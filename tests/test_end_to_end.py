@@ -6,6 +6,7 @@ import xyc.xyc as xyc
     ("helloworldSelfContained", "Hello World\n"),
     ("helloworldSelfContained2", "Hello World\n"),
     ("helloworld", "Hello World\n"),
+    # ("globalConstants", "Speed of Light = 299792458 m/s\n"),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir):
     test_base = resource_dir / "end_to_end" / testname
@@ -13,11 +14,11 @@ def test_end_to_end(testname, output, tmp_path, resource_dir):
         test_base = test_base.with_suffix(".xy")
         assert test_base.exists()
     executable = tmp_path / testname
-    xyc.main([
+    assert xyc._main([
         str(test_base),
         "-P", str(resource_dir / "end_to_end_deps/libxy"),
         "-o", str(executable)
-    ])
+    ]) == 0
     assert executable.exists()
 
     proc = subprocess.run([str(executable)], capture_output=True, text=True)

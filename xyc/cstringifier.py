@@ -18,6 +18,21 @@ def stringify(ast: Ast):
     if len(ast.struct_decls) > 0:
         frags.append("\n")
 
+    for node in ast.consts:
+        assert isinstance(node, Define)
+        if isinstance(node, Define):
+            frags.extend(("#define ", node.name))
+            if len(node.params) > 0:
+                frags.append("(")
+                frags.append(", ".join([p.name for p in node.params]))
+                frags.append(")")
+            if node.value is not None:
+                frags.append(' ')
+                stringify_expr(node.value, frags)
+            frags.append("\n")
+    if len(ast.consts) > 0:
+        frags.append("\n")
+
     ident = 1
     for struct in ast.structs:
         frags.extend(["struct ", struct.name, " {\n"])

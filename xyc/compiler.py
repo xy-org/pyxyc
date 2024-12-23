@@ -359,6 +359,25 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
     for ast in asts:
         for node in ast:
+            if isinstance(node, xy.VarDecl):
+                if node.value is None:
+                    raise CompilationError(
+                        "Global variables are threated as global constants. "
+                        "They must have a compile-time known value",
+                        node
+                    )
+                cdef = c.Define(
+                    name=mangle_define(node.name, ctx.module_name),
+                )
+                ctx.module_ns[node.name] = VarObj(
+                    xy_node=node,
+                    c_node=cdef,
+                )
+                cast.consts.append(cdef)
+                
+
+    for ast in asts:
+        for node in ast:
             if isinstance(node, xy.StructDef):
                 cstruct = c.Struct(name=mangle_struct(node, ctx))
                 type_obj = TypeObj(
@@ -390,6 +409,14 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
                 cast.struct_decls.append(cstruct)
                 cast.structs.append(cstruct)
+
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.VarDecl):
+                _ = ctx.eval(node.value)
+                value_obj = compile_expr(node.value, cast, None, ctx)
+                ctx.module_ns[node.name].c_node.value = value_obj.c_node
+                ctx.module_ns[node.name].type_desc = value_obj.infered_type
 
     for ast in asts:
         for node in ast:
@@ -589,9 +616,8 @@ def compile_funcs(ctx, ast, cast):
             compile_func(node, ctx, ast, cast)
         elif isinstance(node, xy.Comment):
             pass
-        elif not (isinstance(node, xy.StructDef) or isinstance(node, xy.Import)):
-            import pdb; pdb.set_trace()
-            raise CompilationError("NYI", node)
+        elif not isinstance(node, (xy.StructDef, xy.Import, xy.VarDecl)):
+            raise CompilationError(f"{type(node).__name__} not allowed here", node)
 
 def compile_func(node, ctx, ast, cast):
     fspace = ctx.eval_to_fspace(node.name)
@@ -1217,7 +1243,7 @@ def get_c_type(type_expr, ctx):
     return id_desc.c_name
 
 def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
-    mangled = ctx.module_name.replace(".", "_") + "_" + fdef.name.name
+    mangled = mangle_name(fdef.name.name, ctx.module_name)
     if expand:
         mangled = [mangled, "__with"]
         for param in fdef.params:
@@ -1231,7 +1257,13 @@ def mangle_field(field: xy.VarDecl):
     return f"xy_{field.name}"
 
 def mangle_struct(struct: xy.StructDef, ctx):
-    return ctx.module_name.replace(".", "_") + "_" + struct.name
+    return mangle_name(struct.name, ctx.module_name)
+
+def mangle_define(name: str, module_name: str):
+    return mangle_name(name, module_name).upper()
+
+def mangle_name(name: str, module_name: str):
+    return module_name.replace(".", "_") + "_" + name
 
 
 class CompilationError(Exception):

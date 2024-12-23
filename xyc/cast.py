@@ -99,10 +99,17 @@ class Cast:
     to: str = ""
 
 @dataclass
+class Define:
+    name: str = None
+    params: list[VarDecl] = field(default_factory=list)
+    value: any = None
+
+@dataclass
 class Ast:
     includes: list[Include] = field(default_factory=list)
     struct_decls: list[Struct] = field(default_factory=list)
     func_decls: list[Func] = field(default_factory=list)
+    consts: list[VarDecl | Define] = field(default_factory=list)
     structs: list[Struct] = field(default_factory=list)
     funcs: list[Struct] = field(default_factory=list)
 
@@ -115,6 +122,7 @@ class Ast:
 
         self.struct_decls.extend(other.struct_decls)
         self.func_decls.extend(other.func_decls)
+        self.consts.extend(other.consts)
         self.structs.extend(other.structs)
         self.funcs.extend(other.funcs)
 

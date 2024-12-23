@@ -1,0 +1,10 @@
+import libxy.stdio
+import libxy.string
+import libxy.units
+
+c := 299792458~mps;
+
+def main~EntryPoint() -> int {
+    print(f"Speed of Light = {c} m/s\n");
+    return 0;
+}

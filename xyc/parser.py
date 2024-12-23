@@ -444,7 +444,7 @@ def parse_expression(
         elif op == ":":
             if itoken.check("var"):
                 # it's a var decl
-                decl = VarDecl(name=arg1.name, varying=True, src=itoken.src)
+                decl = VarDecl(name=arg1.name, varying=True, src=itoken.src, coords=arg1.coords)
                 if not is_end_of_expr(itoken):
                     decl.type = expr_to_type(
                         parse_expression(itoken, precedence+1, op_prec=op_prec)
@@ -463,10 +463,10 @@ def parse_expression(
                 arg2 = None
                 if not is_end_of_expr(itoken):
                     arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-                sliceop = SliceExpr(start=arg1, end=arg2, src=itoken.src)
+                sliceop = SliceExpr(start=arg1, end=arg2, src=itoken.src, coords=arg1.coords)
                 arg1 = sliceop
         elif op == "=" and isinstance(arg1, SliceExpr):
-            decl = VarDecl(name=arg1.start.name, src=itoken.src)
+            decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=op_coords)
             decl.type = expr_to_type(arg1.end)
             decl.value = parse_expression(itoken)
             arg1 = decl

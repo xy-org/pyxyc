@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 import argparse
+import sys
 from xyc.builder import Builder
 from xyc.parser import ParsingError
 from xyc.compiler import CompilationError
 
 def main(cli_args=None):
+    exit_code = _main(cli_args)
+    sys.exit(exit_code)
+
+def _main(cli_args=None):
     parser = argparse.ArgumentParser(
         prog='xyc',
         description='The XY compiler',
@@ -27,6 +32,8 @@ def main(cli_args=None):
         builder.build()
     except (ParsingError, CompilationError) as e:
         print(e)
+        return 1
+    return 0
 
 if __name__ == '__main__':
     main()
