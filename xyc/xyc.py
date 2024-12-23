@@ -10,6 +10,15 @@ def main(cli_args=None):
     sys.exit(exit_code)
 
 def _main(cli_args=None):
+    builder = setup_builder(cli_args)
+    try:
+        builder.build()
+    except (ParsingError, CompilationError) as e:
+        print(e)
+        return 1
+    return 0
+
+def setup_builder(cli_args=None):
     parser = argparse.ArgumentParser(
         prog='xyc',
         description='The XY compiler',
@@ -28,12 +37,7 @@ def _main(cli_args=None):
         compile_only=args.compile_only,
         package_paths=args.package_path
     )
-    try:
-        builder.build()
-    except (ParsingError, CompilationError) as e:
-        print(e)
-        return 1
-    return 0
+    return builder
 
 if __name__ == '__main__':
     main()

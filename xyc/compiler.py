@@ -222,7 +222,7 @@ class FuncSpace:
             ")"
         err_msg = f"Multiple function matches for '{fsig}'"
         candidates = "\n    ".join((
-            func_sig(f) for f in candidate_fobjs
+            func_sig(f, include_ret=True) for f in candidate_fobjs
         ))
         raise CompilationError(
             err_msg, node,
@@ -236,7 +236,7 @@ class FuncSpace:
             ")"
         err_msg = f"Cannot find function '{fsig}'"
         candidates = "\n    ".join((
-            func_sig(f) for f in candidate_fobjs
+            func_sig(f, include_ret=True) for f in candidate_fobjs
         ))
         raise CompilationError(
             err_msg, node,
@@ -341,7 +341,7 @@ def cmp_arg_param_types(arg_type, param_type):
     
     return True
 
-def func_sig(fobj: FuncObj):
+def func_sig(fobj: FuncObj, include_ret=False):
     fdef = fobj.xy_node
     name = fdef.name if isinstance(fdef.name, str) else fdef.name.name
     res = name + "("
@@ -356,14 +356,17 @@ def func_sig(fobj: FuncObj):
             res += pobj.type_desc.name
         if pobj.xy_node is not None and pobj.xy_node.value is not None:
             res += "]"
-    res += ") -> "
-    if len(fdef.returns) > 1:
-        res += "("
-    if fobj.rtype_obj is None:
-        res += "<ERROR>!"
+    if include_ret:
+        res += ") -> "
+        if len(fdef.returns) > 1:
+            res += "("
+        if fobj.rtype_obj is None:
+            res += "<ERROR>!"
+        else:
+            res += fobj.rtype_obj.xy_node.name
+        if len(fdef.returns) > 1:
+            res += ")"
     else:
-        res += fobj.rtype_obj.xy_node.name
-    if len(fdef.returns) > 1:
         res += ")"
     return res
 
@@ -394,6 +397,8 @@ class CompilerContext:
     flags_obj: any = None
 
     stdlib_included = False
+
+    fsig2obj: dict[str, CompiledObj] = field(default_factory=dict)
 
     def __post_init__(self):
         self.namespaces = [self.global_ns, self.module_ns]
@@ -752,15 +757,24 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 ctx.module_ns[node.name].c_node.value = value_obj.c_node
                 ctx.module_ns[node.name].type_desc = value_obj.infered_type
 
+    fobjs = []
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.FuncDef):
-                compile_func_prototype(node, cast, ctx)
+                fobj = compile_func_prototype(node, cast, ctx)
+                fobjs.append(fobj)
 
-    for ast in asts:
-        for node in ast:
-            if isinstance(node, xy.FuncDef):
-                fill_param_default_values(node, cast, ctx)
+    for fobj in fobjs:
+        fill_param_default_values(fobj, cast, ctx)
+        fsig = func_sig(fobj)
+        if (other := ctx.fsig2obj.get(fsig, None)) is not None:
+            raise CompilationError(
+                f"Function with the same signature already exists: {fsig}", fobj.xy_node,
+                notes=[
+                    ("Previous definition is here", other.xy_node)
+                ]
+            )
+        ctx.fsig2obj[fsig] = fobj
 
     return cast
 
@@ -1147,9 +1161,7 @@ def check_params_have_types(param_objs, ctx):
             do_infer_type(pobj.xy_node.value, ctx)
             raise CompilationError("Unreachable. Report Bug.", pobj.xy_node)
 
-def fill_param_default_values(node, cast, ctx):
-    fspace = ctx.eval_to_fspace(node.name)
-    fobj : FuncObj = fspace.find(node, [], ctx)
+def fill_param_default_values(fobj, cast, ctx):
     ctx.push_ns()
     for pobj in fobj.param_objs:
         if pobj.type_desc is not None:
@@ -1167,6 +1179,7 @@ def fill_param_default_values(node, cast, ctx):
 
         ctx.ns[pobj.xy_node.name] = pobj
     ctx.pop_ns()
+    return fobj
 
 def compile_builtins(builder, module_name, asts):
     mh, _ = compile_module(builder, module_name, asts)
@@ -2993,42 +3006,49 @@ def mangle_name(name: str, module_name: str):
 class CompilationError(Exception):
     def __init__(self, msg, node, notes=None):
         self.notes = notes
-        loc = node.coords[0]
-        loc_len = node.coords[1] - node.coords[0]
-
-        line_num = 1 if loc >= 0 else -1
-        line_loc = 0
-        for i in range(loc):
-            if node.src.code[i] == "\n":
-                line_num += 1
-                line_loc = i+1
-
-        line_end = len(node.src.code)
-        for i in range(line_loc, len(node.src.code)):
-            if node.src.code[i] == "\n":
-                line_end = i
-                break
-
-        cwd = os.getcwd()
-        fn = node.src.filename
-        if fn.startswith(cwd):
-            fn = fn[len(cwd)+1:]
-        
-        src_line = node.src.code[line_loc:line_end].replace("\t", " ")
         self.error_message = msg
         self.xy_node = node
-        self.fmt_msg = f"{fn}:{line_num}:{loc - line_loc + 1}: error: {msg}\n"
-        if loc >= 0:
-            self.fmt_msg += f"| {src_line}\n"
-            self.fmt_msg += "  " + (" " * (loc-line_loc)) + ("^" * loc_len) + "\n"
+        self.fmt_msg = fmt_err_msg(f"error: {msg}", node)
 
         if notes is not None and len(notes) > 0:
-            self.fmt_msg += "\n".join(n[0] for n in notes)
+            self.fmt_msg += "\n".join(
+                fmt_err_msg(f"note: {n[0]}", n[1]) for n in notes
+            )
 
 
     def __str__(self):
         return self.fmt_msg
 
+def fmt_err_msg(msg, node):
+    if node is None:
+        return msg + "\n"
+    loc = node.coords[0]
+    loc_len = node.coords[1] - node.coords[0]
+
+    line_num = 1 if loc >= 0 else -1
+    line_loc = 0
+    for i in range(loc):
+        if node.src.code[i] == "\n":
+            line_num += 1
+            line_loc = i+1
+
+    line_end = len(node.src.code)
+    for i in range(line_loc, len(node.src.code)):
+        if node.src.code[i] == "\n":
+            line_end = i
+            break
+
+    cwd = os.getcwd()
+    fn = node.src.filename
+    if fn.startswith(cwd):
+        fn = fn[len(cwd)+1:]
+    
+    src_line = node.src.code[line_loc:line_end].replace("\t", " ")
+    fmt_msg = f"{fn}:{line_num}:{loc - line_loc + 1}: {msg}\n"
+    if loc >= 0:
+        fmt_msg += f"| {src_line}\n"
+        fmt_msg += "  " + (" " * (loc-line_loc)) + ("^" * loc_len) + "\n"
+    return fmt_msg
 
 def register_func(fdef, ctx):
     fspace = ctx.ensure_func_space(fdef)

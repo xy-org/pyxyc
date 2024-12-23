@@ -112,7 +112,7 @@ class Builder:
         if cc_proc.returncode != 0:
             print("Compilation failed with:")
             print(cc_proc.stdout)
-            print("If you are calling any c method directly please review "
+            print("If you are calling any c functions directly please review "
                   "your code. If you think it is a problem with the Xy compiler"
                   "please report it at TBD.")
 

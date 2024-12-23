@@ -200,7 +200,8 @@ def parse_def(itoken: TokenIter):
     name_coords = itoken.peak_coords()
     name = itoken.consume()
     node = FuncDef(
-        name=Id(name, src=itoken.src, coords=name_coords), src=itoken.src
+        name=Id(name, src=itoken.src, coords=name_coords),
+        src=itoken.src, coords=name_coords
     )
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
