@@ -81,3 +81,22 @@ void for3_double(for3_Array* arr1) {
         }
     }
 }
+
+void for3_doSomething(float f) {
+}
+
+void for3_changeSomehow(float* f) {
+}
+
+void for3_iterAndChange(for3_Array* arr1) {
+    for (size_t tmp_iter0 = for3_iter(); for3_valid(*arr1, tmp_iter0); for3_next(&tmp_iter0)) {
+        if (!for3_valid(*arr1, tmp_iter0)) {
+            abort();
+        }
+        for3_doSomething(*for3_get(*arr1, tmp_iter0));
+        if (!for3_valid(*arr1, tmp_iter0)) {
+            abort();
+        }
+        for3_changeSomehow(for3_get(*arr1, tmp_iter0));
+    }
+}

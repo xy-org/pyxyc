@@ -49,36 +49,15 @@ def double(arr1: inout Array) {
     }
 }
 
-# 
-# struct Slice {
-#     n: Size;
-#     m: Size;
-# }
-# 
-# struct SliceIter {
-#     i: Size;
-#     lim: Size;
-# }
-# 
-# 
-# def slice(n: Size, m: Size) = Slice{n, m}
-# 
-# def iter(arr: Array, slice: Slice) -> ref(arr) SliceIter {
-#     return SliceIter{slice.n, slice.m};
-# }
-# 
-# def valid(arr: Array, iter: SliceIter) = iter.i < arr.len & iter.i < iter.lim
-# 
-# def get(arr: Array, iter: SliceIter) = arr.elems[iter.i]
-# 
-# def set(arr: Array, iter: SliceIter, val: float) {
-#     arr.elems[iter.i] = val;
-# }
-# 
-# def calmpTo0(arr: inout Array, n: Size, m: Size) {
-#     for (elem in arr[n:m]) {
-#         if (elem < 0) {
-#             elem = 0.0f;
-#         }
-#     }
-# }
+def doSomething(f: float) {
+}
+
+def changeSomehow(f: inout float) {
+}
+
+def iterAndChange(arr1: inout Array) {
+    for(elem in arr1) {
+        doSomething(elem);
+        changeSomehow(elem);
+    }
+}

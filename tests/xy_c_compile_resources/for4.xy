@@ -1,19 +1,47 @@
+##########################
+# Iterating over a slice #
+##########################
+
+;; An array of up to 100 floats
 struct Array {
-
+    elems: float[100];
+    len: Size;
 }
 
-struct State {
-    arrayOfArrays: Array[10];
+
+struct Slice {
+    n: Size;
+    m: Size;
 }
 
-def getArray(st: State, idx: int) -> ref(st) Ptr~Array {
-    # Return something
+struct SliceIter {
+    i: Size;
+    lim: Size;
 }
 
-for (elem in st'getArray(x)) {
-    # Do something with elem
+
+def slice(start: Size, end: Size) = Slice{start, end}
+
+def iter(arr: Array, slice: Slice) -> ref(arr) SliceIter {
+    return SliceIter{slice.n, slice.m};
 }
 
-for (elem in onlyPositive(st'getArray(x))) -> ref(st) Ptr~Array {
-    # Do something with elem
+def valid(arr: Array, iter: SliceIter) = iter.i < arr.len & iter.i < iter.lim
+
+def next(arr: Array, iter: inout SliceIter) {
+    iter.i++;
+}
+
+def get(arr: Array, iter: SliceIter) = arr.elems[iter.i]
+
+def set(arr: Array, iter: SliceIter, val: float) {
+    arr.elems[iter.i] = val;
+}
+
+def calmpTo0(arr: inout Array, n: Size, m: Size) {
+    for (elem in arr[n:m]) {
+        if (elem < 0) {
+            elem = 0.0f;
+        }
+    }
 }

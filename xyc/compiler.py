@@ -3014,14 +3014,23 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                     pass # TODO
             else:
                 # not a slice but somesort of collection
-                collection_obj = compile_expr(collection_node, cast, cfunc, ctx, deref=False)
-                iter_arg_objs = []
-                if is_iter_ctor_call(collection_obj):
-                    ictor_obj = collection_obj
+                if isinstance(collection_node, xy.Select):
+                    gen = xy.FuncCall(
+                        xy.Id("iter"),
+                        [collection_node.base, *collection_node.args.args],
+                        collection_node.args.kwargs,
+                        src=collection_node.src, coords=collection_node.coords
+                    )
+                    ictor_obj = compile_fcall(gen, cast, cfunc, ctx)
                 else:
-                    collection_obj = maybe_move_to_temp(collection_obj, cast, cfunc, ctx)
-                    iter_arg_objs = [collection_obj]
-                    ictor_obj = find_and_call("iter", ArgList(iter_arg_objs), cast, cfunc, ctx, collection_node)
+                    collection_obj = compile_expr(collection_node, cast, cfunc, ctx, deref=False)
+                    iter_arg_objs = []
+                    if is_iter_ctor_call(collection_obj):
+                        ictor_obj = collection_obj
+                    else:
+                        collection_obj = maybe_move_to_temp(collection_obj, cast, cfunc, ctx)
+                        iter_arg_objs = [collection_obj]
+                        ictor_obj = find_and_call("iter", ArgList(iter_arg_objs), cast, cfunc, ctx, collection_node)
 
                 if not isinstance(ictor_obj, RefObj):
                     raise CompilationError("Iter Ctors must return refs", ictor_obj.xy_node)

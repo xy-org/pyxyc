@@ -23,6 +23,7 @@ from xyc.compiler import CompilationError
     "for1",
     "for2",
     "for3",
+    "for4",
     "pointers",
     "pseudoParams",
     "errors",
