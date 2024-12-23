@@ -86,6 +86,13 @@ def stringify_body(body, frags, ident=1):
                     else_body = else_body.else_body
                 frags.extend((" " * ident * 4, "}"))
             frags.append("\n")
+        elif isinstance(stmt, DoWhile):
+            frags.append(" " * ident * 4)
+            frags.append("do {\n")
+            stringify_body(stmt.body, frags, ident=ident+1)
+            frags.extend((" " * ident * 4, "} while ("))
+            stringify_expr(stmt.cond, frags)
+            frags.append(");\n")
         elif isinstance(stmt, While):
             frags.append(" " * ident * 4)
             frags.append("while (")

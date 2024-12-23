@@ -18,6 +18,7 @@ from xyc.compiler import CompilationError
     "cimport",
     "ifs",
     "whiles",
+    "dowhiles",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

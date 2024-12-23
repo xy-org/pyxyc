@@ -85,6 +85,11 @@ class While:
     body: list = field(default_factory=list)
 
 @dataclass
+class DoWhile:
+    body: list = field(default_factory=list)
+    cond: any = None
+
+@dataclass
 class Break:
     pass
 

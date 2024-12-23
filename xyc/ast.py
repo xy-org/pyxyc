@@ -161,8 +161,11 @@ class WhileExpr(Node):
     else_node: Node | list | None = None
 
 @dataclass
-class DoWhileExpr(WhileExpr):
-    pass
+class DoWhileExpr(Node):
+    cond: Node | None = None
+    name: Node | None = None
+    block: Block | Node | None = None
+    else_node: Node | list | None = None
 
 @dataclass
 class Break(Node):

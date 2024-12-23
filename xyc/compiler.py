@@ -721,6 +721,8 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
         return compile_expr(rewritten, cast, cfunc, ctx)
     elif isinstance(expr, xy.IfExpr):
         return compile_if(expr, cast, cfunc, ctx)
+    elif isinstance(expr, xy.DoWhileExpr):
+        return compile_dowhile(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.WhileExpr):
         return compile_while(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.Break):
@@ -825,10 +827,15 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     # register loop variables
     for loop_vardecl in xywhile.block.returns:
         if loop_vardecl.name:
-            inferred_type = find_type(loop_vardecl.type, ctx)
+            value_obj = compile_expr(loop_vardecl.value, cast, cfunc, ctx) if loop_vardecl.value is not None else None
+            type_desc = find_type(loop_vardecl.type, ctx) if loop_vardecl.type is not None else None
+
+            inferred_type = type_desc if type_desc is not None else value_obj.infered_type
             name_hint = loop_vardecl.name
             tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
             ctx.id_table[name_hint] = tmp_obj
+            if value_obj is not None:
+                tmp_obj.c_node.value = value_obj.c_node
             cfunc.body.append(tmp_obj.c_node)
             res_c = c.Id(tmp_obj.c_node.name)
 
@@ -861,6 +868,66 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
 
     return ExprObj(
         xy_node=xywhile,
+        c_node=res_c,
+        infered_type=inferred_type,
+    )
+
+def compile_dowhile(xydowhile, cast, cfunc, ctx):
+    cdowhile = c.DoWhile()
+
+    # determine return type if any
+    inferred_type = None
+    res_c = None
+    update_expr_obj = None
+
+    # register loop variables
+    for loop_vardecl in xydowhile.block.returns:
+        if loop_vardecl.name:
+            value_obj = compile_expr(loop_vardecl.value, cast, cfunc, ctx) if loop_vardecl.value is not None else None
+            type_desc = find_type(loop_vardecl.type, ctx) if loop_vardecl.type is not None else None
+
+            inferred_type = type_desc if type_desc is not None else value_obj.infered_type
+            name_hint = loop_vardecl.name
+            tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
+            ctx.id_table[name_hint] = tmp_obj
+            if value_obj is not None:
+                tmp_obj.c_node.value = value_obj.c_node
+            cfunc.body.append(tmp_obj.c_node)
+            res_c = c.Id(tmp_obj.c_node.name)
+
+    if xydowhile.block.is_embedded:
+        update_expr_obj = compile_expr(xydowhile.block.body, cast, cdowhile, ctx)
+        inferred_type = update_expr_obj.infered_type
+
+    # create tmp var if needed
+    if inferred_type is not None and inferred_type is not ctx.void_obj and res_c is None:
+        name_hint = None
+        if isinstance(xydowhile.block, xy.Block):
+            name_hint = xydowhile.block.returns[0].name
+        if name_hint is None:
+            name_hint = ctx.eval_to_id(xydowhile.name)
+        tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
+        ctx.id_table[name_hint] = tmp_obj
+        cfunc.body.append(tmp_obj.c_node)
+        res_c = c.Id(tmp_obj.c_node.name)
+    else:
+        inferred_type = ctx.void_obj
+
+
+    # compile body
+    if update_expr_obj is None:
+        compile_body(xydowhile.block.body, cast, cdowhile, ctx)
+    else:
+        cdowhile.body.append(update_expr_obj.c_node)
+
+    # finaly compile cond
+    cond_obj = compile_expr(xydowhile.cond, cast, cfunc, ctx)
+    cdowhile.cond = cond_obj.c_node
+
+    cfunc.body.append(cdowhile)
+
+    return ExprObj(
+        xy_node=xydowhile,
         c_node=res_c,
         infered_type=inferred_type,
     )
