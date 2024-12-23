@@ -718,11 +718,13 @@ def parse_str_literal(prefix, prefix_start, itoken):
                 lit = itoken.src.code[part_start:part_end]
                 res.parts.append(Const(lit))
 
+            is_introspective = itoken.check("=")
+            args_coords_start = itoken.peak_coords()[0]
             args, kwargs = parse_args_kwargs(itoken)
-            if (len(kwargs) == 0 and len(args) == 1):
-                res.parts.append(args[0])
-            else:
-                res.parts.append(Args(args, kwargs, src=itoken.src))
+            args_coords_end = itoken.peak_coords()[0]
+            res.parts.append(Args(args, kwargs, is_introspective=is_introspective,
+                                  src=itoken.src,
+                                  coords=(args_coords_start, args_coords_end)))
 
             part_start = itoken.peak_coords()[0] + 1
             itoken.expect("}")

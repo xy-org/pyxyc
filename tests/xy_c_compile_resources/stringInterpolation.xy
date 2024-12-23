@@ -23,7 +23,7 @@ def append(builder: inout StrBuilder, str: Str) {
     # left empty for brevity of test
 }
 
-def append(builder: inout StrBuilder, f: float) {
+def append(builder: inout StrBuilder, f: float, precision:=6) {
     # left empty for brevity of test
 }
 
@@ -49,10 +49,10 @@ def createStrings() {
 
     str1 := f"string";
     str2 := f"str1={str1}";
-    # str3 := f"{=str1}";
-    # str4 := f"{pi}";
-    # str5 := f"{pi, 2}";
-    # str6 := f"{pi * 2}";
-
-    # return str1'len + str2'len + str3'len + str4'len + str5'len + str6'len;
+    str3 := f"{=str1}";
+    str4 := f"{pi}";
+    str5 := f"{pi * 2}";
+    str6 := f"{pi, 2}";
+    str7 := f"{pi, precision=2}";
+    str8 := f"{=pi, precision=2}";
 }

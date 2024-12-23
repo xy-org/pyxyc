@@ -68,6 +68,7 @@ class FuncCall(Node):
 class Args(Node):
     args: list[Node] = field(default_factory=list)
     kwargs: dict[str, Node] = field(default_factory=dict)
+    is_introspective: bool = False
 
 @dataclass
 class Select(Node):

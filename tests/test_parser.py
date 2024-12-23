@@ -988,6 +988,7 @@ def test_ambiguous_tags(code, err_msg):
             g := f"complex {a + b, 2, arg=3}";
             h := f"literal {arg=MyStruct{field=10}}";
             i := f"{a}{b} {c}\n{d} ";
+            j := f"{=a+b}";
         }
         """,
         [
@@ -996,7 +997,9 @@ def test_ambiguous_tags(code, err_msg):
                     prefix="f",
                     parts=[
                         ast.Const("before"),
-                        ast.BinExpr(ast.Id("a"), ast.Id("b"), "+"),
+                        ast.Args(
+                            [ast.BinExpr(ast.Id("a"), ast.Id("b"), "+")]
+                        ),
                         ast.Const("after"),
                     ],
                     full_str="before{a + b}after"
@@ -1032,15 +1035,25 @@ def test_ambiguous_tags(code, err_msg):
                 ast.VarDecl("i", type=None, value=ast.StrLiteral(
                     prefix="f",
                     parts=[
-                        ast.Id("a"),
-                        ast.Id("b"),
+                        ast.Args([ast.Id("a")]),
+                        ast.Args([ast.Id("b")]),
                         ast.Const(" "),
-                        ast.Id("c"),
+                        ast.Args([ast.Id("c")]),
                         ast.Const("\n"),
-                        ast.Id("d"),
+                        ast.Args([ast.Id("d")]),
                         ast.Const(" "),
                     ],
                     full_str="{a}{b} {c}\n{d} "
+                )),
+                ast.VarDecl("j", type=None, value=ast.StrLiteral(
+                    prefix="f",
+                    parts=[
+                        ast.Args(
+                            [ast.BinExpr(ast.Id("a"), ast.Id("b"), op="+")],
+                            is_introspective=True
+                        ),
+                    ],
+                    full_str="{=a+b}"
                 )),
             ]),
         ]

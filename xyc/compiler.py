@@ -1134,6 +1134,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
     else:
         builder_tmpvar = ctx.create_tmp_var(func_desc.rtype_obj, f"{expr.prefix}str")
         cfunc.body.append(builder_tmpvar.c_node)
+        ctx.ns[builder_tmpvar.c_node.name] = builder_tmpvar
         builder_tmpvar_id = ExprObj(
             xy_node=expr,
             c_node=c.Id(builder_tmpvar.c_node.name),
@@ -1166,15 +1167,30 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                 )
                 cfunc.body.append(append_call.c_node)
             else:
-                part_expr_obj = compile_expr(part, cast, cfunc, ctx)
-                append_call = find_and_call(
-                    "append",
-                    ArgList([builder_tmpvar_id, part_expr_obj]),
-                    cast,
-                    cfunc,
-                    ctx,
-                    xy_node=expr
+                assert isinstance(part, xy.Args)
+                if part.is_introspective:
+                    part_str = part.args[0].src.code[part.args[0].coords[0]:part.args[0].coords[1]] + "="
+                    append_call = find_and_call(
+                        "append",
+                        ArgList([
+                            builder_tmpvar_id,
+                            ExprObj(c_node=c.Const('"' + part_str + '"'), infered_type=ctx.ptr_obj),
+                            ExprObj(c_node=c.Const(cstr_len(part_str)), infered_type=ctx.size_obj),
+                        ]),
+                        cast,
+                        cfunc,
+                        ctx,
+                        xy_node=expr,
+                    )
+                    cfunc.body.append(append_call.c_node)
+                gen_fcall = xy.FuncCall(
+                    xy.Id("append", src=part.src, coords=part.coords),
+                    args=[xy.Id(builder_tmpvar.c_node.name, src=part.src, coords=part.coords)] + part.args,
+                    kwargs=part.kwargs,
+                    src=part.src,
+                    coords=part.coords
                 )
+                append_call = compile_fcall(gen_fcall, cast, cfunc, ctx)
                 cfunc.body.append(append_call.c_node)
         
         to_obj = func_desc.tags["xyStr"].fields.get("to", None)
