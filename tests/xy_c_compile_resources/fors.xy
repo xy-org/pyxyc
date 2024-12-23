@@ -20,6 +20,10 @@ def doubleLoop(limX: int, limY: int) -> int {
     };
 }
 
+def zipLoop(limX: int, limY: int) -> int {
+    return for (i in :limX, j in :limY) -> (res := 1) res *= i + j;
+}
+
 # ;; Fibonacci number iteerator
 # ;; --------------------------
 # 

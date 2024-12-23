@@ -124,8 +124,12 @@ def stringify_body(body, frags, ident=1):
             for i, update_expr in enumerate(stmt.updates):
                 stringify_expr(update_expr, frags)
                 if i < len(stmt.updates) - 1:
-                    frags.append(",")
+                    frags.append(", ")
             frags.append(") {\n")
+            stringify_body(stmt.body, frags, ident=ident+1)
+            frags.extend((" " * ident * 4, "}\n"))
+        elif isinstance(stmt, Block):
+            frags.extend((" " * ident * 4, "{\n"))
             stringify_body(stmt.body, frags, ident=ident+1)
             frags.extend((" " * ident * 4, "}\n"))
         else:

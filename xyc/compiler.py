@@ -1835,6 +1835,12 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
     cfor = c.For()
     ctx.push_ns()
 
+    for_outer_block = None
+    no_for_vars = False
+    if len(for_node.over) > 1:
+        for_outer_block = c.Block()
+        no_for_vars = True
+
     for iter_node in for_node.over:
         if isinstance(iter_node, xy.BinExpr) and iter_node.op == "in":
             iter_name = ctx.eval_to_id(iter_node.arg1)
@@ -1876,7 +1882,10 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
                     start_value = start_obj.c_node if start_obj is not None else iter_type.init_value 
                     iter_var_decl = c.VarDecl(iter_name, iter_type.c_name, is_const=False, value=start_value)
                     ctx.ns[iter_name] = VarObj(xy_node=iter_node, c_node=iter_var_decl, type_desc=iter_type)
-                    cfor.inits.append(iter_var_decl)
+                    if no_for_vars:
+                        for_outer_block.body.append(iter_var_decl)
+                    else:
+                        cfor.inits.append(iter_var_decl)
 
                     # compile condition
                     if end_obj is not None:
@@ -1885,7 +1894,10 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
                             end_obj.c_node,
                             op="<"
                         )
-                        cfor.cond = c_cond
+                        if cfor.cond is None:
+                            cfor.cond = c_cond
+                        else:
+                            cfor.cond = c.Expr(cfor.cond, c_cond, op="&&")
 
                     # compile step
                     if (step_obj is None or
@@ -1911,6 +1923,8 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
 
         else:
             pass # TODO check expression
+    if for_outer_block is not None:
+        for_outer_block.body.append(cfor)
 
     inferred_type = ctx.void_obj
     return_objs = []
@@ -1929,11 +1943,18 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
     ctx.pop_ns()
 
     if len(return_objs) > 0:
-        cfunc.body.append(cfor)
+        cfunc.body.append(cfor if for_outer_block is None else for_outer_block)
+
+    if len(return_objs) > 0:
+        c_res = c.Id(return_objs[0].c_node.name)
+    elif for_outer_block is not None:
+        c_res = for_outer_block
+    else:
+        c_res = cfor
 
     return ExprObj(
         xy_node=for_node,
-        c_node=cfor if len(return_objs) == 0 else c.Id(return_objs[0].c_node.name),
+        c_node=c_res,
         infered_type=inferred_type,
     )
 

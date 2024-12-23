@@ -97,6 +97,10 @@ class For:
     body: list = field(default_factory=list)
 
 @dataclass
+class Block:
+    body: list = field(default_factory=list)
+
+@dataclass
 class Break:
     pass
 

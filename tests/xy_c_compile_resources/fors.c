@@ -35,3 +35,15 @@ int32_t fors_doubleLoop(int32_t limX, int32_t limY) {
     }
     return res;
 }
+
+int32_t fors_zipLoop(int32_t limX, int32_t limY) {
+    int32_t res = 1;
+    {
+        int32_t i = 0;
+        int32_t j = 0;
+        for (; i < limX && j < limY; ++i, ++j) {
+            res *= i + j;
+        }
+    }
+    return res;
+}
