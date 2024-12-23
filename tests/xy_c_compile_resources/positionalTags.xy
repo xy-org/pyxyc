@@ -15,5 +15,5 @@ def sizeof(:Point) = 8
 def test() -> int {
     ints : Array~int;
     points : Array~Point;
-    return ints'len + points'len + ints'typeof'tagsof.elemType'sizeof + points'typeof'tagsof.elemType'sizeof;
+    return ints'len + points'len + ints..elemType'sizeof + points..elemType'sizeof;
 }

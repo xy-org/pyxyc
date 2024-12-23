@@ -10,7 +10,7 @@ def push(arr: inout Array, val: int) {
     # ...
 }
 
-def dtor(p: Array, managed: bool = p'typeof'tagsof.managed) {
+def dtor(p: Array, managed: bool = p..managed) {
     if (managed) {
         p.mem'free();
     }

@@ -54,7 +54,6 @@ class ArrTypeObj(TypeObj):
     def name(self):
         return self.base_type_obj.name + '[' + ']'
     
-tag_list_type_obj = TypeObj(builtin=True)
 any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE"))
 calltime_expr_obj = TypeObj(builtin=True)
     
@@ -297,7 +296,7 @@ class ExtSpace(FuncSpace):
 def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
     if len(fcall_args_types) > len(fobj.param_objs):
         return False
-    if fobj.builtin and fobj.xy_node.name.name in {"typeof", "tagsof", "sizeof", "addrof", "typeEqs"}:
+    if fobj.builtin and fobj.xy_node.name.name in {"sizeof", "addrof", "typeEqs"}:
         return fobj
     satisfied_params = set()
     # go through positional
@@ -607,12 +606,12 @@ class CompilerContext:
                     if node.arg2.name not in base.type_desc.fields:
                         raise CompilationError(f"No field {node.arg2.name}", node.arg2)
                     return base.type_desc.fields[node.arg2.name]
-                elif base.infered_type is tag_list_type_obj:
-                    if node.arg2.name in base.tags:
-                        return base.tags[node.arg2.name]
-                    raise CompilationError(f"Cannot find tag '{node.arg2.name}'", node.arg1)
                 else:
                     raise CompilationError("Cannot evaluate", node)
+            elif node.op == "..":
+                base = self.eval(node.arg1)
+                return tag_get(node, base, node.arg2.name, self)
+            assert False
         elif isinstance(node, xy.AttachTags):
             obj = self.eval(node.arg)
             if isinstance(obj, ConstObj):
@@ -628,8 +627,6 @@ class CompilerContext:
         else:
             obj = compile_expr(node, None, None, self)
             if isinstance(obj, TypeObj):
-                return obj
-            elif obj.infered_type is tag_list_type_obj:
                 return obj
             elif obj.compiled_obj is not None:
                 return obj.compiled_obj
@@ -1392,6 +1389,7 @@ def call_dtors(ns, cast, cfunc, ctx):
                     xy_node=obj.xy_node,
                     c_node=c.Id(obj.c_node.name),
                     infered_type=obj.infered_type,
+                    compiled_obj=obj
                 )
                 dtor_obj = find_and_call("dtor", ArgList([dtor_arg_obj]), cast, cfunc, ctx, obj.xy_node)
                 cfunc.body.append(dtor_obj.c_node)
@@ -1488,7 +1486,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
             ))
         )
     elif isinstance(expr, xy.BinExpr):
-        if expr.op not in {'.', '=', '.='}:
+        if expr.op not in {'.', '=', '.=', '..'}:
             return compile_binop(expr, cast, cfunc, ctx)
         elif expr.op == '.':
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
@@ -1501,26 +1499,6 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                     c_node=res,
                     infered_type=c_symbol_type
                 )
-            elif arg1_obj.infered_type is tag_list_type_obj:
-                if field_name not in arg1_obj.tags:
-                    available_tags = "Available Tags:" + "    \n".join(arg1_obj.tags.keys())
-                    raise CompilationError(
-                        f"No tag '{field_name}'", expr,
-                        notes=[
-                            (available_tags, None)
-                        ]
-                    )
-                tag_obj = arg1_obj.tags[field_name]
-                if isinstance(tag_obj, TypeObj):
-                    return ExprObj(
-                        c_node=c.Id(tag_obj.c_node.name),
-                        infered_type=tag_obj,
-                    )
-                else:
-                    return ExprObj(
-                        c_node=tag_obj.c_node,
-                        infered_type=tag_obj.infered_type,
-                    )
             else:
                 struct_obj = arg1_obj.infered_type
                 if field_name not in struct_obj.fields:
@@ -1535,7 +1513,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                 c_node=None,
                 infered_type=arg1_obj.infered_type
             )
-        else:
+        elif expr.op == "=":
             if isinstance(expr.arg1, xy.Select):
                 container_obj = compile_expr(expr.arg1.base, cast, cfunc, ctx, lhs=True)
                 assert len(expr.arg1.args.args) == 1
@@ -1556,6 +1534,23 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                     c_node=res,
                     infered_type=arg2_obj.infered_type
                 )
+        else:
+            # compile get tag
+            assert expr.op == ".."
+            assert isinstance(expr.arg2, xy.Id)
+            field_name = expr.arg2.name
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
+            tag_obj = tag_get(expr, arg1_obj, field_name, ctx)
+            if isinstance(tag_obj, TypeObj):
+                return ExprObj(
+                    c_node=c.Id(tag_obj.c_node.name),
+                    infered_type=tag_obj,
+                )
+            else:
+                return ExprObj(
+                    c_node=tag_obj.c_node,
+                    infered_type=tag_obj.infered_type,
+                )
     elif isinstance(expr, xy.UnaryExpr) and expr.op == '&':
         arg_obj = compile_expr(expr.arg, cast, cfunc, ctx, lhs=True)
         if isinstance(arg_obj, RefObj):
@@ -1569,6 +1564,16 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
             return compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx)
         else:
             raise CompilationError("Expression doesn't evaluate to a ref", expr.arg)
+    elif isinstance(expr, xy.UnaryExpr) and expr.op == '%':
+        # compile typeof
+        arg_obj = compile_expr(expr.arg, cast, cfunc, ctx)
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.Id(arg_obj.infered_type.c_node.name),
+            infered_type=arg_obj.infered_type,
+            tags=arg_obj.infered_type.tags,
+            compiled_obj=arg_obj.infered_type,
+        )
     elif isinstance(expr, xy.UnaryExpr):
         fcall = rewrite_unaryop(expr, ctx)
         return compile_expr(fcall, cast, cfunc, ctx)
@@ -1869,6 +1874,26 @@ def ptr_type_to(type_obj, ctx):
     ptr_type.tags = {}
     ptr_type.tags["to"] = type_obj
     return ptr_type
+
+def tag_get(expr, obj, tag_label, ctx):
+    if isinstance(obj.compiled_obj, VarObj):
+        obj = obj.compiled_obj.type_desc
+    elif isinstance(obj.compiled_obj, TypeObj):
+        obj = obj.compiled_obj
+    else:
+        obj = obj.infered_type
+
+    
+    if tag_label not in obj.tags:
+        available_tags = "Available Tags:" + "    \n".join(obj.tags.keys())
+        raise CompilationError(
+            f"No tag '{tag_label}'", expr,
+            notes=[
+                (available_tags, None)
+            ]
+        )
+    tag_obj = obj.tags[tag_label]
+    return tag_obj
 
 def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
     type_obj = ctx.eval(expr.name, msg="Cannot find type")
@@ -2262,7 +2287,8 @@ def move_to_temp(expr_obj, cast, cfunc, ctx):
         xy_node=expr_obj.xy_node,
         c_node=c.Id(tmp_obj.c_node.name),
         infered_type=expr_obj.infered_type,
-        tags=expr_obj.tags
+        tags=expr_obj.tags,
+        compiled_obj=tmp_obj,
     )
 
 def is_simple_cexpr(expr):
@@ -2361,19 +2387,6 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=res,
             xy_node=expr,
             infered_type=func_obj.rtype_obj
-        )
-    elif is_builtin_func(func_obj, "typeof"):
-        return ExprObj(
-            xy_node=expr,
-            c_node=c.Id(arg_exprs[0].infered_type.c_node.name),
-            infered_type=arg_exprs[0].infered_type,
-            tags=arg_exprs[0].infered_type.tags,
-            compiled_obj=arg_exprs[0].infered_type,
-        )
-    elif is_builtin_func(func_obj, "tagsof"):
-        return ExprObj(
-            infered_type=tag_list_type_obj,
-            tags=arg_exprs[0].tags
         )
     elif is_builtin_func(func_obj, "sizeof"):
         return ExprObj(

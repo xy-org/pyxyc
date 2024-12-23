@@ -930,6 +930,67 @@ def test_parse_operator_slices(code, exp_ast):
             ])
         ]
     ],
+    [
+        """def func() -> void {
+            a : Ptr~Ptr~int;
+            b : a..to;
+            c : a..to..to;
+            d : (%a)..to;
+            e : %a..to;
+            f : %c = a..to'sizeof;
+        }""",
+        [
+            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("a", varying=True, type=ast.AttachTags(
+                    arg=ast.Id("Ptr"),
+                    tags=ast.TagList(args=[ast.AttachTags(
+                        arg=ast.Id("Ptr"),
+                        tags=ast.TagList(args=[ast.Id("int")])
+                    )])
+                )),
+                ast.VarDecl("b", varying=True, type=ast.BinExpr(
+                    ast.Id("a"),
+                    ast.Id("to"),
+                    op="..",
+                )),
+                ast.VarDecl("c", varying=True, type=ast.BinExpr(
+                    ast.BinExpr(
+                        ast.Id("a"),
+                        ast.Id("to"),
+                        op="..",
+                    ),
+                    ast.Id("to"),
+                    op="..",
+                )),
+                ast.VarDecl("d", varying=True, type=ast.BinExpr(
+                    ast.UnaryExpr(
+                        ast.Id("a"),
+                        op="%",
+                    ),
+                    ast.Id("to"),
+                    op="..",
+                )),
+                ast.VarDecl("e", varying=True, type=ast.UnaryExpr(
+                    ast.BinExpr(
+                        ast.Id("a"),
+                        ast.Id("to"),
+                        op="..",
+                    ),
+                    op="%"
+                )),
+                ast.VarDecl("f", varying=False, type=ast.UnaryExpr(
+                    ast.Id("c"),
+                    op="%"
+                ), value=ast.FuncCall(
+                    name=ast.Id("sizeof"), args=[
+                        ast.BinExpr(
+                            ast.Id("a"), ast.Id("to"), op=".."
+                        )
+                    ]
+                )),
+            ])
+        ]
+    ],
 ])
 def test_expressions(code, exp_ast):
     act_ast = parse_code(code)

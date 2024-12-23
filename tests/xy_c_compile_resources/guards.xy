@@ -13,7 +13,7 @@ def guards2(a: int, b: pseudo ?) -> int
 }
 
 def guards3(a: pseudo ?, b: pseudo ?) -> int
->>  a'typeof \typeEqs b'typeof
+>>  %a \typeEqs %b
 {
     return 0;
 }

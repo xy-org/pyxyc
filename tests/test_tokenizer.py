@@ -200,6 +200,26 @@ from xyc.tokenizer import split_tokens
         ['b', ':', '=', ':', ';'],
         None
     ),
+    (
+        'b: a..to',
+        ['b', ':', 'a', '..', 'to'],
+        None
+    ),
+    (
+        'b: a...to',  # invalid expression but let's document how it is parsed
+        ['b', ':', 'a', '..', '.', 'to'],
+        None
+    ),
+    (
+        'b: %a = a',
+        ['b', ':', '%', 'a', '=', 'a'],
+        None
+    ),
+    (
+        'b: %func(a, c)',
+        ['b', ':', '%', 'func', '(', 'a', ',', 'c', ')'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)

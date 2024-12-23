@@ -69,6 +69,11 @@ struct Ptr~[to: struct] {
     # Implemented by the compiler
 }
 
+;; The address of any variable or even temporary value
+def addrof(arg: ?) -> Ptr~[<< %arg] {
+    # Implemented by the compiler
+}
+
 ;; 32-bit IEEE 754 floating point number
 struct float {
     # Implemented by the compiler
@@ -348,21 +353,4 @@ struct IterCtor {
     # Implemented by the compiler
 }
 
-# Ctti stuff
-# TODO move to xy.ctti
-
-def typeof(arg: ?) -> void {
-    # Implemented by the compiler
-}
-
-def tagsof(arg: ?) -> void {
-    # Implemented by the compiler
-}
-
-def sizeof(arg: ?) -> Size {
-    # Implemented by the compiler
-}
-
-def addrof(arg: ?) -> Ptr {
-    # Implemented by the compiler
-}
+# Miscellaneous

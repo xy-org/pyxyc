@@ -5,9 +5,13 @@ import libxy.stdio
 import libxy.strings
 import libxy.slices
 
-struct Array~[elemType: struct] {
+struct Array~[elemType: struct, xy_dtor=true] {
     mem: Memory;
     len: Size~Count;
+}
+
+def dtor(arr: Array) {
+    arr.mem'free();
 }
 
 def len(a: Array) = a.len
@@ -19,7 +23,7 @@ def max(a: Size, b: Size) -> Size {
 def ensureCapacity(
     arr: inout Array,
     requiredCap: Size,
-    elemSize : Size = arr'typeof'tagsof.elemType'sizeof
+    elemSize : Size = ctti.sizeof(arr..elemType)
 ) {
     minRequiredSize := requiredCap * elemSize;
     if (arr.mem.size < minRequiredSize) {
@@ -31,9 +35,9 @@ def push(
     arr: inout Array,
     elem: pseudo ?,
     elemMem: Ptr = elem'addrof,
-    elemSize := elem'sizeof
+    elemSize := ctti.sizeof(elem)
 )
-# >> ctti.compatible(arr'typeof'tagsof.elemType, elem'typeof, arr, elem)
+# >> ctti.compatible(arr..elemType, %elem, arr, elem)
 {
     arr'ensureCapacity(arr.len + 1, elemSize=elemSize);
     arr.mem[arr.len * elemSize +: elemSize] = elemMem;
@@ -43,15 +47,15 @@ def push(
 
 def get(
     arr: Array, i: Size,
-    elemSize : Size = arr'typeof'tagsof.elemType'sizeof
-) -> ref(arr) Ptr~[<< arr'typeof'tagsof.elemType] {
+    elemSize : Size = ctti.sizeof(arr..elemType)
+) -> ref(arr) Ptr~[<< arr..elemType] {
     return arr.mem.addr + i * elemSize;
 }
 
 def get(
     arr: Array, i: int,
-    elemSize : Size = arr'typeof'tagsof.elemType'sizeof
-) -> ref(arr) Ptr~[<< arr'typeof'tagsof.elemType] {
+    elemSize : Size = ctti.sizeof(arr..elemType)
+) -> ref(arr) Ptr~[<< arr..elemType] {
     return arr.mem.addr + i * elemSize;
 }
 
