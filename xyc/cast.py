@@ -39,8 +39,8 @@ class Struct:
     fields: list[VarDecl] = field(default_factory=list)
 
 @dataclass
-class StructLiteral:
-    name: str
+class CompoundLiteral:
+    name: any = None
     args: list = field(default_factory=list)
 
 @dataclass

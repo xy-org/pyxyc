@@ -196,13 +196,22 @@ def stringify_expr(expr, frags, parent_op_precedence=-10):
                 frags.append(", ")
             stringify_expr(arg, frags)
         frags.append(")")
-    elif isinstance(expr, StructLiteral):
-        frags.extend(["(", expr.name, "){"])
+    elif isinstance(expr, CompoundLiteral):
+        if isinstance(expr.name, str):
+            frags.extend(["(", expr.name, "){"])
+        elif expr.name is not None:
+            frags.append("(")
+            stringify_expr(expr.name, frags)
+            frags.append("){")
+        else:
+            frags.append("{")
+
         for arg in expr.args:
             stringify_expr(arg, frags)
             frags.append(", ")
         if len(expr.args) > 0:
             frags.pop()
+
         frags.append("}")
     elif isinstance(expr, InitList):
         frags.append("{")
@@ -214,7 +223,8 @@ def stringify_expr(expr, frags, parent_op_precedence=-10):
     elif isinstance(expr, Index):
         stringify_expr(expr.expr, frags)
         frags.append("[")
-        stringify_expr(expr.index, frags)
+        if expr.index is not None:
+            stringify_expr(expr.index, frags)
         frags.append("]")
     elif isinstance(expr, Break):
         frags.append("break")

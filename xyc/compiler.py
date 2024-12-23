@@ -777,7 +777,7 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
                 xy_node=type_obj.xy_node, c_node=None,
                 type_desc=type_obj.base_type_obj,
             )
-        type_obj.init_value = c.StructLiteral(
+        type_obj.init_value = c.CompoundLiteral(
             name=None,
             args=[c.Const(0)]
         )
@@ -852,7 +852,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
 
     all_zeros = all(default_values_zeros)
     c_init_args = [c.Const(0)] if all_zeros else default_values
-    type_obj.init_value = c.StructLiteral(
+    type_obj.init_value = c.CompoundLiteral(
         name=cstruct.name,
         args=c_init_args
     )
@@ -1553,11 +1553,14 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
         return compile_strlit(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.ArrayLit):
         res = c.InitList()
-        arr_type = "Cannot infer type of empty list"
+        arr_type = None
         for elem in expr.elems:
             elem_expr = compile_expr(elem, cast, cfunc, ctx)
             res.elems.append(elem_expr.c_node)
-            arr_type = elem_expr.infered_type
+            if arr_type is None:
+                arr_type = elem_expr.infered_type
+        if arr_type is None:
+            arr_type = "Cannot infer type of empty list"
         return ExprObj(
             xy_node=expr,
             c_node=res,
@@ -1844,7 +1847,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
             del named_objs[pos_to_name[i]]
 
         if len(c_args) > 0:
-            tmp_obj.c_node.value = c.StructLiteral(
+            tmp_obj.c_node.value = c.CompoundLiteral(
                 name=type_obj.c_name,
                 args=c_args,
             )
@@ -1855,7 +1858,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         # creating a new struct
         if len(pos_objs) != 0:
             ctypename = type_obj.c_name
-            res = c.StructLiteral(
+            res = c.CompoundLiteral(
                 name=ctypename,
                 args=c_args,
             )
@@ -2151,7 +2154,7 @@ def is_simple_cexpr(expr):
         return is_simple_cexpr(expr.arg1) and is_simple_cexpr(expr.arg2)
     if isinstance(expr, c.UnaryExpr):
         return is_simple_cexpr(expr.arg)
-    if isinstance(expr, c.StructLiteral):
+    if isinstance(expr, c.CompoundLiteral):
         return all(is_simple_cexpr(e) for e in expr.args)
     if isinstance(expr, c.Index):
         return is_simple_cexpr(expr.expr) and is_simple_cexpr(expr.index)
@@ -2178,10 +2181,20 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if func_obj.builtin and func_obj.xy_node.name == "select":
         # TODO what if args is more numerous
         assert len(arg_exprs) == 2
-        res = c.Index(
-            arg_exprs[0].c_node,
-            arg_exprs[1].c_node,
-        )
+        base_cnode = arg_exprs[0].c_node
+        index_cnode = arg_exprs[1].c_node
+
+        if isinstance(arg_exprs[0].infered_type, ArrTypeObj) and isinstance(base_cnode, c.InitList):
+            # convert InitList to compuond literal to keep c happy
+            base_type = c.Id(arg_exprs[0].infered_type.base_type_obj.c_name)
+            for dim in arg_exprs[0].infered_type.dims:
+                base_type = c.Index(base_type, c.Const(dim))
+            base_cnode = c.CompoundLiteral(
+                base_type,
+                base_cnode.elems,
+            )
+
+        res = c.Index(base_cnode, index_cnode)
         return ExprObj(
             xy_node=expr,
             c_node=res,

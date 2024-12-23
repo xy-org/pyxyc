@@ -15,6 +15,6 @@ int8_t refs_index(refs_Point p, int8_t idx) {
     return idx;
 }
 
-void refs_get(refs_Point p, int8_t idx) {
+float refs_get(refs_Point p, int8_t idx) {
     return (float[4]){p.m_x, p.m_y, p.m_z, p.m_w}[idx];
 }

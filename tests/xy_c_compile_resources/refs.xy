@@ -9,7 +9,7 @@ def index(p: Point, idx: byte) -> ref(p) byte {
     return idx;
 }
 
-def get(p: Point, idx: byte) {
+def get(p: Point, idx: byte) -> float {
     return [p.x, p.y, p.z, p.w][idx];
 }
 
