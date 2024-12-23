@@ -1391,6 +1391,8 @@ c_symbol_type = TypeInferenceError(
 
 def compile_expr(expr, cast, cfunc, ctx: CompilerContext, rhs=False) -> ExprObj:
     if isinstance(expr, xy.Const):
+        # if expr.value_str == "True":
+            # import pdb; pdb.set_trace()
         return ExprObj(
             xy_node=expr,
             c_node=c.Const(expr.value_str),
@@ -1669,36 +1671,13 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
     field_objs = list(type_obj.fields.values())
 
     any_pseudos = False
-    toggle_idx = None
     for i, arg in enumerate(expr_args):
-        if isinstance(arg, xy.UnaryExpr) and arg.op == ".":
-            # it's a toggle
-            if toggle_idx is None:
-                toggle_idx = i
-            assert isinstance(arg.arg, xy.Id)
-            name = arg.arg.name
-            if name not in type_obj.fields:
-                raise CompilationError(f"No field named '{name}", arg)
-            if name in named_objs:
-                raise CompilationError(f"Field {name} already set", arg)
-            named_objs[name] = compile_expr(xy.Const(
-                    True, "true", "bool", src=arg.src, coords=arg.coords
-                ),
-                cast, cfunc, ctx
-            )
-            if type_obj.fields[name].xy_node.is_pseudo:
-                any_pseudos = True
-            if not any_pseudos:
-                pos_objs[name_to_pos[name]] = named_objs[name]
-        elif toggle_idx is not None:
-            raise CompilationError("Cannot mix and match toggle and positional args", arg)
-        else:
-            val_obj = compile_expr(arg, cast, cfunc, ctx)
-            named_objs[field_objs[i].xy_node.name] = val_obj
-            if field_objs[i].xy_node.is_pseudo:
-                any_pseudos = True
-            if not any_pseudos:
-                pos_objs[i] = compile_expr(arg, cast, cfunc, ctx)
+        val_obj = compile_expr(arg, cast, cfunc, ctx)
+        named_objs[field_objs[i].xy_node.name] = val_obj
+        if field_objs[i].xy_node.is_pseudo:
+            any_pseudos = True
+        if not any_pseudos:
+            pos_objs[i] = compile_expr(arg, cast, cfunc, ctx)
 
     for name, arg in expr_kwargs.items():
         if name not in type_obj.fields:

@@ -1751,6 +1751,7 @@ def test_global_constants(code, exp_ast):
             a =.pending;
             a = .end;
             a = . end;
+            b := Status{.end};
         }
         """,
         [
@@ -1779,28 +1780,40 @@ def test_global_constants(code, exp_ast):
                     ),
                     ast.BinExpr(
                         ast.Id("a"),
-                        ast.UnaryExpr(
-                            op=".",
-                            arg=ast.Id("pending"),
+                        ast.BinExpr(
+                            arg1=ast.Id("pending"),
+                            arg2=ast.Const(True),
+                            op="=",
                         ),
                         op="=",
                     ),
                     ast.BinExpr(
                         ast.Id("a"),
-                        ast.UnaryExpr(
-                            op=".",
-                            arg=ast.Id("end"),
+                        ast.BinExpr(
+                            arg1=ast.Id("end"),
+                            arg2=ast.Const(True),
+                            op="=",
                         ),
                         op="=",
                     ),
                     ast.BinExpr(
                         ast.Id("a"),
-                        ast.UnaryExpr(
-                            op=".",
-                            arg=ast.Id("end"),
+                        ast.BinExpr(
+                            arg1=ast.Id("end"),
+                            arg2=ast.Const(True),
+                            op="=",
                         ),
                         op="=",
                     ),
+                    ast.VarDecl(
+                        "b",
+                        value=ast.StructLiteral(
+                            name=ast.Id("Status"),
+                            kwargs={
+                                "end": ast.Const(True),
+                            }
+                        )
+                    )
                 ]
             )
         ]

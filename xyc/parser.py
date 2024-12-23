@@ -590,13 +590,12 @@ def parse_expression(
         elif op in {"++", "--"}:
             arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
         elif op == "." and arg1 is None:
-            # unary . aka toggle
+            # unary . aka toggle => expand to arg = True
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             end_coord = arg2.coords[1] if arg2 is not None else op_coords[1]
-            toggle_op = UnaryExpr(
-                arg2, op=".", src=itoken.src, coords=[op_coords[0], end_coord]
+            arg1 = BinExpr(
+                arg2, Const(True), op="=", src=itoken.src, coords=[op_coords[0], end_coord]
             )
-            arg1 = toggle_op
         else:
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             end_coord = arg2.coords[1] if arg2 is not None else arg1.coords[0] + len(op)
