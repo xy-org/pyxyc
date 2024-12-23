@@ -288,7 +288,7 @@ def parse_block(itoken):
     for expr in args:
         expr = expr_to_type(expr)
         if isinstance(expr, VarDecl):
-            expr.varying = True
+            expr.mutable = True
             block.returns.append(expr)
         else:
             block.returns.append(
@@ -342,7 +342,7 @@ def parse_params(itoken):
         if param.name is None:
             param.is_pseudo = True
 
-        param.varying = False
+        param.mutable = False
         param.is_param = True
         res.append(param)
 
@@ -365,7 +365,7 @@ def parse_toplevel_type_expr(itoken):
     return parse_expression(itoken, op_prec=toplevel_precedence_map)
 
 # ref is a reserved keyword
-var_qualifiers = {"var", "in", "out", "inout", "outin", "pseudo", "ref"}
+var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo", "ref"}
 
 operator_precedence = {
     "^": 12, "unary[": 12,
@@ -440,7 +440,7 @@ def parse_expression(
             for expr in ret_args:
                 expr = expr_to_type(expr)
                 if isinstance(expr, VarDecl):
-                    expr.varying = True
+                    expr.mutable = True
                     arg1.returns.append(expr)
                 else:
                     arg1.returns.append(
@@ -685,7 +685,7 @@ def parse_expression(
         and arg1.step is None and arg1.end is not None
         and is_toplevel):
         # it's actually a var decl
-        decl = VarDecl(varying=not is_struct, src=arg1.src, coords=arg1.coords)
+        decl = VarDecl(mutable=not is_struct, src=arg1.src, coords=arg1.coords)
         if arg1.start is not None:
             if isinstance(arg1.start, CallerContextExpr):
                 decl.name = arg1.start.arg.name
@@ -704,8 +704,8 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
     else:
         decl.coords = itoken.peak_coords()
 
-    if itoken.check("var"):
-        decl.varying = True
+    if itoken.check("mut"):
+        decl.mutable = True
     elif itoken.check("out"):
         decl.is_out = True
     elif itoken.check("inout"):

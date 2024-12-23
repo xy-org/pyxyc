@@ -19,7 +19,7 @@ def callDoubles(a: inout A) -> A {
 }
 
 def test() -> int {
-    a : var = A{5};
+    a : mut = A{5};
     double(a);
     doubleInout(a);
     return callDoubles(a).num;

@@ -34,7 +34,7 @@ def guards4(a: int, b: int) -> (c: int) || ErrorCode
 }
 
 def test(a: int, b: int) -> int {
-    res : var = 0;
+    res : mut = 0;
     res += guards1(a, b);
     res += guards2(a, b);
     res += guards3(res, b);

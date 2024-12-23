@@ -10,7 +10,7 @@ def power(x: int, y: int) -> int || Error {
     if (y < 0) {
         error Error{1};
     }
-    i: var = 0;
+    i: mut = 0;
     return while (i <= y) -> (res: int = 1) {
         res *= x;
         i++;

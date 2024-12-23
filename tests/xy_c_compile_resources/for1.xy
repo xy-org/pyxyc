@@ -13,7 +13,7 @@ def sumUpTo(start: int, end: int) -> int {
 }
 
 def multUpTo(start: int, end: int, step: int) -> int {
-    res : var = 0;
+    res : mut = 0;
     for (i in start:end:step) res *= sumUpTo(start, i);
     return res;
 }

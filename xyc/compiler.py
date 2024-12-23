@@ -1664,7 +1664,7 @@ def type_needs_dtor(type_obj):
     return dtor_tag is not None and is_ct_true(dtor_tag)
 
 def compile_vardecl(node, cast, cfunc, ctx):
-    cvar = c.VarDecl(name=node.name, qtype=c.QualType(is_const=not node.varying))
+    cvar = c.VarDecl(name=node.name, qtype=c.QualType(is_const=not node.mutable))
     value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
     if isinstance(value_obj, RefObj):
         value_obj = ref_get(value_obj, cast, None, ctx)

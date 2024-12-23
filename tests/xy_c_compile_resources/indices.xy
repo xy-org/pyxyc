@@ -30,12 +30,12 @@ def set(p: inout Point, idx: int, v: float)
 }
 
 def testPoint(i: int) -> float {
-    p1: var = Point{w=i'to(float)};
+    p1: mut = Point{w=i'to(float)};
     p2: Point;
     p1.x = p1[i];
     p2.z = p1[4-i];
     sum := p1.x + p2[2] + p2.z + p1[3];
-    res : var = p1[0];
+    res : mut = p1[0];
     p2[0] = p1[0];
     res += p2[0];
     return res + sum;

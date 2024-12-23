@@ -25,7 +25,7 @@ def errorProne(arr: Array) -> void || int {
 }
 
 def funcReturningAnObjectWithDtor(num: int) -> Array {
-    arr: var Array;
+    arr: mut Array;
     for (i in :num) {
         arr'push(i);
     }
@@ -37,7 +37,7 @@ def addr(p: Array) -> Ptr {
 }
 
 def test1() {
-    arr: var Array;
+    arr: mut Array;
     arr'push(10);
 
     update(arr);
@@ -47,46 +47,46 @@ def test1() {
 }
 
 def test2(rng: int) -> void || int {
-    arr1: var Array;
+    arr1: mut Array;
     errorProne(arr1);
 
-    arr2: var Array;
+    arr2: mut Array;
     errorProne(arr2);
 
-    arr3: var Array;
+    arr3: mut Array;
 }
 
 def test3(rng: int) -> Array || int {
-    arr1: var Array;
+    arr1: mut Array;
     errorProne(arr1);
 
-    arr2: var Array;
+    arr2: mut Array;
     errorProne(arr2);
 
-    arr3: var Array;
+    arr3: mut Array;
 
     return if (rng == 0) arr1 elif (rng == 1) arr2 else arr3;
 }
 
 def test4(rng: int) -> Array || int {
-    arr1: var Array;
+    arr1: mut Array;
     errorProne(arr1);
 
-    num : var = 10;
+    num : mut = 10;
     while (rng < num) {
-        arr2: var Array;
+        arr2: mut Array;
         errorProne(arr2);
 
         for (i in 0:num) {
-            arr3: var Array;
+            arr3: mut Array;
             errorProne(arr3);
 
             if (i == rng*2) {
-                arr4: var Array;
+                arr4: mut Array;
                 return arr1;
             }
             if (rng == 3) {
-                arr4: var Array;
+                arr4: mut Array;
                 break;
             }
         }

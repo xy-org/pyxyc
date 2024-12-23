@@ -75,8 +75,8 @@ def set(p: Point, idx: pseudo ZYXField, v: float[3]) = p.coords = [v[2], v[1], v
 def dot(p1: Point, p2: Point) = p1.x * p2.x + p1.y * p2.y + p1.z * p2.z
 
 def test() {
-    p1 : var = Point{.23, .92};
-    p2 : var = Point{.4837, .127, -0.314};
+    p1 : mut = Point{.23, .92};
+    p2 : mut = Point{.4837, .127, -0.314};
     p3 : Point;
     p1.x = p2.z;
     p2.y = .0;

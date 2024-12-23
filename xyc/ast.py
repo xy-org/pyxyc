@@ -233,7 +233,7 @@ class VarDecl(Node):
     name: str | None = None
     type: Node | None = None
     value: Node | None = None
-    varying: bool = False
+    mutable: bool = False
     is_param: bool = False
     is_in: bool = False
     is_out: bool = False

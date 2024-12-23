@@ -27,7 +27,7 @@ def testEnums(a: int) {
     # printStatus(.processed);
     printStatus(Status.processed);
 
-    st : var = Status.canceled;
+    st : mut = Status.canceled;
     if (a > 0) {
         st = Status.processed;
     }

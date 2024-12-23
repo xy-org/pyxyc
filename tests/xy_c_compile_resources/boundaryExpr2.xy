@@ -10,7 +10,7 @@ def print(num: int) {
 }
 
 def main() {
-    a : var int = 1;
+    a : mut int = 1;
     print(a'sum);
     print(sum(a * 2));
     print(sum(quadruple(a)));

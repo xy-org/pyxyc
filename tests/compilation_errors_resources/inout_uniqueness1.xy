@@ -5,8 +5,8 @@ def swap(a: inout int, b: inout int) {
 }
 
 def test() {
-    a : var = 0;
-    b : var = 1;
+    a : mut = 0;
+    b : mut = 1;
     swap(a, b);
     swap(b, a);
     swap(a, a);  # Should produce an error

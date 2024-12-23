@@ -1,5 +1,5 @@
 def simpleDoWhile(x: int, y: int) -> int {
-    i : var = 0;
+    i : mut = 0;
     do {
         x += 10;
         i++;

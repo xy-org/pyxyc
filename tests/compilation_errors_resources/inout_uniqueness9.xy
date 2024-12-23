@@ -10,8 +10,8 @@ def doSwap(a: inout int, b: inout int) {
 }
 
 def test() {
-    a : var = 0;
-    b : var = 1;
+    a : mut = 0;
+    b : mut = 1;
     swap(a);
     swap(b);
 }

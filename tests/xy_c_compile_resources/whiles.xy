@@ -1,5 +1,5 @@
 def func1(x: int, y: int) -> int {
-    i : var = 0;
+    i : mut = 0;
     while (x < y) {
         x += 10;
         i++;
@@ -15,7 +15,7 @@ def func2(x: int, y: int) -> int {
 }
 
 def func3(x: int, y: int) -> int {
-    i : var = 0;
+    i : mut = 0;
     while (x < y) {
         x += 10;
         i++;
