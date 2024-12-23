@@ -1,0 +1,20 @@
+def statementLike(x : int, y: int) -> int {
+    if (x < y) {
+        return x * y * 3;
+    } else {
+        return y * 2;
+    }
+}
+
+def expressionLike(x : int, y: int) -> int {
+    return if (x < y) x * y * 3 else y * 2;
+}
+
+def namedIf(x: int, y: int) -> int {
+    res := if res(x < y) -> int {
+        res = x * y * 3;
+    } else {
+        res = y * 2;
+    }
+    return res;
+}

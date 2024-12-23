@@ -194,8 +194,11 @@ def parse_ml_comment(itoken):
                    coords=[comment_start, comment_start+2])
 
 def parse_def(itoken):
+    name_coords = itoken.peak_coords()
     name = itoken.consume()
-    node = FuncDef(name=Id(name), src=itoken.src)
+    node = FuncDef(
+        name=Id(name, src=itoken.src, coords=name_coords), src=itoken.src
+    )
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
     node.params = parse_params(itoken)
@@ -359,7 +362,9 @@ def parse_expression(
         elif op == "'":
             f_coords = itoken.peak_coords()
             fname = itoken.consume()
-            fcall = FuncCall(Id(fname), [arg1], src=itoken.src, coords=f_coords)
+            fcall = FuncCall(
+                Id(fname, src=itoken.src, coords=f_coords),
+                [arg1], src=itoken.src, coords=f_coords)
             if itoken.check("("):
                 args, kwargs = parse_args_kwargs(itoken)
                 fcall.args.extend(args)
@@ -369,7 +374,10 @@ def parse_expression(
         elif op == "\\":
             f_coords = itoken.peak_coords()
             fname = itoken.consume()
-            fcall = FuncCall(Id(fname), [arg1], src=itoken.src, coords=f_coords)
+            fcall = FuncCall(
+                Id(fname, src=itoken.src, coords=f_coords),
+                [arg1], src=itoken.src, coords=f_coords
+            )
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             fcall.args.append(arg2)
             arg1 = fcall

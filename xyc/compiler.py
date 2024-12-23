@@ -12,6 +12,7 @@ class CompiledObj:
 @dataclass
 class TypeObj(CompiledObj):
     builtin : bool = False
+    fields: dict[str, 'VarObj'] = field(default_factory=list)
 
     @property
     def c_name(self):
@@ -73,6 +74,10 @@ class VarObj(CompiledObj):
 class ImportObj(CompiledObj):
     name: str | None = None
 
+@dataclass
+class ExprObj(CompiledObj):
+    infered_type: CompiledObj | str = "Cannot deduce type"
+
 class IdTable(dict):
     def merge(self, other: 'IdTable'):
         for key, value in other.items():
@@ -100,9 +105,8 @@ class FuncSpace:
     def __getitem__(self, i):
         return self._funcs[i]
     
-    def find(self, node, ctx):
+    def find(self, node, args_infered_types, ctx):
         if isinstance(node, xy.FuncCall):
-            args_infered_types = [infer_type(arg, ctx) for arg in node.args]
             for desc in self._funcs:
                 if cmp_call_def(node, args_infered_types, desc.xy_node, ctx):
                     return desc
@@ -127,7 +131,7 @@ class ExtSpace(FuncSpace):
     def __init__(self, ext_name: str):
         self.ext_name = ext_name
 
-    def find(self, node, ctx):
+    def find(self, node, args_infered_types, ctx):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
 
@@ -185,6 +189,14 @@ class CompilerContext:
             # TODO add notes here
             raise CompilationError(f"Not a function.", name)
         return space
+    
+    def eval_to_var(self, name: xy.Node):
+        var_obj = self.eval(name)
+        if var_obj is None:
+            raise CompilationError("Cannot find variable", name)
+        if not isinstance(var_obj, VarObj):
+            raise CompilationError(f"Not a function.", name)
+        return var_obj
 
     def get_compiled_type(self, name: xy.Id):
         return self.id_table[name.name]
@@ -284,17 +296,27 @@ def compile_header(ctx: CompilerContext, asts, cast):
         for node in ast:
             if isinstance(node, xy.StructDef):
                 cstruct = c.Struct(name=mangle_struct(node, ctx))
-                for field in node.fields:
-                    cfield = c.VarDecl(
-                        name=field.name,
-                        type=get_c_type(field.type, ctx)
-                    )
-                    cstruct.fields.append(cfield)
-
-                ctx.id_table[node.name] = TypeObj(
+                type_obj = TypeObj(
                     xy_node = node,
                     c_node = cstruct,
                 )
+                ctx.id_table[node.name] = type_obj
+
+                fields = {}
+                for field in node.fields:
+                    field_type_obj = find_type(field.type, ctx)
+                    cfield = c.VarDecl(
+                        name=field.name,
+                        type=field_type_obj.c_name
+                    )
+                    fields[field.name] = VarObj(
+                        xy_node=field,
+                        c_node=cfield,
+                        type_desc=field_type_obj,
+                    )
+                    cstruct.fields.append(cfield)
+                type_obj.fields = fields
+
                 cast.struct_decls.append(cstruct)
                 cast.structs.append(cstruct)
 
@@ -372,17 +394,18 @@ def import_builtins(ctx, cast):
             if "Size" in types and ("float" in types or "double" in types):
                 continue
             rtype_name = type1 if p1 > p2 else type2
-            func = xy.FuncDef(
-                "add",
-                params=[
-                    xy.Param("x", xy.Id(type1)),
-                    xy.Param("y", xy.Id(type2))
-                ],
-                rtype=xy.Id(rtype_name)
-            )
-            desc = register_func(func, ctx)
-            desc.builtin = True
-            desc.rtype_obj = ctx.id_table[rtype_name]
+            for fname in ["add", "mul"]:
+                func = xy.FuncDef(
+                    fname,
+                    params=[
+                        xy.Param("x", xy.Id(type1)),
+                        xy.Param("y", xy.Id(type2))
+                    ],
+                    rtype=xy.Id(rtype_name)
+                )
+                desc = register_func(func, ctx)
+                desc.builtin = True
+                desc.rtype_obj = ctx.id_table[rtype_name]
     
     select = xy.FuncDef(name="select", params=[
         xy.Param("arr", xy.ArrayType(base=None)),
@@ -390,6 +413,8 @@ def import_builtins(ctx, cast):
     ])
     select_obj = register_func(select, ctx)
     select_obj.builtin = True
+    # XXX
+    select_obj.rtype_obj = ctx.id_table["int"]
 
     # string construction
     str_ctor = xy.StructDef(name="StrCtor", fields=[
@@ -435,8 +460,17 @@ def compile_funcs(ctx, ast, cast):
 
 def compile_func(node, ctx, ast, cast):
     fspace = ctx.eval_to_fspace(node.name)
-    fdesc = fspace.find(node, ctx)
+    fdesc = fspace.find(node, [], ctx)
     cfunc = fdesc.c_node
+
+    param_objs = []
+    for param in node.params:
+        param_type = find_type(param.type, ctx)
+        ctx.id_table[param.name] = VarObj(
+            xy_node=param,
+            type_desc=param_type
+        )
+
     compile_body(node.body, cast, cfunc, ctx)
     cast.funcs.append(cfunc)
 
@@ -445,18 +479,19 @@ def compile_body(body, cast, cfunc, ctx):
         if isinstance(node, xy.Return):
             ret = c.Return()
             if node.value:
-                ret.value = compile_expr(node.value, cast, cfunc, ctx)
+                ret.value = compile_expr(node.value, cast, cfunc, ctx).c_node
             cfunc.body.append(ret)
         elif isinstance(node, xy.VarDecl):
             cvar = c.VarDecl(name=node.name, type=None)
+            value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
             type_desc = find_type(node.type, ctx) if node.type is not None else None
             if type_desc is None:
-                if node.value is None:
+                if value_obj is None:
                     raise CompilationError(
                         "Cannot create variable with no type and no value",
                         node
                     )
-                type_desc = infer_type(node.value, ctx)
+                type_desc = value_obj.infered_type
             if isinstance(type_desc, ArrTypeObj):
                 cvar.type = type_desc.base.c_name
                 cvar.dims = type_desc.dims
@@ -465,13 +500,13 @@ def compile_body(body, cast, cfunc, ctx):
             ctx.id_table[node.name] = VarObj(node, cvar, type_desc)
 
             if node.value is not None:
-                cvar.value = compile_expr(node.value, cast, cfunc, ctx)
+                cvar.value = value_obj.c_node
             if node.value is None and isinstance(type_desc, ArrTypeObj):
                 cvar.value = c.InitList()
 
             cfunc.body.append(cvar)
         elif isinstance(node, xy.FuncCall):
-            compiled = compile_expr(node, cast, cfunc, ctx)
+            compiled = compile_expr(node, cast, cfunc, ctx).c_node
             cfunc.body.append(compiled)
         else:
             raise CompilationError(
@@ -480,42 +515,89 @@ def compile_body(body, cast, cfunc, ctx):
             )
 
 
-def compile_expr(expr, cast, cfunc, ctx):
+def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
     if isinstance(expr, xy.Const):
-        return c.Const(expr.value_str)
+        return ExprObj(
+            c_node=c.Const(expr.value_str),
+            infered_type=ctx.id_table[expr.type]
+        )
     elif isinstance(expr, xy.BinExpr):
-        arg1 = compile_expr(expr.arg1, cast, cfunc, ctx)
-        arg2 = compile_expr(expr.arg2, cast, cfunc, ctx)
-        res = c.Expr(arg1, arg2, op=expr.op)
-        return res
+        if expr.op != '.':
+            fcall = rewrite_op(expr, ctx)
+            return compile_expr(fcall, cast, cfunc, ctx)
+        else:
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
+            assert isinstance(expr.arg2, xy.Id)
+            field_name = expr.arg2.name
+            res = c.Expr(arg1_obj.c_node, c.Id(field_name), op=expr.op)
+            return ExprObj(
+                c_node=res,
+                infered_type=arg1_obj.infered_type.fields[field_name].type_desc
+            )
     elif isinstance(expr, xy.Id):
         res = c.Id(expr.name)
-        return res
+        return ExprObj(
+            c_node=res,
+            infered_type=ctx.eval_to_var(expr).type_desc
+        )
     elif isinstance(expr, xy.FuncCall):
         fspace = ctx.eval_to_fspace(expr.name)
-        func_obj = fspace.find(expr, ctx)
+
+        arg_exprs = [
+            compile_expr(arg, cast, cfunc, ctx)
+            for arg in expr.args
+        ]
+        arg_infered_types = [
+            arg_expr.infered_type for arg_expr in arg_exprs
+        ]
+        
+        func_obj = fspace.find(expr, arg_infered_types, ctx)
 
         if func_obj.builtin and func_obj.xy_node.name == "select":
             # TODO what if args is more numerous
             assert len(expr.args) == 2
             res = c.Index(
-                compile_expr(expr.args[0], cast, cfunc, ctx),
-                compile_expr(expr.args[1], cast, cfunc, ctx),
+                arg_exprs[0].c_node,
+                arg_exprs[1].c_node,
             )
-            return res
+            return ExprObj(
+                c_node=res,
+                infered_type=func_obj.rtype_obj
+            )
+        elif func_obj.builtin:
+            assert len(expr.args) == 2
+            func_to_op_map = {
+                "add": '+',
+                "mul": '*',
+            }
+            res = c.Expr(
+                arg_exprs[0].c_node, arg_exprs[1].c_node,
+                op=func_to_op_map[expr.name.name]
+            )
+            return ExprObj(
+                c_node=res,
+                infered_type=func_obj.rtype_obj
+            )
 
         res = c.FuncCall(name=func_obj.c_name)
-        for i in range(len(expr.args)):
-            res.args.append(compile_expr(expr.args[i], cast, cfunc, ctx))
-        return res
+        for arg in arg_exprs:
+            res.args.append(arg.c_node)
+        return ExprObj(
+            c_node=res,
+            infered_type=func_obj.rtype_obj
+        )
     elif isinstance(expr, xy.StructLiteral):
-        ctypename = get_c_type(expr.name, ctx)
+        type_obj = find_type(expr.name, ctx)
+        ctypename = type_obj.c_name
         res = c.StructLiteral(
             name=ctypename,
-            args=[compile_expr(arg, cast, cfunc, ctx) for arg in expr.args]
+            args=[compile_expr(arg, cast, cfunc, ctx).c_node for arg in expr.args]
         )
         # TODO what about kwargs
-        return res
+        return ExprObj(
+            c_node=res,
+            infered_type=type_obj
+        )
     elif isinstance(expr, xy.StrLiteral):
         if expr.prefix not in ctx.str_prefix_reg:
             raise CompilationError(
@@ -538,12 +620,21 @@ def compile_expr(expr, cast, cfunc, ctx):
             c.Const('"' + str_const + '"'),
             c.Const(str_len)
         ])
-        return c_func
+        return ExprObj(
+            c_node=c_func,
+            infered_type=func_desc.rtype_obj
+        )
     elif isinstance(expr, xy.ArrayLit):
         res = c.InitList()
+        arr_type = "Cannot infer type of empty list"
         for elem in expr.elems:
-            res.elems.append(compile_expr(elem, cast, cfunc, ctx))
-        return res
+            elem_expr = compile_expr(elem, cast, cfunc, ctx)
+            res.elems.append(elem_expr.c_node)
+            arr_type = elem_expr.infered_type
+        return ExprObj(
+            c_node=res,
+            infered_type=ArrTypeObj(base=arr_type, dims=[len(expr.elems)])
+        )
     elif isinstance(expr, xy.Select):
         rewritten = rewrite_select(expr, ctx)
         return compile_expr(rewritten, cast, cfunc, ctx)
@@ -605,38 +696,6 @@ class CompilationError(Exception):
         return self.fmt_msg
 
 
-def infer_type(expr, ctx):
-    if isinstance(expr, xy.Const):
-        return ctx.id_table[expr.type]
-    elif isinstance(expr, xy.StructLiteral):
-        return ctx.id_table[expr.name.name]
-    elif isinstance(expr, xy.FuncCall):
-        fdesc = find_func(expr, ctx)
-        return ctx.id_table[fdesc.xy_node.rtype.name]
-    elif isinstance(expr, xy.BinExpr):
-        fcall = rewrite_op(expr, ctx)
-        return infer_type(fcall, ctx)
-    elif isinstance(expr, xy.Id):
-        vardesc = ctx.id_table[expr.name]
-        return vardesc.type_desc
-    elif isinstance(expr, xy.StrLiteral):
-        if expr.prefix not in ctx.str_prefix_reg:
-            raise CompilationError(
-                f"No string constructor registered for prefix '{expr.prefix}'",
-                expr
-            )
-        func_desc = ctx.str_prefix_reg[expr.prefix]
-        return func_desc.rtype_obj
-    elif isinstance(expr, xy.ArrayLit):
-        if len(expr.elems) <= 0:
-            raise CompilationError("Cannot infer type of an empty array")
-        base_type = infer_type(expr.elems[0], ctx)
-        res = ArrTypeObj(base=base_type, dims=[len(expr.elems)])
-        return res
-    else:
-        raise CompilationError("Cannot infer type", expr)
-
-
 def register_func(fdef, ctx):
     fspace = ctx.ensure_func_space(fdef)
     res = FuncObj(fdef)
@@ -669,11 +728,12 @@ def find_func(fcall, ctx):
 def rewrite_op(binexpr, ctx):
     fname = {
         "+": "add",
-        "*": "mult",
+        "*": "mul",
     }[binexpr.op]
-    fcall = xy.FuncCall(xy.Id(fname), args=[
-        binexpr.arg1, binexpr.arg2
-    ], src=binexpr.src, coords=binexpr.coords)
+    fcall = xy.FuncCall(
+        xy.Id(fname, src=binexpr.src, coords=binexpr.coords),
+        args=[binexpr.arg1, binexpr.arg2],
+        src=binexpr.src, coords=binexpr.coords)
     return fcall
 
 def rewrite_select(select, ctx):
