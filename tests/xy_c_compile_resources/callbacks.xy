@@ -1,7 +1,10 @@
 struct Callback~[TagCtor{label="cbLabel"}] {}
 
 def test() -> int {
-    #cb := def~Callback(int)->int;
+    cb1 := def abs(:int)->int;
+    #cb2 := def~Callback(:int)->int;
+    #cb3 : (:int, :long)->int;
+    #cb3 = def (:int)->int;
     #return cb(5);
 }
 

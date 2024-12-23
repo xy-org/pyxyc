@@ -3,12 +3,14 @@
 #include <stdbool.h>
 
 typedef struct callbacks_Callback callbacks_Callback;
+typedef int32_t (*xy_fp__int__int)(int32_t) ;
 
 struct callbacks_Callback {
     char __empty_structs_are_not_allowed_in_c__;
 };
 
 int32_t callbacks_test(void) {
+    const xy_fp__int__int cb1 = callbacks_abs;
 }
 
 int32_t callbacks_abs(int32_t a) {

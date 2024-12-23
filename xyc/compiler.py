@@ -1,3 +1,4 @@
+import itertools
 import os
 from copy import copy
 import xyc.ast as xy
@@ -53,6 +54,18 @@ class ArrTypeObj(TypeObj):
     @property
     def name(self):
         return self.base_type_obj.name + '[' + ']'
+    
+@dataclass
+class FuncTypeObj(TypeObj):
+    c_typename: str = ""
+
+    @property
+    def c_name(self):
+        return self.c_typename
+    
+    @property
+    def name(self):
+        return "()->()"
     
 @dataclass
 class TypeInferenceError:
@@ -272,7 +285,7 @@ class FuncSpace:
         self.report_no_matches(candidate_fobjs, node, args_infered_types, ctx)
 
     def find_candidates(self, node, args_infered_types, partial_matches, ctx):
-        if isinstance(node, xy.FuncCall):
+        if isinstance(node, (xy.FuncCall, xy.FuncSelect)):
             candidate_fobjs = []
             for desc in self._funcs:
                 if cmp_call_def(args_infered_types, desc, partial_matches, ctx):
@@ -1662,6 +1675,8 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
             compile_fcall(expr, cast, cfunc, ctx),
             deref, cast, cfunc, ctx
         )
+    elif isinstance(expr, xy.FuncSelect):
+        return compile_fselect(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.StructLiteral):
         return compile_struct_literal(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.StrLiteral):
@@ -2365,6 +2380,37 @@ def cstr_len(s: str) -> int:
         else:
             i += 1
     return res
+
+def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
+    arg_infered_types = ArgList(
+        args=[ctx.eval_to_type(arg.type) for arg in expr.type.params],
+    )
+    fspace = ctx.eval_to_fspace(expr.name)
+    if fspace is None:
+        call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types, expr.inject_args)
+        raise CompilationError(f"Cannot find function {call_sig}", expr.name)
+    if isinstance(fspace, ExtSpace):
+        raise CompilationError("No suitable callbacks found", expr)
+
+    if ctx.compiling_header:
+        for fobj in fspace._funcs:
+            compile_func_prototype(fobj, cast, ctx)
+
+    func_obj: FuncObj = fspace.find(expr, arg_infered_types, ctx, partial_matches=False)
+
+    params = func_obj.param_objs
+    c_typename = mangle_fselect(expr, params, func_obj.rtype_obj, ctx)
+    c_typedef = c.Typedef(
+        f"{func_obj.rtype_obj.c_name} (*{c_typename})({','.join(p.type_desc.c_name for p in params)})",
+        ""
+    )
+    cast.type_decls.append(c_typedef)
+
+    return ExprObj(
+        xy_node=expr,
+        c_node=c.Id(func_obj.c_name),
+        infered_type=FuncTypeObj(c_typename=c_typename),
+    )
 
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     arg_exprs = ArgList()
@@ -3566,6 +3612,28 @@ def mangle_def(fdef: xy.FuncDef, param_objs: list[VarObj], ctx, expand=False):
                 mangled.append(param_obj.type_desc.xy_node.name)
         mangled = "".join(mangled)
     return mangled
+
+def mangle_fselect(fsel: xy.FuncSelect, param_objs: list[VarObj], rtype_obj: TypeObj, ctx):
+    mangled = ["xy_fp"]
+    for param_obj in param_objs:
+        mangled.append("__")
+        do_mangle_type_obj(mangled, param_obj.type_desc)
+    mangled.append("__")
+    do_mangle_type_obj(mangled, rtype_obj)
+
+    mangled = "".join(mangled)
+    return mangled
+
+def do_mangle_type_obj(mangled, type_desc):
+    if isinstance(type_desc.xy_node, xy.ArrayType):
+        if len(type_desc.xy_node.dims) > 0:
+            dim = type_desc.xy_node.dims[0].value_str
+        else:
+            dim = "0"
+        mangled.append(dim)
+        mangled.append(type_desc.xy_node.base.name)
+    else:
+        mangled.append(type_desc.xy_node.name)
 
 def mangle_field(field: xy.VarDecl):
     # mangle in order to prevent duplication with macros
