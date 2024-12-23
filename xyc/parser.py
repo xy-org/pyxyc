@@ -99,7 +99,7 @@ class ParsingError(Exception):
         return self.fmt_msg
 
 
-def parse_code(src):
+def parse_code(src) -> Ast:
     if isinstance(src, str):
         src = Source("<unknown>", src)
     ast = []

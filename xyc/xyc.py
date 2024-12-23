@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import os
 from os import path
 from xyc.parser import parse_code
 from xyc.compiler import compile_module
@@ -24,14 +25,22 @@ def main():
 
 
 def parse_project(input):
-    if path.isfile(input):
+    if not path.exists(input):
+        raise ValueError(f"Input {input} doesn't exist")
+    elif path.isfile(input):
         virtual_module = path.splitext(path.basename(input))[0]
         return {
-            virtual_module: parse_file(input)  # TODO this should be a list
+            virtual_module: [parse_file(input)]
         }
-    elif not path.exists(input):
-        raise ValueError(f"Input {input} doesn't exist")
-    raise ValueError("Compiling multi module projects is NYI")
+    else:
+        asts = []
+        for entry in os.scandir(input):
+            if entry.name.endswith(".xy") and entry.is_file():
+                asts.append(parse_file(entry.path))
+        module_name = path.basename(input)
+        return {
+            module_name: asts
+        }
 
 
 def parse_file(fn):
@@ -42,8 +51,8 @@ def parse_file(fn):
 def compile_project(project):
     print("Compiling...")
     res = {}
-    for module_name, ast in project.items():
-        res[module_name + ".c"] = compile_module(module_name, ast)
+    for module_name, asts in project.items():
+        res[module_name + ".c"] = compile_module(module_name, asts)
     return res
 
 if __name__ == '__main__':

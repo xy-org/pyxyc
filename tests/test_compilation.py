@@ -50,3 +50,19 @@ def test_arrays_common_errors(code, err_msg, tmp_path):
     project = xyc.parse_project(str(fn))
     with pytest.raises(CompilationError, match=err_msg):
         xyc.compile_project(project)
+
+
+@pytest.mark.parametrize("module", [
+    "funcAndStruct",
+])
+def test_module_compilation(resource_dir, module):
+    project = xyc.parse_project(
+        str(resource_dir / "multi_src" / module)
+    )
+    c_project = xyc.compile_project(project)
+    assert len(c_project) == 1
+    assert f"{module}.c" in c_project
+    c_act = stringify(c_project[f"{module}.c"])
+
+    c_exp = open(resource_dir / "multi_src" / f"{module}.c").read()
+    assert c_act == c_exp

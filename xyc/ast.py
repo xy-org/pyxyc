@@ -22,6 +22,8 @@ class Node:
         init=True, kw_only=True, compare=False, repr=False, default=(-1, -1)
     )
 
+Ast = list[Node]
+
 @dataclass
 class Import(Node):
     lib: str

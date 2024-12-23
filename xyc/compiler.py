@@ -236,74 +236,80 @@ class CompilerContext:
                 node)
             
 
-def compile_module(module_name, ast):
+def compile_module(module_name, asts):
     ctx = CompilerContext(module_name)
     res = c.Ast()
+
+    compile_header(ctx, asts, res)
     
-    compile_header(ctx, ast, res)
-    compile_funcs(ctx, ast, res)
-    maybe_add_main(ctx, ast, res)
+    for ast in asts:
+        compile_funcs(ctx, ast, res)
+    
+    maybe_add_main(ctx, res)
 
     return res
 
-def compile_header(ctx: CompilerContext, ast, cast):
+def compile_header(ctx: CompilerContext, asts, cast):
     import_builtins(ctx, cast)
 
-    for node in ast:
-        if isinstance(node, xy.Import):
-            compile_import(node, ctx, ast, cast)
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.Import):
+                compile_import(node, ctx, ast, cast)
 
-    for node in ast:
-        if isinstance(node, xy.StructDef):
-            cstruct = c.Struct(name=mangle_struct(node, ctx))
-            for field in node.fields:
-                cfield = c.VarDecl(
-                    name=field.name,
-                    type=get_c_type(field.type, ctx)
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.StructDef):
+                cstruct = c.Struct(name=mangle_struct(node, ctx))
+                for field in node.fields:
+                    cfield = c.VarDecl(
+                        name=field.name,
+                        type=get_c_type(field.type, ctx)
+                    )
+                    cstruct.fields.append(cfield)
+
+                ctx.id_table[node.name] = TypeObj(
+                    xy_node = node,
+                    c_node = cstruct,
                 )
-                cstruct.fields.append(cfield)
+                cast.struct_decls.append(cstruct)
+                cast.structs.append(cstruct)
 
-            ctx.id_table[node.name] = TypeObj(
-                xy_node = node,
-                c_node = cstruct,
-            )
-            cast.struct_decls.append(cstruct)
-            cast.structs.append(cstruct)
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.FuncDef):
+                func_space = ctx.ensure_func_space(node.name)
+                expand_name = len(func_space) > 0
+                if len(func_space) == 1:
+                    # Already present. Expand name.
+                    func_desc = func_space[0]
+                    func_desc.c_node.name = mangle_def(
+                        func_desc.xy_node, ctx, expand=True
+                    )
+                
+                cname = mangle_def(node, ctx, expand=expand_name)
+                rtype_compiled = ctx.get_compiled_type(node.rtype)
+                rtype = rtype_compiled.c_name
+                cfunc = c.Func(name=cname, rtype=rtype)
+                for param in node.params:
+                    cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
+                    cfunc.params.append(cparam)
+                cast.func_decls.append(cfunc)
 
-    for node in ast:
-        if isinstance(node, xy.FuncDef):
-            func_space = ctx.ensure_func_space(node.name)
-            expand_name = len(func_space) > 0
-            if len(func_space) == 1:
-                # Already present. Expand name.
-                func_desc = func_space[0]
-                func_desc.c_node.name = mangle_def(
-                    func_desc.xy_node, ctx, expand=True
-                )
-            
-            cname = mangle_def(node, ctx, expand=expand_name)
-            rtype_compiled = ctx.get_compiled_type(node.rtype)
-            rtype = rtype_compiled.c_name
-            cfunc = c.Func(name=cname, rtype=rtype)
-            for param in node.params:
-                cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
-                cfunc.params.append(cparam)
-            cast.func_decls.append(cfunc)
+                compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled)
 
-            compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled)
+                # compile tags
+                compiled.tags = ctx.eval_tags(node.tags)
+                if "xy.string" in compiled.tags:
+                    # TODO assert it is a StrCtor indeed
+                    str_lit = compiled.tags["xy.string"].fields["prefix"]
+                    prefix = str_lit.parts[0].value if len(str_lit.parts) else ""
+                    ctx.str_prefix_reg[prefix] = compiled
+                if "xy.entrypoint" in compiled.tags:
+                    # TODO assert it is the correct type
+                    ctx.entrypoint_obj = compiled
 
-            # compile tags
-            compiled.tags = ctx.eval_tags(node.tags)
-            if "xy.string" in compiled.tags:
-                # TODO assert it is a StrCtor indeed
-                str_lit = compiled.tags["xy.string"].fields["prefix"]
-                prefix = str_lit.parts[0].value if len(str_lit.parts) else ""
-                ctx.str_prefix_reg[prefix] = compiled
-            if "xy.entrypoint" in compiled.tags:
-                # TODO assert it is the correct type
-                ctx.entrypoint_obj = compiled
-
-            func_space.append(compiled)
+                func_space.append(compiled)
 
     return cast
 
@@ -668,7 +674,7 @@ def compile_import(imprt, ctx, ast, cast):
         # XXX what about multiple in names
         ctx.id_table[imprt.in_name] = import_obj
 
-def maybe_add_main(ctx, ast, cast):
+def maybe_add_main(ctx, cast):
     if ctx.entrypoint_obj is not None:
         main = c.Func(
             name="main", rtype="int",
