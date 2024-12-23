@@ -75,3 +75,15 @@ class Ast:
     structs: list[Struct] = field(default_factory=list)
     funcs: list[Struct] = field(default_factory=list)
 
+    def merge(self, other: 'Ast'):
+        already_included = {inc.path for inc in self.includes}
+        for ink in other.includes:
+            if ink.path not in already_included:
+                self.includes.append(ink)
+                already_included.add(ink.path)
+
+        self.struct_decls.extend(other.struct_decls)
+        self.func_decls.extend(other.func_decls)
+        self.structs.extend(other.structs)
+        self.funcs.extend(other.funcs)
+

@@ -74,7 +74,18 @@ class ImportObj(CompiledObj):
     name: str | None = None
 
 class IdTable(dict):
-    pass
+    def merge(self, other: 'IdTable'):
+        for key, value in other.items():
+            current = self.get(key, None)
+            if current is None:
+                self[key] = value
+            elif isinstance(current, FuncSpace):
+                if isinstance(value, FuncSpace):
+                    current._funcs.extend(value._funcs)
+                else:
+                    raise ValueError("NYI")
+            else:
+                raise ValueError("NYI")
 
 class FuncSpace:
     def __init__(self):
@@ -138,9 +149,15 @@ def func_sig(fdef):
     return res
 
 @dataclass
+class ModuleHeader:
+    namespace: IdTable
+
+@dataclass
 class CompilerContext:
+    builder: any
     module_name: str  # TODO maybe module_name should be a list of the module names
     id_table: IdTable = field(default_factory=IdTable)
+    global_ns: IdTable = field(default_factory=IdTable)
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
     entrypoint_obj: any = None
 
@@ -198,11 +215,17 @@ class CompilerContext:
                 raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
             res[label] = tag_obj
         return res
-    
+
+    def lookup(self, name: str):
+        if name in self.id_table:
+            return self.id_table[name]
+        else:
+            return self.global_ns.get(name, None)
+
     def eval(self, node):
         if isinstance(node, xy.Id):
             # maybe instead of None we can return a special object
-            return self.id_table.get(node.name, None)
+            return self.lookup(node.name)
         elif isinstance(node, xy.Const):
             return ConstObj(value=node.value, xy_node=node)
         elif isinstance(node, xy.StrLiteral):
@@ -236,8 +259,8 @@ class CompilerContext:
                 node)
             
 
-def compile_module(module_name, asts):
-    ctx = CompilerContext(module_name)
+def compile_module(builder, module_name, asts):
+    ctx = CompilerContext(builder, module_name)
     res = c.Ast()
 
     compile_header(ctx, asts, res)
@@ -247,7 +270,7 @@ def compile_module(module_name, asts):
     
     maybe_add_main(ctx, res)
 
-    return res
+    return ModuleHeader(namespace=ctx.id_table), res
 
 def compile_header(ctx: CompilerContext, asts, cast):
     import_builtins(ctx, cast)
@@ -407,6 +430,7 @@ def compile_funcs(ctx, ast, cast):
         elif isinstance(node, xy.Comment):
             pass
         elif not (isinstance(node, xy.StructDef) or isinstance(node, xy.Import)):
+            import pdb; pdb.set_trace()
             raise CompilationError("NYI", node)
 
 def compile_func(node, ctx, ast, cast):
@@ -523,7 +547,7 @@ def get_c_type(type_expr, ctx):
     return id_desc.c_name
 
 def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
-    mangled = ctx.module_name + "_" + fdef.name.name
+    mangled = ctx.module_name.replace(".", "_") + "_" + fdef.name.name
     if expand:
         mangled = [mangled, "__with__"]
         for param in fdef.params:
@@ -532,7 +556,7 @@ def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
     return mangled
 
 def mangle_struct(struct: xy.StructDef, ctx):
-    return ctx.module_name + "_" + struct.name
+    return ctx.module_name.replace(".", "_") + "_" + struct.name
 
 
 class CompilationError(Exception):
@@ -611,20 +635,18 @@ def register_func(fdef, ctx):
     return res
 
 def find_type(texpr, ctx):
-    if isinstance(texpr, xy.Id):
-        return ctx.id_table[texpr.name]
-    elif isinstance(texpr, xy.ArrayType):
-        base_type = find_type(texpr.base, ctx)
-
+    if not isinstance(texpr, xy.ArrayType):
+        return ctx.eval(texpr)
+    else:
         if len(texpr.dims) == 0:
             raise CompilationError("Arrays must have a length known at compile time", texpr)
+
+        base_type = find_type(texpr.base, ctx)
         dims = []
         for d in texpr.dims:
             dims.append(ct_eval(d, ctx))
         
         return ArrTypeObj(base=base_type, dims=dims)
-    else:
-        raise CompilationError("Cannot determine type", texpr)
 
 def ct_eval(expr, ctx):
     if isinstance(expr, xy.Const):
@@ -668,7 +690,10 @@ def compile_import(imprt, ctx, ast, cast):
             cast.includes.append(c.Include(header_obj.parts[0].value))
         import_obj = ImportObj(name=imprt.lib)
     else:
-        raise CompilationError("Modules are NYI", imprt)
+        assert imprt.in_name is None
+        module_header = ctx.builder.import_module(imprt.lib)
+        ctx.global_ns.merge(module_header.namespace)
+        
     
     if imprt.in_name:
         # XXX what about multiple in names

@@ -1,7 +1,8 @@
 import os.path
 import pytest
 import pathlib
-from xyc import xyc
+import xyc.builder as builder
+from xyc.builder import Builder
 from xyc.cstringifier import stringify
 from xyc.compiler import CompilationError
 
@@ -21,10 +22,11 @@ def resource_dir(request):
     "cimport",
 ])
 def test_c_compilation(resource_dir, filename):
-    project = xyc.parse_project(
-        str(resource_dir / "xy_c_compile_resources" / f"{filename}.xy")
+    project = builder.parse_module(
+        str(resource_dir / "xy_c_compile_resources" / f"{filename}.xy"),
+        module_name=filename
     )
-    c_project = xyc.compile_project(project)
+    c_project = builder.compile_project(project)
     assert len(c_project) == 1
     assert f"{filename}.c" in c_project
     c_act = stringify(c_project[f"{filename}.c"])
@@ -47,22 +49,26 @@ def test_arrays_common_errors(code, err_msg, tmp_path):
     fn = tmp_path / "test.xy"
     fn.write_text(code)
 
-    project = xyc.parse_project(str(fn))
+    project = builder.parse_module(str(fn), module_name="test")
     with pytest.raises(CompilationError, match=err_msg):
-        xyc.compile_project(project)
+        builder.compile_project(project)
 
 
 @pytest.mark.parametrize("module", [
     "funcAndStruct",
+    "submodules",
 ])
-def test_module_compilation(resource_dir, module):
-    project = xyc.parse_project(
-        str(resource_dir / "multi_src" / module)
+def test_module_compilation(resource_dir, module, tmp_path):
+    base_dir = resource_dir / "multi_src"
+    output_fn = tmp_path / f"{module}.c"
+    builder = Builder(
+        input=str(base_dir / module),
+        output=str(output_fn),
     )
-    c_project = xyc.compile_project(project)
-    assert len(c_project) == 1
-    assert f"{module}.c" in c_project
-    c_act = stringify(c_project[f"{module}.c"])
+    builder.search_paths.append(str(base_dir))
+
+    builder.build()
+    c_act = output_fn.read_text()
 
     c_exp = open(resource_dir / "multi_src" / f"{module}.c").read()
     assert c_act == c_exp

@@ -1,0 +1,3 @@
+def callme() -> int {
+    return 0;
+}

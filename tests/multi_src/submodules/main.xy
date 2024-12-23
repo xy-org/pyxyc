@@ -1,0 +1,5 @@
+import submodules.sub
+
+def main~EntryPoint() -> int {
+    return callme();
+}
