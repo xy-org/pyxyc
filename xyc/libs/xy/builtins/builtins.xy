@@ -153,6 +153,10 @@ def addEqual(a: float, b: float) -> void {
     # Implemented by the compiler
 }
 
+def addEqual(a: float, b: int) -> void {
+    # Implemented by the compiler
+}
+
 def addEqual(a: inout int, b: Size) -> void {
     # Implemented by the compiler
 }
@@ -216,6 +220,10 @@ def mul(a: Size, b: Size) -> Size {
 }
 
 def mul(a: Size, b: int) -> Size {
+    # Implemented by the compiler
+}
+
+def mul(a: uint, b: float) -> float {
     # Implemented by the compiler
 }
 
@@ -288,6 +296,18 @@ def cmp(a: int, b: Size) -> Size {
     # Implemented by the compiler
 }
 
+def and(a: bool, b: bool) -> bool {
+    # Implemented by the compiler
+}
+
+def or(a: bool, b: bool) -> bool {
+    # Implemented by the compiler
+}
+
+def xor(a: bool, b: bool) -> bool {
+    # Implemented by the compiler
+}
+
 # Tag related stuff
 
 ;; Use this struct to tag other structs that are intended to be used as tags
@@ -330,6 +350,11 @@ def get(arr: pseudo ?[], index: Size) -> ref(arr) Ptr {
 
 ;; Set element at position {index} of the array {arr}
 def set(arr: pseudo ?[], index: uint, val: pseudo ?) -> void {
+    # Implemented by the compiler
+}
+
+;; Set element at position {index} of the array {arr}
+def set(arr: pseudo ?[], index: Size, val: pseudo ?) -> void {
     # Implemented by the compiler
 }
 

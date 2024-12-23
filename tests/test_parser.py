@@ -1227,6 +1227,9 @@ def test_func_def_with_tags(code, exp_ast):
 
         def func(arr: Array, idx: int) -> ref(arr) Ptr~int {
         }
+
+        def func(idx: int) -> ref() Ptr~int {
+        }
         """,
         [
             ast.StructDef("Array"),
@@ -1266,6 +1269,22 @@ def test_func_def_with_tags(code, exp_ast):
                             args=[ast.Id("int")],
                         )),
                         references=ast.Id("arr"),
+                        varying=True
+                    ),
+                ],
+                body=[],
+            ),
+            ast.FuncDef(
+                ast.Id("func"),
+                params=[
+                    ast.VarDecl("idx", type=ast.Id("int"), is_param=True, is_in=True, varying=False),
+                ],
+                returns=[
+                    ast.VarDecl(
+                        type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+                            args=[ast.Id("int")],
+                        )),
+                        references=ast.nobase,
                         varying=True
                     ),
                 ],

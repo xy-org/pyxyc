@@ -584,7 +584,14 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
         decl.is_pseudo = True
     elif itoken.check("ref"):
         itoken.expect("(")
-        decl.references = parse_expression(itoken, is_toplevel=False)
+        itoken.skip_empty_lines()
+        if itoken.peak() != ")":
+            decl.references = parse_expression(itoken, is_toplevel=False)
+            itoken.skip_empty_lines()
+        else:
+            decl.references = nobase
+        if itoken.peak() == ",":
+            raise ParsingError("References can refer only to a single parameter", itoken)
         itoken.expect(")")
 
     if itoken.peak() in var_qualifiers:

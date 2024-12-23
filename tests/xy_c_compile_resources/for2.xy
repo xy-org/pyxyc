@@ -1,0 +1,24 @@
+;; Fibonacci number iterator
+;; --------------------------
+
+struct Fib {
+    a := 0;
+    b := 1;
+}
+
+def fibonacci~IterCtor() -> ref() Fib {
+    return Fib{};
+}
+
+def valid(fib: Fib) = true
+
+def next(fib: inout Fib) {
+    fib = Fib{fib.a + fib.b, fib.a};
+}
+
+def get(fib: Fib) = fib.a
+
+;; Multiplies the first {lim} fibonacci numbers
+def mulFibs(lim: int) -> int {
+    return for (_ in :lim, fib in fibonacci()) -> (res := 1) res *= fib;
+}

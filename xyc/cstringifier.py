@@ -181,13 +181,13 @@ def stringify_expr(expr, frags, parent_op_precedence=-10):
             frags.append(")")
     elif isinstance(expr, UnaryExpr):
         op_prec = op_precedence[expr.op]
+        if parent_op_precedence > op_prec:
+            frags.append("(")
         if expr.prefix:
             frags.append(expr.op)
-        if parent_op_precedence > op_prec:
-            frags.append("(")
         stringify_expr(expr.arg, frags, op_prec)
         if parent_op_precedence > op_prec:
-            frags.append("(")
+            frags.append(")")
         if not expr.prefix:
             frags.append(expr.op)
     elif isinstance(expr, FuncCall):

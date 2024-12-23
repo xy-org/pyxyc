@@ -21,6 +21,8 @@ from xyc.compiler import CompilationError
     "dowhiles",
     "slices",
     "for1",
+    "for2",
+    "for3",
     "pointers",
     "pseudoParams",
     "errors",

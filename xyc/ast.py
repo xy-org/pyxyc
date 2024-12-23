@@ -210,6 +210,12 @@ class VarDecl(Node):
     @property
     def is_ref(self):
         return self.references is not None
+    
+    @property
+    def is_based(self):
+        return self.references is not nobase
+    
+nobase = Id("")
 
 def param(*args, **kwargs):
     res = VarDecl(*args, **kwargs)

@@ -54,9 +54,6 @@ class ArrTypeObj(TypeObj):
     def name(self):
         return self.base_type_obj.name + '[' + ']'
     
-any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE"))
-calltime_expr_obj = TypeObj(builtin=True)
-    
 @dataclass
 class TypeInferenceError:
     msg: str = ""
@@ -147,6 +144,15 @@ class ExtSymbolObj(CompiledObj):
     @property
     def symbol(self):
         return self.c_node.name
+    
+any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
+calltime_expr_obj = TypeObj(builtin=True)
+global_memory_type = TypeObj(xy_node=xy.Id("GLOBAL_MEM_REPORT_IF_YOU_SEE_ME"), builtin=True)
+global_memory = ExprObj(
+    xy_node=xy.Id("GLOBAL_MEM"),
+    c_node=c.Id("GLOBAL_MEM"),
+    infered_type=global_memory_type,
+)
 
 @dataclass
 class ArgList:
@@ -1685,12 +1691,13 @@ def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
                 infered_type=ref_to_obj,
             )
         else:
+            if ref_obj.container is global_memory:
+                args = [ref_obj.ref]
+            else:
+                args = [ref_obj.container, ref_obj.ref]
             return find_and_call(
                 "get",
-                ArgList([
-                    ref_obj.container,
-                    ref_obj.ref,
-                ]),
+                ArgList(args),
                 cast, cfunc, ctx, ref_obj.xy_node
             )
     elif struct_obj.is_enum:
@@ -2578,12 +2585,17 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     )
 
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_ref:
-        refto_name = func_obj.xy_node.returns[0].references.name
-        if refto_name not in func_ctx.ns:
-            raise CompilationError(f"No parameter {refto_name}", func_obj.xy_node.returns[0].references)
+        if func_obj.xy_node.returns[0].is_based:
+            refto_name = func_obj.xy_node.returns[0].references.name
+            if refto_name not in func_ctx.ns:
+                raise CompilationError(f"No parameter {refto_name}", func_obj.xy_node.returns[0].references)
+            base = func_ctx.ns[refto_name]
+        else:
+            base = global_memory
+
         res_obj = ref_setup(
             RefObj(
-                container=func_ctx.ns[refto_name],
+                container=base,
                 ref=raw_fcall_obj,
                 xy_node=expr,
             ),
@@ -2957,14 +2969,22 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                     pass # TODO
             else:
                 # not a slice but somesort of collection
-                collection_obj = compile_expr(collection_node, cast, cfunc, ctx)
+                collection_obj = compile_expr(collection_node, cast, cfunc, ctx, lhs=True)
                 iter_arg_objs = []
                 if is_iter_ctor_call(collection_obj):
                     ictor_obj = collection_obj
                 else:
-                    collection_obj = move_to_temp(collection_obj, cast, cfunc, ctx)
+                    collection_obj = maybe_move_to_temp(collection_obj, cast, cfunc, ctx)
                     iter_arg_objs = [collection_obj]
                     ictor_obj = find_and_call("iter", ArgList(iter_arg_objs), cast, cfunc, ctx, collection_node)
+
+                if not isinstance(ictor_obj, RefObj):
+                    raise CompilationError("Iter Ctors must return refs", ictor_obj.xy_node)
+                original_ref = ictor_obj
+                iter_arg_objs = [ictor_obj.container]
+                if ictor_obj.container is global_memory:
+                    iter_arg_objs = []
+                ictor_obj = ictor_obj.ref
 
                 # init
                 iter_var_decl = ctx.create_tmp_var(ictor_obj.infered_type, "iter")
@@ -2981,23 +3001,29 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                     cfor.inits.append(iter_var_decl.c_node)
 
                 # compile condition
-                valid_obj = find_and_call("valid", ArgList([iter_obj, *iter_arg_objs]), cast, cfunc, ctx, collection_node)
+                valid_obj = find_and_call("valid", ArgList([*iter_arg_objs, iter_obj]), cast, cfunc, ctx, collection_node)
                 if cfor.cond is None:
-                    cfor.cond = c_cond
+                    cfor.cond = valid_obj.c_node
                 else:
                     cfor.cond = c.Expr(cfor.cond, valid_obj.c_node, op="&&")
 
                 # compile step
-                next_obj = find_and_call("next", ArgList([iter_obj, *iter_arg_objs]), cast, cfunc, ctx, collection_node)
-                cfor.updates.append(c.Expr(iter_obj.c_node, next_obj.c_node, "="))
+                next_obj = find_and_call("next", ArgList([*iter_arg_objs, iter_obj]), cast, cfunc, ctx, collection_node)
+                cfor.updates.append(next_obj.c_node)
 
                 # deref in for body
-                deref_obj = find_and_call("deref", ArgList([iter_obj, *iter_arg_objs]), cast, cfunc, ctx, collection_node)
+                # deref_obj = find_and_call("get", ArgList([*iter_arg_objs, iter_obj]), cast, cfunc, ctx, collection_node)
 
-                val_cdecl = c.VarDecl(iter_name, c.QualType(deref_obj.infered_type.c_node.name), value=deref_obj.c_node)
-                val_obj = VarObj(collection_node, val_cdecl, deref_obj.infered_type)
-                ctx.ns[iter_name] = val_obj
-                cfor.body.append(val_cdecl)
+                # val_cdecl = c.VarDecl(iter_name, c.QualType(deref_obj.infered_type.c_node.name), value=deref_obj.c_node)
+                # val_obj = VarObj(collection_node, val_cdecl, deref_obj.infered_type)
+                # ctx.ns[iter_name] = val_obj
+                # cfor.body.append(val_cdecl)
+
+                new_ref = copy(original_ref)
+                new_ref.c_node = None
+                new_ref.ref = iter_obj
+                ref_setup(new_ref, cast, cfunc, ctx)
+                ctx.ns[iter_name] = new_ref
         else:
             # Bool expression. Continue if false
             pass # TODO check expression
@@ -3037,9 +3063,11 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
     )
 
 def is_iter_ctor_call(expr_obj: ExprObj):
-    if not isinstance(expr_obj, FCallObj):
-        return False
-    return "xyIter" in expr_obj.func_obj.tags
+    if isinstance(expr_obj, FCallObj):
+        return "xyIter" in expr_obj.func_obj.tags
+    if isinstance(expr_obj, RefObj):
+        return is_iter_ctor_call(expr_obj.ref)
+    return False
 
 def compile_break(xybreak, cast, cfunc, ctx):
     if xybreak.loop_name is not None:

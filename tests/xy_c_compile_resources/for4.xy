@@ -1,0 +1,19 @@
+struct Array {
+
+}
+
+struct State {
+    arrayOfArrays: Array[10];
+}
+
+def getArray(st: State, idx: int) -> ref(st) Ptr~Array {
+    # Return something
+}
+
+for (elem in st'getArray(x)) {
+    # Do something with elem
+}
+
+for (elem in onlyPositive(st'getArray(x))) -> ref(st) Ptr~Array {
+    # Do something with elem
+}

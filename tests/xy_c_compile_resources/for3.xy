@@ -4,76 +4,79 @@ struct Array {
     len: Size;
 }
 
-def iter(arr: Array) -> ref(arr) Size {
+def iter(arr: pseudo Array) -> ref(arr) Size {
     return 0;
 }
 
 def valid(arr: Array, idx: Size) = idx < arr.len
 
+def next(arr: pseudo Array, idx: inout Size) {
+    idx++;
+}
+
 def get(arr: Array, idx: Size) -> float
 >> valid(arr, idx)
 {
-    return arr'elems[idx];
+    return arr.elems[idx];
 }
 
 def set(arr: inout Array, idx: Size, elem: int) 
->> valid(arr, idx)
+# >> valid(arr, idx)
 {
     arr.elems[idx] = elem;
 }
 
 def sum(arr: Array) -> float {
     return for(elem in arr) -> (res: float) {
-        res += elem;
-    }
-    return res;
+        # res += elem;
+    };
 }
 
-def mix(arr1: Array, arr2: Array) -> float
->> arr1'len == arr2'len
-{
-    return for(i in :, e1 in arr1, e2 in arr2) -> (res: float) {
-        res += i * e1 * e2;
-    }
-}
+# def mix(arr1: Array, arr2: Array) -> float
+# >> arr1'len == arr2'len
+# {
+#     return for(i in :, e1 in arr1, e2 in arr2) -> (res: float) {
+#         res += i * e1 * e2;
+#     };
+# }
 
-def double(arr1: inout Array) {
-    for(elem in arr) {
-        if (elem > 0) {
-            elem += elem;
-        }
-    }
-}
-
-struct Slice {
-    n: Size;
-    m: Size;
-}
-
-struct SliceIter {
-    i: Size;
-    lim: Size;
-}
-
-
-def slice(n: Size, m: Size) = Slice{n, m}
-
-def iter(arr: Array, slice: Slice) -> ref(arr) SliceIter {
-    return SliceIter{slice.n, slice.m};
-}
-
-def valid(arr: Array, iter: SliceIter) = iter.i < arr.len & iter.i < iter.lim
-
-def get(arr: Array, iter: SliceIter) = arr.elems[iter.i]
-
-def set(arr: Array, iter: SliceIter, val: float) {
-    arr.elems[iter.i] = val;
-}
-
-def calmpTo0(arr: inout Array, n: Size, m: Size) {
-    for (elem in arr[n:m]) {
-        if (elem < 0) {
-            elem = 0.0f;
-        }
-    }
-}
+# def double(arr1: inout Array) {
+#     for(elem in arr1) {
+#         if (elem > 0) {
+#             elem += elem;
+#         }
+#     }
+# }
+# 
+# struct Slice {
+#     n: Size;
+#     m: Size;
+# }
+# 
+# struct SliceIter {
+#     i: Size;
+#     lim: Size;
+# }
+# 
+# 
+# def slice(n: Size, m: Size) = Slice{n, m}
+# 
+# def iter(arr: Array, slice: Slice) -> ref(arr) SliceIter {
+#     return SliceIter{slice.n, slice.m};
+# }
+# 
+# def valid(arr: Array, iter: SliceIter) = iter.i < arr.len & iter.i < iter.lim
+# 
+# def get(arr: Array, iter: SliceIter) = arr.elems[iter.i]
+# 
+# def set(arr: Array, iter: SliceIter, val: float) {
+#     arr.elems[iter.i] = val;
+# }
+# 
+# def calmpTo0(arr: inout Array, n: Size, m: Size) {
+#     for (elem in arr[n:m]) {
+#         if (elem < 0) {
+#             elem = 0.0f;
+#         }
+#     }
+# }

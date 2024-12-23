@@ -27,24 +27,3 @@ def doubleLoop(limX: int, limY: int) -> int {
 def zipLoop(limX: int, limY: int) -> int {
     return for (i in :limX, j in :limY) -> (res := 1) res *= i + j;
 }
-
-;; Fibonacci number iterator
-;; --------------------------
-
-struct Fib {
-    a := 0;
-    b := 1;
-}
-
-def fibonacci~IterCtor() = Fib{}
-
-def valid(fib: Fib) = true
-
-def next(fib: Fib) = Fib{fib.a + fib.b, fib.a}
-
-def deref(fib: Fib) = fib.a
-
-;; Multiplies the first {lim} fibonacci numbers
-def mulFibs(lim: int) -> int {
-    return for (_ in :lim, fib in fibonacci()) -> (res := 1) res *= fib;
-}
