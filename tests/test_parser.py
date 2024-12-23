@@ -633,23 +633,23 @@ def test_parse_string_literals(code, exp_ast):
         """,
         [
             ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
-                ast.VarDecl("empty", type=None, value=ast.ArrLit(
+                ast.VarDecl("empty", type=None, value=ast.ArrayLit(
                     elems=[]
                 )),
-                ast.VarDecl("arr", type=None, value=ast.ArrLit(
+                ast.VarDecl("arr", type=None, value=ast.ArrayLit(
                     elems=[ast.Const(2.718), ast.Const(3.14)]
                 )),
-                ast.VarDecl("uninitialized", varying=True, type=ast.ArrType(
+                ast.VarDecl("uninitialized", varying=True, type=ast.ArrayType(
                     base=ast.Id("int"),
                     dims=[ast.Const(10)]
                 )),
-                ast.VarDecl("m", type=ast.ArrType(
+                ast.VarDecl("m", type=ast.ArrayType(
                         base=ast.Id("int"),
                         dims=[ast.Const(2), ast.Const(2)]
-                    ), value=ast.ArrLit(
+                    ), value=ast.ArrayLit(
                         [
-                            ast.ArrLit([ast.Const(1), ast.Const(2)]),
-                            ast.ArrLit([ast.Const(3), ast.Const(4)]),
+                            ast.ArrayLit([ast.Const(1), ast.Const(2)]),
+                            ast.ArrayLit([ast.Const(3), ast.Const(4)]),
                         ]
                     )
                 )
@@ -665,15 +665,15 @@ def test_parse_string_literals(code, exp_ast):
         """,
         [
             ast.FuncDef(name="main", rtype=ast.Type("Str"), body=[
-                ast.VarDecl("m", type=ast.ArrType(
+                ast.VarDecl("m", type=ast.ArrayType(
                     base=ast.Id("int"),
                     dims=[ast.Const(2), ast.Const(2)]
-                ), value=ast.ArrLit(elems=[
-                    ast.ArrLit([ast.Const(0), ast.Const(1)]),
-                    ast.ArrLit([ast.Const(2), ast.Const(3)]),
+                ), value=ast.ArrayLit(elems=[
+                    ast.ArrayLit([ast.Const(0), ast.Const(1)]),
+                    ast.ArrayLit([ast.Const(2), ast.Const(3)]),
                 ]
                 )),
-                ast.VarDecl("letters", type=None, value=ast.ArrLit(
+                ast.VarDecl("letters", type=None, value=ast.ArrayLit(
                     elems=[
                         ast.SimpleStr("a"), ast.SimpleStr("b"),
                         ast.SimpleStr("c"), ast.SimpleStr("d")
@@ -701,7 +701,7 @@ def test_parse_string_literals(code, exp_ast):
         [
             ast.FuncDef(name="sum", rtype=ast.Type("int"), params=[
                 ast.Param(
-                    "nums", type=ast.ArrType(
+                    "nums", type=ast.ArrayType(
                         base=ast.Id("int"),
                         dims=[ast.Const(2)],
                     )
@@ -723,9 +723,9 @@ def test_parse_string_literals(code, exp_ast):
         [
             ast.FuncDef(
                 name="mkArray",
-                rtype=ast.ArrType(ast.Id("int"), dims=[ast.Const(2)]),
+                rtype=ast.ArrayType(ast.Id("int"), dims=[ast.Const(2)]),
                 body=[
-                    ast.Return(ast.ArrLit(elems=[
+                    ast.Return(ast.ArrayLit(elems=[
                         ast.Const(0),
                         ast.Const(1),
                     ]))

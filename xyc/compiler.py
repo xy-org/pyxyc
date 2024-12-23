@@ -263,7 +263,7 @@ def import_builtins(ctx, cast):
             desc.rtype_obj = ctx.id_table[rtype_name]
     
     select = xy.FuncDef(name="select", params=[
-        xy.Param("arr", xy.ArrType(base=None)),
+        xy.Param("arr", xy.ArrayType(base=None)),
         xy.Param("index", xy.Type("int")),
     ])
     select_obj = register_func(select, ctx)
@@ -380,7 +380,7 @@ def compile_expr(expr, cast, cfunc, ctx):
             c.Const(len(str_const))
         ])
         return c_func
-    elif isinstance(expr, xy.ArrLit):
+    elif isinstance(expr, xy.ArrayLit):
         res = c.InitList()
         for elem in expr.elems:
             res.elems.append(compile_expr(elem, cast, cfunc, ctx))
@@ -468,7 +468,7 @@ def infer_type(expr, ctx):
             )
         func_desc = ctx.str_prefix_reg[expr.prefix]
         return func_desc.rtype_obj
-    elif isinstance(expr, xy.ArrLit):
+    elif isinstance(expr, xy.ArrayLit):
         if len(expr.elems) <= 0:
             raise CompilationError("Cannot infer type of an empty array")
         base_type = infer_type(expr.elems[0], ctx)
@@ -487,7 +487,7 @@ def register_func(fdef, ctx):
 def find_type(texpr, ctx):
     if isinstance(texpr, xy.Id) or isinstance(texpr, xy.Type):
         return ctx.id_table[texpr.name]
-    elif isinstance(texpr, xy.ArrType):
+    elif isinstance(texpr, xy.ArrayType):
         base_type = find_type(texpr.base, ctx)
 
         if len(texpr.dims) == 0:

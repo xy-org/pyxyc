@@ -284,7 +284,7 @@ def parse_expression(
         itoken.consume()
         args = parse_expr_list(itoken)
         itoken.expect("]")
-        arg1 = ArrLit(args, src=itoken.src, coords=coords)
+        arg1 = ArrayLit(args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE:
         if itoken.peak() != '-' and itoken.peak() in operator_precedence.keys():
             return None  # Reach a delimiter
@@ -420,7 +420,7 @@ def parse_expression(
 
 def expr_to_type(expr):
     if isinstance(expr, Select):
-        return ArrType(expr.base, expr.args.args, src=expr.src, coords=expr.coords)
+        return ArrayType(expr.base, expr.args.args, src=expr.src, coords=expr.coords)
     return expr
 
 def parse_struct_literal(itoken, struct_expr):

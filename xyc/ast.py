@@ -86,11 +86,11 @@ def SimpleStr(value):
     return StrLiteral(parts=[Const(value)])
 
 @dataclass
-class ArrLit(Node):
+class ArrayLit(Node):
     elems: list[Node] = field(default_factory=list)
 
 @dataclass
-class ArrType(Node):
+class ArrayType(Node):
     base: Node
     dims: list[Node] = field(default_factory=list)
 
