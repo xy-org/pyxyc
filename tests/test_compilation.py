@@ -25,6 +25,7 @@ from xyc.compiler import CompilationError
     "for3",
     "for4",
     "for5",
+    # "continue",
     "pointers",
     "pseudoParams",
     "errors",

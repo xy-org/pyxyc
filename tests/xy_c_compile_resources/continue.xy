@@ -1,0 +1,7 @@
+def test(argc: int) {
+    for (i in :argc) {
+        if (i == 0) {
+            continue;
+        }
+    }
+}
