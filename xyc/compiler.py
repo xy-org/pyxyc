@@ -270,8 +270,8 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
             return False
         satisfied_params.add(pname)
 
-    for p in fobj.xy_node.params[len(fcall_args_types.args):]:
-        if p.name not in satisfied_params and p.value is None:
+    for p_obj in fobj.param_objs[len(fcall_args_types.args):]:
+        if p_obj.xy_node.name not in satisfied_params and p_obj.xy_node.value is None:
             return False
 
     return True
@@ -697,6 +697,7 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
         compile_struct_fields(type_obj, ast, cast, ctx)
     else:
         compile_enum_fields(type_obj, ast, cast, ctx)
+        autogenerate_ops(type_obj, ast, cast, ctx)
 
     type_obj.fully_compiled = True
     target_cast.append(type_obj.c_node)
@@ -786,6 +787,12 @@ def compile_enum_fields(type_obj, ast, cast, ctx):
     init_value = None
     for field in node.fields:
         if not field.is_pseudo:
+            # this is the base field
+            fields[field.name] = VarObj(
+                xy_node=field,
+                c_node=type_obj.c_node,
+                type_desc=base_type_obj,
+            )
             continue
 
         if field.type is not None:
@@ -820,6 +827,48 @@ def compile_enum_fields(type_obj, ast, cast, ctx):
         init_value = base_type_obj.init_value
     type_obj.init_value = init_value
 
+def autogenerate_ops(type_obj: TypeObj, ast, cast, ctx):
+    assert type_obj.is_enum or type_obj.is_flags
+
+    base_field = None
+    # first we need to find the one non pseudo field:
+    for field in type_obj.fields.values():
+        if not field.xy_node.is_pseudo:
+            base_field = field
+            break
+    base_type = base_field.type_desc
+
+    xy_node = type_obj.xy_node
+    cmp_obj = ctx.eval_to_fspace(
+        xy.Id("cmp", src=xy_node.src, coords=xy_node.coords),
+        msg=f"Cannot find any functions cmp",
+    ).find(
+        xy.FuncCall(xy.Id("cmp"), src=xy_node.src, coords=xy_node.coords),
+        ArgList([base_type, base_type]),
+        ctx
+    )
+    if cmp_obj is None:
+        raise CompilationError("Enum base fields need to be comparable", base_field.xy_node)
+    
+    gen_cmp_obj = copy(cmp_obj)
+    # gen_cmp_obj.xy_node = type_obj.xy_node
+    gen_cmp_obj.param_objs = [copy(param) for param in cmp_obj.param_objs]
+    for param in gen_cmp_obj.param_objs:
+        param.type_desc = type_obj
+    ctx.ensure_func_space(xy.Id("cmp")).append(gen_cmp_obj)
+
+    # autogen | and &
+    gen_or_obj = FuncObj(
+        xy_node=xy.FuncDef(
+            name="bor",
+            src=xy_node.src, coords=xy_node.coords,
+        ),
+        rtype_obj=type_obj,
+        etype_obj=None,
+        param_objs=[VarObj(type_desc=type_obj), VarObj(type_desc=type_obj)],
+        builtin=True,
+    )
+    ctx.ensure_func_space(xy.Id("or")).append(gen_or_obj)
 
 def compile_func_prototype(node, cast, ctx):
     func_space = ctx.ensure_func_space(node.name)
@@ -1454,9 +1503,12 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx):
     for i, expr_arg in enumerate(expr_args):
         if isinstance(expr_arg, xy.UnaryExpr) and expr_arg.op == ".":
             # it's a toggle
-            toggle_idx = i
+            if toggle_idx is None:
+                toggle_idx = i
             assert isinstance(expr_arg.arg, xy.Id)
-            expr_kwargs[expr_arg.arg.name] = xy.Const(True, "true", "bool")
+            expr_kwargs[expr_arg.arg.name] = xy.Const(
+                True, "true", "bool", src=expr_arg.src, coords=expr_arg.coords
+            )
         elif toggle_idx is not None:
             raise CompilationError("Cannot mix and match toggle and positional args", expr_arg)
     if toggle_idx is not None:
@@ -1802,14 +1854,21 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             "subEqual": "-=",
             "mulEqual": "*=",
             "divEqual": "/=",
+            "or": "||",
+            "opEqual": "||=",
+            "and": "&&",
+            "andEqual": "&&=",
+            "bor": "|",
+            "band": "&"
         }
         c_arg1 = arg_exprs[0].c_node
-        if len(func_obj.xy_node.returns) == 1 and func_obj.rtype_obj == ctx.ptr_obj:
+        if func_obj.rtype_obj == ctx.ptr_obj:
+            # TODO what if function returns multiple values if len(func_obj.xy_node.returns) == 1
             # TODO what if Ptr has an attached type
             c_arg1 = c.Cast(c_arg1, to="int8_t*")
         res = c.Expr(
             c_arg1, arg_exprs[1].c_node,
-            op=func_to_op_map[expr.name.name]
+            op=func_to_op_map[func_obj.xy_node.name]
         )
         return ExprObj(
             c_node=res,
@@ -2527,6 +2586,10 @@ def rewrite_op(binexpr, ctx):
         "*=": "mulEqual",
         "/": "div",
         "/=": "divEqual",
+        "|": "or",
+        "|=": "orEqual",
+        "&": "and",
+        "&=": "andEqual",
     }.get(binexpr.op, None)
     if fname is not None:
         return xy.FuncCall(

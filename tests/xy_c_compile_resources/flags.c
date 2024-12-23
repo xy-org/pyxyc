@@ -7,10 +7,10 @@
 typedef int32_t flags_OpenFlags;
 typedef struct flags_String flags_String;
 
-#define flags_OpenFlags__readOnly O_RDONLY
-#define flags_OpenFlags__writeOnly O_WRONLY
-#define flags_OpenFlags__readWrite O_RDWR
-#define flags_OpenFlags__append O_APPEND
+#define flags_OpenFlags__readOnly 1
+#define flags_OpenFlags__writeOnly 2
+#define flags_OpenFlags__readWrite 4
+#define flags_OpenFlags__append 8
 
 struct flags_String {
     void* m_addr;
@@ -23,9 +23,6 @@ flags_String flags_string(void* addr, size_t size) {
 
 void flags_open(flags_String fn, flags_OpenFlags flags) {
     if (flags & flags_OpenFlags__readWrite) {
-    } else if (flags == (flags_OpenFlags__readOnly | flags_OpenFlags__append)) {
-    } else if (flags & flags_OpenFlags__readOnly) {
-    } else if (flags & flags_OpenFlags__writeOnly) {
     }
 }
 
@@ -34,4 +31,6 @@ void flags_testFlags(void) {
     flags_open(tmp_arg0, flags_OpenFlags__readOnly);
     flags_String tmp_arg1 = flags_string("file.txt", 8);
     flags_open(tmp_arg1, flags_OpenFlags__readOnly);
+    flags_String tmp_arg2 = flags_string("file.txt", 8);
+    flags_open(tmp_arg2, flags_OpenFlags__readOnly | flags_OpenFlags__writeOnly);
 }
