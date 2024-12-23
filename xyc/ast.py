@@ -47,7 +47,15 @@ class Param(Node):
 class FuncDef(Node):
     name: Node
     params: list[Param] = field(default_factory=list)
-    rtype: Node | None = None
+    returns: list['VarDecl'] = field(default_factory=list)
+    etype: Node | None = None
+    in_guards: list[Node] = field(default_factory=list)
+    out_guards: list[Node] = field(default_factory=list)
+    body: list[Node] | Node | None = field(default_factory=list)
+
+@dataclass
+class Block(Node):
+    returns: list['VarDecl'] = field(default_factory=list)
     etype: Node | None = None
     in_guards: list[Node] = field(default_factory=list)
     out_guards: list[Node] = field(default_factory=list)
@@ -82,6 +90,9 @@ class StrLiteral(Node):
 
 def SimpleStr(value):
     return StrLiteral(parts=[Const(value)])
+
+def SimpleRType(name):
+    return [VarDecl(type=Id(name))]
 
 @dataclass
 class ArrayLit(Node):
@@ -172,7 +183,7 @@ class Return(Node):
 
 @dataclass
 class VarDecl(Node):
-    name: str
+    name: str | None = None
     type: Node | None = None
     value: Node | None = None
     varying: bool = False

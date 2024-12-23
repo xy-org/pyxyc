@@ -362,7 +362,9 @@ def compile_header(ctx: CompilerContext, asts, cast):
                     )
                 
                 cname = mangle_def(node, ctx, expand=expand_name)
-                rtype_compiled = ctx.get_compiled_type(node.rtype)
+                if len(node.returns) > 1:
+                    raise CompilationError("Multiple return types are NYI", node)
+                rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
                 rtype = rtype_compiled.c_name
                 cfunc = c.Func(name=cname, rtype=rtype)
                 for param in node.params:
@@ -433,7 +435,7 @@ def import_builtins(ctx, cast):
                         xy.Param("x", xy.Id(type1)),
                         xy.Param("y", xy.Id(type2))
                     ],
-                    rtype=xy.Id(rtype_name)
+                    returns=xy.SimpleRType(rtype_name)
                 )
                 desc = register_func(func, ctx)
                 desc.builtin = True
@@ -447,7 +449,7 @@ def import_builtins(ctx, cast):
                 params=[
                     xy.Param("x", xy.Id(type1)),
                 ],
-                rtype=xy.Id(type1)
+                returns=xy.SimpleRType(type1)
             )
             desc = register_func(func, ctx)
             desc.builtin = True

@@ -202,11 +202,36 @@ def parse_def(itoken):
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
     node.params = parse_params(itoken)
-    itoken.expect("->", "Missing -> in func def."
-                  " Please put '-> void' if the func doesn't return anything.")
-    node.rtype = parse_toplevel_type(itoken)
-    if itoken.check("|"):
-        node.etype = parse_toplevel_type(itoken)
+
+    block = parse_block(itoken)
+    node.returns = block.returns
+    node.etype = block.etype
+    node.in_guards = block.in_guards
+    node.out_guards = block.out_guards
+    node.body = block.body
+    return node
+
+def parse_block(itoken):
+    block = Block()
+
+    if itoken.check("->"):
+        if itoken.check("("):
+            args = parse_expr_list(itoken)
+            itoken.expect(")")
+            # transform expressions
+            for expr in args:
+                if isinstance(expr, VarDecl):
+                    block.returns.append(expr)
+                else:
+                    block.returns.append(
+                        VarDecl(type=expr)
+                    )
+        else:
+            block.returns = [VarDecl(name=None, type=parse_toplevel_type(itoken))]
+
+        if itoken.check("|"):
+            block.etype = parse_toplevel_type(itoken)
+
     num_empty = itoken.skip_empty_lines()
     while itoken.peak() in {">>", "<<"}:
         guard_token = itoken.consume()
@@ -214,13 +239,13 @@ def parse_def(itoken):
             raise ParsingError("Guards should be on new lines", itoken)
         guard_expr = parse_expression(itoken)
         if guard_token == "<<":
-            node.out_guards.append(guard_expr)
+            block.out_guards.append(guard_expr)
         else:
-            node.in_guards.append(guard_expr)
+            block.in_guards.append(guard_expr)
         itoken.expect(";")
         num_empty = itoken.skip_empty_lines()  
-    node.body = parse_body(itoken)
-    return node
+    block.body = parse_body(itoken)
+    return block
 
 def parse_params(itoken):
     res = []
@@ -650,10 +675,10 @@ def parse_args_kwargs(itoken):
 
 def parse_expr_list(itoken):
     res = []
-    while itoken.peak() not in {")", "]", "}"}:
+    while itoken.peak() not in {")", "]", "}", ";"}:
         expr = parse_expression(itoken)
         res.append(expr)
-        if itoken.peak() not in {")", "]", "}"}:
+        if itoken.peak() not in {")", "]", "}", ";"}:
             itoken.expect(",")
     return res
 
@@ -663,7 +688,9 @@ def parse_body(itoken):
     itoken.skip_empty_lines()
     while itoken.peak() != "}":
         if itoken.check("return"):
-            expr = parse_expression(itoken)
+            expr = parse_expr_list(itoken)
+            if len(expr) == 1:
+                expr = expr[0]
             node = Return(expr)
             itoken.expect(";")
         else:
