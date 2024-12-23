@@ -142,6 +142,8 @@ def stringify_expr(expr, frags):
         frags.append("[")
         stringify_expr(expr.index, frags)
         frags.append("]")
+    elif isinstance(expr, Break):
+        frags.append("break")
     else:
         raise CGenerationError(f"Unknown expression {type(expr).__name__}")
 

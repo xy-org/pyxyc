@@ -729,34 +729,34 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     
     # the first if in an if chain is handled seperately becase it should 
     # provide the return type for the entire chain
+    infered_type = None
+    c_res = None
+    if_exp_obj = None
     if ifexpr.type is not None:
-        if ifexpr.name is None:
-            raise CompilationError(
-                "Ifs that produce result must also have a name", ifexpr)
-        if_name = ctx.eval_to_id(ifexpr.name)
         infered_type = find_type(ifexpr.type, ctx)
-        var_obj = ctx.create_tmp_var(infered_type, name_hint=if_name)
-        cfunc.body.append(var_obj.c_node)
-        ctx.id_table[if_name] = var_obj
-        c_res = c.Id(var_obj.c_node.name)
     elif isinstance(ifexpr.block, xy.Node):
-        name_hint = ctx.eval_to_id(ifexpr.name) if ifexpr.name else ""
         if_exp_obj = compile_expr(ifexpr.block, cast, cfunc, ctx)
-        var_obj = ctx.create_tmp_var(if_exp_obj.infered_type, name_hint=name_hint)
-        cfunc.body.append(var_obj.c_node)
-        c_res = c.Id(var_obj.c_node.name)
         infered_type = if_exp_obj.infered_type
     else:
-        c_res = None
-        infered_type = ctx.void_obj  # TODO remove this call to find type
+        infered_type = ctx.void_obj
+
+    # create tmp var if needed
+    if infered_type is not None and infered_type is not ctx.void_obj:
+        name_hint = ctx.eval_to_id(ifexpr.name) if ifexpr.name is not None else ""
+        var_obj = ctx.create_tmp_var(infered_type, name_hint=name_hint)
+        cfunc.body.append(var_obj.c_node)
+        ctx.id_table[name_hint] = var_obj
+        c_res = c.Id(var_obj.c_node.name)
 
     # compile if body
     cfunc.body.append(c_if)
-    if isinstance(ifexpr.block, list):
+    if if_exp_obj is None:
         compile_body(ifexpr.block, cast, c_if, ctx)
-    else:
+    elif infered_type is not ctx.void_obj:
         res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
         c_if.body.append(res_assign)
+    else:
+        c_if.body.append(if_exp_obj.c_node)
 
     # subsequent ifs
     next_if = ifexpr.else_block
@@ -796,29 +796,46 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         infered_type=infered_type
     )
 
-def compile_while(xywhile, cast, cfunc, ctx):
+def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     cwhile = c.While()
 
     cond_obj = compile_expr(xywhile.cond, cast, cfunc, ctx)
     cwhile.cond = cond_obj.c_node
-    
-    if isinstance(xywhile.block, list):
+
+    # determine return type if any
+    inferred_type = None
+    res_c = None
+    update_expr_obj = None
+    if xywhile.type is not None:
+        inferred_type = find_type(xywhile.type, ctx)
+    elif not isinstance(xywhile.block, list):
+        update_expr_obj = compile_expr(xywhile.block, cast, cwhile, ctx)
+        inferred_type = update_expr_obj.infered_type
+
+    # create tmp var if needed
+    if inferred_type is not None and inferred_type is not ctx.void_obj:
+        name_hint = ctx.eval_to_id(xywhile.name)
+        tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
+        ctx.id_table[name_hint] = tmp_obj
+        cfunc.body.append(tmp_obj.c_node)
+        res_c = c.Id(tmp_obj.c_node.name)
+    else:
+        inferred_type = ctx.void_obj
+
+
+    # compile body
+    if update_expr_obj is None:
         compile_body(xywhile.block, cast, cwhile, ctx)
     else:
-        assert len(xywhile.name) > 0 
-        rewrite = xy.BinExpr(
-            op='=',
-            arg1=xy.Id(xywhile.name),
-            arg2=xywhile.block
-        )
-        compile_body([rewrite], cast, cwhile, ctx)
+        assert len(xywhile.name) > 0
+        cwhile.body.append(update_expr_obj.c_node)
 
     cfunc.body.append(cwhile)
 
     return ExprObj(
         xy_node=xywhile,
-        c_node=None,
-        infered_type=ctx.void_obj,
+        c_node=res_c,
+        infered_type=inferred_type,
     )
 
 def compile_break(xybreak, cast, cfunc, ctx):
