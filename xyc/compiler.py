@@ -1557,11 +1557,11 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
             if not (isinstance(expr.arg2, xy.StructLiteral) and expr.arg2.name is None):
                 raise CompilationError("The right hand side of the '.=' operator must be an anonymous struct literal")
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, lhs=True)
-            val_obj = do_compile_struct_literal(expr.arg2, arg1_obj.infered_type, arg1_obj, cast, cfunc, ctx)
+            _ = do_compile_struct_literal(expr.arg2, arg1_obj.infered_type, arg1_obj, cast, cfunc, ctx)
             return ExprObj(
                 c_node=None,
                 infered_type=arg1_obj.infered_type
-            ) 
+            )
         else:
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, lhs=True)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
@@ -1970,7 +1970,11 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
             field = type_obj.fields[fname]
             obj = field_set(tmp_obj, field, fval_obj, cast, cfunc, ctx)
             cfunc.body.append(obj.c_node)
-        res = c.Id(tmp_obj.c_node.name)
+
+        if isinstance(tmp_obj, VarObj):
+            res = c.Id(tmp_obj.c_node.name)
+        else:
+            res = tmp_obj.c_node
 
     
     return ExprObj(

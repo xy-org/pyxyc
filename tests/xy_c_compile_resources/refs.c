@@ -82,4 +82,6 @@ void refs_testPointCloud(refs_PointCloud* m0, refs_PointCloud m1) {
     int32_t tmp_arg2 = refs_select__with__PointCloud__int(ms, 2);
     refs_set__with__PointCloud__int__Point(&ms, tmp_arg2, *refs_get__with__PointCloud__int(*m0, refs_select__with__PointCloud__int(*m0, 2)));
     refs_get__with__PointCloud__int(ms, refs_select__with__PointCloud__int(ms, 2))->m_x = refs_get__with__PointCloud__int(*m0, refs_select__with__PointCloud__int(*m0, 0))->m_y;
+    refs_get__with__PointCloud__int(ms, refs_select__with__PointCloud__int(ms, 4))->m_x = 5;
+    refs_get__with__PointCloud__int(ms, refs_select__with__PointCloud__int(ms, 4))->m_y = 10;
 }
