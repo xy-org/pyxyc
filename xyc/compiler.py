@@ -164,6 +164,7 @@ class CompilerContext:
     global_ns: IdTable = field(default_factory=IdTable)
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
     entrypoint_obj: any = None
+    void_obj: any = None
 
     def ensure_func_space(self, name: xy.Id):
         if name.name not in self.id_table:
@@ -410,6 +411,7 @@ def import_builtins(ctx, cast):
             c_node=c.Struct(name=ctype),
             builtin=True
         )
+    ctx.void_obj = ctx.id_table["void"]
 
     # fill in base math operations
     for p1, type1 in enumerate(num_types):
@@ -418,7 +420,8 @@ def import_builtins(ctx, cast):
             if "Size" in types and ("float" in types or "double" in types):
                 continue
             rtype_name = type1 if p1 > p2 else type2
-            for fname in ["add", "mul", "lt", "lte", "gt", "gte", "sub", "div"]:
+            for fname in ["add", "mul", "lt", "ltEqual", "gt", "gtEqual", "sub",
+                          "div", "addEqual", "subEqual"]:
                 func = xy.FuncDef(
                     fname,
                     params=[
@@ -430,6 +433,20 @@ def import_builtins(ctx, cast):
                 desc = register_func(func, ctx)
                 desc.builtin = True
                 desc.rtype_obj = ctx.id_table[rtype_name]
+    
+    # fill in ++(inc) and --(dec)
+    for type1 in num_types:
+        for fname in ["inc", "dec"]:
+            func = xy.FuncDef(
+                fname,
+                params=[
+                    xy.Param("x", xy.Id(type1)),
+                ],
+                rtype=xy.Id(type1)
+            )
+            desc = register_func(func, ctx)
+            desc.builtin = True
+            desc.rtype_obj = ctx.id_table[rtype_name]
     
     select = xy.FuncDef(name="select", params=[
         xy.Param("arr", xy.ArrayType(base=None)),
@@ -566,6 +583,9 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
                 c_node=res,
                 infered_type=arg2_obj.infered_type
             )
+    elif isinstance(expr, xy.UnaryExpr):
+        fcall = rewrite_unaryop(expr, ctx)
+        return compile_expr(fcall, cast, cfunc, ctx)
     elif isinstance(expr, xy.Id):
         var_obj = ctx.eval_to_var(expr)
         res = c.Id(var_obj.c_node.name)
@@ -597,18 +617,35 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
                 c_node=res,
                 infered_type=func_obj.rtype_obj
             )
-        elif func_obj.builtin:
-            assert len(expr.args) == 2
+        elif func_obj.builtin and len(expr.args) == 2:
             func_to_op_map = {
                 "add": '+',
                 "mul": '*',
                 "lt": '<',
-                "lte": '<=',
+                "ltEqual": '<=',
                 "gt": '>',
-                "gte": ">="
+                "gtEqual": ">=",
+                "addEqual": "+=",
+                "subEqual": "-=",
+                "mulEqual": "*=",
+                "divEqual": "/=",
             }
             res = c.Expr(
                 arg_exprs[0].c_node, arg_exprs[1].c_node,
+                op=func_to_op_map[expr.name.name]
+            )
+            return ExprObj(
+                c_node=res,
+                infered_type=func_obj.rtype_obj
+            )
+        elif func_obj.builtin:
+            assert len(expr.args) == 1
+            func_to_op_map = {
+                "inc": '++',
+                "dec": '--',
+            }
+            res = c.UnaryExpr(
+                arg=arg_exprs[0].c_node,
                 op=func_to_op_map[expr.name.name]
             )
             return ExprObj(
@@ -677,6 +714,10 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
         return compile_expr(rewritten, cast, cfunc, ctx)
     elif isinstance(expr, xy.IfExpr):
         return compile_if(expr, cast, cfunc, ctx)
+    elif isinstance(expr, xy.WhileExpr):
+        return compile_while(expr, cast, cfunc, ctx)
+    elif isinstance(expr, xy.Break):
+        return compile_break(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
 
@@ -707,7 +748,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         infered_type = if_exp_obj.infered_type
     else:
         c_res = None
-        infered_type = find_type(xy.Id("void"), ctx)  # TODO remove this call to find type
+        infered_type = ctx.void_obj  # TODO remove this call to find type
 
     # compile if body
     cfunc.body.append(c_if)
@@ -753,6 +794,40 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         xy_node=ifexpr,
         c_node=c_res,
         infered_type=infered_type
+    )
+
+def compile_while(xywhile, cast, cfunc, ctx):
+    cwhile = c.While()
+
+    cond_obj = compile_expr(xywhile.cond, cast, cfunc, ctx)
+    cwhile.cond = cond_obj.c_node
+    
+    if isinstance(xywhile.block, list):
+        compile_body(xywhile.block, cast, cwhile, ctx)
+    else:
+        assert len(xywhile.name) > 0 
+        rewrite = xy.BinExpr(
+            op='=',
+            arg1=xy.Id(xywhile.name),
+            arg2=xywhile.block
+        )
+        compile_body([rewrite], cast, cwhile, ctx)
+
+    cfunc.body.append(cwhile)
+
+    return ExprObj(
+        xy_node=xywhile,
+        c_node=None,
+        infered_type=ctx.void_obj,
+    )
+
+def compile_break(xybreak, cast, cfunc, ctx):
+    if xybreak.loop_name is not None:
+        raise CompilationError("Breaking the outer loop is NYI", xybreak)
+    return ExprObj(
+        xy_node=xybreak,
+        c_node=c.Break(),
+        infered_type=ctx.void_obj,
     )
 
 def get_c_type(type_expr, ctx):
@@ -841,17 +916,38 @@ def find_func(fcall, ctx):
 def rewrite_op(binexpr, ctx):
     fname = {
         "+": "add",
+        "-": "sub",
         "*": "mul",
+        "/": "div",
         "<": "lt",
         ">": "gt",
-        "<=": "lte",
-        ">=": "gte"
-    }[binexpr.op]
+        "<=": "ltEqual",
+        ">=": "gtEqual",
+        "+=": "addEqual",
+        "-=": "subEqual",
+        "*=": "mulEqual",
+        "/=": "divEqual",
+    }.get(binexpr.op, None)
+    if fname is None:
+        raise CompilationError(f"Unrecognized operator '{binexpr.op}'", binexpr)
     fcall = xy.FuncCall(
         xy.Id(fname, src=binexpr.src, coords=binexpr.coords),
         args=[binexpr.arg1, binexpr.arg2],
         src=binexpr.src, coords=binexpr.coords)
     return fcall
+
+def rewrite_unaryop(expr, ctx):
+    if expr.op == "++":
+        fname = "inc"
+    elif expr.op == "--":
+        fname = "dec"
+    else:
+        raise CompilationError(f"Unrecognized operator '{expr.op}'", expr)
+    return xy.FuncCall(
+        xy.Id(fname, src=expr.src, coords=expr.coords),
+        args=[expr.arg],
+        src=expr.src, coords=expr.coords
+    )
 
 def rewrite_select(select, ctx):
     fcall = xy.FuncCall(

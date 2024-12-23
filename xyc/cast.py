@@ -35,6 +35,12 @@ class Expr:
     op: str = ""
 
 @dataclass
+class UnaryExpr:
+    arg: any = None
+    op: str = ""
+    prefix: bool = False
+
+@dataclass
 class Id:
     name: str
 
@@ -72,6 +78,15 @@ class If:
     cond: any = None
     body: list = field(default_factory=list)
     else_body: any = None
+
+@dataclass
+class While:
+    cond: any = None
+    body: list = field(default_factory=list)
+
+@dataclass
+class Break:
+    pass
 
 @dataclass
 class Ast:

@@ -86,6 +86,13 @@ def stringify_body(body, frags, ident=1):
                     else_body = else_body.else_body
                 frags.extend((" " * ident * 4, "}"))
             frags.append("\n")
+        elif isinstance(stmt, While):
+            frags.append(" " * ident * 4)
+            frags.append("while (")
+            stringify_expr(stmt.cond, frags)
+            frags.append(") {\n")
+            stringify_body(stmt.body, frags, ident=ident+1)
+            frags.extend((" " * ident * 4, "}\n"))
         else:
             frags.append(" " * (ident*4))
             stringify_expr(stmt, frags)
@@ -103,6 +110,12 @@ def stringify_expr(expr, frags):
         else:
             frags.append(expr.op)
         stringify_expr(expr.arg2, frags)
+    elif isinstance(expr, UnaryExpr):
+        if expr.prefix:
+            frags.append(expr.op)
+        stringify_expr(expr.arg, frags)
+        if not expr.prefix:
+            frags.append(expr.op)
     elif isinstance(expr, FuncCall):
         frags.extend((expr.name, "("))
         for i, arg in enumerate(expr.args):

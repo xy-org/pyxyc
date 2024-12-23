@@ -102,8 +102,8 @@ class Const(Node):
     value_str: str = ""
     type: str | None = None
 
-    def __init__(self, value, value_str=None, type=None):
-        super().__init__()
+    def __init__(self, value, value_str=None, type=None, **kwargs):
+        super().__init__(**kwargs)
         self.value = value
         self.value_str = value_str if value_str is not None else str(value)
         if type is None:

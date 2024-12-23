@@ -316,9 +316,11 @@ def parse_expression(
             arg1 = Const(float(token), value_str, type)
         elif token[0] >= '0' and token[0] <= '9':
             if token.startswith("0x"):
-                arg1 = Const(int(token[2:], base=16), token, "int")
+                arg1 = Const(int(token[2:], base=16), token, "int",
+                             src=itoken.src, coords=tk_coords)
             else:
-                arg1 = Const(int(token), token, "int")
+                arg1 = Const(int(token), token, "int",
+                             src=itoken.src, coords=tk_coords)
         elif token == '"':
             arg1 = parse_str_literal("", tk_coords[0], itoken)
         elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:
