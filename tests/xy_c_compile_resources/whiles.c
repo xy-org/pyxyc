@@ -31,3 +31,19 @@ int32_t whiles_func3(int32_t x, int32_t y) {
     }
     return i;
 }
+
+bool whiles_cond(void) {
+    return true;
+}
+
+int32_t whiles_update(void) {
+    return 1;
+}
+
+int32_t whiles_func4(int32_t x, int32_t y) {
+    int32_t __tmp_res0 = 0;
+    while (whiles_cond()) {
+        __tmp_res0 += whiles_update();
+    }
+    return __tmp_res0;
+}

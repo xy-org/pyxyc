@@ -203,7 +203,8 @@ def parse_def(itoken):
         node.tags = parse_tags(itoken)
     node.params = parse_params(itoken)
 
-    value = parse_block_or_expr(itoken)
+    itoken.check("=")
+    value = parse_block(itoken)
     if isinstance(value, Block):
         node.returns = value.returns
         node.etype = value.etype
@@ -214,14 +215,6 @@ def parse_def(itoken):
         node.body = value
         itoken.expect(";")
     return node
-
-def parse_block_or_expr(itoken):
-    # return parse_block(itoken)
-    if itoken.check("=") or itoken.peak() not in {"{", "->"}:
-        expr = parse_expression(itoken)
-        return expr
-    else:
-        return parse_block(itoken)
 
 def parse_block(itoken):
     block = Block(src=itoken.src)
@@ -268,7 +261,7 @@ def parse_block(itoken):
 
 def parse_params(itoken):
     res = []
-    itoken.expect("(")
+    itoken.expect("(", msg="Missing param list")
     while itoken.peak() != ")":
         itoken.skip_empty_lines()
         pname = itoken.consume()
@@ -524,10 +517,10 @@ def parse_if(itoken):
     itoken.expect("(")
     if_expr.cond = parse_expression(itoken)
     itoken.expect(")", msg="Missing closing bracket")
-    if_expr.block = parse_block_or_expr(itoken)
+    if_expr.block = parse_block(itoken)
 
     if itoken.check("else"):
-        if_expr.else_node = parse_block_or_expr(itoken)
+        if_expr.else_node = parse_block(itoken)
     elif itoken.peak() == "elif":
         if_expr.else_node = parse_if(itoken)
 
@@ -547,10 +540,10 @@ def parse_while(itoken):
     while_expr.cond = parse_expression(itoken)
     itoken.expect(")", msg="Missing closing bracket")
 
-    while_expr.block = parse_block_or_expr(itoken)
+    while_expr.block = parse_block(itoken)
 
     if itoken.check("else"):
-        while_expr.else_node = parse_block_or_expr(itoken)
+        while_expr.else_node = parse_block(itoken)
 
     return while_expr
 
@@ -559,7 +552,7 @@ def parse_do_while(itoken):
     itoken.consume()  # "do" token
     dowhile_expr = DoWhileExpr(src=itoken.src, coords=while_coords)
 
-    dowhile_expr.block = parse_block_or_expr(itoken)
+    dowhile_expr.block = parse_block(itoken)
 
     itoken.expect("while")
     if itoken.peak() != "(":
@@ -572,7 +565,7 @@ def parse_do_while(itoken):
     itoken.expect(")", msg="Missing closing bracket")
 
     if itoken.check("else"):
-        dowhile_expr.else_node = parse_block_or_expr(itoken)
+        dowhile_expr.else_node = parse_block(itoken)
     return dowhile_expr
 
 
@@ -589,10 +582,10 @@ def parse_for(itoken):
     for_expr.over = parse_expr_list(itoken)
     itoken.expect(")", msg="Missing closing bracket")
 
-    for_expr.block = parse_block_or_expr(itoken)
+    for_expr.block = parse_block(itoken)
 
     if itoken.check("else"):
-        for_expr.else_node = parse_block_or_expr(itoken)
+        for_expr.else_node = parse_block(itoken)
     return for_expr
 
 
@@ -697,7 +690,7 @@ def parse_body(itoken):
 def should_have_semicolon_after_expr(node):
     if not isinstance(node, (IfExpr, ForExpr, WhileExpr)):
         return True
-    return not isinstance(node.block, (Block, list)) # TODO remove list
+    return node.block.is_embedded
 
 def parse_tags(itoken):
     res = TagList()

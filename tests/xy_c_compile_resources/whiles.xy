@@ -23,3 +23,15 @@ def func3(x: int, y: int) -> int {
     }
     return i;
 }
+
+def cond() -> bool {
+    return true;
+}
+
+def update() -> int {
+    return 1;
+}
+
+def func4(x: int, y: int) -> int {
+    return while(cond()) -> (res: int) res += update();
+}

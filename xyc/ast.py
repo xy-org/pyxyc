@@ -59,7 +59,11 @@ class Block(Node):
     etype: Node | None = None
     in_guards: list[Node] = field(default_factory=list)
     out_guards: list[Node] = field(default_factory=list)
-    body: list[Node] = field(default_factory=list)
+    body: list[Node] | Node = field(default_factory=list)
+
+    @property
+    def is_embedded(self):
+        return not isinstance(self.body, list)
 
 @dataclass
 class FuncCall(Node):

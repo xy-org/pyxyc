@@ -739,8 +739,8 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     infered_type = None
     c_res = None
     if_exp_obj = None
-    if not isinstance(ifexpr.block, xy.Block):
-        if_exp_obj = compile_expr(ifexpr.block, cast, cfunc, ctx)
+    if ifexpr.block.is_embedded:
+        if_exp_obj = compile_expr(ifexpr.block.body, cast, cfunc, ctx)
         infered_type = if_exp_obj.infered_type
     elif len(ifexpr.block.returns) > 0:
         if len(ifexpr.block.returns) > 1:
@@ -752,7 +752,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     # create tmp var if needed
     if infered_type is not None and infered_type is not ctx.void_obj:
         name_hint = None
-        if isinstance(ifexpr.block, xy.Block):
+        if not ifexpr.block.is_embedded:
             name_hint = ifexpr.block.returns[0].name
         if name_hint is None:
             name_hint = ifexpr.name
@@ -778,10 +778,10 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     while isinstance(next_if, xy.IfExpr):
         gen_if = c.If()
         gen_if.cond = compile_expr(next_if.cond, cast, cfunc, ctx).c_node
-        if isinstance(next_if.block, xy.Block):
+        if not next_if.block.is_embedded:
             compile_body(next_if.block.body, cast, gen_if, ctx)
         elif next_if.block is not None:
-            if_exp_obj = compile_expr(next_if.block, cast, cfunc, ctx)
+            if_exp_obj = compile_expr(next_if.block.body, cast, cfunc, ctx)
             res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
             # TODO compare types
             gen_if.body = [res_assign]
@@ -791,15 +791,16 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         next_if = next_if.else_node
 
     # finaly the else if any
-    if isinstance(next_if, xy.Block):
+    assert isinstance(next_if, xy.Block) or next_if is None
+    if next_if is not None and not next_if.is_embedded:
         # normal else
         # XXX fix that
         hack_if = c.If()
         compile_body(next_if.body, cast, hack_if, ctx)
         next_c_if.else_body = hack_if.body
-    elif isinstance(next_if, xy.Node) and not isinstance(next_if, xy.IfExpr):
+    elif next_if is not None:
         # else is direct result
-        else_exp_obj = compile_expr(next_if, cast, cfunc, ctx)
+        else_exp_obj = compile_expr(next_if.body, cast, cfunc, ctx)
         res_assign = c.Expr(c_res, else_exp_obj.c_node, op='=')
         # TODO compare types
         next_c_if.else_body = [res_assign]
@@ -820,15 +821,23 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     inferred_type = None
     res_c = None
     update_expr_obj = None
-    if not isinstance(xywhile.block, xy.Block):
-        update_expr_obj = compile_expr(xywhile.block, cast, cwhile, ctx)
+
+    # register loop variables
+    for loop_vardecl in xywhile.block.returns:
+        if loop_vardecl.name:
+            inferred_type = find_type(loop_vardecl.type, ctx)
+            name_hint = loop_vardecl.name
+            tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
+            ctx.id_table[name_hint] = tmp_obj
+            cfunc.body.append(tmp_obj.c_node)
+            res_c = c.Id(tmp_obj.c_node.name)
+
+    if xywhile.block.is_embedded:
+        update_expr_obj = compile_expr(xywhile.block.body, cast, cwhile, ctx)
         inferred_type = update_expr_obj.infered_type
-    elif len(xywhile.block.returns) > 0:
-        assert len(xywhile.block.returns) == 1
-        inferred_type = find_type(xywhile.block.returns[0].type, ctx)
 
     # create tmp var if needed
-    if inferred_type is not None and inferred_type is not ctx.void_obj:
+    if inferred_type is not None and inferred_type is not ctx.void_obj and res_c is None:
         name_hint = None
         if isinstance(xywhile.block, xy.Block):
             name_hint = xywhile.block.returns[0].name
@@ -846,7 +855,6 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     if update_expr_obj is None:
         compile_body(xywhile.block.body, cast, cwhile, ctx)
     else:
-        assert len(xywhile.name) > 0
         cwhile.body.append(update_expr_obj.c_node)
 
     cfunc.body.append(cwhile)

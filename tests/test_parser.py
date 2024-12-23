@@ -237,8 +237,8 @@ def test_parse_simple_func(code, exp_ast):
     ],
     [
         """
-        def double(x: int) = x * 2;
-        def sqr(x: int) x * x;
+        def double(x: int) x * 2
+        def sqr(x: int) = x * x
         """,
         [
             ast.FuncDef(ast.Id("double"),
@@ -1038,11 +1038,11 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl(name="a", value=ast.IfExpr(
                     cond=ast.Id("cond1"),
-                    block=ast.Const(5),
+                    block=ast.Block(body=ast.Const(5)),
                     else_node=ast.IfExpr(
                         cond=ast.Id("cond2"),
-                        block=ast.Const(6),
-                        else_node=ast.Const(7),
+                        block=ast.Block(body=ast.Const(6)),
+                        else_node=ast.Block(body=ast.Const(7)),
                     ),
                 ))
             ]),
@@ -1221,7 +1221,7 @@ def test_if(code, exp_ast):
                         ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
                         ast.IfExpr(
                             cond=ast.BinExpr(op=">", arg1=ast.Id("a"), arg2=ast.Const(10)),
-                            block=ast.Break()
+                            block=ast.Block(body=ast.Break())
                         ),
                     ])
                 )
