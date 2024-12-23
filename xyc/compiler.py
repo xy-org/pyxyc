@@ -193,6 +193,10 @@ class ExtSymbolObj(CompiledObj):
     def c_name(self):
         return self.c_node.name
     
+@dataclass
+class NameAmbiguity:
+    modules: list[str] = field(default_factory=list)
+    
 any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 any_struct_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 fieldarray_type_obj = TypeObj(xy_node=xy.Id("FieldArray"), builtin=True, c_node=c.Id("FIELD_TYPE_ARRAY_REPORT_IF_YOU_SEE_ME"))
@@ -233,7 +237,7 @@ class IdTable(dict):
         super().__init__(*args, **kwargs)
         self.type = None
 
-    def merge(self, other: 'IdTable'):
+    def merge(self, other: 'IdTable', ctx: str, other_module_name: str):
         for key, value in other.items():
             current = self.get(key, None)
             if isinstance(value, ImportObj):
@@ -249,9 +253,12 @@ class IdTable(dict):
                     current._funcs.extend(value._funcs)
                 else:
                     raise ValueError("NYI")
+            elif isinstance(current, TypeObj) and not is_obj_visible(current, ctx):
+                self[key] = value
+            elif isinstance(value, TypeObj) and not is_obj_visible(value, ctx):
+                pass
             else:
-                import pdb; pdb.set_trace()
-                raise ValueError("NYI")
+                self[key] = NameAmbiguity(modules=[ctx.module_name, other_module_name])
 
 class FuncSpace:
     def __init__(self):
@@ -672,6 +679,18 @@ class CompilerContext:
         return None
     
     def eval(self, node, msg=None):
+        res = self.do_eval(node, msg=msg)
+        if isinstance(res, NameAmbiguity):
+            modules_str = '\n    '.join(res.modules)
+            raise CompilationError(
+                "Symbol is defined in multiple modules. Pelase be explicit and specify the module. See TBD for more info",
+                node, notes=(
+                    (f"Symbol is defined in the following modules\n    {modules_str}", None),
+                )
+            )
+        return res
+
+    def do_eval(self, node, msg=None):
         if isinstance(node, xy.Id):
             res = self.lookup(node.name)
             if res is None and msg is not None:
@@ -4226,7 +4245,7 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
             raise CompilationError(f"Cannot find module '{imprt.lib}'", imprt)
         import_obj.module_header = module_header
         if imprt.in_name is None:
-            ctx.global_ns.merge(module_header.namespace)
+            ctx.global_ns.merge(module_header.namespace, ctx, module_header.module_name)
             ctx.str_prefix_reg.update(module_header.str_prefix_reg)
     
     if imprt.in_name:

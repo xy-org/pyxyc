@@ -1,5 +1,5 @@
-import package1.module1
+import package1.module1;
 
 def test() {
-    work1();
+    a := Struct1{};
 }
