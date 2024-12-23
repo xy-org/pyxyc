@@ -119,7 +119,7 @@ class FuncSpace:
     def find(self, node, args_infered_types, ctx):
         if isinstance(node, xy.FuncCall):
             for desc in self._funcs:
-                if cmp_call_def(node, args_infered_types, desc.xy_node, ctx):
+                if cmp_call_def(args_infered_types, desc.xy_node, ctx):
                     return desc
             fsig = ctx.eval_to_id(node.name) + "(" + \
                 ", ".join(t.xy_node.name for t in args_infered_types) + \
@@ -146,9 +146,9 @@ class ExtSpace(FuncSpace):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
 
-def cmp_call_def(fcall, fcall_args_types, fdef, ctx):
+def cmp_call_def(fcall_args_types, fdef, ctx):
     # TODO what about kwargs
-    if len(fcall.args) != len(fdef.params):
+    if len(fcall_args_types) != len(fdef.params):
         return False
     for arg_type, param in zip(fcall_args_types, fdef.params):
         # XXX
@@ -861,17 +861,17 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
     
     if not interpolation:
         str_const = expr.parts[0].value if len(expr.parts) else ""
-
         c_func = c.FuncCall(func_desc.c_name, args=[
-            c.Const('"' + str_const + '"'),
-            c.Const(cstr_len(str_const))
+            c.Const(f'"{str_const}"'),
+            c.Const(cstr_len(str_const)),
         ])
         return ExprObj(
             c_node=c_func,
             infered_type=func_desc.rtype_obj
         )
     else:
-        builder_tmpvar = ctx.create_tmp_var(func_desc.rtype_obj, "str")
+        builder_tmpvar = ctx.create_tmp_var(func_desc.rtype_obj, f"{expr.prefix}str")
+        cfunc.body.append(builder_tmpvar.c_node)
         builder_tmpvar_id = ExprObj(
             xy_node=expr,
             c_node=c.Id(builder_tmpvar.c_node.name),
@@ -888,61 +888,49 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             cfunc=cfunc,
             ctx=ctx
         ).c_node
-        cfunc.body.append(builder_tmpvar.c_node)
         for part in expr.parts:
             if is_str_const(part):
-                append_fobj = ctx.eval_to_fspace(
-                    xy.Id("append", src=expr.src, coords=expr.coords),
-                    msg="Cannot interpolate string because there is no 'append' function"
-                ).find(
-                    xy.FuncCall(xy.Id("append"), args=[xy.Id(""), xy.Id(""), xy.Const(0)], src=expr.src, coords=expr.coords),
-                    [func_desc.rtype_obj, ctx.ptr_obj, ctx.size_obj],
-                    ctx
-                )
-                append_call = do_compile_fcall(
-                    expr,
-                    append_fobj,
-                    arg_exprs=[
+                append_call = find_and_call(
+                    "append",
+                    [
                         builder_tmpvar_id,
-                        ExprObj(c_node=c.Const('"' + part.value + '"')),
-                        ExprObj(c_node=c.Const(cstr_len(part.value)))
+                        ExprObj(c_node=c.Const('"' + part.value + '"'), infered_type=ctx.ptr_obj),
+                        ExprObj(c_node=c.Const(cstr_len(part.value)), infered_type=ctx.size_obj),
                     ],
-                    cast=cast, cfunc=cfunc, ctx=ctx
+                    cast,
+                    cfunc,
+                    ctx,
+                    xy_node=expr,
                 )
                 cfunc.body.append(append_call.c_node)
             else:
                 part_expr_obj = compile_expr(part, cast, cfunc, ctx)
-                append_fobj = ctx.eval_to_fspace(
-                    xy.Id("append", src=expr.src, coords=expr.coords),
-                    msg="Cannot interpolate string because there is no 'append' function"
-                ).find(
-                    xy.FuncCall(xy.Id("append"), args=[xy.Id(""), xy.Id("")], src=expr.src, coords=expr.coords),
-                    [func_desc.rtype_obj, part_expr_obj.infered_type],
-                    ctx
-                )
-                append_call = do_compile_fcall(
-                    expr,
-                    append_fobj,
-                    arg_exprs=[builder_tmpvar_id, part_expr_obj],
-                    cast=cast, cfunc=cfunc, ctx=ctx
+                append_call = find_and_call(
+                    "append",
+                    [builder_tmpvar_id, part_expr_obj],
+                    cast,
+                    cfunc,
+                    ctx,
+                    xy_node=expr
                 )
                 cfunc.body.append(append_call.c_node)
         
         to_obj = func_desc.tags["xy.string"].fields["to"]
-        to = ctx.eval_to_fspace(
-            xy.Id("to", src=expr.src, coords=expr.coords),
-            msg="Cannot interpolate string because there is no 'to' function"
-        ).find(
-            xy.FuncCall(xy.Id("to"), args=[xy.Id(""), xy.Id("")], src=expr.src, coords=expr.coords),
-            [func_desc.rtype_obj, to_obj],
-            ctx
+        to_call_obj = find_and_call(
+            "to",
+            [
+                builder_tmpvar_id,
+                ExprObj(
+                    c_node=c.Id(to_obj.c_node.name),
+                    infered_type=to_obj
+                )
+            ],
+            cast,
+            cfunc,
+            ctx,
+            xy_node=expr
         )
-        to_call_obj = do_compile_fcall(expr, to, [builder_tmpvar_id], cast, cfunc, ctx)
-        return ExprObj(
-            xy_node=expr,
-            c_node=to_call_obj.c_node,
-            infered_type=to.rtype_obj
-        )
+        return to_call_obj
     
 def is_str_const(node: xy.Node) -> bool:
     return isinstance(node, xy.Const) and isinstance(node.value, str)
@@ -977,10 +965,26 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     arg_infered_types = [
         arg_expr.infered_type for arg_expr in arg_exprs
     ]
-    
+
     func_obj = fspace.find(expr, arg_infered_types, ctx)
 
     return do_compile_fcall(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+
+def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
+    fobj = ctx.eval_to_fspace(
+        xy.Id(name, src=xy_node.src, coords=xy_node.coords),
+        msg=f"Cannot find function {name}",
+    ).find(
+        xy.FuncCall(xy.Id(name), src=xy_node.src, coords=xy_node.coords),
+        [obj.infered_type for obj in arg_objs],
+        ctx
+    )
+    return do_compile_fcall(
+        xy_node,
+        fobj,
+        arg_exprs=arg_objs,
+        cast=cast, cfunc=cfunc, ctx=ctx
+    )
 
 def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, ctx):
     if func_obj.builtin and func_obj.xy_node.name == "select":
