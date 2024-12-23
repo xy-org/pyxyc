@@ -6,31 +6,31 @@ typedef struct opOverloading_MyInt opOverloading_MyInt;
 typedef struct opOverloading_Pair opOverloading_Pair;
 
 struct opOverloading_MyInt {
-    int32_t xy_num;
+    int32_t m_num;
 };
 struct opOverloading_Pair {
-    opOverloading_MyInt xy_a;
-    opOverloading_MyInt xy_b;
+    opOverloading_MyInt m_a;
+    opOverloading_MyInt m_b;
 };
 
 int32_t opOverloading_cmp__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
-    return opOverloading_sub__with__MyInt__MyInt(a, b).xy_num;
+    return opOverloading_sub__with__MyInt__MyInt(a, b).m_num;
 }
 
 opOverloading_MyInt opOverloading_add__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
-    return (opOverloading_MyInt){a.xy_num + b.xy_num};
+    return (opOverloading_MyInt){a.m_num + b.m_num};
 }
 
 opOverloading_MyInt opOverloading_sub__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
-    return (opOverloading_MyInt){a.xy_num - b.xy_num};
+    return (opOverloading_MyInt){a.m_num - b.m_num};
 }
 
 opOverloading_MyInt opOverloading_mul__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
-    return (opOverloading_MyInt){a.xy_num * b.xy_num};
+    return (opOverloading_MyInt){a.m_num * b.m_num};
 }
 
 opOverloading_MyInt opOverloading_div__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
-    return (opOverloading_MyInt){a.xy_num / b.xy_num};
+    return (opOverloading_MyInt){a.m_num / b.m_num};
 }
 
 int32_t opOverloading_cmpMyInts(void) {
@@ -49,11 +49,11 @@ int32_t opOverloading_cmpMyInts(void) {
 }
 
 int32_t opOverloading_cmp__with__MyInt__int(opOverloading_MyInt p1, int32_t n) {
-    return p1.xy_num - n;
+    return p1.m_num - n;
 }
 
 opOverloading_MyInt opOverloading_cmp__with__Pair__Pair(opOverloading_Pair p1, opOverloading_Pair p2) {
-    return opOverloading_sub__with__MyInt__MyInt(p1.xy_a, p2.xy_a);
+    return opOverloading_sub__with__MyInt__MyInt(p1.m_a, p2.m_a);
 }
 
 int32_t opOverloading_cmpPairs(void) {

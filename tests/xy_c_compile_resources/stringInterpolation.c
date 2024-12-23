@@ -6,13 +6,13 @@ typedef struct stringInterpolation_Str stringInterpolation_Str;
 typedef struct stringInterpolation_StrBuilder stringInterpolation_StrBuilder;
 
 struct stringInterpolation_Str {
-    void* xy_addr;
-    size_t xy_size;
+    void* m_addr;
+    size_t m_size;
 };
 struct stringInterpolation_StrBuilder {
-    void* xy_addr;
-    size_t xy_size;
-    size_t xy_cap;
+    void* m_addr;
+    size_t m_size;
+    size_t m_cap;
 };
 
 stringInterpolation_Str stringInterpolation_str(void* addr, size_t size) {
@@ -29,7 +29,7 @@ void stringInterpolation_append__with__StrBuilder__Ptr__Size(stringInterpolation
 }
 
 stringInterpolation_Str stringInterpolation_to(stringInterpolation_StrBuilder* builder) {
-    const stringInterpolation_Str res = (stringInterpolation_Str){builder->xy_addr, builder->xy_size};
+    const stringInterpolation_Str res = (stringInterpolation_Str){builder->m_addr, builder->m_size};
     return res;
 }
 

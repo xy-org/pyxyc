@@ -6,6 +6,6 @@
 typedef struct nameCollisions_ErrnoError nameCollisions_ErrnoError;
 
 struct nameCollisions_ErrnoError {
-    int32_t xy_errno;
+    int32_t m_errno;
 };
 

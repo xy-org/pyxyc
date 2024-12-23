@@ -7,16 +7,16 @@ typedef struct errors_Error errors_Error;
 typedef struct errors_Error2 errors_Error2;
 
 struct errors_Error {
-    int32_t xy_errorCode;
+    int32_t m_errorCode;
 };
 struct errors_Error2 {
-    int32_t xy_errorCode;
-    int32_t xy_a;
-    int32_t xy_b;
+    int32_t m_errorCode;
+    int32_t m_a;
+    int32_t m_b;
 };
 
 bool errors_to(errors_Error err) {
-    return err.xy_errorCode != 0;
+    return err.m_errorCode != 0;
 }
 
 errors_Error errors_power(int32_t x, int32_t y, int32_t* _res0) {

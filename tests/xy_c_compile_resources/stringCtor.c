@@ -7,8 +7,8 @@ typedef struct stringCtor_Utf8 stringCtor_Utf8;
 typedef struct stringCtor_Ascii stringCtor_Ascii;
 
 struct stringCtor_Str {
-    void* xy_addr;
-    size_t xy_size;
+    void* m_addr;
+    size_t m_size;
 };
 struct stringCtor_Utf8 {
 };
@@ -26,5 +26,5 @@ void stringCtor_createStrings(void) {
 }
 
 size_t stringCtor_strLen(stringCtor_Str str) {
-    return str.xy_size;
+    return str.m_size;
 }

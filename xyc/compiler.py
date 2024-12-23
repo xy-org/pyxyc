@@ -1400,7 +1400,7 @@ def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
 
 def mangle_field(field: xy.VarDecl):
     # mangle in order to prevent duplication with macros
-    return f"xy_{field.name}"
+    return f"m_{field.name}"
 
 def mangle_struct(struct: xy.StructDef, ctx):
     return mangle_name(struct.name, ctx.module_name)

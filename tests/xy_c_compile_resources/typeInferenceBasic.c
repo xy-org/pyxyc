@@ -5,8 +5,8 @@
 typedef struct typeInferenceBasic_Pair typeInferenceBasic_Pair;
 
 struct typeInferenceBasic_Pair {
-    int32_t xy_a;
-    int32_t xy_b;
+    int32_t m_a;
+    int32_t m_b;
 };
 
 void typeInferenceBasic_func(void) {
