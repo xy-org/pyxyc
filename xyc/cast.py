@@ -136,11 +136,15 @@ class Typedef:
     name: str = None
 
 @dataclass
+class Excerpt:
+    excerpt: str = None
+
+@dataclass
 class Ast:
     includes: list[Include] = field(default_factory=list)
     type_decls: list[Struct] = field(default_factory=list)
     func_decls: list[Func] = field(default_factory=list)
-    consts: list[VarDecl | Define] = field(default_factory=list)
+    consts: list[VarDecl | Define | Excerpt] = field(default_factory=list)
     structs: list[Struct] = field(default_factory=list)
     funcs: list[Struct] = field(default_factory=list)
 

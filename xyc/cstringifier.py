@@ -48,6 +48,9 @@ def stringify(ast: Ast):
                 frags.append(' ')
                 stringify_expr(node.value, frags)
             frags.append("\n")
+        elif isinstance(node, Excerpt):
+            frags.append(node.excerpt)
+            frags.append("\n")
         else:
             assert isinstance(node, VarDecl)
             stringify_var_decl(node, frags)

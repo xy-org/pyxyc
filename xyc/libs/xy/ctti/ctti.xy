@@ -6,6 +6,10 @@ def offsetof(arg: pseudo ?) -> Size {
     # Implemented by the compiler
 }
 
+def alignof(arg: pseudo ?) -> Size {
+    # Implemented by the compiler
+}
+
 struct FieldArray {
     # Implemented by the compiler
 }

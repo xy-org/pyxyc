@@ -401,6 +401,7 @@ class CompilerContext:
     module_ns: IdTable = field(default_factory=IdTable)
     global_ns: IdTable = field(default_factory=IdTable)
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
+    added_alignof_macro: bool = False
 
     current_fobj: FuncObj | None = None
     tmp_var_i: int = 0
@@ -2596,6 +2597,24 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=c.FuncCall("offsetof", [
                 c.Id(field_obj.fieldof_obj.c_node.name),
                 c.Id(field_obj.c_node.name),
+            ]),
+            infered_type=ctx.size_obj,
+        )
+    elif is_builtin_func(func_obj, "alignof"):
+        if not ctx.added_alignof_macro:
+            ctx.added_alignof_macro = True
+            cast.consts.append(
+                c.Excerpt(
+                    "#ifndef __XY_ALIGNOF\n" \
+                    "#define __XY_ALIGNOF(type) offsetof (struct { char c; type member; }, member)\n" \
+                    "#endif"
+                )
+            )
+
+        type_obj = arg_exprs[0].infered_type
+        return ExprObj(
+            c_node=c.FuncCall("__XY_ALIGNOF", [
+                c.Id(type_obj.c_node.name),
             ]),
             infered_type=ctx.size_obj,
         )

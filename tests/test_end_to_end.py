@@ -16,14 +16,14 @@ import xyc.xyc as xyc
 r""";; MyStruct comment
 struct MyStruct {
     ;; My name
-    name: Str; # size=\d+ offset=\d+
+    name: Str; # size=\d+ offset=\d+ alignof=\d+
     ;; Some number
-    num: Size; # size=\d offset=\d+
-    integer: int; # size=4 offset=\d+
+    num: Size; # size=\d offset=\d+ alignof=\d+
+    integer: int; # size=4 offset=\d+ alignof=\d+
     ;; Array of
 floats
-    arr: float\[10\]; # size=40 offset=\d+
-    next: Ptr; # size=\d offset=\d+
+    arr: float\[10\]; # size=40 offset=\d+ alignof=\d+
+    next: Ptr; # size=\d offset=\d+ alignof=\d+
 }\n""", False),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):

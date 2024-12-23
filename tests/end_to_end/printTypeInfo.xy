@@ -24,6 +24,7 @@ struct FieldDesc{
     typename: Str;
     size: Size;
     offset: Size;
+    alignment: Size;
     comment: Str;
 }
 
@@ -37,6 +38,7 @@ def printTypeInfo(
             typename=nameof(%f),
             size=f'sizeof,
             offset=f'offsetof,
+            alignment=f'alignof,
             comment=f'commentof,
         }
     ],
@@ -52,7 +54,7 @@ def printTypeInfo(
         if (f.comment.len > 0) {
             print(f"    ;; {f.comment}\n");
         }
-        print(f"    {f.name}: {f.typename}; # size={f.size} offset={f.offset}\n");
+        print(f"    {f.name}: {f.typename}; # size={f.size} offset={f.offset} alignof={f.alignment}\n");
     }
     print("}\n");
 }
