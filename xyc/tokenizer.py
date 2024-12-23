@@ -21,7 +21,22 @@ def split_tokens(code):
             tokens.append(code[prev_pos:start])
             pos.append(prev_pos)
         if match.group(1) is not None:
-            tokens.append(code[start:end])
+            tok = code[start:end]
+            if tok == ";;":
+                # insert and additional ';' in order to simplify parsing
+                insert_semicolomn = False
+                for i in range(prev_pos-1, -1, -1):
+                    if code[i] == '\n':
+                        break
+                    elif code[i] == ';':
+                        break
+                    elif code[i].isalnum():
+                        insert_semicolomn = True
+                        break
+                if insert_semicolomn:
+                    tokens.append(";")
+                    pos.append(start)
+            tokens.append(tok)
             pos.append(start)
         prev_pos = end
 

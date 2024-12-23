@@ -137,6 +137,32 @@ def main() -> int {
             )
         ]
     ],
+    [
+        """
+def main(i: int) -> int {
+    i *= i; # square i
+    i *= i; ;; square i
+    i *= i ;; square i
+    return i;
+}
+        """,
+        [
+            ast.FuncDef(
+                name=ast.Id("main"),
+                params=[ast.Param("i", type=ast.Id("int"))],
+                body=[
+                    ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
+                    ast.Comment(" square i"),
+                    ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
+                    ast.Comment(";; square i", is_doc=True),
+                    ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
+                    ast.Comment(";; square i", is_doc=True),
+                    ast.Return(ast.Id("i")),
+                ],
+                returns=ast.SimpleRType("int"),
+            )
+        ]
+    ],
 ])
 def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)
