@@ -48,7 +48,7 @@ class ArrTypeObj(TypeObj):
 
     @property
     def c_name(self):
-        self.base_type_obj.c_name + "*"
+        return self.base_type_obj.c_name + "*"
 
     @property
     def name(self):
@@ -1658,6 +1658,39 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
             c_node=res,
             infered_type=ArrTypeObj(base_type_obj=arr_type, dims=[len(expr.elems)])
         )
+    elif isinstance(expr, xy.ListComprehension):
+        if expr.list_type is not None:
+            raise CompilationError("Comprehension with a custom type is NYI", expr)
+        if len(expr.loop.over) != 1:
+            raise CompilationError("List Comprehension with more than one loop is NYI", expr.loop)
+        if isinstance(expr.loop.block.body, list):
+            raise CompilationError("Array Comprehension expressions must have a single inlined expression as body")
+        # determine len
+        container_node = expr.loop.over[0].arg2
+        iter_var_name = expr.loop.over[0].arg1
+        container_obj = compile_expr(container_node, cast, cfunc, ctx)
+        container_obj = maybe_move_to_temp(container_obj, cast, cfunc, ctx)
+        if not isinstance(container_obj.infered_type, ArrTypeObj):
+            raise CompilationError("List comprehension is supported only on arrays", container_obj.xy_node)
+        arr_len = container_obj.infered_type.dims[0]
+
+        c_node = c.InitList()
+        ctx.push_ns()
+        for i in range(arr_len):
+            ctx.ns[iter_var_name.name] = ExprObj(
+                xy_node=iter_var_name,
+                c_node=c.Index(expr=container_obj.c_node, index=c.Const(i)),
+                infered_type=container_obj.infered_type.base_type_obj,
+            )
+            elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
+            c_node.elems.append(elem_obj.c_node)
+        ctx.pop_ns()
+
+        return ExprObj(
+            xy_node=expr,
+            c_node=c_node,
+            infered_type=container_obj.infered_type
+        )
     elif isinstance(expr, xy.Select):
         rewritten = rewrite_select(expr, ctx)
         return compile_expr(rewritten, cast, cfunc, ctx)
@@ -2565,10 +2598,18 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             else:
                 res.args.append(arg.c_node)
 
-        for pobj in func_obj.param_objs[len(arg_exprs.args):]:
+        leftover_params = func_obj.param_objs[len(arg_exprs.args):]
+        for i, pobj in enumerate(leftover_params):
             if pobj.xy_node.name not in arg_exprs.kwargs:
                 try:
                     value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, func_ctx)
+                    to_move = (
+                        (i < len(leftover_params) - 1) or
+                        isinstance(value_obj.c_node, c.InitList) or
+                        (len(func_obj.xy_node.in_guards) > 0)
+                    )
+                    if to_move:
+                        value_obj = maybe_move_to_temp(value_obj, cast, cfunc, ctx)
                 except CompilationError as e:
                     raise CompilationError(
                         f"Cannot compile default value for param '{pobj.xy_node.name}'", expr,

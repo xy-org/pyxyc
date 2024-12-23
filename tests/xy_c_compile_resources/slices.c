@@ -47,7 +47,8 @@ slices_IntSlice slices_slice__int(int32_t step) {
 
 void slices_testIntSlices(void) {
     const slices_AllSlice a = slices_slice();
-    const slices_IntSlice b = slices_slice__int__int__int(1, slices_max__int(), 1);
+    int32_t tmp_arg0 = slices_max__int();
+    const slices_IntSlice b = slices_slice__int__int__int(1, tmp_arg0, 1);
     const int32_t x = 10;
     const int32_t y = 1000;
     const slices_IntSlice c = slices_slice__int__int__int(0, x, 1);
@@ -55,7 +56,8 @@ void slices_testIntSlices(void) {
     const slices_IntSlice e = slices_slice__int(-1);
     const slices_IntSlice f = slices_slice__int__int(x, 1);
     const slices_IntSlice g = slices_slice__int__int(x, y);
-    const slices_IntSlice i = slices_slice__int__int__int(x, slices_max__int(), y);
+    int32_t tmp_arg1 = slices_max__int();
+    const slices_IntSlice i = slices_slice__int__int__int(x, tmp_arg1, y);
     const slices_IntSlice j = slices_slice__int__int__int(x, y, 1);
     const slices_IntSlice k = slices_slice__int__int__int(x, y, 1);
 }

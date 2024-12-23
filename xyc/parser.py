@@ -366,7 +366,7 @@ def parse_expression(
         args = parse_expr_list(itoken)
         itoken.expect("]", msg="Missing closing bracket")
         if maybe_list_comp and len(args) == 1 and isinstance(args[0], ForExpr):
-            arg1 = ListComprehension(loop=args[0])
+            arg1 = ListComprehension(loop=args[0], src=itoken.src, coords=coords)
         else:
             arg1 = ArrayLit(args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "{":
@@ -512,7 +512,7 @@ def parse_expression(
                 # list comprehension with an explicit type
                 arg1 = ListComprehension(
                     list_type=arg1,
-                    loop=args[0]
+                    loop=args[0], src=itoken.src, coords=op_coords
                 )
             else:
                 arg1 = Select(
