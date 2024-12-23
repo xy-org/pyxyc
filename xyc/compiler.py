@@ -580,10 +580,10 @@ def compile_module(builder, module_name, asts):
     ctx.uint_obj = ctx.global_ns["uint"]
     ctx.int_obj = ctx.global_ns["int"]
     ctx.prim_int_objs = (
-        # ctx.global_ns["byte"],
-        # ctx.global_ns["ubyte"],
-        # ctx.global_ns["short"],
-        # ctx.global_ns["ushort"],
+        ctx.global_ns["byte"],
+        ctx.global_ns["ubyte"],
+        ctx.global_ns["short"],
+        ctx.global_ns["ushort"],
         ctx.global_ns["int"],
         ctx.global_ns["uint"],
         ctx.global_ns["long"],
@@ -705,7 +705,7 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
                     cast.type_decls.append(cenum)
 
 
-    # 3rd pass - compile fields   
+    # 3rd pass - compile fields
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.StructDef):
@@ -735,6 +735,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
                 raise CompilationError("Specified and infered types differ", field)
             default_values.append(default_value_obj.c_node)
         else:
+            assert field_type_obj.init_value is not None
             default_values.append(field_type_obj.init_value)
 
         cfield = c.VarDecl(
@@ -968,6 +969,8 @@ def import_builtins(ctx: CompilerContext, cast):
     cast.includes.append(c.Include("stdbool.h"))
 
     int_types = [
+       "byte", "ubyte",
+       "short", "ushort",
        "int", "uint",
        "long", "ulong",
        "Size", 
@@ -978,6 +981,8 @@ def import_builtins(ctx: CompilerContext, cast):
     ]
 
     ctype_map = {
+        "byte": "int8_t", "ubyte": "uint8_t",
+        "short": "int16_t", "ushort": "uint16_t",
         "int": "int32_t", "uint": "uint32_t",
         "long": "int64_t", "ulong": "uint64_t",
         "Size": "size_t",

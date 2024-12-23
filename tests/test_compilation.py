@@ -32,6 +32,7 @@ from xyc.compiler import CompilationError
     "funcs",
     "stringInterpolation",
     "namedArguments",
+    "namedFields",
     "positionalTags",
     # TODO "guards",
     # TODO "refs",
