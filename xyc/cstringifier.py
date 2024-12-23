@@ -62,7 +62,7 @@ def stringify_body(body, frags, ident=1):
 def stringify_expr(expr, frags):
     if isinstance(expr, Const):
         frags.append(str(expr.value))
-    elif isinstance(expr, Name):
+    elif isinstance(expr, Id):
         frags.append(expr.name)
     elif isinstance(expr, Expr):
         stringify_expr(expr.arg1, frags)

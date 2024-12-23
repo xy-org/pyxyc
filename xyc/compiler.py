@@ -306,7 +306,7 @@ def compile_expr(expr, cast, cfunc, ctx):
         res = c.Expr(arg1, arg2, op=expr.op)
         return res
     elif isinstance(expr, xy.Id):
-        res = c.Name(expr.name)
+        res = c.Id(expr.name)
         return res
     elif isinstance(expr, xy.FuncCall):
         fspace = ctx.get_func_space(expr)
@@ -451,7 +451,7 @@ def maybe_add_main(ctx, ast, cast):
                 c.VarDecl("argv", "char**")
             ], body=[
                 c.VarDecl("res", "int", value=c.FuncCall(entrypoint_obj.c_name)),
-                c.Return(c.Name("res")),
+                c.Return(c.Id("res")),
             ]
         )
         cast.funcs.append(main)

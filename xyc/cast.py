@@ -30,7 +30,7 @@ class Expr:
     op: str = ""
 
 @dataclass
-class Name:
+class Id:
     name: str
 
 @dataclass
