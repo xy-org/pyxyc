@@ -1,3 +1,5 @@
+import xy.ctti
+
 def guards1(a: int, b: int) -> int
 >> a > b
 {
@@ -10,16 +12,11 @@ def guards2(a: int, b: pseudo ?) -> int
     return 0;
 }
 
-# def guards3(a: pseudo ?, b: pseudo ?) -> int
-# >> ctti.eval(a'typeof == b'typeof), break "Types must be the same"
-# {
-#     return 0;
-# }
-# 
-# struct ErrorCode {
-#     code: int;
-# }
-# 
+def guards3(a: pseudo ?, b: pseudo ?) -> int
+>>  a'typeof \typeEqs b'typeof
+{
+    return 0;
+}
 
 struct ErrorCode {
     code: int;
@@ -38,8 +35,8 @@ def test(a: int, b: int) -> int {
     res : var = 0;
     res += guards1(a, b);
     res += guards2(a, b);
-    #res += guards3(res, b);
-    # res += guards4(a, res);
+    res += guards3(res, b);
+    res += guards4(a, res);
     #res += guards4(
     #    guards2(guards4(a, b), b),
     #    guards3(res, res)

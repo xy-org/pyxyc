@@ -17,6 +17,10 @@ int32_t guards_guards2(int32_t a) {
     return 0;
 }
 
+int32_t guards_guards3(void) {
+    return 0;
+}
+
 bool guards_to(guards_ErrorCode ec) {
     return ec.m_code != 0;
 }
@@ -37,5 +41,6 @@ int32_t guards_test(int32_t a, int32_t b) {
         abort();
     }
     res += guards_guards2(a);
+    res += guards_guards3();
     return res;
 }

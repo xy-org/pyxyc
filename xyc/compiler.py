@@ -117,7 +117,8 @@ class VarObj(CompiledObj):
 @dataclass
 class ImportObj(CompiledObj):
     name: str | None = None
-    is_external: bool = True  # XXX
+    module_header: 'ModuleHeader' = None
+    is_external: bool = False
 
 @dataclass
 class ExprObj(CompiledObj):
@@ -278,7 +279,7 @@ class ExtSpace(FuncSpace):
 def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
     if len(fcall_args_types) > len(fobj.param_objs):
         return False
-    if fobj.builtin and fobj.xy_node.name in {"typeof", "tagsof", "sizeof", "addrof"}:
+    if fobj.builtin and fobj.xy_node.name in {"typeof", "tagsof", "sizeof", "addrof", "typeEqs"}:
         return fobj
     satisfied_params = set()
     # go through positional
@@ -535,15 +536,15 @@ class CompilerContext:
         elif isinstance(node, xy.BinExpr):
             if node.op == ".":
                 base = self.eval(node.arg1)
-                assert isinstance(node.arg2, xy.Id)
                 if isinstance(base, ImportObj):
+                    assert isinstance(node.arg2, xy.Id)
                     if base.is_external:
                         return ExtSymbolObj(
                             c_node=c.Id(node.arg2.name),
                             xy_node=node,
                         )
                     else:
-                        raise CompilationError("NYI", node)
+                        return base.module_header.ctx.eval(node.arg2, msg)
                 elif isinstance(base, TypeObj):
                     return base.fields[node.arg2.name]
                 elif isinstance(base, VarObj):
@@ -595,6 +596,20 @@ class CompilerContext:
     def exit_block(self):
         # TODO implement
         pass
+
+    def trueObj(self, xy_node):
+        return ConstObj(
+            xy_node=xy_node,
+            c_node=c.Const("true"),
+            infered_type=self.bool_obj
+        )
+
+    def falseObj(self, xy_node):
+        return ConstObj(
+            xy_node=xy_node,
+            c_node=c.Const("false"),
+            infered_type=self.bool_obj
+        )
             
 
 def compile_module(builder, module_name, asts):
@@ -648,7 +663,17 @@ def compile_builtins(builder, module_name):
     import_builtins(ctx, res)
 
     return ModuleHeader(
-        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg
+        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg, ctx=ctx,
+    ), res
+
+def compile_ctti(builder, module_name):
+    ctx = CompilerContext(builder, module_name)
+    res = c.Ast()
+
+    import_ctti(ctx, res)
+
+    return ModuleHeader(
+        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg, ctx=ctx,
     ), res
 
 def compile_header(ctx: CompilerContext, asts, cast):
@@ -1329,6 +1354,16 @@ def import_builtins(ctx: CompilerContext, cast):
     )
     ctx.module_ns["Flags"] = flags_ojb
 
+def import_ctti(ctx: CompilerContext, cast):
+    # typeEqs - compile time type comparison
+    typeEqs = xy.FuncDef("typeEqs", params=[xy.VarDecl("t1"), xy.VarDecl("t2")])
+    typeEqs_obj = register_func(typeEqs, ctx)
+    typeEqs_obj.builtin = True
+    typeEqs_obj.param_objs = [
+        VarObj(),
+        VarObj(),
+    ]
+
 def compile_funcs(ctx, ast, cast):
     for node in ast:
         if isinstance(node, xy.FuncDef):
@@ -1489,20 +1524,22 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
             return ExprObj(
                 xy_node=expr,
                 c_node=c_node,
-                infered_type=var_obj.type_desc
+                infered_type=var_obj.type_desc,
+                compiled_obj=var_obj,
             )
         elif isinstance(var_obj, TypeObj):
             return ExprObj(
                 xy_node=expr,
                 c_node=c.Id(var_obj.c_node.name),
                 infered_type=var_obj,
-                compiled_obj=var_obj
+                compiled_obj=var_obj,
             )
         elif isinstance(var_obj, ImportObj):
             return ExprObj(
                 c_node=None,
                 xy_node=var_obj.xy_node,
-                infered_type=var_obj
+                infered_type=var_obj,
+                compiled_obj=var_obj,
             )
         elif isinstance(var_obj, ExprObj):
             return var_obj
@@ -2150,6 +2187,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=res,
             infered_type=arg_exprs[0].infered_type.base_type_obj
         )
+    elif func_obj.builtin and func_obj.xy_node.name == "typeEqs":
+        return typeEqs(expr, arg_exprs, cast, cfunc, ctx)
     elif func_obj.builtin and len(arg_exprs) == 2 and func_obj.xy_node.name != "cmp":
         func_to_op_map = {
             "add": '+',
@@ -2190,9 +2229,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         )
     elif func_obj.builtin and func_obj.xy_node.name == "typeof":
         return ExprObj(
+            xy_node=expr,
             c_node=c.Id(arg_exprs[0].infered_type.c_node.name),
             infered_type=arg_exprs[0].infered_type,
-            tags=arg_exprs[0].infered_type.tags
+            tags=arg_exprs[0].infered_type.tags,
+            compiled_obj=arg_exprs[0].infered_type,
         )
     elif func_obj.builtin and func_obj.xy_node.name == "tagsof":
         return ExprObj(
@@ -2248,14 +2289,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 res.args.append(arg_exprs.kwargs[pobj.xy_node.name].c_node)
 
         # compile input guards
-        if len(func_obj.xy_node.in_guards) > 0:
+        if (len(func_obj.xy_node.in_guards) + len(func_obj.xy_node.out_guards)) > 0:
             cast.includes.append(c.Include("stdlib.h"))
         for guard in func_obj.xy_node.in_guards:
             guard_obj = compile_expr(guard, cast, cfunc, func_ctx)
-            cfunc.body.append(c.If(
-                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
-                body=[c.FuncCall("abort")]
-            ))
+            if not is_ct_true(guard_obj):
+                cfunc.body.append(c.If(
+                    cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
+                    body=[c.FuncCall("abort")]
+                ))
 
         func_ctx.pop_ns()
     else:
@@ -2321,6 +2363,35 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             infered_type=func_obj.rtype_obj,
             func_obj=func_obj
         )
+
+def typeEqs(expr, arg_exprs, cast, cfunc, ctx):
+    assert len(arg_exprs) == 2
+    for i in range(len(arg_exprs)):
+        if not isinstance(arg_exprs[i].compiled_obj, TypeObj):
+            raise CompilationError("Expected type", arg_exprs[i].xy_node)
+    
+    t1 = arg_exprs[0].compiled_obj
+    t2 = arg_exprs[1].compiled_obj
+    if t1 is t2:
+        return ctx.trueObj(expr)
+    
+    if type(t1) is not type(t2):
+        return ctx.falseObj(expr)
+    
+    if not typeEqs([t1.base_type_obj, t2.base_type_obj], cast, cfunc, ctx):
+        return ctx.falseObj(expr)
+    
+    if t1.tags.keys() != t2.tags.keys():
+        return ctx.falseObj(expr)
+
+    if isinstance(t1, ArrTypeObj):
+        if t1.dims != t2.dims:
+            return ctx.falseObj(expr)
+        
+    return ctx.trueObj(expr)
+            
+def is_ct_true(obj):
+    return isinstance(obj.c_node, c.Const) and obj.c_node.value == "true"
 
 def compile_if(ifexpr, cast, cfunc, ctx):
     c_if = c.If()
@@ -2951,7 +3022,7 @@ def rewrite_select(select, ctx):
 
 def compile_import(imprt, ctx: CompilerContext, ast, cast):
     compiled_tags = ctx.eval_tags(imprt.tags)
-    import_obj = None
+    import_obj = ImportObj(name=imprt.lib)
     if "xyc.lib" in compiled_tags:
         obj = compiled_tags["xyc.lib"]
         # TODO assert obj.xy_node.name.name == "CLib"
@@ -2961,15 +3032,15 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
             if len(header_obj.prefix) > 0:
                 raise CompilationError("Only unprefixed strings are recognized", header.xy_node)
             cast.includes.append(c.Include(header_obj.parts[0].value))
-        import_obj = ImportObj(name=imprt.lib)
+        import_obj.is_external = True
     else:
-        assert imprt.in_name is None
         module_header = ctx.builder.import_module(imprt.lib)
-        ctx.global_ns.merge(module_header.namespace)
-        ctx.str_prefix_reg.update(module_header.str_prefix_reg)
+        import_obj.module_header = module_header
+        if imprt.in_name is None:
+            ctx.global_ns.merge(module_header.namespace)
+            ctx.str_prefix_reg.update(module_header.str_prefix_reg)
     
     if imprt.in_name:
-        # XXX what about multiple in names
         ctx.module_ns[imprt.in_name] = import_obj
 
 def maybe_add_main(ctx, cast):

@@ -3,7 +3,7 @@ from os import path
 import subprocess
 from xyc.ast import Source
 from xyc.parser import parse_code
-from xyc.compiler import compile_module, compile_builtins
+from xyc.compiler import compile_module, compile_builtins, compile_ctti
 import xyc.cstringifier as cstringifier
 from dataclasses import dataclass
 import xyc.cast as c
@@ -39,6 +39,10 @@ class Builder:
     def import_module(self, module_name: str):
         if module_name in self.module_cache:
             return self.module_cache[module_name].header
+        
+        if module_name == "xy.ctti":
+            self.compile_ctti()
+            return self.module_cache[module_name].header
 
         module_path = self.locate_module(module_name)
         header, _ = self.do_compile_module(module_name, module_path)
@@ -49,6 +53,11 @@ class Builder:
         builtins_module_name = "xy.builtins"
         header, c_srcs = compile_builtins(self, builtins_module_name)
         self.module_cache[builtins_module_name] = CompiledModule(header, c_srcs)
+
+    def compile_ctti(self):
+        ctti_module_name = "xy.ctti"
+        header, c_srcs = compile_ctti(self, ctti_module_name)
+        self.module_cache[ctti_module_name] = CompiledModule(header, c_srcs)
 
     def do_compile_module(self, module_name: str, module_path: str):
         module_ast = parse_module(module_path, module_name)

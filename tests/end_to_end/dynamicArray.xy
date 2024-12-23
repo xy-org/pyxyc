@@ -26,7 +26,7 @@ def push(
     elemMem := elem'addrof,
     elemSize := elem'sizeof
 )
-# >> if (elem'typeof == arr'tagsof.elemType) {
+# >> if (elem'typeof'fullname == arr'tagsof.elemType) {
 #     break(ct"Cannot add element of type {elem'typeof'fullname} to array of "
 #           "{elem'tagsof.elemType'fullname}(s)")
 # }
