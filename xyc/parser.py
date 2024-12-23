@@ -520,11 +520,11 @@ def parse_if(itoken):
         if_expr.block = parse_expression(itoken)
     if itoken.check("else"):
         if itoken.peak() == "{":
-            if_expr.else_block = parse_body(itoken)
+            if_expr.else_node = parse_body(itoken)
         else:
-            if_expr.else_block = parse_expression(itoken)
+            if_expr.else_node = parse_expression(itoken)
     elif itoken.peak() == "elif":
-        if_expr.else_block = parse_if(itoken)
+        if_expr.else_node = parse_if(itoken)
     return if_expr
 
 

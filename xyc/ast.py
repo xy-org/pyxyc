@@ -141,7 +141,7 @@ class IfExpr(Node):
     name: Node | None = None
     type: Node | None = None
     block: Node | list | None = None
-    else_block: Node | list | None = None
+    else_node: Node | list | None = None
 
 @dataclass
 class ForExpr(Node):

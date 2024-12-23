@@ -766,7 +766,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         c_if.body.append(if_exp_obj.c_node)
 
     # subsequent ifs
-    next_if = ifexpr.else_block
+    next_if = ifexpr.else_node
     next_c_if = c_if
     while isinstance(next_if, xy.IfExpr):
         gen_if = c.If()
@@ -781,7 +781,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
 
         next_c_if.else_body = gen_if
         next_c_if = gen_if
-        next_if = next_if.else_block
+        next_if = next_if.else_node
 
     # finaly the else if any
     if isinstance(next_if, list):

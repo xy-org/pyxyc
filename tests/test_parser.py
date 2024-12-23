@@ -999,7 +999,7 @@ def test_arrays(code, exp_ast):
                 ast.IfExpr(
                     cond=ast.Id("cond"),
                     block=[ast.Id("expr1")],
-                    else_block=[ast.Id("expr2")],
+                    else_node=[ast.Id("expr2")],
                 )
             ]),
         ]
@@ -1020,10 +1020,10 @@ def test_arrays(code, exp_ast):
                 ast.IfExpr(
                     cond=ast.Id("cond1"),
                     block=[ast.Id("expr1")],
-                    else_block=ast.IfExpr(
+                    else_node=ast.IfExpr(
                         cond=ast.Id("cond2"),
                         block=[ast.Id("expr2")],
-                        else_block=[ast.Id("expr3")],
+                        else_node=[ast.Id("expr3")],
                     ),
                 )
             ]),
@@ -1039,10 +1039,10 @@ def test_arrays(code, exp_ast):
                 ast.VarDecl(name="a", value=ast.IfExpr(
                     cond=ast.Id("cond1"),
                     block=ast.Const(5),
-                    else_block=ast.IfExpr(
+                    else_node=ast.IfExpr(
                         cond=ast.Id("cond2"),
                         block=ast.Const(6),
-                        else_block=ast.Const(7),
+                        else_node=ast.Const(7),
                     ),
                 ))
             ]),
@@ -1066,7 +1066,7 @@ def test_arrays(code, exp_ast):
                         ast.FuncCall(name=ast.Id("func1")),
                         ast.FuncCall(name=ast.Id("func2")),
                     ],
-                    else_block=[
+                    else_node=[
                         ast.FuncCall(name=ast.Id("func3")),
                     ],
                 ))
@@ -1097,7 +1097,7 @@ def test_arrays(code, exp_ast):
                         ),
                         ast.FuncCall(name=ast.Id("func2")),
                     ],
-                    else_block=[
+                    else_node=[
                         ast.BinExpr(
                             op="=",
                             arg1=ast.Id("res"),
