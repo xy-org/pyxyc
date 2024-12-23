@@ -265,12 +265,6 @@ class FuncSpace:
     def find(self, node, args_infered_types, ctx, partial_matches=False):
         candidate_fobjs = self.findAll(node, args_infered_types, ctx, partial_matches)
         if len(candidate_fobjs) > 1:
-            space = space.parent_space
-            while space is not None:
-                candidate_fobjs.extend(
-                    space.find_candidates(node, args_infered_types, ctx)
-                )
-                space = space.parent_space
             self.report_multiple_matches(candidate_fobjs, node, args_infered_types, ctx)
         elif len(candidate_fobjs) == 1:
                 return candidate_fobjs[0]

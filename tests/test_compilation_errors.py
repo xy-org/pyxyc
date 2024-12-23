@@ -188,6 +188,32 @@ src.xy:4:22: error: Cannot find tag
 |             s := Str~Missing{};
                        ^^^^^^^
 """),
+    ("""
+        def fun(a: int, b:long = 0) a
+        def fun(a: int, b:short = 0) b
+        def fun(a: double) a
+     
+        def main() {
+            fun(0);
+        }
+     """, """\
+src.xy:7:13: error: Multiple function matches for 'fun(int)'
+|             fun(0);
+              ^^^
+note: Candidates are:
+    fun(int, [long]) -> int
+    fun(int, [short]) -> short
+"""),
+("""
+        struct Str {}
+        def func() {
+            s := Str~Missing{};
+        }
+     """, """\
+src.xy:4:22: error: Cannot find tag
+|             s := Str~Missing{};
+                       ^^^^^^^
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
