@@ -1,4 +1,5 @@
 import subprocess
+import re
 import pytest
 import xyc.xyc as xyc
 
@@ -11,6 +12,14 @@ import xyc.xyc as xyc
     ("operatorSlices", "In compute\nIn len\nSlice 42 52\nSlice 52 62\n", False),
     ("dynamicArray", "len=100\nres=-9900\n", True),
     ("printCliArgs", "--arg1\n2\n3.14\n", False),
+    ("printTypeInfo",
+r"""struct MyStruct {
+name: Str; # size=\d+ offset=\d+
+num: Size; # size=\d offset=\d+
+integer: int; # size=\d offset=\d+
+arr: float\[10\]; # size=\d+ offset=\d+
+next: Ptr; # size=\d offset=\d+
+}\n""", False),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     test_base = resource_dir / "end_to_end" / testname
@@ -40,7 +49,8 @@ def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     proc = subprocess.run(pr_to_run, capture_output=True, text=True)
 
     assert proc.returncode == 0
-    assert proc.stdout == output
+    if re.match("^" + output + "$", proc.stdout) is None:
+        assert  proc.stdout == output  # provide nice output
 
     if valgrind:
         vg_log = open(vg_log_file).read()

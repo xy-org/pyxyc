@@ -114,6 +114,7 @@ class VarObj(CompiledObj):
     is_pseudo: bool = False
     default_value_obj: CompiledObj = None
     needs_dtor: bool = False
+    fieldof_obj: TypeObj | None = None # set to the type this varobj is a field of
 
     @property
     def infered_type(self):
@@ -944,7 +945,8 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             c_node=cfield,
             type_desc=field_type_obj,
             is_pseudo=field.is_pseudo,
-            default_value_obj=default_value_obj
+            default_value_obj=default_value_obj,
+            fieldof_obj=type_obj,
         )
 
         if not field.is_pseudo:
@@ -1705,6 +1707,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
                     xy_node=iter_var_name,
                     c_node=f_obj.c_node,
                     infered_type=f.type_desc,
+                    compiled_obj=f_obj.compiled_obj,
                 )
                 elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
                 c_node.elems.append(elem_obj.c_node)
@@ -1949,6 +1952,7 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
             container=obj,
             ref=field_obj.default_value_obj,
             xy_node=obj.xy_node,
+            compiled_obj=field_obj,
         )
         return ref_setup(ref_obj, cast, cfunc, ctx)
         return ref_get(ref_obj, cast, cfunc, ctx)
@@ -1980,7 +1984,8 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
     return ExprObj(
         c_node=res,
         xy_node=obj.xy_node,
-        infered_type=field_obj.type_desc
+        infered_type=field_obj.type_desc,
+        compiled_obj=field_obj,
     )
 
 def is_ptr_type(type_obj, ctx):
@@ -2579,6 +2584,21 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=c.FuncCall("sizeof", [arg_exprs[0].c_node]),
             infered_type=ctx.size_obj
         )
+    elif is_builtin_func(func_obj, "offsetof"):
+        field_obj = arg_exprs[0].compiled_obj
+        is_field = not (isinstance(field_obj, VarObj) and field_obj.fieldof_obj is None)
+        if not is_field:
+            raise CompilationError(
+                "Argument of offsetof is not a field in a struct", expr,
+                notes=[("Not a field in a struct", arg_exprs[0].xy_node)]
+            )
+        return ExprObj(
+            c_node=c.FuncCall("offsetof", [
+                c.Id(field_obj.fieldof_obj.c_node.name),
+                c.Id(field_obj.c_node.name),
+            ]),
+            infered_type=ctx.size_obj,
+        )
     elif is_builtin_func(func_obj, "addrof"):
         return compile_builtin_addrof(expr, arg_exprs[0], cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "fieldsof"):
@@ -2587,6 +2607,21 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=c.Id("REPORT_IF_YOU_SEE_ME"),
             infered_type=fieldarray_type_obj,
             compiled_obj=arg_exprs[0],
+        )
+    elif is_builtin_func(func_obj, "nameof"):
+        if isinstance(arg_exprs[0].compiled_obj, ArrTypeObj):
+            name = arg_exprs[0].compiled_obj.base_type_obj.xy_node.name
+            name += "[" + ",".join(str(d) for d in arg_exprs[0].compiled_obj.dims) + "]"
+        elif isinstance(arg_exprs[0].compiled_obj, (TypeObj, VarObj)):
+            name = arg_exprs[0].compiled_obj.xy_node.name
+        else:
+            name = ""
+        return compile_expr(
+            xy.StrLiteral(
+                parts=[xy.Const(name)], full_str=name,
+                src=expr.src, coords=expr.coords,
+            ),
+            cast, cfunc, ctx
         )
     elif is_builtin_func(func_obj, "max"):
         name_to_lim = {

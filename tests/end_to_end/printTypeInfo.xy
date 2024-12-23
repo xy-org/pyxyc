@@ -1,0 +1,52 @@
+import xy.ctti
+import libxy.strings
+import libxy.stdio
+
+struct MyStruct {
+    #;; My name
+    name: Str;
+
+    #;; Some number
+    num: Size;
+
+    integer: int = -1;
+
+    #;; Array of somethings
+    arr: float[10];
+
+    next: Ptr~MyStruct;
+}
+
+struct FieldDesc{
+    name: Str;
+    typename: Str;
+    size: Size;
+    offset: Size;
+}
+
+def printTypeInfo(
+    s: pseudo ?,
+    typeName := nameof(%s),
+    fields: pseudo FieldDesc[] = [
+        for (f in s'fieldsof) FieldDesc{
+            name=f'nameof,
+            typename=nameof(%f),
+            size=f'sizeof,
+            offset=f'offsetof,
+        }
+    ],
+    fieldsPtr : Ptr~FieldDesc = fields'addrof,
+    fieldsLen : Size = fields'len
+) {
+    print(f"struct {typeName} \{\n");
+    for (i in :fieldsLen) {
+        f := fieldsPtr[i];
+        print(f"    {f.name}: {f.typename}; # size={f.size} offset={f.offset}\n");
+    }
+    print("}\n");
+}
+
+def main~EntryPoint() {
+    s := MyStruct{};
+    printTypeInfo(s);
+}

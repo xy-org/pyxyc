@@ -2,11 +2,23 @@ def sizeof(arg: ?) -> Size {
     # Implemented by the compiler
 }
 
+def offsetof(arg: pseudo ?) -> Size {
+    # Implemented by the compiler
+}
+
 struct FieldArray {
     # Implemented by the compiler
 }
 
 def fieldsof(arg: pseudo ?) -> FieldArray {
+    # Implemented by the compiler
+}
+
+struct StrLit {
+    # Implemented by the compiler
+}
+
+def nameof(arg: pseudo ?) -> StrLit {
     # Implemented by the compiler
 }
 
