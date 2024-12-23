@@ -734,7 +734,9 @@ def parse_struct_literal(itoken, struct_expr):
 
 def parse_str_literal(prefix, prefix_start, itoken):
     res = StrLiteral(prefix=prefix, src=itoken.src)
-    part_start = itoken.peak_coords()[0]
+    itoken.i -= 1 # move back in order to get the " coords
+    part_start = itoken.peak_coords()[1]
+    itoken.i += 1
     part_end = part_start
     while itoken.peak() != '"':
         part_end = itoken.peak_coords()[0]

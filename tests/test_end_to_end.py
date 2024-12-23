@@ -13,16 +13,17 @@ import xyc.xyc as xyc
     ("dynamicArray", "len=100\nres=-9900\n", True),
     ("printCliArgs", "--arg1\n2\n3.14\n", False),
     ("printTypeInfo",
-r"""struct MyStruct {
-;; My name
-name: Str; # size=\d+ offset=\d+
-;; Some number
-num: Size; # size=\d offset=\d+
-integer: int; # size=4 offset=\d+
-;; Array of
+r""";; MyStruct comment
+struct MyStruct {
+    ;; My name
+    name: Str; # size=\d+ offset=\d+
+    ;; Some number
+    num: Size; # size=\d offset=\d+
+    integer: int; # size=4 offset=\d+
+    ;; Array of
 floats
-arr: float\[10\]; # size=40 offset=\d+
-next: Ptr; # size=\d offset=\d+
+    arr: float\[10\]; # size=40 offset=\d+
+    next: Ptr; # size=\d offset=\d+
 }\n""", False),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):

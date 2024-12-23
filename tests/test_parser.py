@@ -1170,7 +1170,9 @@ def test_invalid_expressions(code, err_msg):
         ]
     ],
     [
-        """struct Point2d{
+        """
+        ;; Point2d comment
+        struct Point2d{
             ;; x coordinate
             x: float;
             ;; y coordinate
@@ -1178,10 +1180,14 @@ def test_invalid_expressions(code, err_msg):
         }
         """,
         [
-            ast.StructDef(name="Point2d", fields=[
-                ast.VarDecl("x", type=ast.Id("float"), varying=False, comment=';; x coordinate',),
-                ast.VarDecl("y", type=ast.Id("float"), varying=False, comment=';; y coordinate',),
-            ]),
+            ast.StructDef(
+                name="Point2d",
+                fields=[
+                    ast.VarDecl("x", type=ast.Id("float"), varying=False, comment=';; x coordinate',),
+                    ast.VarDecl("y", type=ast.Id("float"), varying=False, comment=';; y coordinate',),
+                ],
+                comment=";; Point2d comment"
+            ),
         ]
     ],
 ])
@@ -1570,6 +1576,38 @@ def test_ambiguous_tags(code, err_msg):
                         ),
                     ],
                     full_str='\\" \\\\ \\a \\b \\f \\n \\r \\t \\v \\x \\0 \\\\\\\\',
+                )),
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            s1 := "    ";
+            s2 := "abc    ";
+            s3 := "   abc   ";
+            s4 := "    abc";
+            s5 := f"   {abc}";
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("s1", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("    ")], full_str="    ",
+                )),
+                ast.VarDecl("s2", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("abc    ")], full_str="abc    ",
+                )),
+                ast.VarDecl("s3", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("   abc   ")], full_str="   abc   ",
+                )),
+                ast.VarDecl("s4", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("    abc")], full_str="    abc",
+                )),
+                ast.VarDecl("s5", type=None, value=ast.StrLiteral(
+                    prefix="f",
+                    parts=[
+                        ast.Const("   "), ast.Args(args=[ast.Id("abc")]),
+                    ], full_str="   {abc}",
                 )),
             ]),
         ]

@@ -134,6 +134,11 @@ from xyc.tokenizer import split_tokens
         None
     ),
     (
+        's := "    ";',
+        ['s', ':', '=', '"', '"', ';'],
+        [0, 2, 3, 5, 10, 11],
+    ),
+    (
         'b := !a',
         ['b', ':', '=', '!', 'a'],
         None
