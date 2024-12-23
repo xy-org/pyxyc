@@ -1,0 +1,34 @@
+struct Point {
+    x: float;
+    y: float;
+    z: float;
+    w: float = 1.0;
+}
+
+def index(p: Point, idx: byte) -> ref(p) idx'typeof = idx
+
+def get(p: Point, idx: byte) {
+    return [p.x, p.y, p.z, p.w][idx];
+}
+
+def set(p: inout Point, idx: ubyte, v: float)
+>> idx <= 3
+{
+    if (idx == 0) {
+        p.x = v;
+    } elif (idx == 1) {
+        p.y = v;
+    } elif (idx == 2) {
+        p.z = v;
+    } elif (idx == 3) {
+        p.z = v;
+    }
+}
+
+def test(i: ubyte) {
+    p1: var = Point{w=i'to(float)};
+    p2: Point;
+    p1.x = p1[ubyte];
+    p2.z = p1[4-ubyte];
+    return p1.x + p2.w + p2.z + p1.w;
+}

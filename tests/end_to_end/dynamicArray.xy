@@ -37,8 +37,10 @@ def push(
 }
 
 
-# def select(arr: Array, i: Size, elemSize := arr'tagsof.elemType'sizeof) -> outin arr'tagsof.elemType {
-#     return arr.mem'at(i * elemSize)'as(outin);
+# def select(arr: Array, i: Size) -> ref(arr) Size = i
+
+# def get(arr: Array, i:Size, elemSize := arr'tagsof.elemType'sizeof) -> Ptr~[arr'tagsof.elemType] {
+#     return arr.mem.addr + (i * elemSize);
 # }
 
 struct ArrayIter {

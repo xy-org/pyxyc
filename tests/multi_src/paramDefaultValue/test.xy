@@ -1,0 +1,11 @@
+import paramDefaultValue.module1
+import paramDefaultValue.module2
+
+def test() {
+    a := 5;
+    func(a);
+    func(a, 10);
+
+    myfunc(a);
+    myfunc(a, 10);
+}

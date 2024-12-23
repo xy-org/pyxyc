@@ -32,6 +32,9 @@ from xyc.compiler import CompilationError
     "stringInterpolation",
     "namedArguments",
     "positionalTags",
+    # TODO "guards",
+    # TODO "refs",
+    # TODO "properties",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(
@@ -105,6 +108,7 @@ def test_common_errors(code, err_msg, tmp_path):
 @pytest.mark.parametrize("module", [
     "funcAndStruct",
     "submodules",
+    "paramDefaultValue",
 ])
 def test_module_compilation(resource_dir, module, tmp_path):
     base_dir = resource_dir / "multi_src"
