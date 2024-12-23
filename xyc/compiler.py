@@ -127,7 +127,7 @@ class ImportObj(CompiledObj):
 
 @dataclass
 class ExprObj(CompiledObj):
-    infered_type: CompiledObj | str = "Cannot deduce type"
+    infered_type: CompiledObj | str | None = None
     compiled_obj: CompiledObj | None = None
 
 @dataclass
@@ -1437,6 +1437,8 @@ def type_needs_dtor(type_obj):
 def compile_vardecl(node, cast, cfunc, ctx):
     cvar = c.VarDecl(name=node.name, qtype=c.QualType(is_const=not node.varying))
     value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
+    if isinstance(value_obj, RefObj):
+        value_obj = ref_get(value_obj, cast, None, ctx)
     type_desc = find_type(node.type, ctx) if node.type is not None else None
     if type_desc is None:
         if value_obj is None:
@@ -1515,6 +1517,9 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
             if not (isinstance(expr.arg2, xy.StructLiteral) and expr.arg2.name is None):
                 raise CompilationError("The right hand side of the '.=' operator must be an anonymous struct literal")
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, lhs=True)
+            if isinstance(arg1_obj, RefObj):
+                # TODO that check chould be here
+                arg1_obj = ref_get(arg1_obj, cast, cfunc, ctx)
             _ = do_compile_struct_literal(expr.arg2, arg1_obj.infered_type, arg1_obj, cast, cfunc, ctx)
             return ExprObj(
                 c_node=None,
@@ -1676,7 +1681,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
         return compile_fcall(slice_ctor_fcall, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
-    
+
 def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     obj = ref_obj.container
     struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
@@ -1728,6 +1733,9 @@ def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     )
 
 def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
+    if isinstance(val_obj, RefObj):
+        # TODO that check should be here
+        val_obj = ref_get(val_obj, cast, cfunc, ctx)
     if not ref_obj.container.infered_type.is_flags:
         if is_ptr_type(ref_obj.ref.infered_type, ctx):
             return ExprObj(
@@ -1768,11 +1776,10 @@ def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
         )
     
 def ref_setup(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
-    if ref_obj.infered_type is None or ref_obj.c_node is None:
+    if ref_obj.infered_type is None:
         ref_obj.container = maybe_move_to_temp(ref_obj.container, cast, cfunc, ctx)
-        deref_obj = ref_get(ref_obj, cast, cfunc, ctx)
+        deref_obj = ref_get(ref_obj, c.Ast(), c.Block(), ctx)
         ref_obj.infered_type = deref_obj.infered_type
-        ref_obj.c_node = deref_obj.c_node
     return ref_obj
 
 def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ctx: CompilerContext):
@@ -1829,6 +1836,9 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
         return ref_set(ref_obj, val, cast, cfunc, ctx)
     
 def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerContext, lhs=False):
+    if isinstance(obj, RefObj):
+        obj.c_node = ref_get(obj, cast, cfunc, ctx).c_node
+
     struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
     if field_obj.xy_node.is_pseudo:
         ref_obj = RefObj(
@@ -2230,6 +2240,10 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     expr_to_move_idx = None
     for i in range(len(expr.args)):
         obj = compile_expr(expr.args[i], cast, cfunc, ctx)
+        # TODO should that check be here
+        if isinstance(obj, RefObj):
+            obj.c_node = ref_get(obj, cast, cfunc, ctx).c_node
+
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
             is_builitin_math = (
                 expr_to_move_idx is not None and
@@ -2441,6 +2455,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     res = c.FuncCall(name=func_obj.c_name)
 
     func_ctx.push_ns()
+
+    for arg in arg_exprs.args:
+        assert arg.c_node is not None
+    for arg in arg_exprs.kwargs.values():
+        assert arg.c_node is not None
 
     # add arguments
     if func_obj.xy_node is None:
@@ -3307,7 +3326,8 @@ def compile_binop(binexpr, cast, cfunc, ctx):
             binexpr = xy.BinExpr(
                 arg1=xy.Id(tmp_obj.c_node.name),
                 arg2=binexpr.arg2,
-                op=binexpr.op
+                op=binexpr.op,
+                src=binexpr.src, coords=binexpr.coords
             )
 
     fcall = rewrite_op(binexpr, ctx)
@@ -3334,6 +3354,8 @@ def rewrite_op(binexpr, ctx):
             args=[binexpr.arg1, binexpr.arg2],
             src=binexpr.src, coords=binexpr.coords)
     elif binexpr.op in {"==", "!=", ">", "<", "<=", ">="}:
+        if binexpr.src is None:
+            import pdb; pdb.set_trace()
         cmp_call = xy.FuncCall(
             xy.Id("cmp", src=binexpr.src, coords=binexpr.coords),
             args=[binexpr.arg1, binexpr.arg2],

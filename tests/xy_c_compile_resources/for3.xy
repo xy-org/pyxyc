@@ -28,25 +28,25 @@ def set(arr: inout Array, idx: Size, elem: int)
 
 def sum(arr: Array) -> float {
     return for(elem in arr) -> (res: float) {
-        # res += elem;
+        res += elem;
     };
 }
 
-# def mix(arr1: Array, arr2: Array) -> float
-# >> arr1'len == arr2'len
-# {
-#     return for(i in :, e1 in arr1, e2 in arr2) -> (res: float) {
-#         res += i * e1 * e2;
-#     };
-# }
+def mix(arr1: Array, arr2: Array) -> float
+>> arr1'len == arr2'len
+{
+    return for(i in :, e1 in arr1, e2 in arr2) -> (res: float) {
+        res += i * e1 * e2;
+    };
+}
 
-# def double(arr1: inout Array) {
-#     for(elem in arr1) {
-#         if (elem > 0) {
-#             elem += elem;
-#         }
-#     }
-# }
+def double(arr1: inout Array) {
+    for(elem in arr1) {
+        if (elem > 0) {
+        #     elem += elem;
+        }
+    }
+}
 # 
 # struct Slice {
 #     n: Size;
