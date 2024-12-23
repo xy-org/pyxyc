@@ -193,7 +193,8 @@ class CompilerContext:
     def eval_to_var(self, name: xy.Node):
         var_obj = self.eval(name)
         if var_obj is None:
-            raise CompilationError("Cannot find variable", name)
+            var_name = f" '{name.name}'" if isinstance(name, xy.Id) else ""
+            raise CompilationError(f"Cannot find variable{var_name}", name)
         if not isinstance(var_obj, VarObj):
             raise CompilationError(f"Not a function.", name)
         return var_obj
@@ -521,7 +522,7 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
             infered_type=ctx.id_table[expr.type]
         )
     elif isinstance(expr, xy.BinExpr):
-        if expr.op != '.':
+        if expr.op not in {'.', '='}:
             fcall = rewrite_op(expr, ctx)
             return compile_expr(fcall, cast, cfunc, ctx)
         else:
