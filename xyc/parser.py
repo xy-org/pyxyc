@@ -265,7 +265,7 @@ operator_precedence = {
     "==": 5, "!=": 5,
     "&": 4,
     "|": 3,
-    "=": 2, ":": 2,
+    "=": 2, ":": 2, '+=': 2, '-=': 2
 }
 MIN_PRECEDENCE=2
 UNARY_PRECEDENCE=11
@@ -277,8 +277,12 @@ def parse_expression(
 ):
     if itoken.check("if"):
         return parse_if(itoken)
-    elif itoken.peak() == "else":
-        raise ParsingError("Else without a corresponding if", itoken)
+    elif itoken.peak() in {"else", "elif"}:
+        raise ParsingError("Missing corresponding if", itoken)
+    elif itoken.peak() == "while":
+        return parse_while(itoken)
+    elif itoken.peak() == "break":
+        return parse_break(itoken)
 
     if precedence >= MAX_PRECEDENCE and itoken.check("("):
         # bracketed expression
@@ -443,12 +447,12 @@ def parse_expression(
     return arg1
 
 def parse_if(itoken):
-    itoken.expect("(")
     if_expr = IfExpr()
+    itoken.expect("(")
     if_expr.cond = parse_expression(itoken)
     itoken.expect(")", msg="Missing closing bracket")
     if itoken.check("->"):
-        if_expr.type = parse_type(itoken)
+        if_expr.type = parse_toplevel_type(itoken)
     itoken.check("=")
     if itoken.peak() == "{":
         if_expr.if_block = parse_body(itoken)
@@ -462,6 +466,42 @@ def parse_if(itoken):
     elif itoken.check("elif"):
         if_expr.else_block = parse_if(itoken)
     return if_expr
+
+
+def parse_while(itoken):
+    while_coords = itoken.peak_coords()
+    itoken.consume()  # "while" token
+    while_expr = WhileExpr(src=itoken.src, coords=while_coords)
+    if itoken.peak() != "(":
+        name_coords = itoken.peak_coords()
+        while_expr.name = Id(
+            itoken.consume(), src=itoken.src, coords=name_coords
+        )
+    itoken.expect("(")
+    while_expr.cond = parse_expression(itoken)
+    itoken.expect(")", msg="Missing closing bracket")
+    if itoken.check("->"):
+        while_expr.type = parse_toplevel_type(itoken)
+    itoken.check("=")
+    if itoken.peak() == "{":
+        while_expr.block = parse_body(itoken)
+    else:
+        while_expr.block = parse_expression(itoken)
+    if itoken.check("else"):
+        if itoken.peak() == "{":
+            while_expr.else_block = parse_body(itoken)
+        else:
+            while_expr.else_block = parse_expression(itoken)
+    return while_expr
+
+
+def parse_break(itoken):
+    break_coords = itoken.peak_coords()
+    itoken.consume() # "break" token
+    res = Break(src=itoken.src, coords=break_coords)
+    if itoken.peak() not in {";", ")", "]", "}"}:
+        res.loop_name = parse_expression(itoken)
+    return res
 
 
 def expr_to_type(expr):
@@ -543,12 +583,20 @@ def parse_body(itoken):
             itoken.expect(";")
         else:
             node = parse_expression(itoken)
-            if not isinstance(node, (IfExpr, ForExpr, WhileExpr)):
-                itoken.expect(";", msg="Missing ';' at end of expression")
+            if not itoken.check(";") and should_have_semicolon_after_expr(node):
+                raise ParsingError("Missing ';' at end of expression", itoken)
+                
         body.append(node)
         itoken.skip_empty_lines()
     itoken.expect("}")
     return body
+
+def should_have_semicolon_after_expr(node):
+    if not isinstance(node, (IfExpr, ForExpr, WhileExpr)):
+        return True
+    if isinstance(node, IfExpr):
+        return not isinstance(node.if_block, list)
+    return not isinstance(node.block, list)
 
 def parse_tags(itoken):
     res = TagList()

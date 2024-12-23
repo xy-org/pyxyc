@@ -137,7 +137,15 @@ class ForExpr(Node):
 
 @dataclass
 class WhileExpr(Node):
-    pass
+    cond: Node | None = None
+    type: Node | Node = None
+    name: Node | None = None
+    block: Node | list | None = None
+    else_block: Node | list | None = None
+
+@dataclass
+class Break(Node):
+    loop_name: Node | None = None
 
 @dataclass
 class AttachTags(Node):

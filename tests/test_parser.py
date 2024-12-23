@@ -495,11 +495,11 @@ def test_expressions(code, exp_ast):
     ("""def func() -> void {
         a----b;
     }""",
-     "Unexpected token"),
+     "Missing ';' at end of expression"),
     ("""def func() -> void {
         a-- b;
     }""",
-     "Unexpected token"),
+     "Missing ';' at end of expression"),
     ("""def func() -> void {
         (b + (a+1)
     }""",
@@ -1000,5 +1000,160 @@ def test_arrays(code, exp_ast):
     ],
 ])
 def test_if(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() -> void {
+            while (a < b) {
+                a += b;
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.WhileExpr(
+                    cond=ast.BinExpr(op="<", arg1=ast.Id("a"), arg2=ast.Id("b")),
+                    block=[
+                        ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
+                    ]
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            while (a < b) {
+                a += b;
+            } else {
+                b += a;
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.WhileExpr(
+                    cond=ast.BinExpr(op="<", arg1=ast.Id("a"), arg2=ast.Id("b")),
+                    block=[
+                        ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
+                    ],
+                    else_block=[
+                         ast.BinExpr(op='+=', arg1=ast.Id("b"), arg2=ast.Id("a")),
+                    ]
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            return while res(a < b) -> int {
+                res += a;
+                a += b;
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.Return(
+                    ast.WhileExpr(
+                        name=ast.Id("res"),
+                        type=ast.Id("int"),
+                        cond=ast.BinExpr(op="<", arg1=ast.Id("a"), arg2=ast.Id("b")),
+                        block=[
+                            ast.BinExpr(op='+=', arg1=ast.Id("res"), arg2=ast.Id("a")),
+                            ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
+                        ]
+                    )
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            return while sum(i < arr'len) -> int sum+=arr[i];
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.Return(
+                    ast.WhileExpr(
+                        name=ast.Id("sum"),
+                        type=ast.Id("int"),
+                        cond=ast.BinExpr(
+                            op="<", arg1=ast.Id("i"),
+                            arg2=ast.FuncCall(ast.Id("len"), [ast.Id("arr")])),
+                        block=ast.BinExpr(
+                            op='+=',
+                            arg1=ast.Id("sum"),
+                            arg2=ast.Select(ast.Id("arr"), ast.Args([ast.Id("i")]))),
+                    )
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            while (a < b) {
+                a += b;
+                if (a > 10) break;
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.WhileExpr(
+                    cond=ast.BinExpr(
+                        op="<", arg1=ast.Id("a"),
+                        arg2=ast.Id("b")
+                    ),
+                    block=[
+                        ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
+                        ast.IfExpr(
+                            cond=ast.BinExpr(op=">", arg1=ast.Id("a"), arg2=ast.Const(10)),
+                            if_block=ast.Break()
+                        ),
+                    ]
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            while outer(a < b) {
+                while inner(b < c) {
+                    if (c < d) {
+                        break outer;
+                    }
+                }
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.WhileExpr(
+                    name=ast.Id("outer"),
+                    cond=ast.BinExpr(op="<", arg1=ast.Id("a"), arg2=ast.Id("b")),
+                    block=[
+                        ast.WhileExpr(
+                            name=ast.Id("inner"),
+                            cond=ast.BinExpr(op="<", arg1=ast.Id("b"), arg2=ast.Id("c")),
+                            block=[
+                                ast.IfExpr(
+                                    cond=ast.BinExpr(op="<", arg1=ast.Id("c"), arg2=ast.Id("d")),
+                                    if_block=[
+                                        ast.Break(ast.Id("outer"))
+                                    ]
+                                )
+                            ]
+                        )
+                    ]
+                )
+            ]),
+        ]
+    ],
+])
+def test_while(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
