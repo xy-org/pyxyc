@@ -445,6 +445,34 @@ def test_parse_var_decl(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def main() -> void {
+            a : var = 1;
+            b := a++;
+            a++;
+            c := b--;
+            d := a++ + b;
+            f := d---b;
+        }""",
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.VarDecl("a", value=ast.Const(1), varying=True),
+                ast.VarDecl("b", value=ast.UnaryExpr(arg=ast.Id("a"), op="++")),
+                ast.UnaryExpr(op="++", arg=ast.Id("a")),
+                ast.VarDecl("c", value=ast.UnaryExpr(op="--", arg=ast.Id("b"))),
+                ast.VarDecl("d", value=ast.BinExpr(
+                    op="+",
+                    arg1=ast.UnaryExpr(op="++", arg=ast.Id("a")),
+                    arg2=ast.Id("b")
+                )),
+                ast.VarDecl("f", value=ast.BinExpr(
+                    op="-",
+                    arg1=ast.UnaryExpr(op="--", arg=ast.Id("d")),
+                    arg2=ast.Id("b")
+                )),
+            ])
+        ]
+    ]
 ])
 def test_expressions(code, exp_ast):
     act_ast = parse_code(code)

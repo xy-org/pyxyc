@@ -412,6 +412,8 @@ def parse_expression(
                     "Please be explicit and put the tags in square brackets.",
                     itoken
                 )
+        elif op in {"++", "--"}:
+            arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
         else:
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             binop = BinExpr(
