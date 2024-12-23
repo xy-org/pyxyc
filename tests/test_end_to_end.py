@@ -7,6 +7,7 @@ import xyc.xyc as xyc
     ("helloworldSelfContained2", "Hello World\n"),
     ("helloworld", "Hello World\n"),
     ("globalConstants", "Speed of Light = 299792458 m/s\nPi = 3.141500\n"),
+    ("argEval", "In Func 1\nIn Func 2\nIn Func 1\nIn Func 2\nIn Take2\nIn Func 1\nIn Func 2\nIn Ignore Second\n")
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir):
     test_base = resource_dir / "end_to_end" / testname

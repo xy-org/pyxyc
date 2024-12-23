@@ -1,0 +1,29 @@
+import libxy.strings
+import libxy.stdio
+
+def func1() -> int {
+    print("In Func 1\n");
+    return 1;
+}
+
+def func2() -> int {
+    print("In Func 2\n");
+    return 2;
+}
+
+def take2(a: int, b:int) -> int {
+    print("In Take2\n");
+    return a + b;
+}
+
+def ignoreSecond(a: int, b: pseudo int) {
+    print("In Ignore Second\n");
+}
+
+def main~EntryPoint() -> int {
+    func1();
+    func2();
+    take2(func1(), func2());
+    ignoreSecond(func1(), func2());
+    return 0;
+}

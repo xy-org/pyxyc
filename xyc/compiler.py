@@ -590,6 +590,8 @@ def compile_func_prototype(node, cast, ctx):
             param_obj.c_node = cparam
 
         param_objs.append(param_obj)
+    if len(node.params) > 0 and not move_args_to_temps:
+        move_args_to_temps = node.params[-1].is_pseudo
 
     expand_name = len(func_space) > 0
     if len(func_space) == 1:
@@ -1196,7 +1198,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
 
     func_obj = fspace.find(expr, arg_infered_types, ctx)
 
-    if func_obj.move_args_to_temps and expr_to_move_idx is not None:
+    if expr_to_move_idx is not None and func_obj.move_args_to_temps:
         arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
             arg_exprs[expr_to_move_idx], cast, cfunc, ctx
         )
