@@ -113,6 +113,7 @@ class FuncObj(CompiledObj):
     params_compiled: bool = False
     prototype_compiled: bool = False
     has_calltime_tags: bool = False
+    decl_visible: bool = False
 
     @property
     def c_name(self):
@@ -1127,7 +1128,7 @@ def autogenerate_ops(type_obj: TypeObj, ast, cast, ctx):
     )
     ctx.ensure_func_space(xy.Id("and")).append(gen_or_obj)
 
-def     compile_func_prototype(fobj: FuncObj, cast, ctx):
+def compile_func_prototype(fobj: FuncObj, cast, ctx):
     if fobj.params_compiled or fobj.prototype_compiled:
         return fobj
     if id(fobj) in ctx.func_compilation_stack:
@@ -1223,7 +1224,7 @@ def     compile_func_prototype(fobj: FuncObj, cast, ctx):
                     if etype_compiled is not None
                     else rtype_compiled.c_name)
 
-    cast.func_decls.append(cfunc)
+    # cast.func_decls.append(cfunc)
 
     fobj.c_node = cfunc
     fobj.rtype_obj = rtype_compiled
@@ -1381,7 +1382,7 @@ def compile_funcs(ctx, ast, cast):
 
 def compile_func(node, ctx, ast, cast):
     fspace = ctx.eval_to_fspace(node.name)
-    fdesc = fspace.find(node, [], ctx)
+    fdesc: FuncObj = fspace.find(node, [], ctx)
     cfunc = fdesc.c_node
 
     param_objs = []
@@ -1401,6 +1402,7 @@ def compile_func(node, ctx, ast, cast):
     ctx.current_fobj = None
 
     cast.funcs.append(cfunc)
+    fdesc.decl_visible = True
     ctx.pop_ns()
 
 def compile_body(body, cast, cfunc, ctx, is_func_body=False):
@@ -2785,6 +2787,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             infered_type=func_obj.rtype_obj,
         )
 
+    ensure_func_decl(func_obj, cast, cfunc, ctx)
+
     func_ctx = ctx
     if func_obj.module_header is not None:
         func_ctx = func_obj.module_header.ctx
@@ -2988,6 +2992,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     func_ctx.pop_ns()
 
     return res_obj
+
+def ensure_func_decl(func_obj: FuncObj, cast, cfunc, ctx):
+    if func_obj.xy_node is None:
+        return # external c functions have declarations someplace else
+    if func_obj.decl_visible:
+        return
+    func_obj.decl_visible = True
+    cast.func_decls.append(func_obj.c_node)
+
 
 def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
     assert len(arg_exprs) == 2

@@ -4,6 +4,9 @@
 
 typedef struct funcs_A funcs_A;
 
+funcs_A funcs_rndA(void);
+funcs_A funcs_defaultArg1(funcs_A a, funcs_A b);
+
 struct funcs_A {
     int32_t m_num;
 };

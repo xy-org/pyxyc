@@ -3,12 +3,15 @@ struct Callback~[TagCtor{label="cbLabel"}] {}
 def test() -> int {
     cb1 := def abs(:int)->int;
     #cb2 := def~Callback(:int)->int;
-    #cb3 : (:int, :long)->int;
-    #cb3 = def (:int)->int;
-    #return cb(5);
+    #cb3 : (:int, :double)->int;
+    #cb3 = def (:int, :doube)->int;
+    #return cb1(cb3(-5, 5.6)'cb2);
 }
 
 def abs~Callback(a: int) -> int {
     return if (a < 0) -a else a;
 }
 
+def funnyFun(a:int, b: double) -> int {
+    return if (b < 2*a) a else -a;
+}

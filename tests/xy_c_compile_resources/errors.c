@@ -6,6 +6,8 @@
 typedef struct errors_Error errors_Error;
 typedef struct errors_Error2 errors_Error2;
 
+void errors_print(int32_t a);
+
 struct errors_Error {
     int32_t m_errorCode;
 };

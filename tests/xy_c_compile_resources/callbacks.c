@@ -22,3 +22,13 @@ int32_t callbacks_abs(int32_t a) {
     }
     return tmp1;
 }
+
+int32_t callbacks_funnyFun(int32_t a, double b) {
+    int32_t tmp0 = 0;
+    if (b < 2 * a) {
+        tmp0 = a;
+    } else {
+        tmp0 = -a;
+    }
+    return tmp0;
+}

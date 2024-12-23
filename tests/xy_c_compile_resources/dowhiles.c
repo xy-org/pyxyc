@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+int32_t dowhiles_step(void);
+
 int32_t dowhiles_simpleDoWhile(int32_t x, int32_t y) {
     int32_t i = 0;
     do {

@@ -5,6 +5,8 @@
 typedef struct opOverloading_MyInt opOverloading_MyInt;
 typedef struct opOverloading_Pair opOverloading_Pair;
 
+opOverloading_MyInt opOverloading_sub(opOverloading_MyInt a, opOverloading_MyInt b);
+
 struct opOverloading_MyInt {
     int32_t m_num;
 };

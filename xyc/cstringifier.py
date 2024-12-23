@@ -37,6 +37,12 @@ def stringify(ast: Ast):
     if len(ast.type_decls) > 0:
         frags.append("\n")
 
+    for func in ast.func_decls:
+        stringify_func_decl(func, frags)
+        frags.append(";\n")
+    if len(ast.func_decls) > 0:
+        frags.append("\n")
+
     for node in ast.consts:
         if isinstance(node, Define):
             frags.extend(("#define ", node.name))
@@ -68,14 +74,8 @@ def stringify(ast: Ast):
         frags.append("\n")
 
     for func in ast.funcs:
-        frags.extend((func.rtype, " ", func.name, "("))
-        for i, param in enumerate(func.params):
-            frags.extend((param.qtype.type.name, " ", param.name))
-            if i < len(func.params)-1:
-                frags.append(", ")
-        if len(func.params) == 0:
-            frags.append("void")
-        frags.append(") {\n")
+        stringify_func_decl(func, frags)
+        frags.append(" {\n")
         stringify_body(func.body, frags)
         frags.append("}\n")
         frags.append("\n")
@@ -83,6 +83,16 @@ def stringify(ast: Ast):
         frags.pop()  # Remove double new line at end of file
     
     return "".join(frags)
+
+def stringify_func_decl(func, frags):
+    frags.extend((func.rtype, " ", func.name, "("))
+    for i, param in enumerate(func.params):
+        frags.extend((param.qtype.type.name, " ", param.name))
+        if i < len(func.params)-1:
+            frags.append(", ")
+    if len(func.params) == 0:
+        frags.append("void")
+    frags.append(")")
 
 def stringify_body(body, frags, ident=1):
     for stmt in body:

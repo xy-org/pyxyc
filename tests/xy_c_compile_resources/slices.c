@@ -8,6 +8,9 @@ typedef struct slices_IntSlice slices_IntSlice;
 typedef struct slices_Date slices_Date;
 typedef struct slices_DateSlice slices_DateSlice;
 
+int32_t slices_max__int(void);
+slices_Date slices_max__Date(void);
+
 struct slices_AllSlice {
     char __empty_structs_are_not_allowed_in_c__;
 };
