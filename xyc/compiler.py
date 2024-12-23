@@ -1277,7 +1277,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, 
             "divEqual": "/=",
         }
         c_arg1 = arg_exprs[0].c_node
-        if len(func_obj.xy_node.returns) == 1 and func_obj.xy_node.returns[0].type.name == "Ptr":
+        if len(func_obj.xy_node.returns) == 1 and func_obj.rtype_obj == ctx.ptr_obj:
             # TODO what if Ptr has an attached type
             c_arg1 = c.Cast(c_arg1, to="int8_t*")
         res = c.Expr(
