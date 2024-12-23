@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 
 typedef struct typeInferenceAdvanced_Pair typeInferenceAdvanced_Pair;

@@ -9,5 +9,7 @@ def func() -> void {
     c := 5.5;
     d := 3.14f;
     e := .333f;
+    t := true;
+    f := false;
     p := Pair{a, b};
 }

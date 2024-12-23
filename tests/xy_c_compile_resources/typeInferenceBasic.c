@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef struct typeInferenceBasic_Pair typeInferenceBasic_Pair;
 
@@ -14,5 +15,7 @@ void typeInferenceBasic_func(void) {
     double c = 5.5;
     float d = 3.14f;
     float e = .333f;
+    bool t = true;
+    bool f = false;
     typeInferenceBasic_Pair p = (typeInferenceBasic_Pair){a, b};
 }

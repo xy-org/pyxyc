@@ -238,7 +238,9 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
             return None  # Reach a delimiter
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
-        if "." in token:
+        if token in {"true", "false"}:
+            arg1 = Const(bool(token), token, "bool")
+        elif "." in token:
             type = "double"
             value_str = token
             if token[-1] == 'f':

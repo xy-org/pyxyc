@@ -70,6 +70,7 @@ def import_builtins(ctx, cast):
     # always include it as it is everywhere
     cast.includes.append(c.Include("stdint.h"))
     cast.includes.append(c.Include("stddef.h"))
+    cast.includes.append(c.Include("stdbool.h"))
 
     ctx.id_table["int"] = TypeDesc(c_name = "int32_t", builtin=True)
     ctx.id_table["uint"] = TypeDesc(c_name = "uint32_t", builtin=True)
@@ -80,6 +81,7 @@ def import_builtins(ctx, cast):
     ctx.id_table["void"] = TypeDesc(c_name = "void", builtin=True)
     ctx.id_table["Size"] = TypeDesc(c_name = "size_t", builtin=True)
     ctx.id_table["Ptr"] = TypeDesc(c_name="void*", builtin=True)
+    ctx.id_table["bool"] = TypeDesc(c_name="bool", builtin=True)
 
 def compile_funcs(ctx, ast, cast):
     pass
