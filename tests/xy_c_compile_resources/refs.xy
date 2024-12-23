@@ -39,32 +39,41 @@ def testPoint(i: int) -> float {
     return res + sum;
 }
 
-# struct  PointCloud {
-#     mem: Ptr;
-#     len: Size;
-# }
-# 
-# def select(pc: PointCloud, i: Size) -> ref(pc) Size = i
-# 
-# def get(pc: inout PointCloud, i: Size) -> ref(pc) Ptr~Point = pc.mem.addr + i * sizeof(Point)
-# 
-# def set(pc: inout PointCloud, i: Size, p: Point) {
-#     # not implemented for brievity
-# }
-# 
-# def testPointCloud(m0: inout PointCloud, m1: PointCloud) {
-#     m0[0].y = 10;
-# 
-#     print(m1[1].y);
-#     print(m1[1]);
-# 
-#     m2 : var = Mesh{};
-#     m2[2] = m0[2];
-#     m2[2].x = m0[2].y;
-#     m2[4] .= {x=5, y=10};
-# 
-#     m3 := PointCloud{};
-#     print(m3[3].z);
-#     print(m3[3]);
-#     print(m3[3][3]);
-# }
+struct  PointCloud {
+    mem: Ptr;
+    len: Size;
+}
+
+def append(pc: inout PointCloud, p: Point) {
+    pc.len++;
+    # rest omitted for brievity
+}
+
+def select(pc: PointCloud, i: int) -> ref(pc) int {
+    return i;
+}
+
+def get(pc: PointCloud, i: int) -> ref(pc) Ptr~Point {
+    return pc.mem + i * sizeof(Point);
+}
+ 
+def set(pc: inout PointCloud, i: int, p: Point) {
+    # not implemented for brievity
+}
+
+def testPointCloud(m0: inout PointCloud, m1: PointCloud) {
+    ms : PointCloud;
+    ms'append(Point{1.0f, 1.0f, .05f, 1.0f});
+    ms'append(Point{1.0f, 1.0f, .05f, 1.0f});
+
+    p := m0[10];
+    
+    m0[0] = Point{1.0f, 2.0f, 3.0f, 0.0f};
+
+    m0[0].y = 10;
+    tmp := m1[1][2];
+
+    ms[2] = m0[2];
+    ms[2].x = m0[0].y;
+    ms[4] .= {x=5, y=10};
+}

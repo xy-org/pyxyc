@@ -34,6 +34,9 @@ class TypeObj(CompiledObj):
 
     @property
     def c_name(self):
+        if self.builtin and self.xy_node.name == "Ptr" and "to" in self.tags:
+            to_obj = self.tags["to"]
+            return to_obj.c_name + "*"
         if self.c_node is not None:
             return self.c_node.name
         return None
@@ -440,19 +443,21 @@ class CompilerContext:
             raise CompilationError(f"Not a variable.", name)
         return var_obj
     
+    def eval_to_type(self, name: xy.Node):
+        obj = self.eval(name)
+        if obj is None:
+            raise CompilationError(f"Cannot find type", name)
+        if not isinstance(obj, TypeObj):
+            raise CompilationError("Not a type", name)
+        return obj
+    
     def eval_to_id(self, name: xy.Node):
         if isinstance(name, xy.Id):
             return name.name
         raise CompilationError("Cannot determine identifier", name)
 
     def get_compiled_type(self, name: xy.Id | str):
-        symbol_name = name.name if isinstance(name, xy.Id) else name
-        for ns in reversed(self.namespaces):
-            res = ns.get(symbol_name, None)
-            if res is not None:
-                return res
-
-        raise CompilationError(f"Cannot find type '{name.name}'", name)
+        return self.eval_to_type(name if not isinstance(name, str) else xy.Id(name))
     
     def split_and_eval_tags(self, tags: xy.TagList, cast, ast):
         open_tags = []
@@ -475,6 +480,9 @@ class CompilerContext:
     
     def eval_tags(self, tags: xy.TagList, tag_specs: list[VarObj] = [], cast=None, ast=None):
         res = {}
+        no_label_msg = "Please associate default label by adding the TagCtor tag" \
+        ": ~[TagCtor{label=\"default-label\"}] " \
+        "or add a positional tag to the struct"
         for i, xy_tag in enumerate(tags.args):
             tag_obj = self.eval(xy_tag)
             if i < len(tag_specs):
@@ -485,14 +493,14 @@ class CompilerContext:
                 if "xyTag" not in tag_obj.tags:
                     raise CompilationError(
                         f"Missing default label for type '{tag_obj.xy_node.name}'",
-                        xy_tag, notes=[("Please associate default label by adding the TagCtor tag: ~[TagCtor{label=\"default-label\"}]", None)])
+                        xy_tag, notes=[(no_label_msg, None)])
                 label = tag_obj.tags["xyTag"].kwargs["label"].as_str()
             elif isinstance(tag_obj, InstanceObj):
                 assert tag_obj.type_obj is not None
                 if "xyTag" not in tag_obj.type_obj.tags:
                     raise CompilationError(
                         f"Missing default label for type '{tag_obj.type_obj.xy_node.name}'",
-                        xy_tag, notes=[("Please associate default label by adding the TagCtor tag: ~[TagCtor{label=\"default-label\"}]", None)])
+                        xy_tag, notes=[(no_label_msg, None)])
                 label = tag_obj.type_obj.tags["xyTag"].kwargs["label"].as_str()
             elif tag_obj.primitive:
                 raise CompilationError("Primitive types have to have an explicit label", xy_tag)
@@ -1069,10 +1077,12 @@ def compile_func_prototype(node: xy.FuncDef, cast, ctx):
             retparam = c.VarDecl(param_name, c.QualType(get_c_type(ret.type, ctx) + "*"))
             cfunc.params.append(retparam)
             rtype_compiled = ctx.get_compiled_type(ret.type)
+            move_args_to_temps = move_args_to_temps or ret.is_ref
         if node.etype is not None:
             etype_compiled = ctx.get_compiled_type(node.etype)
     elif len(node.returns) == 1:
         rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
+        move_args_to_temps = move_args_to_temps or node.returns[0].is_ref
     else:
         rtype_compiled = ctx.void_obj
 
@@ -1169,8 +1179,7 @@ def import_builtins(ctx: CompilerContext, cast):
         "long": "int64_t", "ulong": "uint64_t",
         "Size": "size_t",
         "float": "float", "double": "double",
-        "Ptr": "void*", "bool": "bool",
-        "void": "void",
+        "bool": "bool", "void": "void",
     }
 
     for xtype, ctype in ctype_map.items():
@@ -1185,6 +1194,22 @@ def import_builtins(ctx: CompilerContext, cast):
             "": VarObj(type_desc=type_obj, xy_node=xy.VarDecl())
         }
         ctx.module_ns[xtype] = type_obj
+
+    # Create type Ptr
+    ptr_obj = TypeObj(
+        xy_node=xy.StructDef(name="Ptr"),
+        c_node=c.Struct(name="void*"),
+        builtin=True,
+        init_value=c.Const(0),
+        fully_compiled=True,
+    )
+    ptr_obj.tag_specs = [
+        VarObj(xy_node=xy.VarDecl(name="to")),
+    ]
+    ptr_obj.fields = {
+        "": VarObj(type_desc=type_obj, xy_node=xy.VarDecl())
+    }
+    ctx.module_ns["Ptr"] = ptr_obj
 
     # fill in base math operations
     for p1, type1 in enumerate(num_types):
@@ -1497,7 +1522,9 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
         return ExprObj(
             xy_node=expr,
             c_node=c.Const(expr.value_str),
-            infered_type=ctx.get_compiled_type(expr.type)
+            infered_type=ctx.get_compiled_type(xy.Id(
+                expr.type, src=expr.src, coords=expr.coords
+            ))
         )
     elif isinstance(expr, xy.BinExpr):
         if expr.op not in {'.', '=', '.='}:
@@ -1642,14 +1669,23 @@ def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     obj = ref_obj.container
     struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
     if not (struct_obj.is_enum or struct_obj.is_flags):
-        return find_and_call(
-            "get",
-            ArgList([
-                ref_obj.container,
-                ref_obj.ref,
-            ]),
-            cast, cfunc, ctx, ref_obj.xy_node
-        )
+        if not is_simple_cexpr(ref_obj.container.c_node):
+            import pdb; pdb.set_trace()
+        if is_ptr_type(ref_obj.ref.infered_type, ctx):
+            return ExprObj(
+                c_node=c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
+                xy_node=ref_obj.xy_node,
+                infered_type=ref_obj.ref.infered_type.tags["to"]
+            )
+        else:
+            return find_and_call(
+                "get",
+                ArgList([
+                    ref_obj.container,
+                    ref_obj.ref,
+                ]),
+                cast, cfunc, ctx, ref_obj.xy_node
+            )
     elif struct_obj.is_enum:
         # field of an enum
         if isinstance(ref_obj.container, TypeObj) or isinstance(ref_obj.container, ExprObj) and struct_obj is obj.compiled_obj:
@@ -1679,22 +1715,33 @@ def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
 
 def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
     if not ref_obj.container.infered_type.is_flags:
-        arg_objs = ArgList([
-            ref_obj.container,
-            maybe_move_to_temp(ref_obj.ref, cast, cfunc, ctx),
-            val_obj,
-        ])
-        fobj = find_func_obj("set", arg_objs, cast, cfunc, ctx, ref_obj.xy_node)
+        if is_ptr_type(ref_obj.ref.infered_type, ctx):
+            return ExprObj(
+                c_node=c.Expr(
+                    c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
+                    val_obj.c_node,
+                    op="="
+                ),
+                xy_node=ref_obj.xy_node,
+                infered_type=ref_obj.ref.infered_type.tags["to"]
+            )
+        else:
+            arg_objs = ArgList([
+                ref_obj.container,
+                maybe_move_to_temp(ref_obj.ref, cast, cfunc, ctx),
+                val_obj,
+            ])
+            fobj = find_func_obj("set", arg_objs, cast, cfunc, ctx, ref_obj.xy_node)
 
-        if fobj.move_args_to_temps:
-            arg_objs.args[-1] = maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx)
+            if fobj.move_args_to_temps:
+                arg_objs.args[-1] = maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx)
 
-        return do_compile_fcall(
-            ref_obj.xy_node,
-            fobj,
-            arg_exprs=arg_objs,
-            cast=cast, cfunc=cfunc, ctx=ctx
-        )
+            return do_compile_fcall(
+                ref_obj.xy_node,
+                fobj,
+                arg_exprs=arg_objs,
+                cast=cast, cfunc=cfunc, ctx=ctx
+            )
     else:
         return ExprObj(
             xy_node=ref_obj.xy_node,
@@ -1708,6 +1755,7 @@ def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
     
 def ref_setup(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     if ref_obj.infered_type is None or ref_obj.c_node is None:
+        ref_obj.container = maybe_move_to_temp(ref_obj.container, cast, cfunc, ctx)
         deref_obj = ref_get(ref_obj, cast, cfunc, ctx)
         ref_obj.infered_type = deref_obj.infered_type
         ref_obj.c_node = deref_obj.c_node
@@ -1810,7 +1858,9 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
         xy_node=obj.xy_node,
         infered_type=field_obj.type_desc
     )
-    
+
+def is_ptr_type(type_obj, ctx):
+    return type_obj.base_type_obj is ctx.ptr_obj 
 
 def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
     type_obj = ctx.eval(expr.name, msg="Cannot find type")
