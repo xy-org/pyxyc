@@ -725,6 +725,7 @@ def parse_if(itoken):
     itoken.expect(")", msg="Missing closing bracket")
     if_expr.block = parse_block(itoken)
 
+    itoken.skip_empty_lines()
     if itoken.check("else"):
         if_expr.else_node = parse_block(itoken)
     elif itoken.peak() == "elif":

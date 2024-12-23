@@ -19,6 +19,7 @@ from xyc.compiler import CompilationError
     "arrays",
     "cimport",
     "ifs",
+    "ifs2",
     "whiles",
     "dowhiles",
     "slices",

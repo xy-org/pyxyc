@@ -3334,7 +3334,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     c_res = None
     if_exp_obj = None
     if ifexpr.block.is_embedded:
-        if_exp_obj = compile_expr(ifexpr.block.body, cast, cfunc, ctx)
+        if_exp_obj = compile_expr(ifexpr.block.body, cast, c_if, ctx)
         infered_type = if_exp_obj.infered_type
     elif len(ifexpr.block.returns) > 0:
         if len(ifexpr.block.returns) > 1:
@@ -3375,10 +3375,10 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         if not next_if.block.is_embedded:
             compile_body(next_if.block.body, cast, gen_if, ctx)
         elif next_if.block is not None:
-            if_exp_obj = compile_expr(next_if.block.body, cast, cfunc, ctx)
+            if_exp_obj = compile_expr(next_if.block.body, cast, gen_if, ctx)
             res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
             # TODO compare types
-            gen_if.body = [res_assign]
+            gen_if.body.append(res_assign)
 
         next_c_if.else_body = gen_if
         next_c_if = gen_if
@@ -3394,10 +3394,11 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         next_c_if.else_body = hack_if.body
     elif next_if is not None:
         # else is direct result
-        else_exp_obj = compile_expr(next_if.body, cast, cfunc, ctx)
+        next_c_if.else_body = c.Block()
+        else_exp_obj = compile_expr(next_if.body, cast, next_c_if.else_body, ctx)
         res_assign = c.Expr(c_res, else_exp_obj.c_node, op='=')
         # TODO compare types
-        next_c_if.else_body = [res_assign]
+        next_c_if.else_body.body.append(res_assign)
 
     ctx.pop_ns()
 

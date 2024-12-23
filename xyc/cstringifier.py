@@ -119,6 +119,10 @@ def stringify_body(body, frags, ident=1):
                     frags.append(" else {\n")
                     stringify_body(else_body, frags, ident=ident+1)
                     else_body = None
+                elif isinstance(else_body, Block):
+                    frags.append(" else {\n")
+                    stringify_body(else_body.body, frags, ident=ident+1)
+                    else_body = None
                 else:
                     assert isinstance(else_body, If)
                     frags.append(" else if (")
