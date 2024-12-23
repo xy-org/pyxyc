@@ -125,6 +125,21 @@ class UnaryExpr(Node):
     op: str
 
 @dataclass
+class IfExpr(Node):
+    cond: Node | None = None
+    type: Node | None = None
+    if_block: Node | list | None = None
+    else_block: Node | list | None = None
+
+@dataclass
+class ForExpr(Node):
+    pass
+
+@dataclass
+class WhileExpr(Node):
+    pass
+
+@dataclass
 class AttachTags(Node):
     arg: Node | None = None
 

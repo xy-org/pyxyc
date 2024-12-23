@@ -275,8 +275,10 @@ def parse_expression(
         itoken, precedence=MIN_PRECEDENCE, is_struct=False,
         op_prec=operator_precedence
 ):
-    if itoken.peak() == ";":
-        raise ParsingError("Unexpected end of expression.", itoken)
+    if itoken.check("if"):
+        return parse_if(itoken)
+    elif itoken.peak() == "else":
+        raise ParsingError("Else without a corresponding if", itoken)
 
     if precedence >= MAX_PRECEDENCE and itoken.check("("):
         # bracketed expression
@@ -332,6 +334,8 @@ def parse_expression(
             raise ParsingError("Prefix increment and decrement are not supported. "
                             "More infor at TBD", itoken)
     else:
+        if itoken.peak() == ";":
+            raise ParsingError("Unexpected end of expression.", itoken)
         arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
 
     op = itoken.peak()
@@ -438,6 +442,28 @@ def parse_expression(
 
     return arg1
 
+def parse_if(itoken):
+    itoken.expect("(")
+    if_expr = IfExpr()
+    if_expr.cond = parse_expression(itoken)
+    itoken.expect(")", msg="Missing closing bracket")
+    if itoken.check("->"):
+        if_expr.type = parse_type(itoken)
+    itoken.check("=")
+    if itoken.peak() == "{":
+        if_expr.if_block = parse_body(itoken)
+    else:
+        if_expr.if_block = parse_expression(itoken)
+    if itoken.check("else"):
+        if itoken.peak() == "{":
+            if_expr.else_block = parse_body(itoken)
+        else:
+            if_expr.else_block = parse_expression(itoken)
+    elif itoken.check("elif"):
+        if_expr.else_block = parse_if(itoken)
+    return if_expr
+
+
 def expr_to_type(expr):
     if isinstance(expr, Select):
         return ArrayType(expr.base, expr.args.args, src=expr.src, coords=expr.coords)
@@ -517,7 +543,8 @@ def parse_body(itoken):
             itoken.expect(";")
         else:
             node = parse_expression(itoken)
-            itoken.expect(";")
+            if not isinstance(node, (IfExpr, ForExpr, WhileExpr)):
+                itoken.expect(";", msg="Missing ';' at end of expression")
         body.append(node)
         itoken.skip_empty_lines()
     itoken.expect("}")

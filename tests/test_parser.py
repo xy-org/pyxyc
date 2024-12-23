@@ -891,3 +891,114 @@ def test_parse_string_literals(code, exp_ast):
 def test_arrays(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() -> void {
+            if (cond) {
+                expr;
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.IfExpr(
+                    cond=ast.Id("cond"),
+                    if_block=[ast.Id("expr")],
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            if (cond) {
+                expr1;
+            } else {
+                expr2;
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.IfExpr(
+                    cond=ast.Id("cond"),
+                    if_block=[ast.Id("expr1")],
+                    else_block=[ast.Id("expr2")],
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            if (cond1) {
+                expr1;
+            } elif(cond2) {
+                expr2;
+            } else {
+                expr3;
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.IfExpr(
+                    cond=ast.Id("cond1"),
+                    if_block=[ast.Id("expr1")],
+                    else_block=ast.IfExpr(
+                        cond=ast.Id("cond2"),
+                        if_block=[ast.Id("expr2")],
+                        else_block=[ast.Id("expr3")],
+                    ),
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            a := if (cond1) 5 elif (cond2) 6 else 7;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.VarDecl(name="a", value=ast.IfExpr(
+                    cond=ast.Id("cond1"),
+                    if_block=ast.Const(5),
+                    else_block=ast.IfExpr(
+                        cond=ast.Id("cond2"),
+                        if_block=ast.Const(6),
+                        else_block=ast.Const(7),
+                    ),
+                ))
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            a := if (cond) {
+                func1();
+                func2();
+            } else {
+                func3();
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.VarDecl(name="a", value=ast.IfExpr(
+                    cond=ast.Id("cond"),
+                    if_block=[
+                        ast.FuncCall(name=ast.Id("func1")),
+                        ast.FuncCall(name=ast.Id("func2")),
+                    ],
+                    else_block=[
+                        ast.FuncCall(name=ast.Id("func3")),
+                    ],
+                ))
+            ]),
+        ]
+    ],
+])
+def test_if(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
