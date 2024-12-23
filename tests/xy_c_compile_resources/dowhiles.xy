@@ -1,0 +1,9 @@
+def write(lim: int) -> int {
+    return do -> (total := 0) {
+        total += step();
+    } while (total < lim);
+}
+
+def step() -> int {
+    return 10;
+}

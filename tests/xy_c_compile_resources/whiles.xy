@@ -1,0 +1,25 @@
+def func1(x: int, y: int) -> int {
+    i : var = 0;
+    while (x < y) {
+        x += 10;
+        i++;
+    }
+    return i;
+}
+
+def func2(x: int, y: int) -> int {
+    return while i(x < y) -> int {
+        x += 10;
+        i++;
+    };
+}
+
+def func3(x: int, y: int) -> int {
+    i : var = 0;
+    while (x < y) {
+        x += 10;
+        i++;
+        if (i > 10) break;
+    }
+    return i;
+}
