@@ -264,9 +264,32 @@ def parse_params(itoken):
     itoken.expect("(", msg="Missing param list")
     while itoken.peak() != ")":
         itoken.skip_empty_lines()
-        pname = itoken.consume()
-        param = VarDecl(pname, src=itoken.src)
+        param = VarDecl(src=itoken.src, is_param=True)
+        if itoken.peak() != ":":
+            param.name = itoken.consume()
         itoken.expect(":")
+
+        access_set = False
+        while True:
+            if (access_set and itoken.peak() in {"in", "out", "inout"}) or itoken.peak() == "outin":
+                raise ParsingError("Only one of 'in', 'out', 'inout' is allowed", itoken)
+            if itoken.check("in"):
+                param.is_in = access_set = True
+            elif itoken.check("out"):
+                param.is_out = access_set = True
+            elif itoken.check("inout"):
+                param.is_inout = access_set = True
+            elif itoken.check("pseudo"):
+                if param.is_pseudo:
+                    raise ParsingError("Multiple pseudo qualifiers", itoken)
+                param.is_pseudo = True
+            else:
+                break
+        if not access_set:
+            param.is_in = True
+        if param.name is None:
+            param.is_pseudo = True
+
         param.type = parse_type(itoken)
         res.append(param)
 

@@ -184,6 +184,19 @@ class VarDecl(Node):
     type: Node | None = None
     value: Node | None = None
     varying: bool = False
+    is_param: bool = False
+    is_in: bool = False
+    is_out: bool = False
+    is_inout: bool = False
+    is_outin: bool = False
+    is_pseudo: bool = False
+
+def param(*args, **kwargs):
+    res = VarDecl(*args, **kwargs)
+    res.is_param = True
+    if not (res.is_in or res.is_inout or res.is_outin or res.is_out):
+        res.is_in = True
+    return res
 
 @dataclass
 class SliceExpr(Node):
