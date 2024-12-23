@@ -246,13 +246,8 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
         # Array literal
         coords = itoken.peak_coords()
         itoken.consume()
-        args, kwargs = parse_args_kwargs(itoken)
+        args = parse_expr_list(itoken)
         itoken.expect("]")
-        if len(kwargs) > 0:
-            raise ParsingError(
-                "Key World Arguments in array literals don't make sense",
-                itoken=itoken
-            )
         arg1 = ArrLit(args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE:
         if itoken.peak() != '-' and itoken.peak() in operator_precedence.keys():
@@ -430,8 +425,8 @@ def parse_str_literal(prefix, prefix_start, itoken):
 
 def parse_args_kwargs(itoken):
     positional, named = [], {}
-    while itoken.peak() not in {")", "]", "}"}:
-        expr = parse_expression(itoken)
+    args = parse_expr_list(itoken)
+    for expr in args:
         is_named = (
             isinstance(expr, BinExpr) and expr.op == "=" and
             isinstance(expr.arg1, Id)
@@ -440,9 +435,17 @@ def parse_args_kwargs(itoken):
             named[expr.arg1.name] = expr.arg2
         else:
             positional.append(expr)
+    return positional, named
+    
+
+def parse_expr_list(itoken):
+    res = []
+    while itoken.peak() not in {")", "]", "}"}:
+        expr = parse_expression(itoken)
+        res.append(expr)
         if itoken.peak() not in {")", "]", "}"}:
             itoken.expect(",")
-    return positional, named
+    return res
 
 def parse_body(itoken):
     body = []
