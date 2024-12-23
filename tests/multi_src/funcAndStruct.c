@@ -5,10 +5,10 @@
 typedef struct funcAndStruct_Point funcAndStruct_Point;
 
 struct funcAndStruct_Point {
-    float x;
-    float y;
+    float xy_x;
+    float xy_y;
 };
 
 float funcAndStruct_dot(funcAndStruct_Point p1, funcAndStruct_Point p2) {
-    return p1.x * p2.x + p1.y + p2.y;
+    return p1.xy_x * p2.xy_x + p1.xy_y + p2.xy_y;
 }

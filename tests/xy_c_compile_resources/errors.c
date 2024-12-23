@@ -5,11 +5,11 @@
 typedef struct errors_Error errors_Error;
 
 struct errors_Error {
-    int32_t errorCode;
+    int32_t xy_errorCode;
 };
 
 bool errors_to(errors_Error err) {
-    return err.errorCode != 0;
+    return err.xy_errorCode != 0;
 }
 
 errors_Error errors_power(int32_t x, int32_t y, int32_t* _res0) {

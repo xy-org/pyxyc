@@ -5,8 +5,8 @@
 typedef struct typeInferenceAdvanced_Pair typeInferenceAdvanced_Pair;
 
 struct typeInferenceAdvanced_Pair {
-    int32_t a;
-    int32_t b;
+    int32_t xy_a;
+    int32_t xy_b;
 };
 
 int32_t typeInferenceAdvanced_rng(void) {

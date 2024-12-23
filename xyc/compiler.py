@@ -364,7 +364,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 for field in node.fields:
                     field_type_obj = find_type(field.type, ctx)
                     cfield = c.VarDecl(
-                        name=field.name,
+                        name=mangle_field(field),
                         type=field_type_obj.c_name
                     )
                     fields[field.name] = VarObj(
@@ -681,13 +681,14 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
                     infered_type=None
                 )
             else:
-                res = c.Expr(arg1_obj.c_node, c.Id(field_name), op=expr.op)
                 struct_obj = arg1_obj.infered_type
                 if field_name not in struct_obj.fields:
                     raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
+                field_obj = struct_obj.fields[field_name]
+                res = c.Expr(arg1_obj.c_node, c.Id(field_obj.c_node.name), op=expr.op)
                 return ExprObj(
                     c_node=res,
-                    infered_type=struct_obj.fields[field_name].type_desc
+                    infered_type=field_obj.type_desc
                 )
         else:
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
@@ -1188,6 +1189,10 @@ def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
             mangled.append(param.type.name)
         mangled = "".join(mangled)
     return mangled
+
+def mangle_field(field: xy.VarDecl):
+    # mangle in order to prevent duplication with macros
+    return f"xy_{field.name}"
 
 def mangle_struct(struct: xy.StructDef, ctx):
     return ctx.module_name.replace(".", "_") + "_" + struct.name

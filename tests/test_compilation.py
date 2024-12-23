@@ -23,6 +23,7 @@ from xyc.compiler import CompilationError
     "pointers",
     "pseudoParams",
     "errors",
+    "nameCollisions",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(
