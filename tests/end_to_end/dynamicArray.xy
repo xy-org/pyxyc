@@ -1,6 +1,7 @@
 import libxy.units
 import libxy.memory
 import libxy.stdio
+import libxy.strings
 
 struct Array~[elemType: struct] {
     mem: Memory;
@@ -8,6 +9,16 @@ struct Array~[elemType: struct] {
 }
 
 def len(a: Array) = a.len
+
+def max(a: Size, b: Size) -> Size {
+    return if (a > b) a else b;
+}
+
+def ensureCapacity(arr: inout Array, requiredCap: Size, elemSize : Size = arr'tagsof.elemType'sizeof) {
+    if (arr.mem.size < (requiredCap * elemSize)) {
+        arr.mem'realloc(max(requiredCap * elemSize, 2 * arr.mem.size));
+    }
+}
 
 def push(
     arr: inout Array,
@@ -20,21 +31,31 @@ def push(
 #           "{elem'tagsof.elemType'fullname}(s)")
 # }
 {
-    # arr'ensureCapacity(arr.len + 1);
+    arr'ensureCapacity(arr.len + 1, elemSize=elemSize);
     # arr.mem[arr.len * elemSize :+ elemSize] = elemMem;
-    # arr.len++;
+    arr.len++;
 }
-# 
-# def ensureCapacity(arr: inout Array, requiredCap: Size, elemSize := arr'tagsof["elemType"]'sizeof) {
-#     if (arr.mem.len < (requiredCap * elemSize)) {
-#         arr.mem.relocate(max(requiredCap * elemSize, 2 * arr.mem.len));
-#     }
-# }
-# 
+
 
 # def select(arr: Array, i: Size, elemSize := arr'tagsof.elemType'sizeof) -> outin arr'tagsof.elemType {
 #     return arr.mem'at(i * elemSize)'as(outin);
 # }
+
+struct ArrayIter {
+    idx: Size;
+}
+
+def iter(arr: Array) ArrayIter{}
+
+def valid(iter: ArrayIter, arr: Array) = iter.idx < arr'len
+
+def next(iter: ArrayIter, arr: pseudo Array) = ArrayIter{iter.idx+1}
+
+#def deref(iter: ArrayIter, arr: Array, elemSize := arr'tagsof.elemType'sizeof) -> outin arr'tagsof.elemType {
+#    return arr.mem'at(i * elemSize)'as(outin);
+#}
+
+# ----------------- test code -----------------
 
 struct Point {
     x: int;
@@ -42,17 +63,19 @@ struct Point {
 }
 
 def main~EntryPoint() -> int {
-    return 0;
     ints: Array~int;
     points: Array~Point;
-    # for (i in :100) {
-    #     ints.push(i);
-    #     points.push(Point{ints[ints'len -1 -i] + i, ints[i]});
-    # }
+    for (i in :100) {
+        ints'push(i);
+    #     points'push(Point{ints[ints'len -1 -i] + i, ints[i]});
+    }
 
-    res := for (i in :, num in ints, point in points) -> (res := 0) {
-        res *= (point.x - point.y) * num - i;
-    };
-    print(f"{=res}\n");
+    print(f"len={ints'len}\n");
+
+    #res := for (i in :, num in ints, point in points) -> (res := 0) {
+    #    res *= (point.x - point.y) * num - i;
+    #};
+    #print(f"{=res}\n");
+
     return 0;
 }

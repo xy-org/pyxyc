@@ -238,6 +238,8 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
         # XXX
         if isinstance(type_obj, ArrTypeObj):
             continue
+        if param_obj.type_desc is any_type_obj:
+            continue
         if type_obj.get_base_type() is not param_obj.type_desc.get_base_type():
             return False
         if param_obj.xy_node is not None and param_obj.xy_node.name is not None:
@@ -267,8 +269,19 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
 def func_sig(fobj: FuncObj):
     fdef = fobj.xy_node
     name = fdef.name if isinstance(fdef.name, str) else fdef.name.name
-    res = name + "(" + ", ".join(pobj.type_desc.xy_node.name for pobj in fobj.param_objs) + ")"
-    res += " -> "
+    res = name + "("
+    for i, pobj in enumerate(fobj.param_objs):
+        if i > 0:
+            res += ", "
+        if pobj.xy_node.value is not None:
+            res += "["
+        if pobj.type_desc == any_type_obj:
+            res += "?"
+        else:
+            res += pobj.type_desc.xy_node.name
+        if pobj.xy_node.value is not None:
+            res += "]"
+    res += ") -> "
     if len(fdef.returns) > 1:
         res += "("
     res += fobj.rtype_obj.xy_node.name
@@ -483,10 +496,17 @@ class CompilerContext:
             if node.op == ".":
                 base = self.eval(node.arg1)
                 assert isinstance(node.arg2, xy.Id)
-                if not isinstance(base, ImportObj):
-                    raise CompilationError("Selection is NYI")
-                # XXX assume c library
-                return ExtSpace(node.arg2.name)
+                if isinstance(base, ImportObj):
+                    # XXX assume c library
+                    return ExtSpace(node.arg2.name)
+                elif isinstance(base, TypeObj):
+                    return base.fields[node.arg2.name]
+                elif isinstance(base, VarObj):
+                    if node.arg2.name not in base.type_desc.fields:
+                        raise CompilationError(f"No field {node.arg2.name}", node.arg2)
+                    return base.type_desc.fields[node.arg2.name]
+                else:
+                    raise CompilationError("Cannot evaluate", node)
         elif isinstance(node, xy.AttachTags):
             obj = self.eval(node.arg)
             if isinstance(obj, ConstObj):
