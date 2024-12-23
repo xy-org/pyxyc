@@ -111,7 +111,7 @@ class FuncSpace:
             for desc in self._funcs:
                 if cmp_call_def(node, args_infered_types, desc.xy_node, ctx):
                     return desc
-            fsig = node.name + "(" + \
+            fsig = ctx.eval_to_id(node.name) + "(" + \
                 ", ".join(t.xy_node.name for t in args_infered_types) + \
                 ")"
             candidates = "\n    ".join((
@@ -149,8 +149,14 @@ def cmp_call_def(fcall, fcall_args_types, fdef, ctx):
     return True
 
 def func_sig(fdef):
-    res = fdef.name + "(" + ", ".join(p.type.name for p in fdef.params) + ")"
-    res += " -> " + fdef.rtype.name
+    name = fdef.name if isinstance(fdef.name, str) else fdef.name.name
+    res = name + "(" + ", ".join(p.type.name for p in fdef.params) + ")"
+    res += " -> "
+    if len(fdef.returns) > 1:
+        res += "("
+    res += ",".join(r.type.name for r in fdef.returns)
+    if len(fdef.returns) > 1:
+        res += ")"
     return res
 
 @dataclass
@@ -355,7 +361,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 expand_name = len(func_space) > 0
                 if len(func_space) == 1:
                     # Already present. Expand name.
-                    func_desc = func_spacparam = c.VarDecl(param.name, get_c_type(param.type, ctx))ce[0]
+                    func_desc = func_space[0]
                     func_desc.c_node.name = mangle_def(
                         func_desc.xy_node, ctx, expand=True
                     )
@@ -577,9 +583,12 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
             assert isinstance(expr.arg2, xy.Id)
             field_name = expr.arg2.name
             res = c.Expr(arg1_obj.c_node, c.Id(field_name), op=expr.op)
+            struct_obj = arg1_obj.infered_type
+            if field_name not in struct_obj.fields:
+                raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
             return ExprObj(
                 c_node=res,
-                infered_type=arg1_obj.infered_type.fields[field_name].type_desc
+                infered_type=struct_obj.fields[field_name].type_desc
             )
         else:
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
@@ -941,7 +950,7 @@ def compile_break(xybreak, cast, cfunc, ctx):
     )
 
 def get_c_type(type_expr, ctx):
-    id_desc = find_type(type_expr, ctx)
+    id_desc = find_type(type_expr, ctx, required=True)
     return id_desc.c_name
 
 def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
@@ -1000,9 +1009,12 @@ def register_func(fdef, ctx):
     fspace.append(res)
     return res
 
-def find_type(texpr, ctx):
+def find_type(texpr, ctx, required=True):
     if not isinstance(texpr, xy.ArrayType):
-        return ctx.eval(texpr)
+        res = ctx.eval(texpr)
+        if res is None:
+            raise CompilationError("Cannot find type", texpr)
+        return res
     else:
         if len(texpr.dims) == 0:
             raise CompilationError("Arrays must have a length known at compile time", texpr)

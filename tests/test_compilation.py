@@ -52,6 +52,32 @@ def test_arrays_common_errors(code, err_msg, tmp_path):
     with pytest.raises(CompilationError, match=err_msg):
         builder.compile_project(project)
 
+code_ast = [
+    ("""def func(t: MissingType) -> void {
+    }""",
+    "Cannot find type"),
+    ("""
+    def func(x: int, y: int) -> int {
+        return x + y;
+    }
+     
+    def main() -> void {
+        x : long = 0;
+        y : int = 0;
+        func(x, y);
+    }
+    """,
+    "Cannot find function"),
+]
+@pytest.mark.parametrize("code, err_msg", code_ast)
+def test_common_errors(code, err_msg, tmp_path):
+    fn = tmp_path / "test.xy"
+    fn.write_text(code)
+
+    project = builder.parse_module(str(fn), module_name="test")
+    with pytest.raises(CompilationError, match=err_msg):
+        builder.compile_project(project)
+
 
 @pytest.mark.parametrize("module", [
     "funcAndStruct",
