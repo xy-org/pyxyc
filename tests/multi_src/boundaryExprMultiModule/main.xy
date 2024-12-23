@@ -1,4 +1,4 @@
-import boundaryExpr2.module;
+import boundaryExprMultiModule.module;
 
 struct Struct {}
 

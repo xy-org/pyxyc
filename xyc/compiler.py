@@ -628,6 +628,9 @@ class CompilerContext:
             if not self.eval_calltime_exprs:
                 return calltime_expr_obj
             return self.eval(node.arg)
+        elif isinstance(node, xy.CallerContextExpr):
+            assert self.has_caller_context()
+            return self.get_caller_context().eval(node.arg, msg=msg)
         elif isinstance(node, xy.Const):
             const_type_obj = None
             if node.type is not None:
