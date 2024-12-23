@@ -1740,6 +1740,8 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
         return compile_for(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.Break):
         return compile_break(expr, cast, cfunc, ctx)
+    elif isinstance(expr, xy.Continue):
+        return compile_continue(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.AttachTags):
         obj = compile_expr(expr.arg, cast, cfunc, ctx)
         obj.tags = ctx.eval_tags(expr.tags)
@@ -3408,6 +3410,21 @@ def compile_break(xybreak, cast, cfunc, ctx):
     return ExprObj(
         xy_node=xybreak,
         c_node=c.Break(),
+        infered_type=ctx.void_obj,
+    )
+
+def compile_continue(xycont, cast, cfunc, ctx):
+    if xycont.loop_name is not None:
+        raise CompilationError("Continuing the outer loop is NYI", xycont)
+
+    for ns in reversed(ctx.namespaces):
+        call_dtors(ns, cast, cfunc, ctx)
+        if ns.type is NamespaceType.Loop:
+            break
+
+    return ExprObj(
+        xy_node=xycont,
+        c_node=c.Continue(),
         infered_type=ctx.void_obj,
     )
 

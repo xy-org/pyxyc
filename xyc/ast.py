@@ -184,6 +184,10 @@ class Break(Node):
     loop_name: Node | None = None
 
 @dataclass
+class Continue(Node):
+    loop_name: Node | None = None
+
+@dataclass
 class AttachTags(Node):
     arg: Node | None = None
 

@@ -2325,6 +2325,33 @@ def test_do_while(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def main() -> void {
+            for (elem in arr) {
+                if (elem > 0) {
+                    continue;
+                }
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.ForExpr(
+                    over=[
+                        ast.BinExpr(op="in", arg1=ast.Id("elem"), arg2=ast.Id("arr"))
+                    ],
+                    block=ast.Block(body=[
+                        ast.IfExpr(
+                            cond=ast.BinExpr(ast.Id("elem"), ast.Const(0), op=">"),
+                            block=ast.Block(body=[
+                                ast.Continue(),
+                            ])
+                        )
+                    ])
+                )
+            ]),
+        ]
+    ],
 ])
 def test_for(code, exp_ast):
     act_ast = parse_code(code)

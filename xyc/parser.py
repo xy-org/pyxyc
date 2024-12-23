@@ -348,8 +348,8 @@ def parse_expression(
         return parse_while(itoken)
     elif itoken.peak() == "do":
         return parse_do_while(itoken)
-    elif itoken.peak() == "break":
-        return parse_break(itoken)
+    elif itoken.peak() in {"break", "continue"}:
+        return parse_break_continue(itoken)
     elif itoken.peak() == "for":
         return parse_for(itoken)
     elif itoken.peak() == ";":
@@ -719,10 +719,13 @@ def parse_for(itoken):
     return for_expr
 
 
-def parse_break(itoken):
-    break_coords = itoken.peak_coords()
-    itoken.consume() # "break" token
-    res = Break(src=itoken.src, coords=break_coords)
+def parse_break_continue(itoken):
+    node_coords = itoken.peak_coords()
+    if itoken.check("break"):
+        res = Break(src=itoken.src, coords=node_coords)
+    else:
+        assert itoken.check("continue")
+        res = Continue(src=itoken.src, coords=node_coords)
     if not is_end_of_expr(itoken):
         res.loop_name = parse_expression(itoken)
     return res

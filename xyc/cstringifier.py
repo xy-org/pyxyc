@@ -235,6 +235,8 @@ def stringify_expr(expr, frags, parent_op_precedence=-10):
         frags.append("]")
     elif isinstance(expr, Break):
         frags.append("break")
+    elif isinstance(expr, Continue):
+        frags.append("continue")
     elif isinstance(expr, Cast):
         if parent_op_precedence > cast_precedence:
             frags.append("(")

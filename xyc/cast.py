@@ -120,6 +120,10 @@ class Break:
     pass
 
 @dataclass
+class Continue:
+    pass
+
+@dataclass
 class Cast:
     what: any = None
     to: str = ""
