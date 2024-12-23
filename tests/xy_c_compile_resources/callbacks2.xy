@@ -1,0 +1,14 @@
+struct Test~[TagCtor{label="test"}] {}
+
+def test1~Test() {}
+
+def test2~Test() {}
+
+def invokeTests() {
+    tests := [for (f in def* ~Test()->void) f];
+    for (f in tests) {
+        f();
+    }
+}
+
+def test3~Test() {}

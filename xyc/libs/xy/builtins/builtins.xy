@@ -437,4 +437,10 @@ struct IterCtor {
     # Implemented by the compiler
 }
 
+# Function Selection
+
+struct FuncSelection {
+    # Compile-time only array-like structure implemented by the compiler
+}
+
 # Miscellaneous

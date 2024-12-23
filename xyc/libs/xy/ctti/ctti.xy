@@ -11,7 +11,7 @@ def alignof(arg: pseudo ?) -> Size {
 }
 
 struct FieldArray {
-    # Implemented by the compiler
+    # Compile-time only structure implemented by the compiler
 }
 
 def fieldsof(arg: pseudo ?) -> FieldArray {

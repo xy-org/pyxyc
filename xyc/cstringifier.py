@@ -207,7 +207,11 @@ def stringify_expr(expr, frags, parent_op_precedence=-10):
         if not expr.prefix:
             frags.append(expr.op)
     elif isinstance(expr, FuncCall):
-        frags.extend((expr.name, "("))
+        if isinstance(expr.name, str):
+            frags.extend((expr.name, "("))
+        else:
+            stringify_expr(expr.name, frags, cast_precedence + 1)
+            frags.append('(')
         for i, arg in enumerate(expr.args):
             if i != 0:
                 frags.append(", ")

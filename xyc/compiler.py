@@ -168,6 +168,7 @@ class ExtSymbolObj(CompiledObj):
 any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 any_struct_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 fieldarray_type_obj = TypeObj(xy_node=xy.Id("FieldArray"), builtin=True, c_node=c.Id("FIELD_TYPE_ARRAY_REPORT_IF_YOU_SEE_ME"))
+fselection_type_obj = TypeObj(xy_node=xy.Id("$*"), builtin=True, c_node=c.Id("FUN_SELECTION_REPORT_IF_YOU_SEE_ME"))
 calltime_expr_obj = TypeObj(builtin=True)
 global_memory_type = TypeObj(xy_node=xy.Id("GLOBAL_MEM_REPORT_IF_YOU_SEE_ME"), builtin=True)
 global_memory = ExprObj(
@@ -1779,6 +1780,32 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
                     base_type_obj=elem_type_obj
                 )
             )
+        elif container_obj.infered_type is fselection_type_obj:
+            func_type_objs: list[FuncTypeObj] = container_obj.compiled_obj
+            arr_len = len(func_type_objs)
+
+            c_node = c.InitList()
+            ctx.push_ns()
+            for func_type_obj in func_type_objs:
+                ctx.ns[iter_var_name.name] = ExprObj(
+                    xy_node=iter_var_name,
+                    c_node=c.Id(func_type_obj.func_obj.c_node.name),
+                    infered_type=func_type_obj,
+                    compiled_obj=func_type_obj.func_obj,
+                )
+                elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
+                c_node.elems.append(elem_obj.c_node)
+                elem_type_obj = elem_obj.infered_type
+            ctx.pop_ns()
+
+            return ExprObj(
+                xy_node=expr,
+                c_node=c_node,
+                infered_type=ArrTypeObj(
+                    xy_node=expr, c_node=c_node, dims=[arr_len],
+                    base_type_obj=elem_type_obj
+                )
+            )
         else:
             raise CompilationError("List comprehension is supported only on arrays", container_obj.xy_node)
     elif isinstance(expr, xy.Select):
@@ -2409,39 +2436,61 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
         args=[ctx.eval_to_type(arg.type) for arg in expr.type.params],
     )
 
-    if expr.name is not None:
-        fspace = ctx.eval_to_fspace(expr.name)
-        if fspace is None:
-            call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types, expr.inject_args)
-            raise CompilationError(f"Cannot find function {call_sig}", expr.name)
-        if isinstance(fspace, ExtSpace):
-            raise CompilationError("No suitable callbacks found", expr)
+    if not expr.multiple:
+        if expr.name is not None:
+            fspace = ctx.eval_to_fspace(expr.name)
+            if fspace is None:
+                call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types, expr.inject_args)
+                raise CompilationError(f"Cannot find function {call_sig}", expr.name)
+            if isinstance(fspace, ExtSpace):
+                raise CompilationError("No suitable callbacks found", expr)
 
-        if ctx.compiling_header:
-            for fobj in fspace._funcs:
-                compile_func_prototype(fobj, cast, ctx)
+            if ctx.compiling_header:
+                for fobj in fspace._funcs:
+                    compile_func_prototype(fobj, cast, ctx)
 
-        func_obj: FuncObj = fspace.find(expr, arg_infered_types, ctx, partial_matches=False)
+            func_obj: FuncObj = fspace.find(expr, arg_infered_types, ctx, partial_matches=False)
+        else:
+            func_obj = None
+            candidates: list[FuncObj] = fselect_unnamed(expr, arg_infered_types, ctx, partial_matches=False)
+            for cand in candidates:
+                if len(cand.tags) > 0:
+                    func_obj = cand
+                    break
+            if func_obj is None:
+                func_obj = candidates[0]
+
+        ensure_func_decl(func_obj, cast, cfunc, ctx)
+
+        params = func_obj.param_objs
+        c_typename = create_fptr_type(params, func_obj.rtype_obj, cast, ctx)
+
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.Id(func_obj.c_name),
+            infered_type=FuncTypeObj(c_typename=c_typename, func_obj=func_obj),
+        )
     else:
-        func_obj = None
+        # select multiple
+        assert expr.name is None
         candidates: list[FuncObj] = fselect_unnamed(expr, arg_infered_types, ctx, partial_matches=False)
+
+        res_objs = []
         for cand in candidates:
             if len(cand.tags) > 0:
-                func_obj = cand
-                break
-        if func_obj is None:
-            func_obj = candidates[0]
+                ensure_func_decl(cand, cast, cfunc, ctx)
 
-    ensure_func_decl(func_obj, cast, cfunc, ctx)
+                params = cand.param_objs
+                c_typename = create_fptr_type(params, cand.rtype_obj, cast, ctx)
 
-    params = func_obj.param_objs
-    c_typename = create_fptr_type(params, func_obj.rtype_obj, cast, ctx)
+                res_objs.append(FuncTypeObj(c_typename=c_typename, func_obj=cand))
 
-    return ExprObj(
-        xy_node=expr,
-        c_node=c.Id(func_obj.c_name),
-        infered_type=FuncTypeObj(c_typename=c_typename, func_obj=func_obj),
-    )
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.Id("REPORT_IF_YOU_SEE_ME"),
+            compiled_obj=res_objs,
+            infered_type=fselection_type_obj,
+        )
 
 def fselect_unnamed(expr, arg_types: ArgList, ctx, partial_matches=True):
     res = []
@@ -2496,24 +2545,34 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     if fspace is None:
         call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types, expr.inject_args)
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
+
+    if isinstance(fspace, RefObj):
+        fspace = ref_get(fspace, cast, cfunc, ctx)
     if not isinstance(fspace, ExtSpace):
         for arg in arg_exprs.args:
             assert_has_type(arg)
         for arg in arg_exprs.kwargs.values():
             assert_has_type(arg)
         
-    if isinstance(fspace, FuncSpace):
+    if isinstance(fspace, (FuncSpace, ExtSpace)):
         if ctx.compiling_header:
             for fobj in fspace._funcs:
                 compile_func_prototype(fobj, cast, ctx)
 
         func_obj = fspace.find(expr, arg_infered_types, ctx, partial_matches=expr.inject_args)
-    else:
-        if not isinstance(fspace, VarObj):
-            raise CompilationError("Not a function or callback")
-        if not isinstance(fspace.type_desc, FuncTypeObj):
-            raise CompilationError("Not a callback")
-        func_obj = fspace.type_desc.func_obj
+    elif not isinstance(fspace, ExtSymbolObj):
+        if isinstance(fspace, VarObj):
+            if not isinstance(fspace.type_desc, FuncTypeObj):
+                raise CompilationError("Not a callback", expr)
+            func_obj = fspace.type_desc.func_obj
+        elif isinstance(fspace, ExprObj):
+            if not isinstance(fspace.infered_type, FuncTypeObj):
+                raise CompilationError("Not a callback", expr)
+            func_obj = copy(fspace.infered_type.func_obj)
+            func_obj.c_node = fspace.c_node
+        else:
+            raise CompilationError("Not a function or callback", expr)
+        
 
     if expr_to_move_idx is not None and func_obj.move_args_to_temps:
         arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
@@ -2836,7 +2895,12 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     func_ctx = ctx
     if func_obj.module_header is not None:
         func_ctx = func_obj.module_header.ctx
-    res = c.FuncCall(name=func_obj.c_name)
+
+    # XXX
+    if hasattr(func_obj.c_node, 'name'):
+        res = c.FuncCall(name=func_obj.c_name)
+    else:
+        res = c.FuncCall(name=func_obj.c_node)
 
     func_ctx.push_ns()
 
