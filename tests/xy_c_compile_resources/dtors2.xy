@@ -3,7 +3,7 @@ struct Array~[elemType: struct, xy_dtor=true] {
     len: Size;
 }
 
-def dtor(arr: inout Array) {
+def dtor(arr: mut Array) {
     # free arr.mem
 }
 

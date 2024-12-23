@@ -4,7 +4,7 @@ struct Point {
     w: int = 1;
 }
 
-def testMovingOutInout(p: inout Point) -> Point {
+def testMovingOutInout(p: mut Point) -> Point {
     return p->;
 }
 

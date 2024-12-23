@@ -11,6 +11,6 @@ def test() {
     }
 }
 
-def funcToCall~MyMark(a: inout int, b: int) -> void {
+def funcToCall~MyMark(a: mut int, b: int) -> void {
     a += b;
 }

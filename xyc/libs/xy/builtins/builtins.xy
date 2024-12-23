@@ -178,15 +178,15 @@ def *addEqual(a: float, b: int) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: inout int, b: Size) -> void {
+def *addEqual(a: mut int, b: Size) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: inout Size, b: Size) -> void {
+def *addEqual(a: mut Size, b: Size) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: inout Size, b: int) -> void {
+def *addEqual(a: mut Size, b: int) -> void {
     # Implemented by the compiler
 }
 
@@ -215,19 +215,19 @@ def *neg(a: Size) -> int {
     # Implemented by the compiler
 }
 
-def *inc(a: inout int) -> void {
+def *inc(a: mut int) -> void {
     # Implemented by the compiler
 }
 
-def *inc(a: inout uint) -> void {
+def *inc(a: mut uint) -> void {
     # Implemented by the compiler
 }
 
-def *dec(a: inout int) -> void {
+def *dec(a: mut int) -> void {
     # Implemented by the compiler
 }
 
-def *inc(a: inout Size) -> void {
+def *inc(a: mut Size) -> void {
     # Implemented by the compiler
 }
 
@@ -417,7 +417,7 @@ def *valid(arr: pseudo ?[], idx: Size) -> bool {
     # Implemented by the compiler
 }
 
-def *next(arr: pseudo ?[], idx: inout Size) -> void {
+def *next(arr: pseudo ?[], idx: mut Size) -> void {
     # Implemented by the compiler
 }
 

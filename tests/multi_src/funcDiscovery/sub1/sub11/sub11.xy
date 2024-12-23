@@ -1,5 +1,5 @@
 import funcDiscovery.mark;
 
-def someFunc~MyMark(a: inout int, b: int) -> void {
+def someFunc~MyMark(a: mut int, b: int) -> void {
     a = b;
 }

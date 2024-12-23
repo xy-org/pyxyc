@@ -2465,7 +2465,7 @@ def do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compiler
     )
 
 def should_pass_by_ref(param: xy.VarDecl):
-    return param.is_out or param.is_inout
+    return param.mutable
 
 def c_deref(c_node, field=None):
     if isinstance(c_node, c.UnaryExpr) and c_node.op == "*" and c_node.prefix:

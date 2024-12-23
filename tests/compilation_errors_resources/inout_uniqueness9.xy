@@ -1,9 +1,9 @@
-def swap(a: inout int) {
+def swap(a: mut int) {
     # should produce an error
     doSwap(a, a);
 }
 
-def doSwap(a: inout int, b: inout int) {
+def doSwap(a: mut int, b: mut int) {
     tmp := a;
     a = b;
     b = a;

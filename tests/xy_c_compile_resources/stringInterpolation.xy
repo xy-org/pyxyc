@@ -19,19 +19,19 @@ struct StrBuilder {
     cap: Size;
 }
 
-def append(builder: inout StrBuilder, str: Str) {
+def append(builder: mut StrBuilder, str: Str) {
     # left empty for brevity of test
 }
 
-def append(builder: inout StrBuilder, f: float, precision:=6) {
+def append(builder: mut StrBuilder, f: float, precision:=6) {
     # left empty for brevity of test
 }
 
-def append(builder: inout StrBuilder, addr: Ptr, size: Size) {
+def append(builder: mut StrBuilder, addr: Ptr, size: Size) {
     # left empty for brevity of test
 }
 
-def to(builder: inout StrBuilder, :Str) -> Str {
+def to(builder: mut StrBuilder, :Str) -> Str {
     res := Str{builder.addr, builder.size};
     # builder.addr = Ptr'null;
     # builder.[cap, size] = 0;

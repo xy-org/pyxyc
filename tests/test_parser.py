@@ -651,15 +651,15 @@ def test_parse_boundary_expressions(code, exp_ast):
                 ],
                 params=[
                     ast.VarDecl(
-                        "a", type=ast.Id("int"), is_param=True, is_in=True
+                        "a", type=ast.Id("int"), is_param=True,
                     ),
                     ast.VarDecl(
                         "b", type=ast.Id("int"), value=ast.Const(0),
-                        is_param=True, is_in=True
+                        is_param=True,
                     ),
                     ast.VarDecl(
                         "c", value=ast.BinExpr(ast.Id("a"), ast.Id("b"), op="+"),
-                        is_param=True, is_in=True
+                        is_param=True,
                     ),
                 ],
                 body=[
@@ -1277,7 +1277,7 @@ def test_expressions(code, exp_ast):
         """def test() -> void {
             cb1: (:int)->int;
             cb2: (a:int, b:int)->void||Error;
-            cb3: (:inout int)->void;
+            cb3: (:mut int)->void;
             cb4: Ptr~[()->Str||Error];
         }
         """,
@@ -1285,7 +1285,7 @@ def test_expressions(code, exp_ast):
             ast.FuncDef(ast.Id("test"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl("cb1", mutable=True, type=ast.FuncType(
                     params=[
-                        ast.VarDecl(type=ast.Id("int"), is_in=True, is_param=True),
+                        ast.VarDecl(type=ast.Id("int"), is_param=True),
                     ],
                     returns=[
                         ast.VarDecl(type=ast.Id("int")),
@@ -1293,8 +1293,8 @@ def test_expressions(code, exp_ast):
                 )),
                 ast.VarDecl("cb2", mutable=True, type=ast.FuncType(
                     params=[
-                        ast.VarDecl(name="a", type=ast.Id("int"), is_in=True, is_param=True),
-                        ast.VarDecl(name="b", type=ast.Id("int"), is_in=True, is_param=True),
+                        ast.VarDecl(name="a", type=ast.Id("int"), is_param=True),
+                        ast.VarDecl(name="b", type=ast.Id("int"), is_param=True),
                     ],
                     returns=[
                         ast.VarDecl(type=ast.Id("void")),
@@ -1303,7 +1303,7 @@ def test_expressions(code, exp_ast):
                 )),
                 ast.VarDecl("cb3", mutable=True, type=ast.FuncType(
                     params=[
-                        ast.VarDecl(type=ast.Id("int"), is_inout=True),
+                        ast.VarDecl(type=ast.Id("int"), mutable=True),
                     ],
                     returns=[
                         ast.VarDecl(type=ast.Id("void")),
@@ -1737,7 +1737,7 @@ def test_visibility(code, exp_ast):
                     ast.VarDecl(type=ast.Id("int"), index_in=ast.Id("arr"), mutable=True),
                 ],
                 params=[
-                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, is_in=True, mutable=False)
+                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, mutable=False)
                 ],
                 body=[
                     ast.Return(ast.Const(0)),
@@ -1749,7 +1749,7 @@ def test_visibility(code, exp_ast):
                     ast.VarDecl(type=ast.Id("int"), index_in=ast.Id("arr"), mutable=True),
                 ],
                 params=[
-                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, is_in=True, mutable=False)
+                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, mutable=False)
                 ],
                 body=[
                     ast.Return(ast.Const(0)),
@@ -1758,8 +1758,8 @@ def test_visibility(code, exp_ast):
             ast.FuncDef(
                 ast.Id("func"),
                 params=[
-                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, is_in=True, mutable=False),
-                    ast.VarDecl("idx", type=ast.Id("int"), is_param=True, is_in=True, mutable=False),
+                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, mutable=False),
+                    ast.VarDecl("idx", type=ast.Id("int"), is_param=True, mutable=False),
                 ],
                 returns=[
                     ast.VarDecl(
@@ -1775,7 +1775,7 @@ def test_visibility(code, exp_ast):
             ast.FuncDef(
                 ast.Id("func"),
                 params=[
-                    ast.VarDecl("idx", type=ast.Id("int"), is_param=True, is_in=True, mutable=False),
+                    ast.VarDecl("idx", type=ast.Id("int"), is_param=True, mutable=False),
                 ],
                 returns=[
                     ast.VarDecl(
@@ -2716,9 +2716,9 @@ def test_do_while(code, exp_ast):
         """,
         [
             ast.FuncDef(ast.Id("main"), params=[
-                ast.VarDecl("limX", type=ast.Id("int"), is_param=True, is_in=True),
-                ast.VarDecl("limY", type=ast.Id("int"), is_param=True, is_in=True),
-                ast.VarDecl("limZ", type=ast.Id("int"), is_param=True, is_in=True),
+                ast.VarDecl("limX", type=ast.Id("int"), is_param=True),
+                ast.VarDecl("limY", type=ast.Id("int"), is_param=True),
+                ast.VarDecl("limZ", type=ast.Id("int"), is_param=True),
             ], body=[
                 ast.VarDecl("res", value=ast.Const(1), mutable=True),
                 ast.ForExpr(

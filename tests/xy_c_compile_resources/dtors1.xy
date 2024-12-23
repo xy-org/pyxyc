@@ -6,7 +6,7 @@ def free(mem: Ptr) {
     # ...
 }
 
-def push(arr: inout Array, val: int) {
+def push(arr: mut Array, val: int) {
     # ...
 }
 
@@ -16,7 +16,7 @@ def dtor(p: Array, managed: bool = p..managed) {
     }
 }
 
-def update(arr: inout Array) {
+def update(arr: mut Array) {
     # ...
 }
 

@@ -1,4 +1,4 @@
-def swap(a: inout int, b: inout int) {
+def swap(a: mut int, b: mut int) {
     tmp := a;
     a = b;
     b = a;
@@ -12,11 +12,11 @@ def get(arr: Array, idx: int) -> ref(arr) Ptr~[<< arr..elemType] {
     # omitted for brevity
 }
 
-def stuff(arr1: inout Array~int, arr2: inout Array~int) {
+def stuff(arr1: mut Array~int, arr2: mut Array~int) {
     moreStuff(arr1, arr2[0]); # cannot catch the error here
 }
 
-def moreStuff(arr: inout Array~int, val: inout int) {
+def moreStuff(arr: mut Array~int, val: mut int) {
     # omitted for brevity
 }
 

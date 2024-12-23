@@ -10,7 +10,7 @@ struct Array~[elemType: struct, xy_dtor=true] {
     len: Size~Count;
 }
 
-def dtor(arr: inout Array) {
+def dtor(arr: mut Array) {
     arr.mem'free();
 }
 
@@ -21,7 +21,7 @@ def max(a: Size, b: Size) -> Size {
 }
 
 def ensureCapacity(
-    arr: inout Array,
+    arr: mut Array,
     requiredCap: Size,
     elemSize : Size = ctti.sizeof(arr..elemType)
 ) {
@@ -32,7 +32,7 @@ def ensureCapacity(
 }
 
 def push(
-    arr: inout Array,
+    arr: mut Array,
     elem: pseudo ?,
     elemMem: Ptr = elem'addrof,
     elemSize := ctti.sizeof(elem)
@@ -69,7 +69,7 @@ def iter(arr: Array) -> in(arr) ArrayIter {
 
 def valid(arr: Array, iter: ArrayIter) = iter.idx < arr'len;
 
-def next(arr: pseudo Array, iter: inout ArrayIter) {
+def next(arr: pseudo Array, iter: mut ArrayIter) {
    iter.idx++;
 }
 

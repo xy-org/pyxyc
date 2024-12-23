@@ -13,7 +13,7 @@ struct CoordField{
 def get(p: Point, f: CoordField) -> float {
     return p.coords[f.i];
 }
-def set(p: inout Point, f: CoordField, val: float) -> void {
+def set(p: mut Point, f: CoordField, val: float) -> void {
     p.coords[f.i] = val;
 }
 

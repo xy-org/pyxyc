@@ -1,4 +1,4 @@
-def swap(a: inout int, b: inout int) {
+def swap(a: mut int, b: mut int) {
     tmp := a;
     a = b;
     b = a;

@@ -6,7 +6,7 @@ struct State {
     y: float;
 }
 
-def fillAndReset(st: inout State, val: inout int) {
+def fillAndReset(st: mut State, val: mut int) {
     st.a = val;
     st.b = val;
     st.c = val;

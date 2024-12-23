@@ -12,7 +12,7 @@ def fibonacci~IterCtor() -> in() Fib {
 
 def valid(fib: Fib) = true;
 
-def next(fib: inout Fib) {
+def next(fib: mut Fib) {
     fib = Fib{fib.a + fib.b, fib.a};
 }
 

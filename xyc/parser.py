@@ -336,13 +336,11 @@ def parse_params(itoken):
             if itoken.peak() != ")":
                 raise ParsingError("Missing comma at end of parameter", itoken)
 
-        if not (param.is_in or param.is_out or param.is_inout or param.is_outin):
-            param.is_in = True
-
         if param.name is None:
             param.is_pseudo = True
 
-        param.mutable = False
+        if not param.explicit_mutable:
+            param.mutable = False
         param.is_param = True
         res.append(param)
 
@@ -706,12 +704,9 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
 
     if itoken.check("mut"):
         decl.mutable = True
-    elif itoken.check("out"):
-        decl.is_out = True
-    elif itoken.check("inout"):
-        decl.is_inout = True
-    elif itoken.check("outin"):
-        decl.is_outin = True
+        decl.explicit_mutable = True
+    elif itoken.peak() in {"out", "inout", "outin", "ref"}:
+        raise ParsingError(f"'{itoken.peak()}' is a reserved keyword", itoken)
     elif itoken.check("pseudo"):
         decl.is_pseudo = True
     elif itoken.check("in"):
@@ -847,7 +842,7 @@ def expr_to_param(expr, itoken):
     if isinstance(expr, VarDecl):
         return expr
     if (isinstance(expr, SliceExpr) and expr.step is None and expr.end is not None):
-        decl = VarDecl(src=expr.src, coords=expr.coords, is_param=True, is_in=True)
+        decl = VarDecl(src=expr.src, coords=expr.coords, is_param=True)
         if expr.start is not None:
             decl.name = expr.start.name
         decl.type = expr_to_type(expr.end)

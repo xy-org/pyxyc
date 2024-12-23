@@ -1,4 +1,4 @@
-def mod(num: inout int) {
+def mod(num: mut int) {
     num *= 2;
 }
 

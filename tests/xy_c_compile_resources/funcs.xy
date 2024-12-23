@@ -1,4 +1,4 @@
-# Funcs having in and inout params
+# Funcs having in and mut params
 
 struct A {
     num: int;
@@ -8,11 +8,11 @@ def double(a: A) -> A {
     return A{a.num * 2};
 }
 
-def doubleInout(a: inout A) {
+def doubleInout(a: mut A) {
     a.num *= 2;
 }
 
-def callDoubles(a: inout A) -> A {
+def callDoubles(a: mut A) -> A {
     a = double(a);
     doubleInout(a);
     return a;

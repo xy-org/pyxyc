@@ -32,7 +32,7 @@ def valid(arr: Array, iter: SliceIter) -> bool {
     return iter.i < arr.len & iter.i < iter.lim;
 }
 
-def next(arr: Array, iter: inout SliceIter) {
+def next(arr: Array, iter: mut SliceIter) {
     iter.i++;
 }
 
@@ -44,7 +44,7 @@ def set(arr: Array, iter: SliceIter, val: float) {
     arr.elems[iter.i] = val;
 }
 
-def calmpTo0(arr: inout Array, n: Size, m: Size) {
+def calmpTo0(arr: mut Array, n: Size, m: Size) {
     for (elem in arr[n:m]) {
         if (elem < 0) {
             elem = 0.0f;

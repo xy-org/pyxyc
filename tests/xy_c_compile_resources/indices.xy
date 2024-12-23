@@ -15,7 +15,7 @@ def get(p: Point, idx: int) -> float {
     return @[p.x, p.y, p.z, p.w][idx];
 }
 
-def set(p: inout Point, idx: int, v: float)
+def set(p: mut Point, idx: int, v: float)
 >> idx <= 3
 {
     if (idx == 0) {
@@ -46,7 +46,7 @@ struct  PointCloud {
     len: Size;
 }
 
-def append(pc: inout PointCloud, p: Point) {
+def append(pc: mut PointCloud, p: Point) {
     pc.len++;
     # rest omitted for brievity
 }
@@ -59,11 +59,11 @@ def get(pc: PointCloud, i: int) -> in(pc) Ptr~Point {
     return pc.mem + i * sizeof(Point);
 }
  
-def set(pc: inout PointCloud, i: int, p: Point) {
+def set(pc: mut PointCloud, i: int, p: Point) {
     # not implemented for brievity
 }
 
-def testPointCloud(m0: inout PointCloud, m1: PointCloud) {
+def testPointCloud(m0: mut PointCloud, m1: PointCloud) {
     ms : PointCloud;
     ms'append(Point{1.0f, 1.0f, .05f, 1.0f});
     ms'append(Point{1.0f, 1.0f, .05f, 1.0f});

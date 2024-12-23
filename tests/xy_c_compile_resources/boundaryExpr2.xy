@@ -1,6 +1,6 @@
 def sum(x: int, y: int = ^x) x + y;
 
-def quadruple(num: inout int) -> int {
+def quadruple(num: mut int) -> int {
     num *= 4;
     return num;
 }
