@@ -71,8 +71,7 @@ def test_error_statement(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """import module
-        """,
+        """import module""",
         "Missing ';' at end of import. All statements or expressions not using a '{}' block require a terminating ';'"
     ),
 ])

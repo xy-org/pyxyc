@@ -153,6 +153,12 @@ def main(i: int) -> int {
             )
         ]
     ],
+    [
+        "import xylib;; Used for stuff\n",
+        [
+            ast.Import(lib="xylib", comment=";; Used for stuff"),
+        ],
+    ],
 ])
 def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)

@@ -16,7 +16,7 @@ class TokenIter:
     
     def peak(self):
         if not self.has_more():
-            raise ParsingError("Unexpected end of file", self)
+            return ""
         return self.tokens[self.i]
     
     def peakn(self, n: int):
@@ -48,7 +48,7 @@ class TokenIter:
 
     def expect_semicolon(self, msg=None):
         if not self.has_more():
-            raise ParsingError("Unexpected end of file", self)
+            raise ParsingError(msg, self)
         if not self.check_semicolon():
             if msg:
                 raise ParsingError(msg, self)
@@ -174,8 +174,7 @@ def parse_import(itoken):
 
     if itoken.peak() == ",":
         raise ParsingError("Importing more than one module at a time is NYI.", itoken)
-    itoken.expect(";", msg=f"Missing ';' at end of import. {semicolon_error_explanation}")
-    itoken.expect_eol()
+    itoken.expect_semicolon(msg=f"Missing ';' at end of import. {semicolon_error_explanation}")
 
     return Import(
         lib=lib, in_name=in_name, tags=tags, src=itoken.src, coords=coords
