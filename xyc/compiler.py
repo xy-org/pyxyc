@@ -2715,6 +2715,17 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             xy_node=expr,
             infered_type=func_obj.rtype_obj
         )
+    elif is_builtin_func(func_obj, "neg"):
+        res = c.UnaryExpr(
+            arg=arg_exprs[0].c_node,
+            op='-',
+            prefix=True,
+        )
+        return ExprObj(
+            c_node=res,
+            xy_node=expr,
+            infered_type=func_obj.rtype_obj
+        )
     elif is_builtin_func(func_obj, "argc"):
         return ExprObj(
             c_node=c.Id(global_argc_name),
@@ -3711,6 +3722,8 @@ def rewrite_unaryop(expr, ctx):
         fname = "inc"
     elif expr.op == "--":
         fname = "dec"
+    elif expr.op == "-":
+        fname = "neg"
     else:
         raise CompilationError(f"Unrecognized operator '{expr.op}'", expr)
     return xy.FuncCall(

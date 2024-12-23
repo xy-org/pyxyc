@@ -6,6 +6,6 @@ def test() -> int {
 }
 
 def abs~Callback(a: int) -> int {
-    return if(a < 0) a else a;
+    return if (a < 0) -a else a;
 }
 

@@ -1102,6 +1102,24 @@ def test_parse_operator_slices(code, exp_ast):
             ])
         ]
     ],
+    [
+        """def func() -> void {
+            a := 5;
+            b := -a;
+            c := if(a < 0) -a else a;
+        }""",
+        [
+            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("a", varying=False, value=ast.Const(5)),
+                ast.VarDecl("b", varying=False, value=ast.UnaryExpr(ast.Id("a"), op="-")),
+                ast.VarDecl("c", value=ast.IfExpr(
+                    cond=ast.BinExpr(ast.Id("a"), ast.Const(0), op="<"),
+                    block=ast.Block(body=ast.UnaryExpr(ast.Id("a"), op="-")),
+                    else_node=ast.Block(body=ast.Id("a")),
+                ))
+            ]),
+        ]
+    ],
 ])
 def test_expressions(code, exp_ast):
     act_ast = parse_code(code)

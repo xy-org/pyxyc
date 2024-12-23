@@ -207,6 +207,14 @@ def sub(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
+def neg(a: int) -> int {
+    # Implemented by the compiler
+}
+
+def neg(a: Size) -> int {
+    # Implemented by the compiler
+}
+
 def inc(a: inout int) -> void {
     # Implemented by the compiler
 }

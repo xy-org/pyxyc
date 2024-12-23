@@ -14,7 +14,7 @@ int32_t callbacks_test(void) {
 int32_t callbacks_abs(int32_t a) {
     int32_t tmp1 = 0;
     if (a < 0) {
-        tmp1 = a;
+        tmp1 = -a;
     } else {
         tmp1 = a;
     }
