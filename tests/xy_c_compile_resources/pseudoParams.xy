@@ -15,9 +15,9 @@ def func2(x: int, y: double) -> int {
 }
 
 def test() {
-     func1(5, 0);
-     func1(5, true);
-     func2(5, 5);
-     func2(5, int);
-     func2(5, 5.0);
+    func1(5, 0);
+    func1(5, true);
+    func2(5, 5);
+    func2(5, int);
+    func2(5, 5.0);
 }

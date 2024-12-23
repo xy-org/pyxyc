@@ -66,6 +66,7 @@ class FuncObj(CompiledObj):
     etype_obj: TypeObj = None
     params: list['VarObj'] = field(default_factory=list)
     builtin: bool = False
+    move_args_to_temps: bool = False
 
     @property
     def c_name(self):
@@ -572,8 +573,12 @@ def compile_func_prototype(node, cast, ctx):
     cname = mangle_def(node, ctx, expand=expand_name)
     cfunc = c.Func(name=cname)
     param_objs = []
+    move_args_to_temps = False
     for param in node.params:
         param_obj = VarObj(xy_node=param, passed_by_ref=should_pass_by_ref(param))
+
+        if param.value is not None:
+            move_args_to_temps = True
 
         if param.type is not None:
             param_obj.type_desc = find_type(param.type, ctx)
@@ -627,7 +632,7 @@ def compile_func_prototype(node, cast, ctx):
     cast.func_decls.append(cfunc)
     compiled = FuncObj(
         node, cfunc, rtype_obj=rtype_compiled, etype_obj=etype_compiled,
-        params=param_objs
+        params=param_objs, move_args_to_temps=move_args_to_temps
     )
 
     if node.etype is not None:
@@ -974,6 +979,8 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
                 xy_node=var_obj.xy_node,
                 infered_type=var_obj
             )
+        elif isinstance(var_obj, ExprObj):
+            return var_obj
         else:
             raise CompilationError("Invalid expression", expr)
     elif isinstance(expr, xy.FuncCall):
@@ -1171,17 +1178,64 @@ def cstr_len(s: str) -> int:
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     fspace = ctx.eval_to_fspace(expr.name)
 
-    arg_exprs = [
-        compile_expr(arg, cast, cfunc, ctx)
-        for arg in expr.args
-    ]
+    arg_exprs = []
+    expr_to_move_idx = None
+    for i in range(len(expr.args)):
+        obj = compile_expr(expr.args[i], cast, cfunc, ctx)
+        if cfunc is not None and not is_simple_cexpr(obj.c_node):
+            if expr_to_move_idx is not None:
+                tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, cfunc, ctx)
+                arg_exprs[expr_to_move_idx] = tmp_obj
+            expr_to_move_idx = i
+
+        arg_exprs.append(obj)
     arg_infered_types = [
         arg_expr.infered_type for arg_expr in arg_exprs
     ]
 
     func_obj = fspace.find(expr, arg_infered_types, ctx)
 
+    if func_obj.move_args_to_temps and expr_to_move_idx is not None:
+        arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
+            arg_exprs[expr_to_move_idx], cast, cfunc, ctx
+        )
+
     return do_compile_fcall(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+
+def compile_expr_for_arg(arg: xy.Node, cast, cfunc, ctx: CompilerContext):
+    expr_obj = compile_expr(arg, cast, cfunc, ctx)
+    return maybe_move_to_temp(expr_obj, cast, cfunc, ctx)
+
+def maybe_move_to_temp(expr_obj, cast, cfunc, ctx):
+    if cfunc is not None and not is_simple_cexpr(expr_obj.c_node):
+        return move_to_temp(expr_obj, cast, cfunc, ctx)
+    else:
+        return expr_obj
+    
+def move_to_temp(expr_obj, cast, cfunc, ctx):
+    tmp_obj = ctx.create_tmp_var(expr_obj.infered_type, name_hint="arg")
+    tmp_obj.c_node.value = expr_obj.c_node
+    cfunc.body.append(tmp_obj.c_node)
+    return ExprObj(
+        xy_node=expr_obj.xy_node,
+        c_node=c.Id(tmp_obj.c_node.name),
+        infered_type=expr_obj.infered_type,
+        tags=expr_obj.tags
+    )
+
+def is_simple_cexpr(expr):
+    if isinstance(expr, (c.Id, c.Const)):
+        return True
+    if isinstance(expr, c.Expr):
+        return is_simple_cexpr(expr.arg1) and is_simple_cexpr(expr.arg2)
+    if isinstance(expr, c.UnaryExpr):
+        return is_simple_cexpr(expr.arg)
+    if isinstance(expr, c.StructLiteral):
+        return all(is_simple_cexpr(e) for e in expr.args)
+    if isinstance(expr, c.Index):
+        return is_simple_cexpr(expr.expr) and is_simple_cexpr(expr.index)
+    return False 
+    
 
 def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     fobj = ctx.eval_to_fspace(
@@ -1258,16 +1312,19 @@ def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, 
 
     res = c.FuncCall(name=func_obj.c_name)
     if func_obj.xy_node is not None:
-        for xy_param, arg in zip(func_obj.xy_node.params, arg_exprs):
-            if xy_param.is_pseudo:
+        ctx.push_ns()
+        for pobj, arg in zip(func_obj.params, arg_exprs):
+            ctx.ns[pobj.xy_node.name] = arg
+            if pobj.xy_node.is_pseudo:
                 continue
-            if should_pass_by_ref(xy_param):
+            if pobj.passed_by_ref:
                 res.args.append(c_getref(arg.c_node))
             else:
                 res.args.append(arg.c_node)
-        for xy_param in func_obj.xy_node.params[len(arg_exprs):]:
-            default_obj = compile_expr(xy_param.value, cast, cfunc, ctx)
+        for pobj in func_obj.params[len(arg_exprs):]:
+            default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, ctx)
             res.args.append(default_obj.c_node)
+        ctx.pop_ns()
     else:
         # external c function
         for arg in arg_exprs:
@@ -1712,6 +1769,14 @@ def compile_binop(binexpr, cast, cfunc, ctx):
                 op=binexpr.op
             )
             return ExprObj(binexpr, c_res, infered_type=ctx.bool_obj)
+        else:
+            tmp_obj = ctx.create_tmp_var(arg1_eobj.infered_type)
+            ctx.ns[tmp_obj.c_node.name] = arg1_eobj
+            binexpr = xy.BinExpr(
+                arg1=xy.Id(tmp_obj.c_node.name),
+                arg2=binexpr.arg2,
+                op=binexpr.op
+            )
 
     fcall = rewrite_op(binexpr, ctx)
     return compile_expr(fcall, cast, cfunc, ctx)

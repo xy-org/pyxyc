@@ -41,6 +41,10 @@ funcs_A funcs_defaultArg2(funcs_A a, funcs_A b) {
     return (funcs_A){a.m_num * b.m_num};
 }
 
+funcs_A funcs_defaultArg3(funcs_A a, funcs_A b) {
+    return (funcs_A){a.m_num - b.m_num};
+}
+
 funcs_A funcs_rndA(void) {
     return (funcs_A){5};
 }
@@ -51,4 +55,9 @@ void funcs_testDefaultArgs(void) {
     const funcs_A a = (funcs_A){10};
     funcs_defaultArg1(a, (funcs_A){0});
     funcs_defaultArg2(a, funcs_rndA());
+    funcs_defaultArg2(a, (funcs_A){10});
+    funcs_defaultArg3(a, funcs_defaultArg1(a, (funcs_A){0}));
+    funcs_defaultArg3(a, (funcs_A){20});
+    funcs_A tmp_arg0 = funcs_defaultArg2((funcs_A){0}, funcs_rndA());
+    funcs_defaultArg3(tmp_arg0, funcs_defaultArg1(tmp_arg0, (funcs_A){0}));
 }
