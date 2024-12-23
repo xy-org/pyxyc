@@ -3,7 +3,7 @@ from os import path
 import subprocess
 from xyc.ast import Source
 from xyc.parser import parse_code
-from xyc.compiler import compile_module, compile_builtins, compile_ctti
+from xyc.compiler import compile_module, compile_ctti, compile_builtins
 import xyc.cstringifier as cstringifier
 from dataclasses import dataclass
 import xyc.cast as c
@@ -16,14 +16,17 @@ class CompiledModule:
 class Builder:
     def __init__(self, input: str, output: str | None = None,
                  compile_only=False, work_dir=".xyc_build",
-                 package_paths: list[str] = []):
+                 package_paths: list[str] = [], builtin_lib_path: str = None):
         self.input = input
         self.output = output
         self.project_name = path.splitext(path.basename(path.abspath(input)))[0]
         if not output:
             self.output = self.project_name
         self.module_cache = {}
-        self.search_paths = package_paths[:]
+        if builtin_lib_path is None:
+            builtin_lib_path = path.join(path.dirname(__file__), "libs")
+        self.builtin_lib_path = builtin_lib_path
+        self.search_paths = package_paths + [builtin_lib_path]
         self.compile_only = compile_only
         self.work_dir = work_dir
 
@@ -51,7 +54,15 @@ class Builder:
     
     def compile_builtins(self):
         builtins_module_name = "xy.builtins"
-        header, c_srcs = compile_builtins(self, builtins_module_name)
+        module_path = path.join(self.builtin_lib_path, "xy", "builtins")
+        if not path.exists(module_path):
+            raise ValueError(f"Cannot locate the 'xy' library at {module_path}")
+        module_ast = parse_module(module_path, builtins_module_name)
+
+        header, c_srcs = compile_builtins(
+            self, builtins_module_name, list(module_ast.values())[0]
+        )
+
         self.module_cache[builtins_module_name] = CompiledModule(header, c_srcs)
 
     def compile_ctti(self):

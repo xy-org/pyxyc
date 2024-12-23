@@ -1,0 +1,331 @@
+;; A type that means no-type
+struct void {
+    # Implemented by the compiler
+    # Should this even be a type?
+    # It is a type in C so it makes sense to be one in xy.
+}
+
+# Primitive bool tyes
+
+;; 8-bit true/false type
+struct bool {
+    # Implemented by the compiler
+}
+
+# Primitive numeric types.
+
+;; 8-bit signed integer type
+struct byte {
+    # Implemented by the compiler
+}
+
+;; 16-bit signed integer type
+struct short {
+    # Implemented by the compiler
+}
+
+;; 32-bit signed integer type
+struct int {
+    # Implemented by the compiler
+}
+
+;; 64-bit signed integer type
+struct long {
+    # Implemented by the compiler
+}
+
+;; 8-bit unsigned integer type
+struct ubyte {
+    # Implemented by the compiler
+}
+
+;; 16-bit unsigned integer type
+struct ushort {
+    # Implemented by the compiler
+}
+
+;; 32-bit unsigned integer type
+struct uint {
+    # Implemented by the compiler
+}
+
+;; 64-bit unsigned integer type
+struct ulong {
+    # Implemented by the compiler
+}
+
+;; Integer type as large as the addressable memory space on the target
+;; architecture. This type is (by definition) platform dependant. It is
+;; provided for interfacing with native libraries and for building libraries. 
+;; Size is always unsigned. For error handling use xy error-handling mechanisms.
+struct Size {
+    # Implemented by the compiler
+}
+
+;; A good old pointer. Use with caution.
+struct Ptr~[to: struct] {
+    # Implemented by the compiler
+}
+
+;; 32-bit IEEE 754 floating point number
+struct float {
+    # Implemented by the compiler
+}
+
+;; 64-bit IEEE 754 floating point number
+struct double {
+    # Implemented by the compiler
+}
+
+# Arithmatic operations
+
+def add(a: int, b: int) -> int {
+    # Implemented by the compiler
+}
+
+def add(a: int, b: double) -> double {
+    # Implemented by the compiler
+}
+
+def add(a: int, b: float) -> float {
+    # Implemented by the compiler
+}
+
+def add(a: double, b: float) -> double {
+    # Implemented by the compiler
+}
+
+def add(a: double, b: double) -> double {
+    # Implemented by the compiler
+}
+
+def add(a: Size, b: Size) -> Size {
+    # Implemented by the compiler
+}
+
+def add(a: Size, b: int) -> Size {
+    # Implemented by the compiler
+}
+
+def add(a: long, b: int) -> double {
+    # Implemented by the compiler
+}
+
+def add(a: double, b: int) -> double {
+    # Implemented by the compiler
+}
+
+def add(a: Ptr, b: int) -> Ptr {
+    # Implemented by the compiler
+}
+
+def add(a: Ptr, b: Size) -> Ptr {
+    # Implemented by the compiler
+}
+
+def add(a: float, b: float) -> float {
+    # Implemented by the compiler
+}
+
+;; Add and accumulate
+def addEqual(a: int, b: int) -> int {
+    # Implemented by the compiler
+}
+
+def addEqual(a: float, b: float) -> int {
+    # Implemented by the compiler
+}
+
+def addEqual(a: inout int, b: Size) -> int {
+    # Implemented by the compiler
+}
+
+def addEqual(a: inout Size, b: Size) -> int {
+    # Implemented by the compiler
+}
+
+def addEqual(a: inout Size, b: int) -> void {
+    # Implemented by the compiler
+}
+
+;; Subtraction
+def sub(a: int, b: int) -> int {
+    # Implemented by the compiler
+}
+
+def sub(a: Size, b: int) -> Size {
+    # Implemented by the compiler
+}
+
+def inc(a: inout int) -> void {
+    # Implemented by the compiler
+}
+
+def inc(a: inout Size) -> void {
+    # Implemented by the compiler
+}
+
+;; Multiplies {a} and {b} together
+def mul(a: int, b: int) -> int {
+    # Implemented by the compiler
+}
+
+def mul(a: float, b: float) -> int {
+    # Implemented by the compiler
+}
+
+def mul(a: double, b: double) -> double {
+    # Implemented by the compiler
+}
+
+def mul(a: float, b: int) -> float {
+    # Implemented by the compiler
+}
+
+def mul(a: int, b: Size) -> Size {
+    # Implemented by the compiler
+}
+
+def mul(a: Size, b: Size) -> Size {
+    # Implemented by the compiler
+}
+
+;; Multiplication with accumulate
+def mulEqual(a: double, b: double) -> int {
+    # Implemented by the compiler
+}
+
+def mulEqual(a: int, b: int) -> int {
+    # Implemented by the compiler
+}
+
+;; Division
+
+def div(a: int, b: int) -> int {
+    # Implemented by the compiler
+}
+
+# Conversion between types
+
+;; Convert {a} to uint
+def to(a: int, :uint) -> uint {
+    # Implemented by the compiler
+}
+
+def to(a: int, b: float) -> float {
+    # Implemented by the compiler
+}
+
+def to(a: int, b: double) -> double {
+    # Implemented by the compiler
+}
+
+# Logical operations
+
+;; Compares {a} to {b}.
+def cmp(a: int, b: int) -> int {
+    # Implemented by the compiler
+}
+
+def cmp(a: uint, b: int) -> int {
+    # Implemented by the compiler
+}
+
+def cmp(a: Size, b: Size) -> Size {
+    # Implemented by the compiler
+}
+
+def cmp(a: Size, b: int) -> Size {
+    # Implemented by the compiler
+}
+
+def cmp(a: double, b: int) -> double {
+    # Implemented by the compiler
+}
+
+def cmp(a: double, b: double) -> double {
+    # Implemented by the compiler
+}
+
+def cmp(a: int, b: Size) -> Size {
+    # Implemented by the compiler
+}
+
+# Tag related stuff
+
+;; Use this struct to tag other structs that are intended to be used as tags
+;; themselves
+struct TagCtor {
+    # Implemented by the compiler
+}
+
+# String related stuff
+
+;; Use this struct to mark functions that construct strings
+struct StrCtor {
+    # Implemented by the compiler
+}
+
+# Enums and Flags
+
+# TODO
+struct Enum {
+}
+
+# TODO
+struct Flags {
+}
+
+# Arrays
+
+;; Get the element at position {index} from the array {arr}
+def select(arr: ?, index: int) -> void {
+    # Implemented by the compiler
+}
+
+def select(arr: ?, index: uint) -> void {
+    # Implemented by the compiler
+}
+
+def select(arr: ?, index: Size) -> void {
+    # Implemented by the compiler
+}
+
+;; Use this struct to mark the function that should be used as the program
+;; entry point
+struct EntryPoint {
+    # Implemented by the compiler
+}
+
+# External libraries
+
+;; Use this struct to mark external libraries
+struct CLib {
+    # Implemented by the compiler
+}
+
+# Iter stuff
+
+;; Use this struct to mark iterator functions
+struct IterCtor {
+    # Implemented by the compiler
+}
+
+# Ctti stuff
+# TODO move to xy.ctti
+
+def typeof(arg: ?) -> void {
+    # Implemented by the compiler
+}
+
+def tagsof(arg: ?) -> void {
+    # Implemented by the compiler
+}
+
+def sizeof(arg: ?) -> Size {
+    # Implemented by the compiler
+}
+
+def addrof(arg: ?) -> Ptr {
+    # Implemented by the compiler
+}

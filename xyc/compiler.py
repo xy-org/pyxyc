@@ -643,26 +643,27 @@ def compile_module(builder, module_name, asts):
     ctx = CompilerContext(builder, module_name)
     res = c.Ast()
 
-    compile_import(xy.Import(lib="xy.builtins"), ctx, asts, res)
-    ctx.void_obj = ctx.global_ns["void"]
-    ctx.bool_obj = ctx.global_ns["bool"]
-    ctx.ptr_obj = ctx.global_ns["Ptr"]
-    ctx.size_obj = ctx.global_ns["Size"]
-    ctx.tagctor_obj = ctx.global_ns["TagCtor"]
-    ctx.uint_obj = ctx.global_ns["uint"]
-    ctx.int_obj = ctx.global_ns["int"]
-    ctx.prim_int_objs = (
-        ctx.global_ns["byte"],
-        ctx.global_ns["ubyte"],
-        ctx.global_ns["short"],
-        ctx.global_ns["ushort"],
-        ctx.global_ns["int"],
-        ctx.global_ns["uint"],
-        ctx.global_ns["long"],
-        ctx.global_ns["ulong"],
-    )
-    ctx.enum_obj = ctx.global_ns["Enum"]
-    ctx.flags_obj = ctx.global_ns["Flags"]
+    if module_name != "xy.builtins":
+        compile_import(xy.Import(lib="xy.builtins"), ctx, asts, res)
+        ctx.void_obj = ctx.global_ns["void"]
+        ctx.bool_obj = ctx.global_ns["bool"]
+        ctx.ptr_obj = ctx.global_ns["Ptr"]
+        ctx.size_obj = ctx.global_ns["Size"]
+        ctx.tagctor_obj = ctx.global_ns["TagCtor"]
+        ctx.uint_obj = ctx.global_ns["uint"]
+        ctx.int_obj = ctx.global_ns["int"]
+        ctx.prim_int_objs = (
+            ctx.global_ns["byte"],
+            ctx.global_ns["ubyte"],
+            ctx.global_ns["short"],
+            ctx.global_ns["ushort"],
+            ctx.global_ns["int"],
+            ctx.global_ns["uint"],
+            ctx.global_ns["long"],
+            ctx.global_ns["ulong"],
+        )
+        ctx.enum_obj = ctx.global_ns["Enum"]
+        ctx.flags_obj = ctx.global_ns["Flags"]
 
     compile_header(ctx, asts, res)
     
@@ -682,16 +683,6 @@ def compile_module(builder, module_name, asts):
                 func_obj.module_header = mh
 
     return mh, res
-
-def compile_builtins(builder, module_name):
-    ctx = CompilerContext(builder, module_name)
-    res = c.Ast()
-
-    import_builtins(ctx, res)
-
-    return ModuleHeader(
-        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg, ctx=ctx,
-    ), res
 
 def compile_ctti(builder, module_name):
     ctx = CompilerContext(builder, module_name)
@@ -775,8 +766,8 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     type_obj.tags.update(tag_objs)
     type_obj.tag_specs = tag_specs
 
-    type_obj.is_enum = type_obj.tags.get("xy_enum", None) is ctx.enum_obj
-    type_obj.is_flags = type_obj.tags.get("xy_flags", None) is ctx.flags_obj
+    type_obj.is_enum = type_obj.tags.get("xy_enum", -1) is ctx.enum_obj
+    type_obj.is_flags = type_obj.tags.get("xy_flags", -1) is ctx.flags_obj
 
     target_cast = None
     if isinstance(type_obj, ArrTypeObj):
@@ -1154,265 +1145,62 @@ def fill_param_default_values(node, cast, ctx):
         ctx.ns[pobj.xy_node.name] = pobj
     ctx.pop_ns()
 
-def import_builtins(ctx: CompilerContext, cast):
+def compile_builtins(builder, module_name, asts):
+    mh, _ = compile_module(builder, module_name, asts)
+    cast = c.Ast()
+
     # always include it as it is everywhere
     cast.includes.append(c.Include("stdint.h"))
     cast.includes.append(c.Include("stddef.h"))
     cast.includes.append(c.Include("stdbool.h"))
 
-    int_types = [
-       "byte", "ubyte",
-       "short", "ushort",
-       "int", "uint",
-       "long", "ulong",
-       "Size", 
-    ]
-    num_types = [
-       *int_types,
-       "float", "double"
-    ]
+    for obj in mh.ctx.module_ns.values():
+        obj.builtin = True
 
-    ctype_map = {
-        "byte": "int8_t", "ubyte": "uint8_t",
-        "short": "int16_t", "ushort": "uint16_t",
-        "int": "int32_t", "uint": "uint32_t",
-        "long": "int64_t", "ulong": "uint64_t",
-        "Size": "size_t",
-        "float": "float", "double": "double",
-        "bool": "bool", "void": "void",
-    }
+        if isinstance(obj, FuncSpace):
+            for func_obj in obj._funcs:
+                func_obj.builtin = True
+                # XXX Please remove that
+                func_obj.xy_node.name = func_obj.xy_node.name.name
 
-    for xtype, ctype in ctype_map.items():
-        type_obj = TypeObj(
-            xy_node=xy.StructDef(name=xtype),
-            c_node=c.Struct(name=ctype),
-            builtin=True,
-            init_value=c.Const(0),
-            fully_compiled=True,
-        )
-        type_obj.fields = {
-            "": VarObj(type_desc=type_obj, xy_node=xy.VarDecl())
-        }
-        ctx.module_ns[xtype] = type_obj
+        if isinstance(obj, TypeObj):
+            ctype_map = {
+                "byte": "int8_t", "ubyte": "uint8_t",
+                "short": "int16_t", "ushort": "uint16_t",
+                "int": "int32_t", "uint": "uint32_t",
+                "long": "int64_t", "ulong": "uint64_t",
+                "Size": "size_t",
+                "float": "float", "double": "double",
+                "bool": "bool", "void": "void",
+                "Ptr": "void*"
+            }
+            if obj.xy_node.name in ctype_map:
+                obj.c_node.name = ctype_map[obj.xy_node.name]
+                obj.init_value = c.Const(0)
+                obj.fields = {
+                    "": VarObj(type_desc=obj, xy_node=xy.VarDecl())
+                }
 
-    # Create type Ptr
-    ptr_obj = TypeObj(
-        xy_node=xy.StructDef(name="Ptr"),
-        c_node=c.Struct(name="void*"),
-        builtin=True,
-        init_value=c.Const(0),
-        fully_compiled=True,
-    )
-    ptr_obj.tag_specs = [
-        VarObj(xy_node=xy.VarDecl(name="to")),
-    ]
-    ptr_obj.fields = {
-        "": VarObj(type_desc=type_obj, xy_node=xy.VarDecl())
-    }
-    ctx.module_ns["Ptr"] = ptr_obj
 
-    # fill in base math operations
-    for p1, type1 in enumerate(num_types):
-        for p2, type2 in enumerate(num_types):
-            types = {type1, type2}
-            if "Size" in types and ("float" in types or "double" in types):
-                continue
-            larger_type = type1 if p1 > p2 else type2
-            for fname, rtype_name in [
-                ("add", larger_type), ("mul", larger_type),
-                ("sub", larger_type), ("div", larger_type),
-                ("addEqual", type1), ("mulEqual", type1),
-                ("subEqual", type1), ("divEqual", type1),
-                ("cmp", larger_type),
-            ]:
-                func = xy.FuncDef(
-                    fname,
-                    params=[
-                        xy.VarDecl("x", xy.Id(type1)),
-                        xy.VarDecl("y", xy.Id(type2))
-                    ],
-                    returns=xy.SimpleRType(rtype_name)
+            default_tag_label_map = {
+                "TagCtor": "xyTag",
+                "StrCtor": "xyStr",
+                "EntryPoint": "xy.entrypoint",
+                "IterCtor": "xyIter",
+                "CLib": "xyc.lib",
+                "Enum": "xy_enum",
+                "Flags": "xy_flags"
+            }
+            if obj.xy_node.name in default_tag_label_map:
+                label = default_tag_label_map[obj.xy_node.name]
+                obj.tags["xyTag"] = InstanceObj(
+                    kwargs={
+                        "label": StrObj(parts=[ConstObj(value=label)])
+                    },
+                    type_obj=mh.ctx.module_ns["TagCtor"]
                 )
-                desc = register_func(func, ctx)
-                desc.builtin = True
-                desc.rtype_obj = ctx.module_ns[rtype_name]
-                desc.param_objs = [
-                    VarObj(xy_node=xy.VarDecl(name="a"), type_desc=ctx.module_ns[type1]),
-                    VarObj(xy_node=xy.VarDecl(name="b"), type_desc=ctx.module_ns[type2])
-                ]
 
-    for type in int_types:
-        for fname in ["add", "sub"]:
-            func = xy.FuncDef(
-                fname,
-                params=[
-                    xy.VarDecl("x", xy.Id("Ptr")),
-                    xy.VarDecl("y", xy.Id(type))
-                ],
-                returns=xy.SimpleRType("Ptr")
-            )
-            desc = register_func(func, ctx)
-            desc.builtin = True
-            desc.rtype_obj = ctx.module_ns["Ptr"]
-            desc.param_objs = [
-                VarObj(type_desc=ctx.module_ns["Ptr"]),
-                VarObj(type_desc=ctx.module_ns[type])
-            ]
-    
-    # fill in ++(inc) and --(dec)
-    for type1 in num_types:
-        for fname in ["inc", "dec"]:
-            func = xy.FuncDef(
-                fname,
-                params=[
-                    xy.VarDecl("x", xy.Id(type1)),
-                ],
-                returns=xy.SimpleRType(type1)
-            )
-            desc = register_func(func, ctx)
-            desc.builtin = True
-            desc.rtype_obj = ctx.module_ns[rtype_name]
-            desc.param_objs = [
-                VarObj(type_desc=ctx.module_ns[type1]),
-            ]
-    
-    for int_type in int_types:
-        select = xy.FuncDef(name="select", params=[
-            xy.VarDecl("arr", xy.ArrayType(base=None)),
-            xy.VarDecl("index", xy.Id(int_type)),
-        ])
-        select_obj = register_func(select, ctx)
-        select_obj.builtin = True
-        select_obj.rtype_obj = None
-        select_obj.param_objs = [
-            VarObj(type_desc=ArrTypeObj(base_type_obj=any_type_obj)),
-            VarObj(type_desc=ctx.module_ns[int_type]),
-        ]
-
-    # conversion funcs
-
-    for base_type in num_types:
-        for to_type in num_types:
-            to = xy.FuncDef(name="to", params=[
-                xy.VarDecl("value", xy.Id(base_type)),
-                xy.VarDecl(type=xy.Id(to_type), is_pseudo=True),
-            ])
-            to_obj = register_func(to, ctx)
-            to_obj.builtin = True
-            to_obj.rtype_obj = None
-            to_obj.param_objs = [
-                VarObj(type_desc=ctx.module_ns[base_type]),
-                VarObj(type_desc=ctx.module_ns[to_type]),
-            ]
-
-    # tag construction
-    tag_ctor = xy.StructDef(name="TagCtor", fields=[
-        xy.VarDecl("label", type=None)
-    ])
-    tag_obj = TypeObj(tag_ctor, c.Struct("TagCtor"), builtin=True, fully_compiled=True)
-    tag_obj.tags["xyTag"] = InstanceObj(
-        kwargs={
-            "label": StrObj(parts=[ConstObj(value="xyTag")])
-        },
-        type_obj=tag_obj
-    )
-    ctx.module_ns["TagCtor"] = tag_obj
-
-    # string construction
-    str_ctor = xy.StructDef(name="StrCtor", fields=[
-        xy.VarDecl("prefix", type=None)
-    ])
-    str_obj = TypeObj(str_ctor, c.Struct("StrCtor"), builtin=True, fully_compiled=True)
-    str_obj.tags["xyTag"] = InstanceObj(
-        kwargs={
-            "label": StrObj(parts=[ConstObj(value="xyStr")])
-        },
-        type_obj=tag_obj
-    )
-    ctx.module_ns["StrCtor"] = str_obj
-
-    # iter construction
-    iter_ctor = xy.StructDef(name="IterCtor")
-    iter_ctor = TypeObj(str_ctor, c.Struct("IterCtor"), builtin=True, fully_compiled=True)
-    iter_ctor.tags["xyTag"] = InstanceObj(
-        kwargs={
-            "label": StrObj(parts=[ConstObj(value="xyIter")])
-        },
-        type_obj=tag_obj
-    )
-    ctx.module_ns["IterCtor"] = iter_ctor
-
-    # entry point
-    entrypoint = xy.StructDef(name="EntryPoint")
-    ep_obj = TypeObj(entrypoint, builtin=True, fully_compiled=True)
-    ep_obj.tags["xyTag"] = InstanceObj(
-        kwargs={
-            "label": StrObj(parts=[ConstObj(value="xy.entrypoint")])
-        }
-    )
-    ctx.module_ns["EntryPoint"] = ep_obj
-
-    # clib
-    clib = xy.StructDef(name="CLib")
-    clib_ojb = TypeObj(clib, builtin=True)
-    clib_ojb.tags["xyTag"] = InstanceObj(
-        kwargs={
-            "label": StrObj(parts=[ConstObj(value="xyc.lib")])
-        }
-    )
-    ctx.module_ns["CLib"] = clib_ojb
-
-    # typeof
-    typeof = xy.FuncDef("typeof", params=[xy.VarDecl("val")])
-    typeof_obj = register_func(typeof, ctx)
-    typeof_obj.builtin = True
-    typeof_obj.param_objs = [
-        VarObj()
-    ]
-
-    # tagsof
-    tagsof = xy.FuncDef("tagsof", params=[xy.VarDecl("val")])
-    tagsof_obj = register_func(tagsof, ctx)
-    tagsof_obj.builtin = True
-    tagsof_obj.param_objs = [
-        VarObj()
-    ]
-
-    # sizeof
-    sizeof = xy.FuncDef("sizeof", params=[xy.VarDecl("val")])
-    sizeof_obj = register_func(sizeof, ctx)
-    sizeof_obj.builtin = True
-    sizeof_obj.param_objs = [
-        VarObj()
-    ]
-
-    # addrof
-    addrof = xy.FuncDef("addrof", params=[xy.VarDecl("val")])
-    addrof_obj = register_func(addrof, ctx)
-    addrof_obj.builtin = True
-    addrof_obj.param_objs = [
-        VarObj()
-    ]
-
-    # Enum
-    enum = xy.StructDef(name="Enum")
-    enum_ojb = TypeObj(enum, builtin=True, fully_compiled=True)
-    enum_ojb.tags["xyTag"] = InstanceObj(
-        kwargs={
-            "label": StrObj(parts=[ConstObj(value="xy_enum")])
-        }
-    )
-    ctx.module_ns["Enum"] = enum_ojb
-
-    # Flags
-    flags = xy.StructDef(name="Flags")
-    flags_ojb = TypeObj(flags, builtin=True, fully_compiled=True)
-    flags_ojb.tags["xyTag"] = InstanceObj(
-        kwargs={
-            "label": StrObj(parts=[ConstObj(value="xy_flags")])
-        }
-    )
-    ctx.module_ns["Flags"] = flags_ojb
+    return mh, cast
 
 def import_ctti(ctx: CompilerContext, cast):
     # typeEqs - compile time type comparison
@@ -2335,7 +2123,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             "band": "&"
         }
         c_arg1 = arg_exprs[0].c_node
-        if func_obj.rtype_obj == ctx.ptr_obj:
+        if func_obj.rtype_obj is ctx.ptr_obj:
             # TODO what if function returns multiple values if len(func_obj.xy_node.returns) == 1
             # TODO what if Ptr has an attached type
             c_arg1 = c.Cast(c_arg1, to="int8_t*")
