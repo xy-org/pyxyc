@@ -1415,12 +1415,12 @@ def compile_ret_err_types(node, cast, cfunc, ctx):
             retparam = c.VarDecl(param_name, c.QualType(get_c_type(ret.type, cast, ctx) + "*"))
             cfunc.params.append(retparam)
             rtype_compiled = ctx.get_compiled_type(ret.type)
-            any_refs = any_refs or ret.is_ref
+            any_refs = any_refs or ret.is_index
         if node.etype is not None:
             etype_compiled = ctx.get_compiled_type(node.etype)
     elif len(node.returns) == 1:
         rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
-        any_refs = any_refs or node.returns[0].is_ref
+        any_refs = any_refs or node.returns[0].is_index
     else:
         rtype_compiled = ctx.void_obj
 
@@ -3317,11 +3317,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         func_obj=func_obj
     )
 
-    if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_ref:
+    if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:
         if func_obj.xy_node.returns[0].is_based:
-            refto_name = func_obj.xy_node.returns[0].references.name
+            refto_name = func_obj.xy_node.returns[0].index_in.name
             if refto_name not in callee_ctx.ns:
-                raise CompilationError(f"No parameter {refto_name}", func_obj.xy_node.returns[0].references)
+                raise CompilationError(f"No parameter {refto_name}", func_obj.xy_node.returns[0].index_in)
             base = callee_ctx.ns[refto_name]
         else:
             base = global_memory

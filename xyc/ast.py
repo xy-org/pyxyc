@@ -241,15 +241,15 @@ class VarDecl(Node):
     is_outin: bool = False
     is_pseudo: bool = False
     is_callerContext: bool = False
-    references: Node | None = None
+    index_in: Node | None = None
 
     @property
-    def is_ref(self):
-        return self.references is not None
+    def is_index(self):
+        return self.index_in is not None
     
     @property
     def is_based(self):
-        return self.references is not nobase
+        return self.index_in is not nobase
     
 nobase = Id("")
 

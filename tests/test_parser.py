@@ -1734,7 +1734,7 @@ def test_visibility(code, exp_ast):
             ast.FuncDef(
                 ast.Id("func"),
                 returns=[
-                    ast.VarDecl(type=ast.Id("int"), references=ast.Id("arr"), varying=True),
+                    ast.VarDecl(type=ast.Id("int"), index_in=ast.Id("arr"), varying=True),
                 ],
                 params=[
                     ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, is_in=True, varying=False)
@@ -1746,7 +1746,7 @@ def test_visibility(code, exp_ast):
             ast.FuncDef(
                 ast.Id("func"),
                 returns=[
-                    ast.VarDecl(type=ast.Id("int"), references=ast.Id("arr"), varying=True),
+                    ast.VarDecl(type=ast.Id("int"), index_in=ast.Id("arr"), varying=True),
                 ],
                 params=[
                     ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, is_in=True, varying=False)
@@ -1766,7 +1766,7 @@ def test_visibility(code, exp_ast):
                         type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                             args=[ast.Id("int")],
                         )),
-                        references=ast.Id("arr"),
+                        index_in=ast.Id("arr"),
                         varying=True
                     ),
                 ],
@@ -1782,7 +1782,7 @@ def test_visibility(code, exp_ast):
                         type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                             args=[ast.Id("int")],
                         )),
-                        references=ast.nobase,
+                        index_in=ast.nobase,
                         varying=True
                     ),
                 ],
@@ -1791,7 +1791,7 @@ def test_visibility(code, exp_ast):
         ]
     ],
 ])
-def test_refs_returning(code, exp_ast):
+def test_returning_indices(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 

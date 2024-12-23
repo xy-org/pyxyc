@@ -712,12 +712,12 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
         itoken.expect("(")
         itoken.skip_empty_lines()
         if itoken.peak() != ")":
-            decl.references = parse_expression(itoken, is_toplevel=False)
+            decl.index_in = parse_expression(itoken, is_toplevel=False)
             itoken.skip_empty_lines()
         else:
-            decl.references = nobase
+            decl.index_in = nobase
         if itoken.peak() == ",":
-            raise ParsingError("References can refer only to a single parameter", itoken)
+            raise ParsingError("Indecies require only one base", itoken)
         itoken.expect(")")
 
     if itoken.peak() in var_qualifiers:
