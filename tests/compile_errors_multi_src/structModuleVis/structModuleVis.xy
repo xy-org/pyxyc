@@ -1,0 +1,5 @@
+import structModuleVis.module;
+
+def test() {
+    a := Struct{};
+}

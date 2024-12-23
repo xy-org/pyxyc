@@ -313,6 +313,9 @@ def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
 @pytest.mark.parametrize("package, exp_err_msg", [
     ("moduleVis", r".*Cannot find function 'func\(\)'.*"),
     ("packageVis/package2", r".*Cannot find function 'func\(\)'.*"),
+
+    ("structModuleVis", r".*Struct 'Struct' is not visible.*"),
+    ("structPackageVis/package2", r".*Struct 'Struct' is not visible.*"),
 ])
 def test_compilation_errors_multi_src(package, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
@@ -326,4 +329,4 @@ def test_compilation_errors_multi_src(package, exp_err_msg, tmp_path, resource_d
         ])
         builder.build()
     err_msg = str(err.value)
-    assert re.match(exp_err_msg, err_msg) is not None
+    assert re.match(exp_err_msg, err_msg) is not None, err_msg

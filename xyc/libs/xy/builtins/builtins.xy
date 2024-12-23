@@ -1,7 +1,7 @@
 # Header files "stdint.h", "stddef.h", "stdbool.h" are auto imported in symbol c
 
 ;; A type that means no-type
-struct void {
+struct *void {
     # Implemented by the compiler
     # Should this even be a type?
     # It is a type in C so it makes sense to be one in xy.
@@ -10,49 +10,49 @@ struct void {
 # Primitive bool tyes
 
 ;; 8-bit true/false type
-struct bool {
+struct *bool {
     # Implemented by the compiler
 }
 
 # Primitive numeric types.
 
 ;; 8-bit signed integer type
-struct byte {
+struct *byte {
     # Implemented by the compiler
 }
 
 ;; 16-bit signed integer type
-struct short {
+struct *short {
     # Implemented by the compiler
 }
 
 ;; 32-bit signed integer type
-struct int {
+struct *int {
     # Implemented by the compiler
 }
 
 ;; 64-bit signed integer type
-struct long {
+struct *long {
     # Implemented by the compiler
 }
 
 ;; 8-bit unsigned integer type
-struct ubyte {
+struct *ubyte {
     # Implemented by the compiler
 }
 
 ;; 16-bit unsigned integer type
-struct ushort {
+struct *ushort {
     # Implemented by the compiler
 }
 
 ;; 32-bit unsigned integer type
-struct uint {
+struct *uint {
     # Implemented by the compiler
 }
 
 ;; 64-bit unsigned integer type
-struct ulong {
+struct *ulong {
     # Implemented by the compiler
 }
 
@@ -60,12 +60,12 @@ struct ulong {
 ;; architecture. This type is (by definition) platform dependant. It is
 ;; provided for interfacing with native libraries and for building libraries. 
 ;; Size is always unsigned. For error handling use xy error-handling mechanisms.
-struct Size {
+struct *Size {
     # Implemented by the compiler
 }
 
 ;; A good old pointer. Use with caution.
-struct Ptr~[to: struct] {
+struct *Ptr~[to: struct] {
     # Implemented by the compiler
 }
 
@@ -96,12 +96,12 @@ def *addrof(arg: ?) -> Ptr~[%^arg] {
 }
 
 ;; 32-bit IEEE 754 floating point number
-struct float {
+struct *float {
     # Implemented by the compiler
 }
 
 ;; 64-bit IEEE 754 floating point number
-struct double {
+struct *double {
     # Implemented by the compiler
 }
 

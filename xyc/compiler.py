@@ -27,6 +27,7 @@ class TypeObj(CompiledObj):
     is_enum: bool = False
     is_flags: bool = False
     fully_compiled: bool = False
+    module_header: 'ModuleHeader' = None  # None means current module
 
     def get_base_type(self):
         return self if self.base_type_obj is None else self.base_type_obj
@@ -47,6 +48,12 @@ class TypeObj(CompiledObj):
         if self.c_node is not None:
             return self.c_node.name
         return None
+    
+    @property
+    def visibility(self):
+        if hasattr(self.xy_node, 'visibility'):
+            return self.xy_node.visibility
+        return xy.PackageVisibility
     
 @dataclass
 class ArrTypeObj(TypeObj):
@@ -292,7 +299,7 @@ class FuncSpace:
                 candidates += f"    in module {module_name}\n"
                 prev_module_name = module_name
             candidates += "        " + func_sig(cfobj, include_ret=True)
-            if not is_func_visible(cfobj, ctx):
+            if not is_obj_visible(cfobj, ctx):
                 candidates += ";; not visible"
 
         raise CompilationError(
@@ -355,7 +362,7 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx)
         return fobj
     
     # check visibility
-    if not is_func_visible(fobj, ctx):
+    if not is_obj_visible(fobj, ctx):
         return False
 
     satisfied_params = set()
@@ -387,13 +394,13 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx)
 
     return True
 
-def is_func_visible(fobj, ctx: 'CompilerContext'):
-    if fobj.visibility in xy.ModuleVisibility:
-        if fobj.module_header is not None:
+def is_obj_visible(obj, ctx: 'CompilerContext'):
+    if obj.visibility in xy.ModuleVisibility:
+        if obj.module_header is not None:
             return False
-    if fobj.visibility == xy.PackageVisibility:
-        if fobj.module_header is not None:
-            if ctx.module_name.split('.')[0] != fobj.module_header.module_name.split('.')[0]:
+    if obj.visibility == xy.PackageVisibility:
+        if obj.module_header is not None:
+            if ctx.module_name.split('.')[0] != obj.module_header.module_name.split('.')[0]:
                 return False
     return True
 
@@ -578,12 +585,14 @@ class CompilerContext:
             raise CompilationError(f"Not a variable.", name)
         return var_obj
     
-    def eval_to_type(self, name: xy.Node):
-        obj = self.eval(name)
+    def eval_to_type(self, name: xy.Node, msg = None):
+        obj = self.eval(name, msg=msg)
         if obj is None:
             raise CompilationError(f"Cannot find type", name)
         if not isinstance(obj, TypeObj):
             raise CompilationError("Not a type", name)
+        if not is_obj_visible(obj, self):
+            raise CompilationError(f"Struct '{obj.name}' is not visible", name)
         return obj
     
     def eval_to_id(self, name: xy.Node):
@@ -876,6 +885,8 @@ def compile_module(builder, module_name, asts):
         if isinstance(obj, FuncSpace):
             for func_obj in obj._funcs:
                 func_obj.module_header = mh
+        elif isinstance(obj, TypeObj):
+            obj.module_header = mh
 
     # TODO should that really be here
     if module_name.startswith("xy."):
@@ -2279,6 +2290,8 @@ def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
             cfunc.body.append(tmp_obj.c_node)
         else:
             tmp_obj = var_obj
+    elif not is_obj_visible(type_obj, ctx):
+            raise CompilationError(f"Struct '{type_obj.name}' is not visible", expr.name)
 
     return do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx)
 
