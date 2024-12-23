@@ -12,24 +12,26 @@ class Type:
     name: str = None
     dims: list[int] = field(default_factory=list)
 
+    @property
+    def is_array(self):
+        return len(self.dims) > 0
+
 @dataclass
 class QualType:
-    #type: 'Type' = field(default_factory=Type)
-    name : str
+    type: 'Type' = field(default_factory=Type)
     is_const: bool = True
     is_volatile: bool = False
     is_restricted: bool = False
+
+    def __post_init__(self):
+        if isinstance(self.type, str):
+            self.type = Type(self.type) 
 
 @dataclass
 class VarDecl:
     name: str
     qtype: QualType = None
-    dims: list = field(default_factory=list)
     value: any = None
-
-    @property
-    def is_array(self):
-        return len(self.dims) > 0
 
 @dataclass
 class Struct:

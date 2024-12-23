@@ -36,7 +36,7 @@ def stringify(ast: Ast):
     for struct in ast.structs:
         frags.extend(["struct ", struct.name, " {\n"])
         for field in struct.fields:
-            frags.extend([" " * ident * 4, field.qtype.name, " ", field.name, ";\n"])
+            frags.extend([" " * ident * 4, field.qtype.type.name, " ", field.name, ";\n"])
         frags.append("};\n")
     if len(ast.structs) > 0:
         frags.append("\n")
@@ -44,7 +44,7 @@ def stringify(ast: Ast):
     for func in ast.funcs:
         frags.extend((func.rtype, " ", func.name, "("))
         for i, param in enumerate(func.params):
-            frags.extend((param.qtype.name, " ", param.name))
+            frags.extend((param.qtype.type.name, " ", param.name))
             if i < len(func.params)-1:
                 frags.append(", ")
         if len(func.params) == 0:
@@ -192,9 +192,9 @@ def stringify_expr(expr, frags):
 def stringify_var_decl(stmt, frags):
     if stmt.qtype.is_const:
         frags.append("const ")
-    frags.extend([stmt.qtype.name, " ", stmt.name])
-    if stmt.is_array:
-        for dim in stmt.dims:
+    frags.extend([stmt.qtype.type.name, " ", stmt.name])
+    if stmt.qtype.type.is_array:
+        for dim in stmt.qtype.type.dims:
             frags.extend(["[", str(dim), "]"])
     if stmt.value is not None:
         frags.append(" = ")
