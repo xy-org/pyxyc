@@ -1182,7 +1182,7 @@ def test_if(code, exp_ast):
     ],
     [
         """def main() -> void {
-            return while (i < arr'len) -> (sum: int) {sum+=arr[i];};
+            return while (i < arr'len) -> (sum: int) sum += arr[i];
         }
         """,
         [
@@ -1192,11 +1192,11 @@ def test_if(code, exp_ast):
                         cond=ast.BinExpr(
                             op="<", arg1=ast.Id("i"),
                             arg2=ast.FuncCall(ast.Id("len"), [ast.Id("arr")])),
-                        block=ast.Block(body=[ast.BinExpr(
+                        block=ast.Block(body=ast.BinExpr(
                             op='+=',
                             arg1=ast.Id("sum"),
                             arg2=ast.Select(ast.Id("arr"), ast.Args([ast.Id("i")]))),
-                        ], returns=[ast.VarDecl("sum", ast.Id("int"), varying=True)])
+                        returns=[ast.VarDecl("sum", ast.Id("int"), varying=True)])
                     )
                 )
             ]),
@@ -1366,7 +1366,7 @@ def test_do_while(code, exp_ast):
     ],
     [
         """def main() -> void {
-            for (e in arr) -> (or: bool) {e | or;};
+            for (e in arr) -> (or: bool = true) or |= e;
         }
         """,
         [
@@ -1379,9 +1379,13 @@ def test_do_while(code, exp_ast):
                             arg2=ast.Id("arr")
                         ),
                     ],
-                    block=ast.Block(body=[ast.BinExpr(
-                        op="|", arg1=ast.Id("e"), arg2=ast.Id("or")
-                    )], returns=[ast.VarDecl("or", ast.Id("bool"), varying=True)]),
+                    block=ast.Block(body=ast.BinExpr(
+                        op="|=", arg1=ast.Id("or"), arg2=ast.Id("e")
+                    ),
+                    returns=[
+                        ast.VarDecl("or", ast.Id("bool"), varying=True,
+                                    value=ast.Const(True, "true", "bool"))
+                    ]),
                 )
             ]),
         ]

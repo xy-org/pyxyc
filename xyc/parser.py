@@ -216,6 +216,7 @@ def parse_def(itoken):
     return node
 
 def parse_block_or_expr(itoken):
+    # return parse_block(itoken)
     if itoken.check("=") or itoken.peak() not in {"{", "->"}:
         expr = parse_expression(itoken)
         return expr
@@ -232,6 +233,7 @@ def parse_block(itoken):
             # transform expressions
             for expr in args:
                 if isinstance(expr, VarDecl):
+                    expr.varying = True
                     block.returns.append(expr)
                 else:
                     block.returns.append(
@@ -257,7 +259,10 @@ def parse_block(itoken):
         num_empty = itoken.skip_empty_lines()
 
     block.coords = itoken.peak_coords()
-    block.body = parse_body(itoken)
+    if itoken.peak() != "{":
+        block.body = parse_expression(itoken)
+    else:
+        block.body = parse_body(itoken)
 
     return block
 
@@ -307,7 +312,7 @@ operator_precedence = {
     "==": 5, "!=": 5, "in": 5,
     "&": 4,
     "|": 3,
-    "=": 2, '+=': 2, '-=': 2
+    "=": 2, '+=': 2, '-=': 2, "|=": 2,
 }
 MIN_PRECEDENCE=2
 UNARY_PRECEDENCE=11
