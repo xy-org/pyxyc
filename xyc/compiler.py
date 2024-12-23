@@ -156,6 +156,8 @@ class ImportObj(CompiledObj):
 class ExprObj(CompiledObj):
     infered_type: CompiledObj | str | None = None
     compiled_obj: CompiledObj | None = None
+    first_cnode_idx: int = -1
+    num_cnodes: int = -1
 
 @dataclass
 class RefObj(ExprObj):
@@ -991,7 +993,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             if field.value is None:
                 raise CompilationError("All pseudo fields must have an explicit value")
             default_value_obj = ctx.eval(field.value)
-            default_value_obj.c_node = compile_expr(field.value, cast, cast, ctx).c_node
+            default_value_obj.c_node = compile_expr(field.value, cast, None, ctx).c_node
             if field_type_obj is None:
                 field_type_obj = default_value_obj.infered_type
             elif field_type_obj is not default_value_obj.infered_type:
@@ -1616,6 +1618,14 @@ c_symbol_type = TypeInferenceError(
 )
 
 def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
+    before_idx = len(cfunc.body) if cfunc is not None else 0
+    res = do_compile_expr(expr, cast, cfunc, ctx, deref=deref)
+    after_idx = len(cfunc.body) if cfunc is not None else 0
+    res.first_cnode_idx = before_idx
+    res.num_cnodes = after_idx - before_idx
+    return res
+
+def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
     if isinstance(expr, xy.Const):
         return ExprObj(
             xy_node=expr,
@@ -2704,6 +2714,8 @@ def move_to_temp(expr_obj, cast, cfunc, ctx):
         infered_type=expr_obj.infered_type,
         tags=expr_obj.tags,
         compiled_obj=tmp_obj,
+        first_cnode_idx=expr_obj.first_cnode_idx,
+        num_cnodes=expr_obj.num_cnodes + 1,
     )
 
 def is_simple_cexpr(expr):
@@ -3022,6 +3034,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
             callee_ctx.ns[pobj.xy_node.name] = arg
             caller_ctx.ns[pobj.xy_node.name] = LazyObj(xy_node=arg.xy_node)
+            if pobj.xy_node.is_callerContext:
+                redact_code(arg, cast, cfunc, ctx)
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:
@@ -3224,6 +3238,11 @@ def ensure_func_decl(func_obj: FuncObj, cast, cfunc, ctx):
     func_obj.decl_visible = True
     cast.func_decls.append(func_obj.c_node)
 
+
+def redact_code(obj: ExprObj, cast, cfunc, ctx):
+    if obj.num_cnodes > 0:
+        for idx in range(obj.first_cnode_idx, obj.first_cnode_idx + obj.num_cnodes):
+            cfunc.body[idx] = c.Empty()
 
 def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
     assert len(arg_exprs) == 2

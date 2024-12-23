@@ -167,6 +167,8 @@ def stringify_body(body, frags, ident=1):
             frags.extend((" " * ident * 4, "{\n"))
             stringify_body(stmt.body, frags, ident=ident+1)
             frags.extend((" " * ident * 4, "}\n"))
+        elif isinstance(stmt, Empty):
+            pass
         else:
             frags.append(" " * (ident*4))
             stringify_expr(stmt, frags)

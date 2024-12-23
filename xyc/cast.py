@@ -50,6 +50,10 @@ class Expr:
     op: str = ""
 
 @dataclass
+class Empty:
+    pass
+
+@dataclass
 class UnaryExpr:
     arg: any = None
     op: str = ""
