@@ -51,9 +51,15 @@ class FuncSelect(Node):
     kwargs: dict[str, Node] = field(default_factory=dict)
     multiple: bool = False
 
+ModuleVisibility = "module"
+PackageVisibility = "package"
+PublicVisibility = "public"
+visibilityMap = {"+": PackageVisibility, "-": ModuleVisibility, "*": PublicVisibility}
+
 @dataclass
 class FuncDef(Node):
     name: Node
+    visibility: str = PackageVisibility
     params: list['VarDecl'] = field(default_factory=list)
     returns: list['VarDecl'] = field(default_factory=list)
     etype: Node | None = None
@@ -264,4 +270,5 @@ class SliceExpr(Node):
 @dataclass
 class StructDef(Node):
     name: str
+    visibility: str = PackageVisibility
     fields: list[VarDecl] = field(default_factory=list)

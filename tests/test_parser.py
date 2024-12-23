@@ -1663,6 +1663,51 @@ def test_func_def_with_tags(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        def -func() -> void {}
+        def +func() -> void {}
+        def *func() -> void {}
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("func"), returns=ast.SimpleRType("void"), body=[],
+                visibility=ast.ModuleVisibility,
+            ),
+            ast.FuncDef(
+                ast.Id("func"), returns=ast.SimpleRType("void"), body=[],
+                visibility=ast.PackageVisibility,
+            ),
+            ast.FuncDef(
+                ast.Id("func"), returns=ast.SimpleRType("void"), body=[],
+                visibility=ast.PublicVisibility,
+            ),
+        ]
+    ],
+    [
+        """
+        struct -Struct {}
+        struct +Struct {}
+        struct *Struct {}
+        """,
+        [
+            ast.StructDef(
+                "Struct", visibility=ast.ModuleVisibility,
+            ),
+            ast.StructDef(
+                "Struct", visibility=ast.PackageVisibility,
+            ),
+            ast.StructDef(
+                "Struct", visibility=ast.PublicVisibility,
+            ),
+        ]
+    ],
+])
+def test_visibility(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
 
 @pytest.mark.parametrize("code, exp_ast", [
     [

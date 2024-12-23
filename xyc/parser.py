@@ -203,11 +203,15 @@ def parse_ml_comment(itoken):
                    coords=[comment_start, comment_start+2])
 
 def parse_def(itoken: TokenIter):
+    visibility = PackageVisibility
+    if itoken.peak() in {"-", "+", "*"}:
+        visibility = visibilityMap[itoken.consume()]
     name_coords = itoken.peak_coords()
     name = itoken.consume()
     node = FuncDef(
         name=Id(name, src=itoken.src, coords=name_coords),
-        src=itoken.src, coords=name_coords
+        src=itoken.src, coords=name_coords,
+        visibility=visibility,
     )
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
@@ -1060,9 +1064,12 @@ def parse_tags(itoken):
     return res
 
 def parse_struct(itoken: TokenIter):
+    visibility = PackageVisibility
+    if itoken.peak() in visibilityMap:
+        visibility = visibilityMap[itoken.consume()]
     coords = itoken.peak_coords()
     name = itoken.consume()
-    node = StructDef(name=name, src=itoken.src, coords=coords)
+    node = StructDef(name=name, src=itoken.src, coords=coords, visibility=visibility)
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
     itoken.expect("{")
