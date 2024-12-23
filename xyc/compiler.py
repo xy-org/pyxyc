@@ -1848,8 +1848,7 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
             ref=field_obj.default_value_obj,
             xy_node=obj.xy_node,
         )
-        if obj.xy_node is None:
-            import pdb; pdb.set_trace()
+        return ref_setup(ref_obj, cast, cfunc, ctx)
         return ref_get(ref_obj, cast, cfunc, ctx)
 
     if not (struct_obj.is_enum or struct_obj.is_flags):
@@ -2040,6 +2039,7 @@ def do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compiler
     for i, arg in enumerate(expr.args):
         if field_objs[i].xy_node.is_pseudo:
             val_obj = field_get(type_obj, field_objs[i], cast, cfunc, ctx)
+            val_obj = maybe_deref(val_obj, True, cast, cfunc, ctx)
             if res is not None:
                 res = c.Expr(
                     res,
@@ -2056,6 +2056,7 @@ def do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compiler
             raise CompilationError(f"No field '{fname}'", arg)
         if type_obj.fields[fname].xy_node.is_pseudo:
             val_obj = field_get(type_obj, type_obj.fields[fname], cast, cfunc, ctx)
+            val_obj = maybe_deref(val_obj, True, cast, cfunc, ctx)
             if res is not None:
                 res = c.Expr(
                     res,
@@ -2293,7 +2294,7 @@ def compile_expr_for_arg(arg: xy.Node, cast, cfunc, ctx: CompilerContext):
     return maybe_move_to_temp(expr_obj, cast, cfunc, ctx)
 
 def maybe_move_to_temp(expr_obj, cast, cfunc, ctx):
-    if cfunc is not None and not is_simple_cexpr(expr_obj.c_node):
+    if isinstance(expr_obj, ExprObj) and cfunc is not None and not is_simple_cexpr(expr_obj.c_node):
         return move_to_temp(expr_obj, cast, cfunc, ctx)
     else:
         return expr_obj
