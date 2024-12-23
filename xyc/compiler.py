@@ -509,7 +509,8 @@ class CompilerContext:
             const_type_obj = None
             if node.type is not None:
                 const_type_obj = self.get_compiled_type(node.type)
-            return ConstObj(value=node.value, xy_node=node, c_node=c.Const(node.value),
+            return ConstObj(value=node.value, xy_node=node,
+                            c_node=c.Const(node.value_str),
                             infered_type=const_type_obj)
         elif isinstance(node, xy.StrLiteral):
             return StrObj(

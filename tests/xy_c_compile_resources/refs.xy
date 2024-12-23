@@ -13,31 +13,27 @@ def get(p: Point, idx: byte) -> float {
     return [p.x, p.y, p.z, p.w][idx];
 }
 
-# def get(p: Point, idx: byte) {
-#     return [p.x, p.y, p.z, p.w][idx];
-# }
-# 
-# def set(p: inout Point, idx: ubyte, v: float)
-# >> idx <= 3
-# {
-#     if (idx == 0) {
-#         p.x = v;
-#     } elif (idx == 1) {
-#         p.y = v;
-#     } elif (idx == 2) {
-#         p.z = v;
-#     } else {
-#         p.w = v;
-#     }
-# }
-# 
-# def testPoint(i: ubyte) {
-#     p1: var = Point{w=i'to(float)};
-#     p2: Point;
-#     p1.x = p1[i];
-#     p2.z = p1[4-i];
-#     return p1.x + p2.w + p2.z + p1.w;
-# }
+def set(p: inout Point, idx: byte, v: float)
+>> idx <= 3
+{
+    if (idx == 0) {
+        p.x = v;
+    } elif (idx == 1) {
+        p.y = v;
+    } elif (idx == 2) {
+        p.z = v;
+    } else {
+        p.w = v;
+    }
+}
+
+def testPoint(i: ubyte) {
+    #p1: var = Point{w=i'to(float)};
+    p2: Point;
+    #p1.x = p1[i];
+    #p2.z = p1[4-i];
+    #return p1.x + p2.w + p2.z + p1.w;
+}
 
 # struct  PointCloud {
 #     mem: Ptr;
