@@ -67,6 +67,11 @@ class Args(Node):
     kwargs: dict[str, Node] = field(default_factory=dict)
 
 @dataclass
+class Select(Node):
+    var: Node
+    args: Args = field(default_factory=Args)
+
+@dataclass
 class StructLiteral(Node):
     name: Node | None
     args: list[Node] = field(default_factory=list)
@@ -76,6 +81,15 @@ class StructLiteral(Node):
 class StrLiteral(Node):
     prefix: str = ""
     parts: list[Node] = field(default_factory=list)
+
+@dataclass
+class ArrLit(Node):
+    elems: list[Node] = field(default_factory=list)
+
+@dataclass
+class ArrType(Node):
+    base: Node
+    dims: list[Node] = field(default_factory=list)
 
 @dataclass
 class Id(Node):
@@ -95,7 +109,7 @@ class Const(Node):
             if isinstance(value, int):
                 type = "int"
             elif isinstance(value, float):
-                type = "float"
+                type = "double"
         self.type = type
 
 @dataclass

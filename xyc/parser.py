@@ -242,6 +242,18 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
         # bracketed expression
         arg1 = parse_expression(itoken)
         itoken.expect(")")
+    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "[":
+        # Array literal
+        coords = itoken.peak_coords()
+        itoken.consume()
+        args, kwargs = parse_args(itoken)
+        itoken.expect("]")
+        if len(kwargs) > 0:
+            raise ParsingError(
+                "Key World Arguments in array literals don't make sense",
+                itoken=itoken
+            )
+        arg1 = ArrLit(args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE:
         if itoken.peak() != '-' and itoken.peak() in operator_precedence.keys():
             return None  # Reach a delimiter
@@ -307,7 +319,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
             if itoken.check("var"):
                 # it's a var decl
                 decl = VarDecl(name=arg1.name, varying=True, src=itoken.src)
-                decl.type = parse_expression(itoken, precedence+1)
+                decl.type = expr_to_type(parse_expression(itoken, precedence+1))
                 if itoken.check("="):
                     decl.value = parse_expression(itoken, precedence+1)
                 arg1 = decl
@@ -323,13 +335,16 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
                 arg1 = sliceop
         elif op == "=" and isinstance(arg1, SliceExpr):
             decl = VarDecl(name=arg1.start.name, src=itoken.src)
-            decl.type = arg1.end
+            decl.type = expr_to_type(arg1.end)
             decl.value = parse_expression(itoken)
             arg1 = decl
         elif op == "[":
+            args, kwargs = parse_args(itoken)
             itoken.expect("]")
-            index = Index(arg1, args, src=itoken.src)
-            arg1 = index
+            select = Select(
+                arg1, Args(args, kwargs), src=itoken.src, coords=op_coords
+            )
+            arg1 = select
         elif op == "~":
             if isinstance(arg1, AttachTags):
                 # parse right to left
@@ -365,10 +380,15 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
         and arg1.step is None):
         # it's actually a var decl
         decl = VarDecl(name=arg1.start.name, varying=not is_struct)
-        decl.type = arg1.end
+        decl.type = expr_to_type(arg1.end)
         arg1 = decl
 
     return arg1
+
+def expr_to_type(expr):
+    if isinstance(expr, Select):
+        return ArrType(expr.var, expr.args.args)
+    return expr
 
 def parse_struct_literal(itoken, struct_expr):
     args, kwargs = parse_args(itoken)

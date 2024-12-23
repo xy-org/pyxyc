@@ -620,3 +620,65 @@ def test_ambiguous_tags(code, err_msg):
 def test_parse_string_literals(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() -> void {
+            empty := [];
+            arr := [2.718, 3.14];
+            uninitialized : int[10];
+            m: int[2, 2] = [[1, 2], [3, 4]];
+        }
+        """,
+        [
+            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+                ast.VarDecl("empty", type=None, value=ast.ArrLit(
+                    elems=[]
+                )),
+                ast.VarDecl("arr", type=None, value=ast.ArrLit(
+                    elems=[ast.Const(2.718), ast.Const(3.14)]
+                )),
+                ast.VarDecl("uninitialized", varying=True, type=ast.ArrType(
+                    base=ast.Id("int"),
+                    dims=[ast.Const(10)]
+                )),
+                ast.VarDecl("m", type=ast.ArrType(
+                        base=ast.Id("int"),
+                        dims=[ast.Const(2), ast.Const(2)]
+                    ), value=ast.ArrLit(
+                        [
+                            ast.ArrLit([ast.Const(1), ast.Const(2)]),
+                            ast.ArrLit([ast.Const(3), ast.Const(4)]),
+                        ]
+                    )
+                )
+            ]),
+        ]
+    ],
+    # [
+    #     """def main() -> Str {
+    #         m: int[2, 2] = [[0, 1], [2, 3]];
+    #         letters := ["a", "b", "c", "d"]
+    #         return letters[m[1, 0]];
+    #     }
+    #     """,
+    #     [
+    #         ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+    #             ast.VarDecl("empty", type=None, value=ast.ArrLit(
+    #                 elems=[]
+    #             )),
+    #             ast.VarDecl("arr", type=None, value=ast.ArrLit(
+    #                 elems=[ast.Const("2.718"), ast.Const("3.14")]
+    #             )),
+    #             ast.VarDecl("uninitialized", varying=True, type=ast.ArrType(
+    #                 base=ast.Type("int"),
+    #                 dims=[ast.Const(2), ast.Const(2)]
+    #             )),
+    #         ]),
+    #     ]
+    # ],
+])
+def test_arrays(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
