@@ -1,0 +1,16 @@
+import funcDiscovery.sub1
+import funcDiscovery.sub2
+import funcDiscovery.sub1.sub11
+import funcDiscovery.mark
+
+def test() {
+    a: int;
+    funcs := def* ~MyMark(inout int, int)->void;
+    for (f in funcs) {
+        f(a, 5);
+    }
+}
+
+def funcToCall~MyMark(a: inout int, b: int) -> void {
+    a += b;
+}

@@ -1,0 +1,5 @@
+import funcDiscovery.mark
+
+def funcToCall~MyMark(a: inout int, b: int) -> void {
+    a -= b;
+}
