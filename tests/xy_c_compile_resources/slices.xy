@@ -53,7 +53,7 @@ def slice(start: Date, end := Date'max, step := Date{1}) = DateSlice{start, end,
 def slice(end: Date, step := Date{1}) = DateSlice{Date{0}, end, step}
 def slice(step: Date) = DateSlice{Date{0}, Date'max, step}
 
-def today() = Date{c.time()}
+def today() = Date{c.time(c.NULL)}
 def tomorrow() = Date{today().unixtime + 24*60*60}
 
 def testDataSlices() {

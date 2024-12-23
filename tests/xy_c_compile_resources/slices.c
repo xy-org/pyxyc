@@ -80,7 +80,7 @@ slices_DateSlice slices_slice__with__Date(slices_Date step) {
 }
 
 slices_Date slices_today(void) {
-    return (slices_Date){time()};
+    return (slices_Date){time(NULL)};
 }
 
 slices_Date slices_tomorrow(void) {

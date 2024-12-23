@@ -37,6 +37,7 @@ class TypeInferenceError:
 @dataclass
 class ConstObj(CompiledObj):
     value: int | float | str | None = None
+    infered_type: TypeObj = None
 
 @dataclass
 class StrObj(CompiledObj):
@@ -96,6 +97,10 @@ class ImportObj(CompiledObj):
 @dataclass
 class ExprObj(CompiledObj):
     infered_type: CompiledObj | str = "Cannot deduce type"
+
+@dataclass
+class FCallObj(ExprObj):
+    func_obj: FuncObj | None = None
 
 @dataclass
 class ArgList:
@@ -448,7 +453,11 @@ class CompilerContext:
                 raise CompilationError(msg, node)
             return res
         elif isinstance(node, xy.Const):
-            return ConstObj(value=node.value, xy_node=node)
+            const_type_obj = None
+            if node.type is not None:
+                const_type_obj = self.get_compiled_type(node.type)
+            return ConstObj(value=node.value, xy_node=node, c_node=c.Const(node.value),
+                            infered_type=const_type_obj)
         elif isinstance(node, xy.StrLiteral):
             return StrObj(
                 prefix=node.prefix,
@@ -637,8 +646,22 @@ def compile_structs(ctx: CompilerContext, asts, cast):
                 type_obj = ctx.module_ns[node.name]
                 cstruct = type_obj.c_node
                 fields = {}
+                default_values = []
                 for field in node.fields:
-                    field_type_obj = find_type(field.type, ctx)
+                    field_type_obj = None
+                    if field.type is not None:
+                        field_type_obj = find_type(field.type, ctx)
+
+                    if field.value is not None:
+                        default_value_obj = ctx.eval(field.value)
+                        if field_type_obj is None:
+                            field_type_obj = default_value_obj.infered_type
+                        elif field_type_obj is not default_value_obj.infered_type:
+                            raise CompilationError("Specified and infered types differ", field)
+                        default_values.append(default_value_obj.c_node)
+                    else:
+                        default_values.append(field_type_obj.init_value)
+
                     cfield = c.VarDecl(
                         name=mangle_field(field),
                         type=field_type_obj.c_name
@@ -650,12 +673,13 @@ def compile_structs(ctx: CompilerContext, asts, cast):
                     )
                     cstruct.fields.append(cfield)
                 type_obj.fields = fields
+                all_zeros = all((isinstance(dv, c.Const) and dv.value == 0)
+                                for dv in default_values)
+                c_init_args = [c.Const(0)] if all_zeros else default_values
                 type_obj.init_value = c.StructLiteral(
                     name=cstruct.name,
-                    args=[
-                        c.Const(0)
-                    ]
-                ) # TODO what about non zero fields
+                    args=c_init_args
+                )
 
     # 3rd pass - compile tags:
     for ast in asts:
@@ -935,6 +959,17 @@ def import_builtins(ctx: CompilerContext, cast):
     )
     ctx.module_ns["StrCtor"] = str_obj
 
+    # iter construction
+    iter_ctor = xy.StructDef(name="IterCtor")
+    iter_ctor = TypeObj(str_ctor, c.Struct("IterCtor"), builtin=True)
+    iter_ctor.tags["xyTag"] = InstanceObj(
+        fields={
+            "label": StrObj(parts=[ConstObj(value="xyIter")])
+        },
+        type_obj=tag_obj
+    )
+    ctx.module_ns["IterCtor"] = iter_ctor
+
     # entry point
     entrypoint = xy.StructDef(name="EntryPoint")
     ep_obj = TypeObj(entrypoint, builtin=True)
@@ -1164,7 +1199,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
             args=[compile_expr(arg, cast, cfunc, ctx).c_node for arg in expr.args]
         )
         if len(res.args) == 0:
-            res.args = [c.Const(0)]  # empty {} is valid only in C2X
+            res = type_obj.init_value # empty {} is valid only in C2X
         # TODO what about kwargs
         return ExprObj(
             c_node=res,
@@ -1619,15 +1654,17 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         else:
             cfunc.body.append(res)
 
-        return ExprObj(
+        return FCallObj(
             c_node=tmp_cid,
             xy_node=expr,
-            infered_type=func_obj.rtype_obj
+            infered_type=func_obj.rtype_obj,
+            func_obj=func_obj
         )
     else:
-        return ExprObj(
+        return FCallObj(
             c_node=res,
-            infered_type=func_obj.rtype_obj
+            infered_type=func_obj.rtype_obj,
+            func_obj=func_obj
         )
 
 def compile_if(ifexpr, cast, cfunc, ctx):
@@ -1831,7 +1868,7 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
         infered_type=inferred_type,
     )
 
-def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
+def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
     cfor = c.For()
     ctx.push_ns()
 
@@ -1844,6 +1881,8 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
     for iter_node in for_node.over:
         if isinstance(iter_node, xy.BinExpr) and iter_node.op == "in":
             iter_name = ctx.eval_to_id(iter_node.arg1)
+            if iter_name == "_":
+                iter_name = ctx.create_tmp_var(ctx.void_obj, "iter").c_node.name
             collection_node = iter_node.arg2
 
             if isinstance(collection_node, xy.SliceExpr):
@@ -1918,10 +1957,50 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
                 else:
                     pass # TODO
             else:
-                raise CompilationError("NYI", iter_node)
-                collection_obj = compile_expr(iter_node.arg2, cast, cfunc, ctx)
+                # not a slice but somesort of collection
+                collection_obj = compile_expr(collection_node, cast, cfunc, ctx)
+                iter_arg_objs = []
+                if is_iter_ctor_call(collection_obj):
+                    ictor_obj = collection_obj
+                else:
+                    collection_obj = move_to_temp(collection_obj, cast, cfunc, ctx)
+                    iter_arg_objs = [collection_obj]
+                    ictor_obj = find_and_call("iter", ArgList(iter_arg_objs), cast, cfunc, ctx, collection_node)
 
+                # init
+                iter_var_decl = ctx.create_tmp_var(ictor_obj.infered_type, "iter")
+                iter_var_decl.c_node.value = ictor_obj.c_node
+                iter_obj = ExprObj(
+                    xy_node=collection_node,
+                    c_node=c.Id(iter_var_decl.c_node.name),
+                    infered_type=iter_var_decl.type_desc
+                )
+                ctx.ns[iter_var_decl.c_node.name] = iter_var_decl
+                if no_for_vars:
+                    for_outer_block.body.append(iter_var_decl.c_node)
+                else:
+                    cfor.inits.append(iter_var_decl.c_node)
+
+                # compile condition
+                valid_obj = find_and_call("valid", ArgList([iter_obj, *iter_arg_objs]), cast, cfunc, ctx, collection_node)
+                if cfor.cond is None:
+                    cfor.cond = c_cond
+                else:
+                    cfor.cond = c.Expr(cfor.cond, valid_obj.c_node, op="&&")
+
+                # compile step
+                next_obj = find_and_call("next", ArgList([iter_obj, *iter_arg_objs]), cast, cfunc, ctx, collection_node)
+                cfor.updates.append(c.Expr(iter_obj.c_node, next_obj.c_node, "="))
+
+                # deref in for body
+                deref_obj = find_and_call("deref", ArgList([iter_obj, *iter_arg_objs]), cast, cfunc, ctx, collection_node)
+
+                val_cdecl = c.VarDecl(iter_name, deref_obj.infered_type.c_node.name, value=deref_obj.c_node)
+                val_obj = VarObj(collection_node, val_cdecl, deref_obj.infered_type)
+                ctx.ns[iter_name] = val_obj
+                cfor.body.append(val_cdecl)
         else:
+            # Bool expression. Continue if false
             pass # TODO check expression
     if for_outer_block is not None:
         for_outer_block.body.append(cfor)
@@ -1957,6 +2036,11 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
         c_node=c_res,
         infered_type=inferred_type,
     )
+
+def is_iter_ctor_call(expr_obj: ExprObj):
+    if not isinstance(expr_obj, FCallObj):
+        return False
+    return "xyIter" in expr_obj.func_obj.tags
 
 def compile_break(xybreak, cast, cfunc, ctx):
     if xybreak.loop_name is not None:
