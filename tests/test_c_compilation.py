@@ -2,7 +2,7 @@ import os.path
 import pytest
 import pathlib
 from xyc import xyc
-from xyc.cast import stringify
+from xyc.cstringifier import stringify
 
 @pytest.fixture
 def resource_dir(request):
