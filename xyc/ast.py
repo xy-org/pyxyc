@@ -36,14 +36,14 @@ class Comment(Node):
 
 @dataclass
 class Param(Node):
-    name: str
+    name: Node
     type: Node | None = None
     value: Node | None = None
     outin: bool = False
 
 @dataclass
 class FuncDef(Node):
-    name: str
+    name: Node
     params: list[Param] = field(default_factory=list)
     rtype: Node | None = None
     etype: Node | None = None
@@ -53,7 +53,7 @@ class FuncDef(Node):
 
 @dataclass
 class FuncCall(Node):
-    name: str
+    name: Node
     args: list[Node] = field(default_factory=list)
     kwargs: dict[str, Node] = field(default_factory=dict)
 

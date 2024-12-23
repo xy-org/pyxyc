@@ -171,7 +171,7 @@ def compile_header(ctx: CompilerContext, ast, cast):
 
     for node in ast:
         if isinstance(node, xy.FuncDef):
-            func_space = ctx.ensure_func_space(node)
+            func_space = ctx.ensure_func_space(node.name)
             expand_name = len(func_space) > 0
             if len(func_space) == 1:
                 # Already present. Expand name.
@@ -290,7 +290,7 @@ def compile_funcs(ctx, ast, cast):
             raise CompilationError("NYI", node)
 
 def compile_func(node, ctx, ast, cast):
-    fspace = ctx.get_func_space(node)
+    fspace = ctx.get_func_space(node.name)
     fdesc = fspace.find(node, ctx)
     cfunc = fdesc.c_node
     compile_body(node.body, cast, cfunc, ctx)
@@ -397,7 +397,7 @@ def get_c_type(type_expr, ctx):
     return id_desc.c_name
 
 def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
-    mangled = ctx.module_name + "_" + fdef.name
+    mangled = ctx.module_name + "_" + fdef.name.name
     if expand:
         mangled = [mangled, "__with__"]
         for param in fdef.params:

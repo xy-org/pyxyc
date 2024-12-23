@@ -189,7 +189,7 @@ def parse_ml_comment(itoken):
 
 def parse_def(itoken):
     name = itoken.consume()
-    node = FuncDef(name=name, src=itoken.src)
+    node = FuncDef(name=Id(name), src=itoken.src)
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
     node.params = parse_params(itoken)
