@@ -30,4 +30,7 @@ void typeInferenceAdvanced_func(void) {
     int32_t b = typeInferenceAdvanced_rng() + 10;
     float c = typeInferenceAdvanced_transform(typeInferenceAdvanced_myadd(a, b));
     typeInferenceAdvanced_Pair d = typeInferenceAdvanced_ctorPair();
+    double e = 1 + 1.1718;
+    float ef = 2.1718f;
+    double pi = 1 + 1.0 + 1.14f;
 }

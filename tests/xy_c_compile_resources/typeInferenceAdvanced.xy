@@ -25,4 +25,7 @@ def func() -> void {
     b := rng() + 10;
     c := (a \myadd b)'transform;
     d := ctorPair();
+    e := 1 + 1.1718;
+    ef := 2.1718f;
+    pi := 1 + 1.0 + 1.14f;
 }

@@ -16,6 +16,12 @@ class FuncDesc:
     c_func: any = None
     c_name : str | None = None
 
+@dataclass
+class VarDesc:
+    xy_node: any = None
+    c_node: any = None
+    type_desc: TypeDesc | None = None
+
 class IdTable(dict):
     pass
 
@@ -34,10 +40,20 @@ class FuncSpace:
     
     def find(self, node, ctx):
         if isinstance(node, xy.FuncCall):
+            args_infered_types = [infer_type(arg, ctx) for arg in node.args]
             for desc in self._funcs:
-                if cmp_call_def(node, desc.xy_func, ctx):
+                if cmp_call_def(node, args_infered_types, desc.xy_func, ctx):
                     return desc
-            raise "Cannot find func"
+            fsig = node.name + "(" + \
+                ", ".join(t.xy_struct.name for t in args_infered_types) + \
+                ")"
+            candidates = "\n    ".join((
+                func_sig(f.xy_func) for f in self._funcs
+            ))
+            raise CompilationError(
+                f"Cannot find function '{fsig}'", node,
+                notes=[(f"Candidates are:\n    {candidates}", None)]
+            )
         else:
             assert isinstance(node, xy.FuncDef)
             for desc in self._funcs:
@@ -45,14 +61,19 @@ class FuncSpace:
                     return desc
             raise "Cannot find func"
 
-def cmp_call_def(fcall, fdef, ctx):
+def cmp_call_def(fcall, fcall_args_types, fdef, ctx):
     # TODO what about kwargs
     if len(fcall.args) != len(fdef.params):
         return False
-    for arg, param in zip(fcall.args, fdef.params):
-        if infer_type(arg, ctx).xy_struct.name != param.type.name:
+    for arg_type, param in zip(fcall_args_types, fdef.params):
+        if arg_type.xy_struct.name != param.type.name:
             return False
     return True
+
+def func_sig(fdef):
+    res = fdef.name + "(" + ", ".join(p.type.name for p in fdef.params) + ")"
+    res += " -> " + fdef.rtype.name
+    return res
 
 @dataclass
 class CompilerContext:
@@ -145,35 +166,44 @@ def import_builtins(ctx, cast):
     cast.includes.append(c.Include("stddef.h"))
     cast.includes.append(c.Include("stdbool.h"))
 
-    num_types = {
+    num_types = [
+       "int", "uint",
+       "long", "ulong",
+       "Size",
+       "float", "double"
+    ]
+
+    ctype_map = {
         "int": "int32_t", "uint": "uint32_t",
         "long": "int64_t", "ulong": "uint64_t",
         "Size": "size_t",
         "float": "float", "double": "double",
-    }
-    misc_types = {
         "Ptr": "void*", "bool": "bool",
         "void": "void",
     }
-    builtin_types = {**num_types, **misc_types}
 
-    for xtype, ctype in builtin_types.items():
+    for xtype, ctype in ctype_map.items():
         ctx.id_table[xtype] = TypeDesc(
             xy_struct=xy.StructDef(name=xtype),
             c_name = ctype, builtin=True
         )
 
 
-    for xtype in ["int"]:
-        func = xy.FuncDef(
-            "add",
-            params=[
-                xy.Param("x", xy.Type(xtype)),
-                xy.Param("y", xy.Type(xtype))
-            ],
-            rtype=xy.Type(xtype)
-        )
-        _desc = register_func(func, ctx)
+    for p1, type1 in enumerate(num_types):
+        for p2, type2 in enumerate(num_types):
+            types = {type1, type2}
+            if "Size" in types and ("float" in types or "double" in types):
+                continue
+            rtype_name = type1 if p1 > p2 else type2
+            func = xy.FuncDef(
+                "add",
+                params=[
+                    xy.Param("x", xy.Type(type1)),
+                    xy.Param("y", xy.Type(type2))
+                ],
+                rtype=xy.Type(rtype_name)
+            )
+            _desc = register_func(func, ctx)
 
 def compile_funcs(ctx, ast, cast):
     for node in ast:
@@ -200,18 +230,20 @@ def compile_body(body, cast, cfunc, ctx):
             cfunc.body.append(ret)
         elif isinstance(node, xy.VarDecl):
             cvar = c.VarDecl(name=node.name, type=None)
-            if node.type is None:
+            type_desc = ctx.id_table[node.type.name] if node.type is not None else None
+            if type_desc is None:
                 if node.value is None:
                     raise CompilationError(
                         "Cannot create variable with no type and no value",
                         node
                     )
                 type_desc = infer_type(node.value, ctx)
-                cvar.type = type_desc.c_name
-            else:
-                cvar.type = get_c_type(node.type, ctx)
+            cvar.type = type_desc.c_name
+            ctx.id_table[node.name] = VarDesc(node, cvar, type_desc)
+
             if node.value is not None:
                 cvar.value = compile_expr(node.value, cast, cfunc, ctx)
+
             cfunc.body.append(cvar)
         else:
             raise CompilationError(f"Unknown xy ast node {type(node).__name__}", node)
@@ -266,7 +298,6 @@ def mangle_struct(struct: xy.StructDef, ctx):
 
 class CompilationError(Exception):
     def __init__(self, msg, node, notes=None):
-        # TODO print notes as well
         loc = node.coords[0]
         loc_len = node.coords[1] - node.coords[0]
 
@@ -294,6 +325,9 @@ class CompilationError(Exception):
             self.fmt_msg += f"| {node.src.code[line_loc:line_end]}\n"
             self.fmt_msg += "  " + (" " * (loc-line_loc)) + ("^" * loc_len) + "\n"
 
+        if notes is not None and len(notes) > 0:
+            self.fmt_msg += "\n".join(n[0] for n in notes)
+
 
     def __str__(self):
         return self.fmt_msg
@@ -310,6 +344,9 @@ def infer_type(expr, ctx):
     elif isinstance(expr, xy.BinExpr):
         fcall = rewrite_op(expr, ctx)
         return infer_type(fcall, ctx)
+    elif isinstance(expr, xy.Id):
+        vardesc = ctx.id_table[expr.name]
+        return vardesc.type_desc
     else:
         raise CompilationError("Cannot infer type", expr)
 
@@ -330,5 +367,5 @@ def rewrite_op(binexpr, ctx):
     }[binexpr.op]
     fcall = xy.FuncCall(fname, args=[
         binexpr.arg1, binexpr.arg2
-    ])
+    ], src=binexpr.src, coords=binexpr.coords)
     return fcall
