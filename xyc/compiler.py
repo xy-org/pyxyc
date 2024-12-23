@@ -634,7 +634,7 @@ class CompilerContext:
                 "Cannot evaluate at compile time.",
                 node)
         
-    def create_tmp_var(self, type_obj, name_hint="") -> VarObj:
+    def create_tmp_var(self, type_obj, name_hint="", xy_node=None) -> VarObj:
         tmp_var_name = self.gen_tmp_name(name_hint)
 
         # TODO rewrite expression and call other func
@@ -649,8 +649,8 @@ class CompilerContext:
             c_tmp.value = type_obj.init_value
 
         dummy_xy_node = xy.VarDecl(
-            src=None,
-            coords=(-1, -1),
+            src=xy_node.src if xy_node is not None else None,
+            coords=xy_node.coords if xy_node is not None else (-1, -1),
         )
         res = VarObj(dummy_xy_node, c_tmp, type_obj, needs_dtor=type_needs_dtor(type_obj))
         self.ns[tmp_var_name] = res
@@ -2114,7 +2114,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             infered_type=func_desc.rtype_obj
         )
     else:
-        builder_tmpvar = ctx.create_tmp_var(func_desc.rtype_obj, f"{expr.prefix}str")
+        builder_tmpvar = ctx.create_tmp_var(func_desc.rtype_obj, f"{expr.prefix}str", xy_node=expr)
         cfunc.body.append(builder_tmpvar.c_node)
         ctx.ns[builder_tmpvar.c_node.name] = builder_tmpvar
         builder_tmpvar_id = ExprObj(

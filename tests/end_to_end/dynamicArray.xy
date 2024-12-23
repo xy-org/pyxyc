@@ -10,7 +10,7 @@ struct Array~[elemType: struct, xy_dtor=true] {
     len: Size~Count;
 }
 
-def dtor(arr: Array) {
+def dtor(arr: inout Array) {
     arr.mem'free();
 }
 
