@@ -370,6 +370,39 @@ def test_parse_advanced_funcs(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
+        """def func(a: int, b: int = 0, c := a + b) -> int {
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("func"),
+                returns=[
+                    ast.VarDecl(type=ast.Id("int")),
+                ],
+                params=[
+                    ast.VarDecl(
+                        "a", type=ast.Id("int"), is_param=True, is_in=True
+                    ),
+                    ast.VarDecl(
+                        "b", type=ast.Id("int"), value=ast.Const(0),
+                        is_param=True, is_in=True
+                    ),
+                    ast.VarDecl(
+                        "c", value=ast.BinExpr(ast.Id("a"), ast.Id("b"), op="+"),
+                        is_param=True, is_in=True
+                    ),
+                ],
+                body=[
+                ],
+            ),
+        ]
+    ],
+])
+def test_parse_default_param_values(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
         """def main() -> void {
             func(a);
             a'func;
@@ -456,6 +489,61 @@ def test_parse_func_call(code, exp_ast):
     ],
 ])
 def test_parse_var_decl(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() -> void {
+            a := :;
+            b:=:;
+            c := :a;
+            d := a:;
+            e := :a+b;
+            f := (a:):(:b):(d);
+            (a: int) = 5;
+            g[a:b] = c[e:f];
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("a", value=ast.SliceExpr()),
+                ast.VarDecl("b", value=ast.SliceExpr()),
+                ast.VarDecl("c", value=ast.SliceExpr(end=ast.Id("a"))),
+                ast.VarDecl("d", value=ast.SliceExpr(start=ast.Id("a"))),
+                ast.VarDecl("e", value=ast.SliceExpr(
+                    end=ast.BinExpr(ast.Id("a"), ast.Id("b"), op="+"),
+                )),
+                ast.VarDecl("f", value=ast.SliceExpr(
+                    start=ast.SliceExpr(start=ast.Id("a")),
+                    end=ast.SliceExpr(end=ast.Id("b")),
+                    step=ast.Id("d"),
+                )),
+                ast.VarDecl(
+                    "a",
+                    type=ast.Id("int"),
+                    value=ast.Const(5),
+                ),
+                ast.BinExpr(
+                    arg1=ast.Select(
+                        ast.Id("g"),
+                        args=ast.Args(
+                            [ast.SliceExpr(ast.Id("a"), ast.Id("b"))]
+                        )
+                    ),
+                    arg2=ast.Select(
+                        ast.Id("c"),
+                        args=ast.Args(
+                            [ast.SliceExpr(ast.Id("e"), ast.Id("f"))]
+                        )
+                    ),
+                    op="=",
+                )
+            ]),
+        ]
+    ],
+])
+def test_parse_slices(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
