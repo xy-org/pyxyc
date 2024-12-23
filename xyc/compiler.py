@@ -52,14 +52,7 @@ def compile_header(ctx, ast, cast):
 
     for node in ast:
         if isinstance(node, xy.FuncDef):
-            name = mangle(node.name, ctx)
-            rtype = get_c_type(node.rtype, ctx)
-            cfunc = c.Func(name=name, rtype=rtype)
-            cast.funcs.append(cfunc)
-            for param in node.params:
-                cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
-                cfunc.params.append(cparam)
-            compile_body(node.body, cast, cfunc, ctx)
+            compile_func(node, ctx, ast, cast)
         elif isinstance(node, xy.Comment):
             pass
         elif not isinstance(node, xy.StructDef):
@@ -85,6 +78,16 @@ def import_builtins(ctx, cast):
 
 def compile_funcs(ctx, ast, cast):
     pass
+
+def compile_func(node, ctx, ast, cast):
+    name = mangle(node.name, ctx)
+    rtype = get_c_type(node.rtype, ctx)
+    cfunc = c.Func(name=name, rtype=rtype)
+    cast.funcs.append(cfunc)
+    for param in node.params:
+        cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
+        cfunc.params.append(cparam)
+    compile_body(node.body, cast, cfunc, ctx)
 
 def compile_body(body, cast, cfunc, ctx):
     for node in body:
