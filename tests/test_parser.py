@@ -1157,3 +1157,32 @@ def test_if(code, exp_ast):
 def test_while(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() -> void {
+            return do -> int {
+                a += 10;
+                res += a;
+            } while res(a > b);
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.Return(ast.DoWhileExpr(
+                    name=ast.Id("res"),
+                    type=ast.Id("int"),
+                    cond=ast.BinExpr(op=">", arg1=ast.Id("a"), arg2=ast.Id("b")),
+                    block=[
+                        ast.BinExpr(op="+=", arg1=ast.Id("a"), arg2=ast.Const(10)),
+                        ast.BinExpr(op="+=", arg1=ast.Id("res"), arg2=ast.Id("a")),
+                    ]
+                ))
+            ]),
+        ]
+    ],
+])
+def test_do_while(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast

@@ -144,6 +144,10 @@ class WhileExpr(Node):
     else_block: Node | list | None = None
 
 @dataclass
+class DoWhileExpr(WhileExpr):
+    pass
+
+@dataclass
 class Break(Node):
     loop_name: Node | None = None
 

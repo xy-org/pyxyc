@@ -281,6 +281,8 @@ def parse_expression(
         raise ParsingError("Missing corresponding if", itoken)
     elif itoken.peak() == "while":
         return parse_while(itoken)
+    elif itoken.peak() == "do":
+        return parse_do_while(itoken)
     elif itoken.peak() == "break":
         return parse_break(itoken)
 
@@ -493,6 +495,35 @@ def parse_while(itoken):
         else:
             while_expr.else_block = parse_expression(itoken)
     return while_expr
+
+def parse_do_while(itoken):
+    while_coords = itoken.peak_coords()
+    itoken.consume()  # "do" token
+    dowhile_expr = DoWhileExpr(src=itoken.src, coords=while_coords)
+    if itoken.check("->"):
+        dowhile_expr.type = parse_toplevel_type(itoken)
+    itoken.check("=")
+    if itoken.peak() == "{":
+        dowhile_expr.block = parse_body(itoken)
+    else:
+        dowhile_expr.block = parse_expression(itoken)
+
+    itoken.expect("while")
+    if itoken.peak() != "(":
+        name_coords = itoken.peak_coords()
+        dowhile_expr.name = Id(
+            itoken.consume(), src=itoken.src, coords=name_coords
+        )
+    itoken.expect("(")
+    dowhile_expr.cond = parse_expression(itoken)
+    itoken.expect(")", msg="Missing closing bracket")
+
+    if itoken.check("else"):
+        if itoken.peak() == "{":
+            dowhile_expr.else_block = parse_body(itoken)
+        else:
+            dowhile_expr.else_block = parse_expression(itoken)
+    return dowhile_expr
 
 
 def parse_break(itoken):
