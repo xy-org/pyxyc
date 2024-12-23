@@ -38,7 +38,6 @@ def stringify(ast: Ast):
         frags.append("\n")
 
     for node in ast.consts:
-        assert isinstance(node, Define)
         if isinstance(node, Define):
             frags.extend(("#define ", node.name))
             if len(node.params) > 0:
@@ -49,6 +48,10 @@ def stringify(ast: Ast):
                 frags.append(' ')
                 stringify_expr(node.value, frags)
             frags.append("\n")
+        else:
+            assert isinstance(node, VarDecl)
+            stringify_var_decl(node, frags)
+            frags.append(";\n")
     if len(ast.consts) > 0:
         frags.append("\n")
 

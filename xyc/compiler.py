@@ -754,6 +754,15 @@ def compile_module(builder, module_name, asts):
             for func_obj in obj._funcs:
                 func_obj.module_header = mh
 
+    # TODO should that really be here
+    if module_name.startswith("xy."):
+        for obj in ctx.module_ns.values():
+            obj.builtin = True
+
+            if isinstance(obj, FuncSpace):
+                for func_obj in obj._funcs:
+                    func_obj.builtin = True
+
     return mh, res
 
 def compile_header(ctx: CompilerContext, asts, cast):
@@ -1391,7 +1400,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
 
     # add no error return if needed
     if is_func_body and ctx.current_fobj.etype_obj is not None:
-        if len(body) == 0 or not isinstance(body[-1], xy.Return):
+        if len(body) == 0 or not isinstance(body[-1], (xy.Return, xy.Error)):
             cfunc.body.append(c.Return(ctx.current_fobj.etype_obj.init_value))
 
     ctx.exit_block()
@@ -2484,6 +2493,18 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             xy_node=expr,
             infered_type=func_obj.rtype_obj
         )
+    elif is_builtin_func(func_obj, "argc"):
+        return ExprObj(
+            c_node=c.Id(global_argc_name),
+            xy_node=expr,
+            infered_type=func_obj.rtype_obj,
+        )
+    elif is_builtin_func(func_obj, "argv"):
+        return ExprObj(
+            c_node=c.Id(global_argv_name),
+            xy_node=expr,
+            infered_type=func_obj.rtype_obj,
+        )
 
     func_ctx = ctx
     if func_obj.module_header is not None:
@@ -3458,7 +3479,10 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
     if imprt.in_name:
         ctx.module_ns[imprt.in_name] = import_obj
 
-def maybe_add_main(ctx, cast):
+global_argc_name = "__xy_sys_argc"
+global_argv_name = "__xy_sys_argv"
+
+def maybe_add_main(ctx: CompilerContext, cast):
     if ctx.entrypoint_obj is not None:
         main = c.Func(
             name="main", rtype="int",
@@ -3466,16 +3490,27 @@ def maybe_add_main(ctx, cast):
                 c.VarDecl("argc", c.QualType("int",)),
                 c.VarDecl("argv", c.QualType("char**"))
             ], body=[
+                c.Expr(c.Id(global_argc_name), c.Id("argc"), op="="),
+                c.Expr(c.Id(global_argv_name), c.Id("argv"), op="="),
             ]
         )
+        ctx.current_fobj = FuncObj(
+            xy_node=ctx.entrypoint_obj.xy_node,
+            c_node=main,
+            rtype_obj=ctx.int_obj,
+            etype_obj=ctx.int_obj,
+            prototype_compiled=True,
+            params_compiled=True,
+        )
+
         fcall_obj = do_compile_fcall(
             ctx.entrypoint_obj.xy_node, ctx.entrypoint_obj, ArgList(),
             cast, main, ctx
         )
-        main.body.extend([
-            # c.VarDecl("res", c.QualType("int", is_const=True), value=fcall_obj.c_node),
-            fcall_obj.c_node,
-            # c.Return(c.Id("res")),
-            c.Return(c.Const(0))
-        ])
+        if fcall_obj.c_node is not None:
+            main.body.append(fcall_obj.c_node)
+        main.body.append(c.Return(c.Const(0)))
+
+        cast.consts.append(c.VarDecl(global_argc_name, c.QualType("int", False)))
+        cast.consts.append(c.VarDecl(global_argv_name, c.QualType("char**", False)))
         cast.funcs.append(main)

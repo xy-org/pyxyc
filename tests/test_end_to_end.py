@@ -10,6 +10,7 @@ import xyc.xyc as xyc
     ("argEval", "In Func 1\nIn Func 2\nIn Func 1\nIn Func 2\nIn Take2\nIn Func 1\nIn Func 2\nIn Ignore Second\n", False),
     ("operatorSlices", "In compute\nIn len\nSlice 42 52\nSlice 52 62\n", False),
     ("dynamicArray", "len=100\nres=-9900\n", True),
+    ("printCliArgs", "--arg1\n2\n3.14\n", False),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     test_base = resource_dir / "end_to_end" / testname
@@ -32,6 +33,9 @@ def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
         ]
     else:
         pr_to_run = [str(executable)]
+
+    if testname == "printCliArgs":
+        pr_to_run.extend(["--arg1", "2", "3.14"])
 
     proc = subprocess.run(pr_to_run, capture_output=True, text=True)
 

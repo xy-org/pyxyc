@@ -45,6 +45,7 @@ from xyc.compiler import CompilationError
     "dtors2",
     "paramsVsArgs",
     # TODO "properties",
+    "exitWithError",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

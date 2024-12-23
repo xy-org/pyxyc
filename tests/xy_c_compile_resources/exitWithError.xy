@@ -1,0 +1,3 @@
+def main~EntryPoint() -> void || int {
+    error 2;
+}

@@ -45,6 +45,7 @@ src.xy:6:21: error: Cannot find function 'get(Array, int)'
 |             a := arr[0];
                       ^
 note: Candidates are:
+    get(Ptr, int) -> Ptr
     get(?[], int) -> Ptr
     get(?[], uint) -> Ptr
     get(?[], Size) -> Ptr
