@@ -37,4 +37,16 @@ void namedFields_test(void) {
     const namedFields_Person p6 = (namedFields_Person){namedFields_string("Jonny", 5), namedFields_string("Cash", 4), 0, 0, true};
     const namedFields_Person p7 = (namedFields_Person){namedFields_string("Johnny", 6), namedFields_string("Cash", 4), 71};
     const namedFields_Person p8 = (namedFields_Person){(namedFields_String){0}, (namedFields_String){0}, 71, 0, 0, (namedFields_Color){0, 0, 0}};
+    namedFields_Person tmp0 = p3;
+    tmp0.m_age = 71;
+    tmp0.m_married = true;
+    const namedFields_Person p9 = tmp0;
+    namedFields_Person tmp1 = p8;
+    tmp1.m_firstName = namedFields_string("Jonny", 5);
+    tmp1.m_lastName = namedFields_string("Cash", 4);
+    const namedFields_Person p10 = tmp1;
+    p1.m_firstName = namedFields_string("Johnny", 6);
+    p1.m_age = 71;
+    p1.m_height = p4.m_height;
+    p1.m_married = true;
 }

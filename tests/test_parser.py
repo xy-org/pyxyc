@@ -898,6 +898,22 @@ def test_parse_struct(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """
+        def func() -> void {
+            a .= {1};
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+                ast.BinExpr(
+                    ast.Id("a"),
+                    ast.StructLiteral(name=None, args=[ast.Const(1)]),
+                    op=".=",
+                ),
+            ]),
+        ],
+    ],
 ])
 def test_struct_literals(code, exp_ast):
     act_ast = parse_code(code)

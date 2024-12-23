@@ -1279,7 +1279,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
             infered_type=ctx.get_compiled_type(expr.type)
         )
     elif isinstance(expr, xy.BinExpr):
-        if expr.op not in {'.', '='}:
+        if expr.op not in {'.', '=', '.='}:
             return compile_binop(expr, cast, cfunc, ctx)
         elif expr.op == '.':
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
@@ -1332,6 +1332,15 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
                     c_node=res,
                     infered_type=field_obj.type_desc
                 )
+        elif expr.op == '.=':
+            if not (isinstance(expr.arg2, xy.StructLiteral) and expr.arg2.name is None):
+                raise CompilationError("The right hand side of the '.=' operator must be an anonymous struct literal")
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
+            val_obj = do_compile_struct_literal(expr.arg2, arg1_obj.infered_type, arg1_obj, cast, cfunc, ctx)
+            return ExprObj(
+                c_node=None,
+                infered_type=arg1_obj.infered_type
+            ) 
         else:
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
@@ -1372,68 +1381,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
     elif isinstance(expr, xy.FuncCall):
         return compile_fcall(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.StructLiteral):
-        type_obj = find_type(expr.name, ctx)
-
-        expr_args = expr.args
-        expr_kwargs = copy(expr.kwargs)
-
-        toggle_idx = None
-        for i, expr_arg in enumerate(expr_args):
-            if isinstance(expr_arg, xy.UnaryExpr) and expr_arg.op == ".":
-                # it's a toggle
-                toggle_idx = i
-                assert isinstance(expr_arg.arg, xy.Id)
-                expr_kwargs[expr_arg.arg.name] = xy.Const(True, "true", "bool")
-            elif toggle_idx is not None:
-                raise CompilationError("Cannot mix and match toggle and positional args", expr_arg)
-        if toggle_idx is not None:
-            expr_args = expr_args[:toggle_idx]
-
-
-        # map positional and named fields
-        name_to_pos = {
-            fname: i
-            for i, fname in enumerate(type_obj.fields.keys())
-        }
-        arg_cnodes = [None] * len(name_to_pos)
-
-        for i, arg in enumerate(expr_args):
-            arg_cnodes[i] = compile_expr(arg, cast, cfunc, ctx).c_node
-        
-        for name, arg in expr_kwargs.items():
-            if name not in name_to_pos:
-                raise CompilationError(f"No field named '{name}", arg)
-            if arg_cnodes[name_to_pos[name]] is not None:
-                raise CompilationError(f"Field {name} already set", arg)
-            arg_cnodes[name_to_pos[name]] = compile_expr(arg, cast, cfunc, ctx).c_node
-
-        arg_cnodes_zeroes = [False] * len(name_to_pos)
-        for i, field in enumerate(type_obj.fields.values()):
-            if arg_cnodes[i] is None:
-                arg_cnodes[i] = field.type_desc.init_value
-                arg_cnodes_zeroes[i] = field.type_desc.is_init_value_zeros
-
-        # eliminate andy trailing zeros
-        last_non_zero_idx = 0
-        for i in range(len(arg_cnodes) - 1, -1, -1):
-            if not arg_cnodes_zeroes[i]:
-                last_non_zero_idx = i+1
-                break
-        arg_cnodes = arg_cnodes[:last_non_zero_idx]
-
-        # create c rep
-        ctypename = type_obj.c_name
-        res = c.StructLiteral(
-            name=ctypename,
-            args=arg_cnodes
-        )
-        if len(arg_cnodes) == 0:
-            res = type_obj.init_value # empty {} is valid only in C2X
-        # TODO what about kwargs
-        return ExprObj(
-            c_node=res,
-            infered_type=type_obj
-        )
+        return compile_struct_literal(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.StrLiteral):
         return compile_strlit(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.ArrayLit):
@@ -1482,6 +1430,100 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         return compile_fcall(slice_ctor_fcall, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
+    
+def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
+    type_obj = ctx.eval(expr.name, msg="Cannot find type")
+    tmp_obj = None
+    if not isinstance(type_obj, TypeObj):
+        assert isinstance(type_obj, VarObj)
+        var_obj = type_obj
+        type_obj = type_obj.type_desc
+        tmp_obj = ctx.create_tmp_var(type_obj)
+        tmp_obj.c_node.value = c.Id(var_obj.c_node.name)
+        cfunc.body.append(tmp_obj.c_node)
+
+    return do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx)
+
+def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx):
+    expr_args = expr.args
+    expr_kwargs = copy(expr.kwargs)
+
+    toggle_idx = None
+    for i, expr_arg in enumerate(expr_args):
+        if isinstance(expr_arg, xy.UnaryExpr) and expr_arg.op == ".":
+            # it's a toggle
+            toggle_idx = i
+            assert isinstance(expr_arg.arg, xy.Id)
+            expr_kwargs[expr_arg.arg.name] = xy.Const(True, "true", "bool")
+        elif toggle_idx is not None:
+            raise CompilationError("Cannot mix and match toggle and positional args", expr_arg)
+    if toggle_idx is not None:
+        expr_args = expr_args[:toggle_idx]
+
+
+    # map positional and named fields
+    name_to_pos = {
+        fname: i
+        for i, fname in enumerate(type_obj.fields.keys())
+    }
+    arg_cnodes = [None] * len(name_to_pos)
+
+    for i, arg in enumerate(expr_args):
+        arg_cnodes[i] = compile_expr(arg, cast, cfunc, ctx).c_node
+    
+    for name, arg in expr_kwargs.items():
+        if name not in name_to_pos:
+            raise CompilationError(f"No field named '{name}", arg)
+        if arg_cnodes[name_to_pos[name]] is not None:
+            raise CompilationError(f"Field {name} already set", arg)
+        arg_cnodes[name_to_pos[name]] = compile_expr(arg, cast, cfunc, ctx).c_node
+
+    if tmp_obj is None:
+        # don't do this optimization if we are working with tmp vars
+        arg_cnodes_zeroes = [False] * len(name_to_pos)
+        for i, field in enumerate(type_obj.fields.values()):
+            if arg_cnodes[i] is None:
+                arg_cnodes[i] = field.type_desc.init_value
+                arg_cnodes_zeroes[i] = field.type_desc.is_init_value_zeros
+
+        # eliminate andy trailing zeros
+        last_non_zero_idx = 0
+        for i in range(len(arg_cnodes) - 1, -1, -1):
+            if not arg_cnodes_zeroes[i]:
+                last_non_zero_idx = i+1
+                break
+        arg_cnodes = arg_cnodes[:last_non_zero_idx]
+
+    if tmp_obj is None:
+        # creating a new struct
+        if len(arg_cnodes) != 0:
+            ctypename = type_obj.c_name
+            res = c.StructLiteral(
+                name=ctypename,
+                args=arg_cnodes
+            )
+        else:
+            res = type_obj.init_value
+    else:
+        # craeting a new struct from an existing one
+        tmp_var = c.Id(tmp_obj.c_node.name)
+        for i, arg_cnode in enumerate(arg_cnodes):
+            if arg_cnode is not None:
+                fields = list(type_obj.fields.values())
+                cfunc.body.append(
+                    c.Expr(
+                        c.Expr(tmp_var, c.Id(fields[i].c_node.name), op="."),
+                        arg_cnode,
+                        op="=",
+                    )
+                )
+        res = tmp_var
+
+    
+    return ExprObj(
+        c_node=res,
+        infered_type=type_obj
+    )
 
 def should_pass_by_ref(param: xy.VarDecl):
     return param.is_out or param.is_inout

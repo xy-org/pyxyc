@@ -368,7 +368,7 @@ operator_precedence = {
     "==": 5, "!=": 5, "in": 5,
     "&": 4,
     "|": 3, "||": 3,
-    "=": 2, '+=': 2, '-=': 2, "|=": 2, '*=': 2, '/=': 2,
+    "=": 2, '+=': 2, '-=': 2, "|=": 2, '*=': 2, '/=': 2, ".=": 2,
 }
 MIN_PRECEDENCE=2
 UNARY_PRECEDENCE=11
@@ -406,6 +406,10 @@ def parse_expression(
         args = parse_expr_list(itoken)
         itoken.expect("]", msg="Missing closing bracket")
         arg1 = ArrayLit(args, src=itoken.src, coords=coords)
+    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "{":
+        # announomous struct literal
+        itoken.consume()
+        arg1 = parse_struct_literal(itoken, None)
     elif precedence >= MAX_PRECEDENCE:
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
@@ -429,7 +433,7 @@ def parse_expression(
             arg1 = parse_str_literal("", tk_coords[0], itoken)
         elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:
             if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*', token):
-                raise ParsingError(f"Invalid Prefix Name", itoken)
+                raise ParsingError(f"Invalid prefix Name", itoken)
             itoken.expect('"')
             arg1 = parse_str_literal(token, tk_coords[0], itoken)
         elif token == ":":
@@ -717,10 +721,12 @@ def expr_to_type(expr):
     return expr
 
 def parse_struct_literal(itoken, struct_expr):
+    start_coords = itoken.peak_coords()
     args, kwargs = parse_args_kwargs(itoken)
     itoken.expect("}")
+    end_coords = itoken.peak_coords()
     return StructLiteral(
-        struct_expr, args, kwargs, src=itoken.src, coords=struct_expr.coords
+        struct_expr, args, kwargs, src=itoken.src, coords=[start_coords[0], end_coords[1]]
     )
 
 def parse_str_literal(prefix, prefix_start, itoken):

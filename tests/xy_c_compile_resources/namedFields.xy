@@ -30,6 +30,8 @@ def test() {
     p7 := Person{firstName="Johnny", lastName="Cash", age=71};
     p8 := Person{age=71, favoriteColorClothes=Color{0, 0, 0}};
 
-    # p9 := p3{age=71, .married};
-    # p10 := p8{"Jonny", "Cash"};
+    p9 := p3{age=71, .married};
+    p10 := p8{"Jonny", "Cash"};
+
+    p1 .= {"Johnny", age=71, height=p4.height, .married};
 }
