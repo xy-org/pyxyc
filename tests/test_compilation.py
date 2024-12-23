@@ -26,7 +26,7 @@ from xyc.compiler import CompilationError
     "errors",
     "nameCollisions",
     "opOverloading",
-    "enumsAndFlags",
+    "enums",
     "globalConstants",
     "funcs",
     "stringInterpolation",
