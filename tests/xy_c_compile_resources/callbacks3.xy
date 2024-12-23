@@ -1,0 +1,29 @@
+struct Test1~[TagCtor{label="test1"}] {}
+struct Test2~[TagCtor{label="test1"}] {}
+struct Test3~[TagCtor{label="test3"}] {}
+
+def test1~Test1() {}
+
+def test2~Test2() {}
+
+def invokeTests() {
+    tests := [for (f in $* ~Test1()) f];
+    runTests(tests);
+
+    moreTests := [for (f in $* ~Test2()) f];
+    runTests(moreTests);
+
+    specialTest := $~Test3();
+    runSpecial(specialTest);
+}
+
+def special~Test3() {}
+
+def test3~Test1() {}
+
+def runTests(x: pseudo ()->()[], tPtr := x'addrof, tLen : Size = x'len) {
+}
+
+def runSpecial(x: ()->void) {
+    x();
+}

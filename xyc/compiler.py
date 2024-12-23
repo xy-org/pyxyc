@@ -54,7 +54,7 @@ class ArrTypeObj(TypeObj):
     @property
     def name(self):
         return self.base_type_obj.name + '[' + ']'
-    
+
 @dataclass
 class FuncTypeObj(TypeObj):
     func_obj: 'FuncObj' = None
@@ -66,7 +66,14 @@ class FuncTypeObj(TypeObj):
     
     @property
     def name(self):
-        return "()->()"
+        res = "("
+        for i, p in enumerate(self.func_obj.param_objs):
+            if i > 0:
+                res += ", "
+            res += p.xy_node.name
+        res += ")"
+        res += "->" + self.func_obj.rtype_obj.name
+        return res
     
 @dataclass
 class TypeInferenceError:
@@ -241,8 +248,8 @@ class FuncSpace:
 
     def report_multiple_matches(self, candidate_fobjs, node, args_infered_types, ctx):
         fsig = ctx.eval_to_id(node.name) + "(" + \
-            ", ".join(fmt_type(t.xy_node) for t in args_infered_types) + \
-            ", ".join(f"{pname}: {fmt_type(t.xy_node)}" for pname, t in args_infered_types.kwargs.items()) + \
+            ", ".join(fmt_type(t) for t in args_infered_types) + \
+            ", ".join(f"{pname}: {fmt_type(t)}" for pname, t in args_infered_types.kwargs.items()) + \
             ")"
         err_msg = f"Multiple function matches for '{fsig}'"
         candidates = "\n    ".join((
@@ -309,13 +316,8 @@ class ExtSpace(FuncSpace):
     def find(self, node, args_infered_types, ctx, partial_matches=False):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
-def fmt_type(node):
-    if isinstance(node, xy.ArrayType):
-        return fmt_type(node.base) + '[' + ','.join(d.value_str for d in node.dims) + ']'
-    elif node is not None:
-        return node.name
-    else:
-        return "<ERROR>!"
+def fmt_type(obj: CompiledObj):
+    return obj.name
 
 def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx):
     if len(fcall_args_types) > len(fobj.param_objs):
@@ -364,6 +366,9 @@ def cmp_arg_param_types(arg_type, param_type):
         for i in range(len(arg_type.dims)):
             if arg_type.dims[i] != param_type.dims[i]:
                 return False
+            
+    if isinstance(arg_type, FuncTypeObj) and isinstance(param_type, FuncTypeObj):
+        return True  # XXX
 
     if arg_type.get_base_type() is not param_type.get_base_type():
         return False
@@ -372,8 +377,8 @@ def cmp_arg_param_types(arg_type, param_type):
 
 def fcall_sig(name, args_infered_types, inject_args=False):
     return name + "(" + \
-        ", ".join(fmt_type(t.xy_node) for t in args_infered_types) + \
-        ", ".join(f"{pname}: {fmt_type(t.xy_node)}" for pname, t in args_infered_types.kwargs.items()) + \
+        ", ".join(fmt_type(t) for t in args_infered_types) + \
+        ", ".join(f"{pname}: {fmt_type(t)}" for pname, t in args_infered_types.kwargs.items()) + \
         (", ..." if inject_args else "" )+ \
         ")"
 
@@ -2454,8 +2459,9 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
         else:
             func_obj = None
             candidates: list[FuncObj] = fselect_unnamed(expr, arg_infered_types, ctx, partial_matches=False)
+            required_tags = ctx.eval_tags(expr.tags, cast=cast)
             for cand in candidates:
-                if len(cand.tags) > 0:
+                if compatible_tags(cand.tags, required_tags):
                     func_obj = cand
                     break
             if func_obj is None:
@@ -2477,8 +2483,9 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
         candidates: list[FuncObj] = fselect_unnamed(expr, arg_infered_types, ctx, partial_matches=False)
 
         res_objs = []
+        required_tags = ctx.eval_tags(expr.tags, cast=cast)
         for cand in candidates:
-            if len(cand.tags) > 0:
+            if compatible_tags(cand.tags, required_tags):
                 ensure_func_decl(cand, cast, cfunc, ctx)
 
                 params = cand.param_objs
@@ -2492,6 +2499,13 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
             compiled_obj=res_objs,
             infered_type=fselection_type_obj,
         )
+    
+def compatible_tags(base_tags, required_tags):
+    for tag_name, tag_value in required_tags.items():
+        if tag_value != base_tags.get(tag_name, None):
+            return False
+
+    return True
 
 def fselect_unnamed(expr, arg_types: ArgList, ctx, partial_matches=True):
     res = []
@@ -2566,12 +2580,9 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
 
         func_obj = fspace.find(expr, arg_infered_types, ctx, partial_matches=expr.inject_args)
     else:
-        if isinstance(fspace, VarObj):
-            if not isinstance(fspace.type_desc, FuncTypeObj):
-                raise CompilationError("Not a callback", expr)
-            func_obj = fspace.type_desc.func_obj
-        elif isinstance(fspace, ExprObj):
-            if not isinstance(fspace.infered_type, FuncTypeObj):
+        if isinstance(fspace, (VarObj, ExprObj)):
+            infered_type = fspace.infered_type if isinstance(fspace, ExprObj) else fspace.type_desc
+            if not isinstance(infered_type, FuncTypeObj):
                 raise CompilationError("Not a callback", expr)
             func_obj = copy(fspace.infered_type.func_obj)
             func_obj.c_node = fspace.c_node

@@ -54,6 +54,7 @@ from xyc.compiler import CompilationError
     "injectScopeArgs",
     "callbacks1",
     "callbacks2",
+    "callbacks3",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(
