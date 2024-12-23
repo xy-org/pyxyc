@@ -1,8 +1,8 @@
-import libc~[CLib{headers=["string.h", "stdio.h"]}] in c
-import xy.sys in sys
-import libxy.strings
-import libxy.stdio
-import libxy.memory
+import libc~[CLib{headers=["string.h", "stdio.h"]}] in c;
+import xy.sys in sys;
+import libxy.strings;
+import libxy.stdio;
+import libxy.memory;
 
 def main~EntryPoint() {
     argc := sys.argc();

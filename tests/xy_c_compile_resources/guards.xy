@@ -1,4 +1,4 @@
-import xy.ctti
+import xy.ctti;
 
 def guards1(a: int, b: int) -> int
 >> a > b

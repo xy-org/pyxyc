@@ -147,7 +147,8 @@ def parse_code(src) -> Ast:
         raise ParsingError("Unexpected token", itoken)
 
     return ast
-        
+
+semicolon_error_explanation = "All statements or expressions not using a '{}' block require a terminating ';'"
 def parse_import(itoken):
     coords = itoken.peak_coords()
     itoken.consume()  # "import"
@@ -171,7 +172,11 @@ def parse_import(itoken):
 
     coords = (coords[0], itoken.peak_coords()[1] - 1)
 
+    if itoken.peak() == ",":
+        raise ParsingError("Importing more than one module at a time is NYI.", itoken)
+    itoken.expect(";", msg=f"Missing ';' at end of import. {semicolon_error_explanation}")
     itoken.expect_eol()
+
     return Import(
         lib=lib, in_name=in_name, tags=tags, src=itoken.src, coords=coords
     )

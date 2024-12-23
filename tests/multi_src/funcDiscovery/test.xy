@@ -1,7 +1,7 @@
-import funcDiscovery.sub1
-import funcDiscovery.sub2
-import funcDiscovery.sub1.sub11
-import funcDiscovery.mark
+import funcDiscovery.sub1;
+import funcDiscovery.sub2;
+import funcDiscovery.sub1.sub11;
+import funcDiscovery.mark;
 
 def test() {
     a: int;

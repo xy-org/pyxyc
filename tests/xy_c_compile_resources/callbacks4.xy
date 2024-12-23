@@ -1,6 +1,6 @@
 ;; Test callbacks as members in structs
 
-import xy.ctti
+import xy.ctti;
 
 struct Test~[TagCtor{label="test"}] {}
 

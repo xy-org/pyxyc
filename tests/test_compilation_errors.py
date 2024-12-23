@@ -111,13 +111,13 @@ src.xy:4:19: error: Expression doesn't evaluate to a ref
 #      """, """
 # """),
     ("""
-        import doesnt.exist
+        import doesnt.exist;
 
         def test() {
         }
      """, """\
 src.xy:2:9: error: Cannot find module 'doesnt.exist'
-|         import doesnt.exist
+|         import doesnt.exist;
           ^^^^^^^^^^^^^^^^^^^
 """),
     ("""
@@ -145,7 +145,7 @@ src.xy:2:27: error: Cannot infer type because: Cannot find symbol
                             ^^^
 """),
     ("""
-        import xy.ctti
+        import xy.ctti;
         struct Desc {
             size: Size;
         }
@@ -157,7 +157,7 @@ src.xy:6:58: error: Cannot infer type because: Cannot get fields of an unknown t
                                                            ^^^^^^^^
 """),
     ("""
-        import libc~[CLib{headers=["string.h", "stdio.h"]}] in c
+        import libc~[CLib{headers=["string.h", "stdio.h"]}] in c;
         def func(a: int) a
         def test() {
             func(c.external());
@@ -168,7 +168,7 @@ src.xy:5:18: error: Cannot determine type of expression
                    ^^^^^^^^^^
 """),
     ("""
-        import libc~[CLib{headers=["string.h", "stdio.h"]}] in c
+        import libc~[CLib{headers=["string.h", "stdio.h"]}] in c;
         def func(a: int) a
         def test() {
             func(c.argc);

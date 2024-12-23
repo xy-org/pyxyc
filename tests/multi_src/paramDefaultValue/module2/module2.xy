@@ -1,4 +1,4 @@
-import paramDefaultValue.module1
+import paramDefaultValue.module1;
 
 def calcDefaultValue(num: int) -> int {
     return num * 10;

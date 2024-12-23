@@ -71,6 +71,20 @@ def test_error_statement(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
+        """import module
+        """,
+        "Missing ';' at end of import. All statements or expressions not using a '{}' block require a terminating ';'"
+    ),
+])
+def test_semicolons(code, err_msg):
+    if err_msg is not None:
+        with pytest.raises(ParsingError, match=err_msg):
+            parse_code(code)
+    else:
+        parse_code(code)
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
         """def func() {
             for (x in :) for (y in :) for (z in :) -> (res: int) res *= x + y - z
         }""",

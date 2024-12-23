@@ -5,25 +5,25 @@ import xyc.ast as ast
 
 code_ast = [
     [
-        "import xylib",
+        "import xylib;",
         [
             ast.Import(lib="xylib")
         ],
     ],
     [
-        "import xylib.string",
+        "import xylib.string;",
         [
             ast.Import(lib="xylib.string")
         ],
     ],
     [
-        "import xylib in xy\n",
+        "import xylib in xy;\n",
         [
             ast.Import(lib="xylib", in_name="xy"),
         ],
     ],
     [
-        "import libc~[CLib{headers=[c\"unistd.h\"]}] in c",
+        "import libc~[CLib{headers=[c\"unistd.h\"]}] in c;",
         [
             ast.Import(lib="libc", in_name="c", tags=ast.TagList(
                 args=[ast.StructLiteral(
@@ -48,7 +48,7 @@ def test_parse_import(code, exp_ast):
 
 
 code_ast = [
-    ("import xylib.str, xylib.re", "Unexpected token"),
+    ("import xylib.str, xylib.re", "Importing more than one module at a time is NYI."),
     ("from xylib import method in c", "The correct syntax to import a library"),
 ]
 @pytest.mark.parametrize("code, err_msg", code_ast)
@@ -178,7 +178,7 @@ def test_parse_comments(code, exp_ast):
     ],
     [
         """# multi word comment
-        import xylib
+        import xylib;
 
         def main() -> int {
         }
@@ -193,7 +193,7 @@ def test_parse_comments(code, exp_ast):
     ],
     [
         """# multi word comment
-        import xylib
+        import xylib;
 
         def main~EntryPoint() -> int {
             return 0;

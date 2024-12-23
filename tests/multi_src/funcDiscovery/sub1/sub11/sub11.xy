@@ -1,4 +1,4 @@
-import funcDiscovery.mark
+import funcDiscovery.mark;
 
 def someFunc~MyMark(a: inout int, b: int) -> void {
     a = b;

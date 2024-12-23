@@ -1,6 +1,6 @@
-import libxy.stdio
-import libxy.strings
-import libxy.units
+import libxy.stdio;
+import libxy.strings;
+import libxy.units;
 
 c := 299792458~mps;
 pi := 3.1415;

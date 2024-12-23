@@ -1,5 +1,5 @@
-import posix~[CLib{headers=["unistd.h"]}] in c
-import libc~[CLib{headers=["errno.h"]}] in c
+import posix~[CLib{headers=["unistd.h"]}] in c;
+import libc~[CLib{headers=["errno.h"]}] in c;
 
 
 def cstr~[StrCtor{prefix="c"}](addr: Ptr, size: Size) -> Ptr {

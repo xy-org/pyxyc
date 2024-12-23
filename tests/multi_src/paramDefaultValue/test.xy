@@ -1,5 +1,5 @@
-import paramDefaultValue.module1
-import paramDefaultValue.module2
+import paramDefaultValue.module1;
+import paramDefaultValue.module2;
 
 def test() {
     a := 5;

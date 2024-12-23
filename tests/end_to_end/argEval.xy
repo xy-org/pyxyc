@@ -1,5 +1,5 @@
-import libxy.strings
-import libxy.stdio
+import libxy.strings;
+import libxy.stdio;
 
 def func1() -> int {
     print("In Func 1\n");

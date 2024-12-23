@@ -1,4 +1,4 @@
-import xy.ctti
+import xy.ctti;
 
 struct MyStruct {
     a: int;

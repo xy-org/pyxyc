@@ -1,5 +1,5 @@
-import libxy.strings
-import libxy.stdio
+import libxy.strings;
+import libxy.stdio;
 
 def main~EntryPoint() -> int {
     print("Hello World\n");

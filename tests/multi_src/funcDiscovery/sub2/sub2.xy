@@ -1,4 +1,4 @@
-import funcDiscovery.mark
+import funcDiscovery.mark;
 
 def noop~MyMark(a: inout int, b: int) -> void {
 }
