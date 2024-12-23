@@ -24,6 +24,7 @@ from xyc.compiler import CompilationError
     "for2",
     "for3",
     "for4",
+    "for5",
     "pointers",
     "pseudoParams",
     "errors",
@@ -46,6 +47,7 @@ from xyc.compiler import CompilationError
     "paramsVsArgs",
     # TODO "properties",
     "exitWithError",
+    "arrayComprehension",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

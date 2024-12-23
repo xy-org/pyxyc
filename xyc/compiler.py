@@ -1099,7 +1099,7 @@ def autogenerate_ops(type_obj: TypeObj, ast, cast, ctx):
     )
     ctx.ensure_func_space(xy.Id("and")).append(gen_or_obj)
 
-def compile_func_prototype(fobj: FuncObj, cast, ctx):
+def     compile_func_prototype(fobj: FuncObj, cast, ctx):
     if fobj.params_compiled or fobj.prototype_compiled:
         return fobj
     if id(fobj) in ctx.func_compilation_stack:
@@ -2416,6 +2416,37 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             xy_node=expr,
             c_node=c.Cast(what=arg_exprs[0].c_node, to=arg_exprs[1].c_node.name),
             infered_type=arg_exprs[1].infered_type
+        )
+    elif is_builtin_func(func_obj, "iter"):
+        return RefObj(
+            container=arg_exprs[0],
+            ref=ExprObj(
+                xy_node=expr,
+                c_node=c.Const(0),
+                infered_type=func_obj.rtype_obj
+            ),
+            infered_type=ctx.int_obj,
+            xy_node=expr,
+        )
+    elif is_builtin_func(func_obj, "valid"):
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.Expr(
+                arg1=arg_exprs[1].c_node,
+                arg2=c.Const(arg_exprs[0].infered_type.dims[0]),
+                op="<"
+            ),
+            infered_type=ctx.bool_obj,
+        )
+    elif is_builtin_func(func_obj, "next"):
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.UnaryExpr(
+                arg=arg_exprs[1].c_node,
+                op="++",
+                prefix=True,
+            ),
+            infered_type=ctx.void_obj,
         )
     elif func_obj.builtin and len(arg_exprs) == 2 and func_obj.xy_node.name.name != "cmp":
         func_to_op_map = {

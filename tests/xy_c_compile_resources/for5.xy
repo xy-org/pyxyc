@@ -1,0 +1,10 @@
+def mod(num: inout int) {
+    num *= 2;
+}
+
+def test() {
+    arr : var = [1, 3, 5, 7, 9, 11];
+    for (i in arr) {
+        mod(i);
+    }
+}

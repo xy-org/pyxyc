@@ -376,6 +376,20 @@ struct EntryPoint {
     # Implemented by the compiler
 }
 
+# Arrays
+
+def iter(arr: pseudo ?[]) -> ref(arr) Size {
+    # Implemented by the compiler
+}
+
+def valid(arr: pseudo ?[], idx: Size) -> bool {
+    # Implemented by the compiler
+}
+
+def next(arr: pseudo ?[], idx: inout Size) -> void {
+    # Implemented by the compiler
+}
+
 # External libraries
 
 ;; Use this struct to mark external libraries
