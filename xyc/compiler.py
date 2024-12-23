@@ -876,6 +876,11 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
                 type_obj = TypeObj(
                     xy_node = node,
                 )
+                if node.name in ctx.module_ns:
+                    raise CompilationError(
+                        "Struct with same name already defined in module", node,
+                        notes=[("Previous definition", ctx.module_ns[node.name].xy_node)]
+                    )
                 ctx.module_ns[node.name] = type_obj
 
     # 2nd pass - compile fields
@@ -2462,7 +2467,7 @@ def cstr_len(s: str) -> int:
     return res
 
 def remove_xy_escapes(s: str) -> str:
-    return s.replace("\{", "{")
+    return s.replace("\\{", "{")
 
 def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
     arg_infered_types = ArgList(

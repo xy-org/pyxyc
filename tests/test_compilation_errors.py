@@ -235,6 +235,17 @@ src.xy:2:13: note: Previous entrypoint
 |         def main1~EntryPoint() {}
               ^^^^^
 """),
+("""
+        struct Structure {}
+        struct Structure {}
+     """, """\
+src.xy:3:16: error: Struct with same name already defined in module
+|         struct Structure {}
+                 ^^^^^^^^^
+src.xy:2:16: note: Previous definition
+|         struct Structure {}
+                 ^^^^^^^^^
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
