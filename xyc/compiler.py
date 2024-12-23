@@ -2415,7 +2415,14 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
 
         func_obj: FuncObj = fspace.find(expr, arg_infered_types, ctx, partial_matches=False)
     else:
-        func_obj: FuncObj = fselect_unnamed(expr, arg_infered_types, ctx, partial_matches=False)[0]
+        func_obj = None
+        candidates: list[FuncObj] = fselect_unnamed(expr, arg_infered_types, ctx, partial_matches=False)
+        for cand in candidates:
+            if len(cand.tags) > 0:
+                func_obj = cand
+                break
+        if func_obj is None:
+            func_obj = candidates[0]
 
     ensure_func_decl(func_obj, cast, cfunc, ctx)
 

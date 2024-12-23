@@ -7,6 +7,7 @@ typedef int32_t (*xy_fp__int__int)(int32_t) ;
 typedef int32_t (*xy_fp__int__double__int)(int32_t, double) ;
 
 int32_t callbacks_abs(int32_t a);
+int32_t callbacks_cb(int32_t a);
 int32_t callbacks_funnyFun(int32_t a, double b);
 
 struct callbacks_Callback {
@@ -15,6 +16,7 @@ struct callbacks_Callback {
 
 int32_t callbacks_test(void) {
     const xy_fp__int__int cb1 = callbacks_abs;
+    const xy_fp__int__int cb2 = callbacks_cb;
     xy_fp__int__double__int cb3;
     cb3 = callbacks_funnyFun;
     const xy_fp__int__double__int cb4 = cb3;
@@ -28,6 +30,10 @@ int32_t callbacks_abs(int32_t a) {
         tmp1 = a;
     }
     return tmp1;
+}
+
+int32_t callbacks_cb(int32_t a) {
+    return a;
 }
 
 int32_t callbacks_funnyFun(int32_t a, double b) {
