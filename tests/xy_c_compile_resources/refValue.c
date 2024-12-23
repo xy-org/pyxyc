@@ -17,7 +17,7 @@ int32_t refValue_func1(refValue_Data d, int32_t i) {
 }
 
 void refValue_test(void) {
-    const int32_t a = 10;
+    int32_t a = 10;
     const int32_t* b = &a;
     const int32_t* c = &a;
     const refValue_Data d = (refValue_Data){0};

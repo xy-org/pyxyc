@@ -66,6 +66,35 @@ src.xy:4:19: error: Expression doesn't evaluate to a ref
 #      """, """
 # """),
 #     ("""
+#         def func(ptr: Ptr~int, arg: pseudo ?) -> Ptr~[arg~[~int]] {
+#             return ptr;
+#         }
+#      """, """
+# """),
+#     ("""
+#         def func(ptr: Ptr~int, arg: pseudo ?) -> Ptr~[~arg'typeof] {
+#             return ptr;
+#         }
+#      """, """
+# """),
+# """),
+#     ("""
+#         def func(ptr: Ptr~int, arg: pseudo ?) -> Ptr~[int] {
+#             return ptr~[~arg];
+#         }
+#      """, """
+# """),
+# """),
+#     ("""
+#         def func(a: int) = ~a
+#      """, """
+# """),
+
+# def func3(ptr: Ptr, arg: pseudo ?) -> Ptr~[<< typeof(a)] {
+#     return ptr;
+# }
+
+#     ("""
 #         def func(arg: pseudo ?, ptr: Ptr~[arg'typeof]) -> Ptr~[arg'typeof] {
 #             return ptr;
 #         }

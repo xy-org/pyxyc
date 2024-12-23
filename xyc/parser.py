@@ -512,7 +512,7 @@ def parse_expression(
                     src=itoken.src, coords=op_coords
                 )
             elif itoken.check("["):
-                args, kwargs = parse_args_kwargs(itoken)
+                args, kwargs = parse_args_kwargs(itoken, is_taglist=True)
                 itoken.expect("]")
                 attach_tags = AttachTags(
                     arg1, TagList(args, kwargs), src=itoken.src, coords=op_coords
@@ -746,9 +746,9 @@ def parse_str_literal(prefix, prefix_start, itoken):
     res.full_str = itoken.src.code[prefix_start+len(prefix)+1:part_end]
     return res
 
-def parse_args_kwargs(itoken, is_toplevel=True):
+def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False):
     positional, named = [], {}
-    args = parse_expr_list(itoken, ignore_eols=True, is_toplevel=is_toplevel)
+    args = parse_expr_list(itoken, ignore_eols=True, is_toplevel=is_toplevel, is_taglist=is_taglist)
     for expr in args:
         is_named = (
             isinstance(expr, BinExpr) and expr.op == "=" and
@@ -761,11 +761,16 @@ def parse_args_kwargs(itoken, is_toplevel=True):
     return positional, named
     
 
-def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True):
+def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False):
     res = []
     if ignore_eols: itoken.skip_empty_lines()
     while itoken.peak() not in {")", "]", "}", ";"}:
+        calltime_coords = itoken.peak_coords()
+        is_calltime_expr = is_taglist and itoken.check("<<")
         expr = parse_expression(itoken, is_toplevel=is_toplevel)
+        if is_calltime_expr:
+            expr = CallTimeExpr(expr, src=itoken.src, coords=calltime_coords)
+
         res.append(expr)
         if ignore_eols: itoken.skip_empty_lines()
         if itoken.peak() not in {")", "]", "}", ";"}:

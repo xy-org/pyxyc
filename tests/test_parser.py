@@ -372,6 +372,64 @@ def test_parse_simple_func(code, exp_ast):
             ),
         ]
     ],
+    [
+        """
+        def func(x: int) -> Ptr~int {}
+        def func(x: pseudo ?) -> Ptr~[<<(a'typeof)] {}
+        def func(x: pseudo ?) -> Ptr~[<< a'typeof] {}
+        def func(x: pseudo ?) -> Ptr~[<<typeof(a)] {}
+        """,
+        [
+            ast.FuncDef(ast.Id("func"),
+                params=[ast.param("x", type=ast.Id("int"))],
+                returns=[
+                    ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+                        args=[ast.Id("int")]
+                    ))),
+                ],
+                body=[]
+            ),
+            ast.FuncDef(ast.Id("func"),
+                params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
+                returns=[
+                    ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+                        args=[
+                            ast.CallTimeExpr(
+                                ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
+                            )
+                        ]
+                    ))),
+                ],
+                body=[]
+            ),
+            ast.FuncDef(ast.Id("func"),
+                params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
+                returns=[
+                    ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+                        args=[
+                            ast.CallTimeExpr(
+                                ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
+                            )
+                        ]
+                    ))),
+                ],
+                body=[]
+            ),
+            ast.FuncDef(ast.Id("func"),
+                params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
+                returns=[
+                    ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+                        args=[
+                            ast.CallTimeExpr(
+                                ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
+                            )
+                        ]
+                    ))),
+                ],
+                body=[]
+            ),
+        ]
+    ],
 ])
 def test_parse_advanced_funcs(code, exp_ast):
     act_ast = parse_code(code)

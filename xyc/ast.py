@@ -182,6 +182,10 @@ class AttachTags(Node):
             self.tags = tags
 
 @dataclass
+class CallTimeExpr(Node):
+    arg: Node | None = None
+
+@dataclass
 class Return(Node):
     value: Node
 

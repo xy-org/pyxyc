@@ -34,7 +34,8 @@ class TypeObj(CompiledObj):
 
     @property
     def c_name(self):
-        if self.builtin and self.xy_node.name == "Ptr" and "to" in self.tags:
+        if self.builtin and self.xy_node.name == "Ptr" and "to" in self.tags \
+            and self.tags["to"] is not calltime_expr_obj:
             to_obj = self.tags["to"]
             return to_obj.c_name + "*"
         if self.c_node is not None:
@@ -55,6 +56,7 @@ class ArrTypeObj(TypeObj):
     
 tag_list_type_obj = TypeObj(builtin=True)
 any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("any"))
+calltime_expr_obj = TypeObj(builtin=True)
     
 @dataclass
 class TypeInferenceError:
@@ -101,6 +103,7 @@ class FuncObj(CompiledObj):
     module_header: 'ModuleHeader' = None  # None means current module
     params_compiled: bool = False
     prototype_compiled: bool = False
+    has_calltime_tags: bool = False
 
     @property
     def c_name(self):
@@ -401,6 +404,7 @@ class CompilerContext:
     stdlib_included = False
     compiling_header = False
     func_compilation_stack : dict = field(default_factory=dict)
+    eval_calltime_exprs = False
 
     fsig2obj: dict[str, CompiledObj] = field(default_factory=dict)
 
@@ -477,7 +481,8 @@ class CompilerContext:
         raise CompilationError("Cannot determine identifier", name)
 
     def get_compiled_type(self, name: xy.Id | str):
-        return self.eval_to_type(name if not isinstance(name, str) else xy.Id(name))
+        res = self.eval_to_type(name if not isinstance(name, str) else xy.Id(name))
+        return res
     
     def split_and_eval_tags(self, tags: xy.TagList, cast, ast):
         open_tags = []
@@ -551,6 +556,10 @@ class CompilerContext:
                     msg = f"Cannot find symbol '{node.name}'"
                 raise CompilationError(msg, node)
             return res
+        elif isinstance(node, xy.CallTimeExpr):
+            if not self.eval_calltime_exprs:
+                return calltime_expr_obj
+            return self.eval(node.arg)
         elif isinstance(node, xy.Const):
             const_type_obj = None
             if node.type is not None:
@@ -1145,6 +1154,9 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     else:
         rtype_compiled = ctx.void_obj
 
+    has_calltime_tags = remove_calltime_tags(rtype_compiled)
+    fobj.has_calltime_tags = has_calltime_tags
+
     if not isinstance(node.body, list) and len(node.returns) == 0:
         # shorthand notation
         rtype_compiled = do_infer_type(node.body, cast, ctx)
@@ -1217,6 +1229,27 @@ def fill_param_default_values(fobj, cast, ctx):
                 )
             
     return fobj
+
+def remove_calltime_tags(obj: CompiledObj):
+    has_any = False
+    tags = obj.tags
+
+    for tag in tags.values():
+        if tag is calltime_expr_obj:
+            has_any = True
+            break
+
+    if has_any:
+        obj.tags = {}
+        for label, tag in tags.items():
+            if tag is not calltime_expr_obj:
+                obj.tags[label] = tag
+    
+    for tag in obj.tags.values():
+        any_removed = remove_calltime_tags(tag)
+        has_any = has_any or any_removed
+
+    return has_any
 
 def compile_builtins(builder, module_name, asts):
     mh, _ = compile_module(builder, module_name, asts)
@@ -1531,11 +1564,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                 tags=arg_obj.ref.tags
             )
         elif isinstance(arg_obj.compiled_obj, VarObj):
-            return ExprObj(
-                expr,
-                c_node=c.UnaryExpr(arg=arg_obj.c_node, op="&", prefix=True),
-                infered_type=ptr_type_to(arg_obj.infered_type, ctx),
-            )
+            return compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx)
         else:
             raise CompilationError("Expression doesn't evaluate to a ref", expr.arg)
     elif isinstance(expr, xy.UnaryExpr):
@@ -2349,10 +2378,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             infered_type=ctx.size_obj
         )
     elif is_builtin_func(func_obj, "addrof"):
-        return ExprObj(
-            c_node=c.UnaryExpr(arg=arg_exprs[0].c_node, op="&", prefix=True),
-            infered_type=ctx.ptr_obj
-        )
+        return compile_builtin_addrof(expr, arg_exprs[0], cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "max"):
         name_to_lim = {
             "byte": "INT8_MAX",
@@ -2411,7 +2437,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         for pobj in func_obj.param_objs[len(arg_exprs.args):]:
             if pobj.xy_node.name not in arg_exprs.kwargs:
                 try:
-                    default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, func_ctx)
+                    value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, func_ctx)
                 except CompilationError as e:
                     raise CompilationError(
                         f"Cannot compile default value for param '{pobj.xy_node.name}'", expr,
@@ -2420,9 +2446,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                             *(e.notes if e.notes is not None else [])
                         ]
                     )
-                res.args.append(default_obj.c_node)
             else:
-                res.args.append(arg_exprs.kwargs[pobj.xy_node.name].c_node)
+                value_obj = arg_exprs.kwargs[pobj.xy_node.name]
+            
+            res.args.append(value_obj.c_node)
+            func_ctx.ns[pobj.xy_node.name] = value_obj
 
     # compile input guards if any
     in_guards = func_obj.xy_node.in_guards if func_obj.xy_node is not None else []
@@ -2439,14 +2467,18 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
     rtype_obj = func_obj.rtype_obj
     if (func_obj.xy_node is not None and len(func_obj.xy_node.returns) > 0 and
-        isinstance(func_obj.xy_node.returns[0].type, xy.AttachTags)
+        func_obj.has_calltime_tags
     ):
         # TODO optimize this by evaluating only the values that need it
         rtype_obj = copy(rtype_obj)
+
+        eval_stored_value = func_ctx.eval_calltime_exprs
+        func_ctx.eval_calltime_exprs = True
         rtype_obj.tags.update(func_ctx.eval_tags(
             func_obj.xy_node.returns[0].type.tags,
-            tag_specs=rtype_obj.base_type_obj.tag_specs
+            tag_specs=rtype_obj.base_type_obj.tag_specs,
         ))
+        func_ctx.eval_calltime_exprs = eval_stored_value
 
     if (
         func_obj.xy_node is not None and
@@ -2563,6 +2595,16 @@ def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
         xy_node=expr,
         c_node=res,
         infered_type=arg_exprs[0].infered_type.base_type_obj
+    )
+
+def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx):
+    if isinstance(arg_obj.compiled_obj, VarObj):
+        # Pointers in xy don't have any constness attached to them so
+        # any const variables must be made non-const 
+        arg_obj.compiled_obj.c_node.qtype.is_const = False
+    return ExprObj(
+        c_node=c.UnaryExpr(arg=arg_obj.c_node, op="&", prefix=True),
+        infered_type=ptr_type_to(arg_obj.infered_type, ctx)
     )
 
 def is_builtin_func(func_obj, name):
