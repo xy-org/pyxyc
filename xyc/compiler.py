@@ -1971,6 +1971,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
             obj = field_set(tmp_obj, field, fval_obj, cast, cfunc, ctx)
             cfunc.body.append(obj.c_node)
 
+
         if isinstance(tmp_obj, VarObj):
             res = c.Id(tmp_obj.c_node.name)
         else:
@@ -3006,7 +3007,7 @@ def get_c_type(type_expr, ctx):
 def mangle_def(fdef: xy.FuncDef, param_objs: list[VarObj], ctx, expand=False):
     mangled = mangle_name(fdef.name.name, ctx.module_name)
     if expand:
-        mangled = [mangled, "__with"]
+        mangled = [mangled]
         for param_obj in param_objs:
             mangled.append("__")
             mangled.append(param_obj.type_desc.xy_node.name)
