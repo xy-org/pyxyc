@@ -253,6 +253,11 @@ def test_callbacks_and_fselect(code, err_msg):
         }""",
         "Guards are allowed only on new lines"
     ),
+    (
+        """def get(^num: int = 0) {
+        }""",
+        "Caller context parameters cannot have default values"
+    ),
 ])
 def test_func_def_errors(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):

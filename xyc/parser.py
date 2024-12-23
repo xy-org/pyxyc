@@ -581,6 +581,8 @@ def parse_expression(
 
                 arg1 = sliceop
         elif op == "=" and isinstance(arg1, SliceExpr):
+            if isinstance(arg1.start, CallerContextExpr):
+                raise ParsingError("Caller context parameters cannot have default values", itoken)
             decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=op_coords)
             decl.type = expr_to_type(arg1.end)
             decl.value = parse_expression(itoken, precedence+1, op_prec=op_prec)
