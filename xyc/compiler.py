@@ -2991,6 +2991,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     )
                     if to_move:
                         value_obj = maybe_move_to_temp(value_obj, cast, cfunc, ctx)
+                    elif pobj.xy_node.is_pseudo:
+                        # ensure pseudo parameters get executed
+                        cfunc.body.append(value_obj.c_node)
                 except CompilationError as e:
                     raise CompilationError(
                         f"Cannot compile default value for param '{pobj.xy_node.name}'", expr,
