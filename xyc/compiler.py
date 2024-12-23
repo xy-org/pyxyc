@@ -64,6 +64,7 @@ class InstanceObj(CompiledObj):
 class FuncObj(CompiledObj):
     rtype_obj: TypeObj = None
     etype_obj: TypeObj = None
+    params: list['VarObj'] = field(default_factory=list)
     builtin: bool = False
 
     @property
@@ -118,17 +119,27 @@ class FuncSpace:
     
     def find(self, node, args_infered_types, ctx):
         if isinstance(node, xy.FuncCall):
+            candidate_fobjs = []
             for desc in self._funcs:
-                if cmp_call_def(args_infered_types, desc.xy_node, ctx):
-                    return desc
+                if cmp_call_def(args_infered_types, desc, ctx):
+                    candidate_fobjs.append(desc)
+            
+            if len(candidate_fobjs) == 1:
+                return candidate_fobjs[0]
+
             fsig = ctx.eval_to_id(node.name) + "(" + \
                 ", ".join(t.xy_node.name for t in args_infered_types) + \
                 ")"
+            if len(candidate_fobjs) == 0:
+                candidate_fobjs = self._funcs
+                err_msg = f"Cannot find function '{fsig}'"
+            else:
+                err_msg = f"Multiple function matches for '{fsig}'"
             candidates = "\n    ".join((
-                func_sig(f.xy_node) for f in self._funcs
+                func_sig(f.xy_node) for f in candidate_fobjs
             ))
             raise CompilationError(
-                f"Cannot find function '{fsig}'", node,
+                err_msg, node,
                 notes=[(f"Candidates are:\n    {candidates}", None)]
             )
         else:
@@ -146,12 +157,17 @@ class ExtSpace(FuncSpace):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
 
-def cmp_call_def(fcall_args_types, fdef, ctx):
+def cmp_call_def(fcall_args_types, fobj, ctx):
+    if len(fcall_args_types) > len(fobj.params):
+        return False
+    fdef = fobj.xy_node
     # TODO what about kwargs
     for arg_type, param in zip(fcall_args_types, fdef.params):
         # XXX
         if isinstance(arg_type, ArrTypeObj):
             continue
+        if param.type is None:
+            continue # XXX
         if arg_type.xy_node.name != param.type.name:
             return False
     for p in fdef.params[len(fcall_args_types):]:
@@ -193,6 +209,19 @@ class CompilerContext:
     size_obj: any = None
 
     stdlib_included = False
+
+    def __post_init__(self):
+        self.namespaces = [self.global_ns, self.module_ns]
+
+    def push_ns(self):
+        self.namespaces.append(dict())
+
+    @property
+    def ns(self):
+        return self.namespaces[-1]
+
+    def pop_ns(self):
+        self.namespaces.pop()
 
     def ensure_func_space(self, name: xy.Id):
         if name.name not in self.module_ns:
@@ -236,12 +265,11 @@ class CompilerContext:
 
     def get_compiled_type(self, name: xy.Id | str):
         symbol_name = name.name if isinstance(name, xy.Id) else name
-        res = self.module_ns.get(symbol_name, None)
-        if res is None:
-            res = self.global_ns.get(symbol_name, None)
+        for ns in reversed(self.namespaces):
+            res = ns.get(symbol_name, None)
+            if res is not None:
+                return res
 
-        if res is not None:
-            return res
         raise CompilationError(f"Cannot find type '{name.name}'", name)
     
     def eval_tag_ctors(self, tags: xy.TagList):
@@ -288,10 +316,10 @@ class CompilerContext:
         return res
 
     def lookup(self, name: str):
-        if name in self.module_ns:
-            return self.module_ns[name]
-        else:
-            return self.global_ns.get(name, None)
+        for ns in reversed(self.namespaces):
+            if name in ns:
+                return ns[name]
+        return None
 
     def eval(self, node, msg="Cannot find symbol"):
         if isinstance(node, xy.Id):
@@ -424,6 +452,11 @@ def compile_header(ctx: CompilerContext, asts, cast):
             if isinstance(node, xy.FuncDef):
                 compile_func_prototype(node, cast, ctx)
 
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.FuncDef):
+                fill_param_default_values(node, cast, ctx)
+
     return cast
 
 def compile_structs(ctx: CompilerContext, asts, cast):
@@ -490,13 +523,28 @@ def compile_func_prototype(node, cast, ctx):
     
     cname = mangle_def(node, ctx, expand=expand_name)
     cfunc = c.Func(name=cname)
+    param_objs = []
     for param in node.params:
-        if not param.is_pseudo:
-            c_type = get_c_type(param.type, ctx)
-            if should_pass_by_ref(param):
+        param_obj = VarObj(xy_node=param, passed_by_ref=should_pass_by_ref(param))
+
+        if param.type is not None:
+            param_obj.type_desc = find_type(param.type, ctx)
+        else:
+            param_obj.type_desc = try_infer_type(param.value, ctx)
+
+        if param_obj.type_desc:
+            c_type = param_obj.type_desc.c_name
+            if param_obj.passed_by_ref:
                 c_type = c_type + "*"
+        else:
+            c_type = None
+
+        if not param.is_pseudo:
             cparam = c.VarDecl(param.name, c_type)
             cfunc.params.append(cparam)
+            param_obj.c_node = cparam
+
+        param_objs.append(param_obj)
 
     etype_compiled = None
     if return_by_param(node):
@@ -516,12 +564,23 @@ def compile_func_prototype(node, cast, ctx):
     else:
         rtype_compiled = ctx.void_obj
 
+    if not isinstance(node.body, list) and len(node.returns) == 0:
+        # shorthand notation
+        ctx.push_ns()
+        for pobj in param_objs:
+            ctx.ns[pobj.xy_node.name] = pobj
+        rtype_compiled = do_infer_type(node.body, ctx)
+        ctx.pop_ns()
+
     cfunc.rtype = (etype_compiled.c_name
                     if etype_compiled is not None
                     else rtype_compiled.c_name)
 
     cast.func_decls.append(cfunc)
-    compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled, etype_obj=etype_compiled)
+    compiled = FuncObj(
+        node, cfunc, rtype_obj=rtype_compiled, etype_obj=etype_compiled,
+        params=param_objs
+    )
 
     if node.etype is not None:
         compiled.etype_obj = ctx.get_compiled_type(node.etype)
@@ -538,6 +597,29 @@ def compile_func_prototype(node, cast, ctx):
         ctx.entrypoint_obj = compiled
 
     func_space.append(compiled)
+
+    return compiled
+
+def fill_param_default_values(node, cast, ctx):
+    fspace = ctx.eval_to_fspace(node.name)
+    fobj : FuncObj = fspace.find(node, [], ctx)
+    ctx.push_ns()
+    for pobj in fobj.params:
+        if pobj.type_desc is not None:
+            ctx.ns[pobj.xy_node.name] = pobj
+            continue
+        if pobj.xy_node.value is None:
+            raise CompilationError("Cannot infer type", pobj.xy_node)
+        type_obj = do_infer_type(pobj.xy_node.value, ctx)
+        pobj.type_desc = type_obj
+
+        c_type = pobj.type_desc.c_name
+        if pobj.passed_by_ref:
+            c_type = c_type + "*"
+        pobj.c_node.type = c_type
+
+        ctx.ns[pobj.xy_node.name] = pobj
+    ctx.pop_ns()
 
 def import_builtins(ctx: CompilerContext, cast):
     # always include it as it is everywhere
@@ -601,6 +683,10 @@ def import_builtins(ctx: CompilerContext, cast):
                 desc = register_func(func, ctx)
                 desc.builtin = True
                 desc.rtype_obj = ctx.global_ns[rtype_name]
+                desc.params = [
+                    VarObj(type_desc=ctx.global_ns[type1]),
+                    VarObj(type_desc=ctx.global_ns[type2])
+                ]
 
     for type in int_types:
         for fname in ["add", "sub"]:
@@ -615,6 +701,10 @@ def import_builtins(ctx: CompilerContext, cast):
             desc = register_func(func, ctx)
             desc.builtin = True
             desc.rtype_obj = ctx.global_ns["Ptr"]
+            desc.params = [
+                VarObj(type_desc=ctx.global_ns["Ptr"]),
+                VarObj(type_desc=ctx.global_ns[type])
+            ]
     
     # fill in ++(inc) and --(dec)
     for type1 in num_types:
@@ -629,6 +719,9 @@ def import_builtins(ctx: CompilerContext, cast):
             desc = register_func(func, ctx)
             desc.builtin = True
             desc.rtype_obj = ctx.global_ns[rtype_name]
+            desc.params = [
+                VarObj(type_desc=ctx.global_ns[type1]),
+            ]
     
     select = xy.FuncDef(name="select", params=[
         xy.VarDecl("arr", xy.ArrayType(base=None)),
@@ -638,6 +731,10 @@ def import_builtins(ctx: CompilerContext, cast):
     select_obj.builtin = True
     # XXX
     select_obj.rtype_obj = ctx.global_ns["int"]
+    select_obj.params = [
+        VarObj(type_desc=ArrayObj()),
+        VarObj(type_desc=ctx.global_ns["int"]),
+    ]
 
     # tag construction
     tag_ctor = xy.StructDef(name="TagCtor", fields=[
@@ -701,14 +798,9 @@ def compile_func(node, ctx, ast, cast):
     cfunc = fdesc.c_node
 
     param_objs = []
-    for param, cparam in zip(node.params, cfunc.params):
-        param_type = find_type(param.type, ctx)
-        ctx.module_ns[param.name] = VarObj(
-            xy_node=param,
-            c_node=cparam,
-            type_desc=param_type,
-            passed_by_ref=should_pass_by_ref(param)
-        )
+    ctx.push_ns()
+    for param_obj in fdesc.params:
+        ctx.ns[param_obj.xy_node.name] = param_obj
 
     ctx.current_fobj = fdesc
     if isinstance(node.body, list):
@@ -722,6 +814,7 @@ def compile_func(node, ctx, ast, cast):
     ctx.current_fobj = None
 
     cast.funcs.append(cfunc)
+    ctx.pop_ns()
 
 def compile_body(body, cast, cfunc, ctx, is_func_body=False):
     ctx.enter_block()
@@ -755,7 +848,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 cvar.dims = type_desc.dims
             else:
                 cvar.type = type_desc.c_name
-            ctx.module_ns[node.name] = VarObj(node, cvar, type_desc)
+            ctx.ns[node.name] = VarObj(node, cvar, type_desc)
 
             if node.value is not None:
                 cvar.value = value_obj.c_node
@@ -899,6 +992,20 @@ def c_getref(c_node):
     if isinstance(c_node, c.UnaryExpr) and c_node.op == "*" and c_node.prefix:
         return c_node.arg
     return c.UnaryExpr(c_node, op='&', prefix=True)
+
+def try_infer_type(expr, ctx):
+    try:
+        do_infer_type(expr, ctx)
+    except CompilationError:
+        return None
+    
+def do_infer_type(expr, ctx):
+    if isinstance(expr, xy.StructLiteral):
+        return ctx.get_compiled_type(expr.name)
+    try:
+        return compile_expr(expr, None, None, ctx).infered_type
+    except CompilationError as e:
+        raise CompilationError(f"Cannot infer type because: {e.error_message}", e.xy_node)
 
 def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
     if expr.prefix not in ctx.str_prefix_reg:
@@ -1210,7 +1317,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
             name_hint = ctx.eval_to_id(name_hint) if name_hint is not None else ""
         var_obj = ctx.create_tmp_var(infered_type, name_hint=name_hint)
         cfunc.body.append(var_obj.c_node)
-        ctx.module_ns[name_hint] = var_obj
+        ctx.ns[name_hint] = var_obj
         c_res = c.Id(var_obj.c_node.name)
 
     # compile if body
@@ -1282,7 +1389,7 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
             inferred_type = type_desc if type_desc is not None else value_obj.infered_type
             name_hint = loop_vardecl.name
             tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
-            ctx.module_ns[name_hint] = tmp_obj
+            ctx.ns[name_hint] = tmp_obj
             if value_obj is not None:
                 tmp_obj.c_node.value = value_obj.c_node
             cfunc.body.append(tmp_obj.c_node)
@@ -1507,6 +1614,7 @@ class CompilationError(Exception):
         
         src_line = node.src.code[line_loc:line_end].replace("\t", " ")
         self.error_message = msg
+        self.xy_node = node
         self.fmt_msg = f"{fn}:{line_num}:{loc - line_loc + 1}: error: {msg}\n"
         if loc >= 0:
             self.fmt_msg += f"| {src_line}\n"
