@@ -1,0 +1,5 @@
+;; Compares two types. Returns true if types are identical including tags.
+;; TODO should be renamed to cmp or something. Maybe don't use.
+def typeEqs(a: pseudo ?, b: pseudo ?) -> bool {
+    # Implemented by the compiler
+}

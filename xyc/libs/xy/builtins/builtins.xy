@@ -128,19 +128,19 @@ def add(a: float, b: float) -> float {
 }
 
 ;; Add and accumulate
-def addEqual(a: int, b: int) -> int {
+def addEqual(a: int, b: int) -> void {
     # Implemented by the compiler
 }
 
-def addEqual(a: float, b: float) -> int {
+def addEqual(a: float, b: float) -> void {
     # Implemented by the compiler
 }
 
-def addEqual(a: inout int, b: Size) -> int {
+def addEqual(a: inout int, b: Size) -> void {
     # Implemented by the compiler
 }
 
-def addEqual(a: inout Size, b: Size) -> int {
+def addEqual(a: inout Size, b: Size) -> void {
     # Implemented by the compiler
 }
 

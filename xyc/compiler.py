@@ -684,16 +684,6 @@ def compile_module(builder, module_name, asts):
 
     return mh, res
 
-def compile_ctti(builder, module_name):
-    ctx = CompilerContext(builder, module_name)
-    res = c.Ast()
-
-    import_ctti(ctx, res)
-
-    return ModuleHeader(
-        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg, ctx=ctx,
-    ), res
-
 def compile_header(ctx: CompilerContext, asts, cast):
     for ast in asts:
         for node in ast:
@@ -1200,16 +1190,18 @@ def compile_builtins(builder, module_name, asts):
 
     return mh, cast
 
-def import_ctti(ctx: CompilerContext, cast):
-    # typeEqs - compile time type comparison
-    typeEqs = xy.FuncDef("typeEqs", params=[xy.VarDecl("t1"), xy.VarDecl("t2")])
-    typeEqs_obj = register_func(typeEqs, ctx)
-    typeEqs.name = xy.Id("typeEqs")
-    typeEqs_obj.builtin = True
-    typeEqs_obj.param_objs = [
-        VarObj(),
-        VarObj(),
-    ]
+def compile_ctti(builder, module_name, asts):
+    mh, _ = compile_module(builder, module_name, asts)
+    cast = c.Ast()
+
+    for obj in mh.ctx.module_ns.values():
+        obj.builtin = True
+
+        if isinstance(obj, FuncSpace):
+            for func_obj in obj._funcs:
+                func_obj.builtin = True
+
+    return mh, cast
 
 def compile_funcs(ctx, ast, cast):
     for node in ast:

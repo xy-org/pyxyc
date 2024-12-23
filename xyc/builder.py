@@ -67,7 +67,15 @@ class Builder:
 
     def compile_ctti(self):
         ctti_module_name = "xy.ctti"
-        header, c_srcs = compile_ctti(self, ctti_module_name)
+        module_path = path.join(self.builtin_lib_path, "xy", "ctti")
+        if not path.exists(module_path):
+            raise ValueError(f"Cannot locate the 'xy' library at {module_path}")
+        module_ast = parse_module(module_path, ctti_module_name)
+
+        header, c_srcs = compile_ctti(
+            self, ctti_module_name, list(module_ast.values())[0]
+        )
+
         self.module_cache[ctti_module_name] = CompiledModule(header, c_srcs)
 
     def do_compile_module(self, module_name: str, module_path: str):
