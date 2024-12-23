@@ -7,6 +7,6 @@ int32_t entrypoint_main(void) {
 }
 
 int main(int argc, char** argv) {
-    const int res = entrypoint_main();
-    return res;
+    entrypoint_main();
+    return 0;
 }

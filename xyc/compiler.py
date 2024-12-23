@@ -601,7 +601,7 @@ class CompilerContext:
             return ArrayObj(elems=[self.eval(elem) for elem in node.elems], xy_node=node)
         elif isinstance(node, xy.BinExpr):
             if node.op == ".":
-                base = self.eval(node.arg1)
+                base = self.eval(node.arg1, msg="Cannot find symbol")
                 if isinstance(base, ImportObj):
                     assert isinstance(node.arg2, xy.Id)
                     if base.is_external:

@@ -134,6 +134,14 @@ src.xy:2:19: error: function parameters cannot be of type struct.
 |         def parse(args: pseudo struct) -> void {
                     ^^^^
 """),
+    ("""
+        def parse(args := sys.argc()) -> void {
+        }
+     """, """\
+src.xy:2:27: error: Cannot infer type because: Cannot find symbol
+|         def parse(args := sys.argc()) -> void {
+                            ^^^
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
