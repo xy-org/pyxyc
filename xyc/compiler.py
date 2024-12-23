@@ -1670,6 +1670,8 @@ def type_needs_dtor(type_obj):
 def compile_vardecl(node, cast, cfunc, ctx):
     cvar = c.VarDecl(name=node.name, qtype=c.QualType(is_const=not node.mutable))
     value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
+    if node.is_move:
+        value_obj = move_out(value_obj, cast, cfunc, ctx)
     if isinstance(value_obj, RefObj):
         value_obj = ref_get(value_obj, cast, None, ctx)
     type_desc = find_type(node.type, cast, ctx) if node.type is not None else None
@@ -1743,7 +1745,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             ))
         )
     elif isinstance(expr, xy.BinExpr):
-        if expr.op not in {'.', '=', '.=', '..'}:
+        if expr.op not in {'.', '=', '.=', '..', '=<'}:
             return compile_binop(expr, cast, cfunc, ctx)
         elif expr.op == '.':
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
@@ -1777,7 +1779,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 c_node=None,
                 infered_type=arg1_obj.infered_type
             )
-        elif expr.op == "=":
+        elif expr.op in {"=", "=<"}:
             if isinstance(expr.arg1, xy.Select):
                 if expr.arg1.base is not None:
                     container_obj = compile_expr(expr.arg1.base, cast, cfunc, ctx, deref=False)
@@ -1792,10 +1794,13 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
 
+            if expr.op == "=<":
+                arg2_obj = move_out(arg2_obj, cast, cfunc, ctx)
+
             if isinstance(arg1_obj, RefObj):
                 return ref_set(arg1_obj, arg2_obj, cast, cfunc, ctx)
             else:
-                res = c.Expr(arg1_obj.c_node, arg2_obj.c_node, op=expr.op)
+                res = c.Expr(arg1_obj.c_node, arg2_obj.c_node, op="=")
                 return ExprObj(
                     xy_node=expr,
                     c_node=res,
@@ -2049,6 +2054,23 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_caller_context_expr(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
+    
+def move_out(obj: ExprObj, cast, cfunc, ctx):
+    if is_tmp_expr(obj):
+        return obj
+
+    tmp_obj = move_to_temp(obj, cast, cfunc, ctx)
+
+    c_reset = c.Expr(obj.c_node, obj.infered_type.init_value, op="=")
+    cfunc.body.append(c_reset)
+
+    return tmp_obj
+
+def is_tmp_expr(obj: ExprObj):
+    return (
+        isinstance(obj.c_node, c.Id) and obj.c_node.name.startswith("tmp") and
+        '_' in obj.c_node.name
+    )
     
 def maybe_deref(obj: CompiledObj, deref: bool, cast, cfunc, ctx):
     if not deref:

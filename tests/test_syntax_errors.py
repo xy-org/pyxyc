@@ -160,6 +160,18 @@ def test_invalid_slices(code, err_msg):
         }""",
         "Unexpected end of expression"
     ),
+    (
+        """def funct(a: int, b: int) {
+            a = a + *b;
+        }""",
+        "Expected operand found operator"
+    ),
+    (
+        """def funct(a: int, b: int) {
+            a => b;
+        }""",
+        "Malformed expression"
+    ),
 ])
 def test_invalid_expression(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):

@@ -254,7 +254,17 @@ from xyc.tokenizer import split_tokens
         "p1.x = 10.0f;",
         ['p1', '.', 'x', '=', '10.0f', ';'],
         None
-    )
+    ),
+    (
+        "a =< b;",
+        ['a', '=<', 'b', ';'],
+        None
+    ),
+    (
+        "c :=< b;",
+        ['c', ':', '=<', 'b', ';'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)

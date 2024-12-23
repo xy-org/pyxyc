@@ -63,6 +63,7 @@ from xyc.compiler import CompilationError
     "callbacks3",
     "callbacks4",
     "macros1",
+    "moveOperators1",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

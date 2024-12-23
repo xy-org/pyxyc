@@ -981,6 +981,58 @@ def test_parse_operator_slices(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def test() {
+            a : mut = 10;
+            b : int;
+            b =< a;
+            c :=< b;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.VarDecl("a", mutable=True, value=ast.Const(10)),
+                ast.VarDecl("b", mutable=True, type=ast.Id("int")),
+                ast.BinExpr(
+                    arg1=ast.Id("b"), arg2=ast.Id("a"), op="=<",
+                ),
+                ast.VarDecl(name="c", value=ast.Id("b"), is_move=True)
+            ]),
+        ]
+    ],
+    [
+        """def test() {
+            a : mut = 10;
+            b : int;
+            b =< a;
+            c :=< b;
+            f(a =>, b);
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.VarDecl("a", mutable=True, value=ast.Const(10)),
+                ast.VarDecl("b", mutable=True, type=ast.Id("int")),
+                ast.BinExpr(
+                    arg1=ast.Id("b"), arg2=ast.Id("a"), op="=<",
+                ),
+                ast.VarDecl(name="c", value=ast.Id("b"), is_move=True),
+                ast.FuncCall(
+                    name=ast.Id("f"),
+                    args=[
+                        ast.UnaryExpr(ast.Id("a"), op="=>"),
+                        ast.Id("b"),
+                    ]
+                )
+            ]),
+        ]
+    ],
+])
+def test_move_operators(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
 
 @pytest.mark.parametrize("code, exp_ast", [
     [

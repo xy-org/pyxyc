@@ -1,0 +1,13 @@
+def test() {
+    a : mut = 10;
+    b : int;
+    b =< a;
+    c :=< b;
+    assert(a == 0);
+    assert(b == 0);
+    assert(c == 10);
+}
+
+def assert(cond: bool) {
+    # ...
+}

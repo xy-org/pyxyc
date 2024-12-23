@@ -235,10 +235,11 @@ class VarDecl(Node):
     type: Node | None = None
     value: Node | None = None
     mutable: bool = False
-    explicit_mutable: bool = field(default=False, compare=False)  # has mut been set explicitly
+    explicit_mutable: bool = field(default=False, compare=False, repr=False)  # has mut been set explicitly
     is_param: bool = False
     is_pseudo: bool = False
     is_callerContext: bool = False
+    is_move: bool = False
     index_in: Node | None = None
 
     @property

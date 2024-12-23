@@ -376,7 +376,7 @@ operator_precedence = {
     "==": 5, "!=": 5, "in": 5,
     "&": 4,
     "|": 3, "||": 3,
-    "=": 2, '+=': 2, '-=': 2, "|=": 2, '*=': 2, '/=': 2, ".=": 2,
+    "=": 2, '+=': 2, '-=': 2, "|=": 2, '*=': 2, '/=': 2, ".=": 2, "=<": 2, "=>": 2,
 }
 MIN_PRECEDENCE=2
 UNARY_PRECEDENCE=10
@@ -528,6 +528,7 @@ def parse_expression(
         elif token[-1] == ":":
             raise ParsingError("Operator slices require a start.", itoken)
         elif token in operator_precedence:
+            itoken.consume(-1)
             raise ParsingError("Expected operand found operator", itoken)
         else:
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
@@ -623,10 +624,10 @@ def parse_expression(
                     raise ParsingError("Operator slices require both start and end expressions", itoken)
 
                 arg1 = sliceop
-        elif op == "=" and isinstance(arg1, SliceExpr):
+        elif op in {"=", "=<"} and isinstance(arg1, SliceExpr):
             if isinstance(arg1.start, CallerContextExpr):
                 raise ParsingError("Caller context parameters cannot have default values", itoken)
-            decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=op_coords)
+            decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=op_coords, is_move=(op=="=<"))
             decl.type = expr_to_type(arg1.end)
             decl.value = parse_expression(itoken, precedence+1, op_prec=op_prec)
             arg1 = decl
@@ -676,6 +677,8 @@ def parse_expression(
                     itoken
                 )
         elif op in {"++", "--"}:
+            arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
+        elif op == "=>":
             arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
         elif op == "." and arg1 is None:
             # unary . aka toggle => expand to arg = True
@@ -749,7 +752,7 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
     return decl
 
 def is_end_of_expr(itoken):
-    return itoken.peak() in {";", ")", "]", "}", "=", ","}
+    return itoken.peak() in {";", ")", "]", "}", "=", ",", "=<", "=>"}
 
 def parse_if(itoken):
     if_coords = itoken.peak_coords()
@@ -1029,6 +1032,12 @@ def parse_stmt_list(itoken: TokenIter):
                 notes = []
                 if fuzzy_cmp(itoken.tokens[first_expr_token_idx], "struct") > .8:
                     notes=[("Did you mean 'struct'?", first_expr_token_idx)]
+                if not any(c.isalnum() for c in itoken.peak()) and itoken.peak() not in {"}", ")", "]"}:
+                    import pdb; pdb.set_trace()
+                    raise ParsingError(
+                        "Malformed expression. Looks like invalid operator.",
+                        itoken, notes=notes
+                    )
                 raise ParsingError(
                     "Malformed expression. Maybe missing operator or semicolon.",
                     itoken, notes=notes
