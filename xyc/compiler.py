@@ -59,6 +59,7 @@ class InstanceObj(CompiledObj):
 @dataclass
 class FuncObj(CompiledObj):
     rtype_obj: TypeObj = None
+    etype_obj: TypeObj = None
     builtin: bool = False
 
     @property
@@ -74,6 +75,7 @@ class VarObj(CompiledObj):
 @dataclass
 class ImportObj(CompiledObj):
     name: str | None = None
+    is_external: bool = True  # XXX
 
 @dataclass
 class ExprObj(CompiledObj):
@@ -170,6 +172,10 @@ class CompilerContext:
     id_table: IdTable = field(default_factory=IdTable)
     global_ns: IdTable = field(default_factory=IdTable)
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
+
+    current_fobj: FuncObj | None = None
+    tmp_var_i: int = 0
+
     entrypoint_obj: any = None
     void_obj: any = None
 
@@ -189,10 +195,11 @@ class CompilerContext:
             ]
         )
     
-    def eval_to_fspace(self, name: xy.Node):
+    def eval_to_fspace(self, name: xy.Node, msg=None):
         space = self.eval(name)
         if space is None:
-            raise CompilationError(f"Cannot find any functions named '{name.name}'", name)
+            msg = msg or f"Cannot find any functions named '{name.name}'"
+            raise CompilationError(msg, name)
         if not (isinstance(space, FuncSpace) or isinstance(space, ExtSpace)):
             # TODO add notes here
             raise CompilationError(f"Not a function.", name)
@@ -210,10 +217,13 @@ class CompilerContext:
     def eval_to_id(self, name: xy.Node):
         if isinstance(name, xy.Id):
             return name.name
-        raise CompilationError("Cannot determina identifier", name)
+        raise CompilationError("Cannot determine identifier", name)
 
     def get_compiled_type(self, name: xy.Id):
-        return self.id_table[name.name]
+        res = self.id_table.get(name.name, None)
+        if res is not None:
+            return res
+        raise CompilationError(f"Cannot find type '{name.name}'", name)
     
     def eval_tags(self, tags: xy.TagList):
         res = {}
@@ -285,11 +295,8 @@ class CompilerContext:
         
     def create_tmp_var(self, type_obj, name_hint=""):
         tmp_var_name = f"__tmp{'_' if name_hint else ''}{name_hint}"
-        for i in range(10000):
-            candidate = f"{tmp_var_name}{i}"
-            if candidate not in self.id_table:
-                tmp_var_name = candidate
-                break
+        tmp_var_name = f"{tmp_var_name}{self.tmp_var_i}"
+        self.tmp_var_i += 1
 
         # TODO rewrite expression and call other func
         c_tmp = c.VarDecl(name=tmp_var_name, type=None, varying=True)
@@ -303,6 +310,14 @@ class CompilerContext:
             c_tmp.value = type_obj.init_value
 
         return VarObj(None, c_tmp, type_obj)
+    
+    def enter_block(self):
+        # TODO implement
+        self.tmp_var_i = 0
+
+    def exit_block(self):
+        # TODO implement
+        pass
             
 
 def compile_module(builder, module_name, asts):
@@ -350,6 +365,12 @@ def compile_header(ctx: CompilerContext, asts, cast):
                     )
                     cstruct.fields.append(cfield)
                 type_obj.fields = fields
+                type_obj.init_value = c.StructLiteral(
+                    name=cstruct.name,
+                    args=[
+                        c.Const(0)
+                    ]
+                ) # TODO what about non zero fields
 
                 cast.struct_decls.append(cstruct)
                 cast.structs.append(cstruct)
@@ -367,21 +388,40 @@ def compile_header(ctx: CompilerContext, asts, cast):
                     )
                 
                 cname = mangle_def(node, ctx, expand=expand_name)
-                if len(node.returns) > 1:
-                    raise CompilationError("Multiple return types are NYI", node)
-                if len(node.returns) == 1:
-                    rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
-                else:
-                    rtype_compiled = ctx.void_obj
-                rtype = rtype_compiled.c_name
-                cfunc = c.Func(name=cname, rtype=rtype)
+                cfunc = c.Func(name=cname)
                 for param in node.params:
                     if not param.is_pseudo:
                         cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
                         cfunc.params.append(cparam)
-                cast.func_decls.append(cfunc)
 
-                compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled)
+                etype_compiled = None
+                if len(node.returns) > 1 or node.etype is not None:
+                    # return through parameter
+                    for iret, ret in enumerate(node.returns):
+                        if ctx.eval(ret.type) is ctx.void_obj:
+                            rtype_compiled = ctx.void_obj
+                            assert len(node.returns) == 1
+                            continue
+                        param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
+                        retparam = c.VarDecl(param_name, get_c_type(ret.type, ctx) + "*")
+                        cfunc.params.append(retparam)
+                        rtype_compiled = ctx.get_compiled_type(ret.type)
+                    if node.etype is not None:
+                        etype_compiled = ctx.get_compiled_type(node.etype)
+                elif len(node.returns) == 1:
+                    rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
+                else:
+                    rtype_compiled = ctx.void_obj
+
+                cfunc.rtype = (etype_compiled.c_name
+                               if etype_compiled is not None
+                               else rtype_compiled.c_name)
+
+                cast.func_decls.append(cfunc)
+                compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled, etype_obj=etype_compiled)
+
+                if node.etype is not None:
+                    compiled.etype_obj = ctx.get_compiled_type(node.etype)
 
                 # compile tags
                 compiled.tags = ctx.eval_tags(node.tags)
@@ -438,9 +478,15 @@ def import_builtins(ctx, cast):
             types = {type1, type2}
             if "Size" in types and ("float" in types or "double" in types):
                 continue
-            rtype_name = type1 if p1 > p2 else type2
-            for fname in ["add", "mul", "lt", "ltEqual", "gt", "gtEqual", "sub",
-                          "div", "addEqual", "subEqual"]:
+            larger_type = type1 if p1 > p2 else type2
+            for fname, rtype_name in [
+                ("add", larger_type), ("mul", larger_type),
+                ("sub", larger_type), ("div", larger_type),
+                ("addEqual", type1), ("mulEqual", type1),
+                ("subEqual", type1), ("divEqual", type1),
+                ("lt", "bool"), ("ltEqual", "bool"), ("gt", "bool"),
+                ("gtEqual", "bool"), ("equal", "bool"), ("notEqual", "bool"),
+            ]:
                 func = xy.FuncDef(
                     fname,
                     params=[
@@ -546,18 +592,30 @@ def compile_func(node, ctx, ast, cast):
             type_desc=param_type
         )
 
-    compile_body(node.body, cast, cfunc, ctx)
+    ctx.current_fobj = fdesc
+    if isinstance(node.body, list):
+        compile_body(node.body, cast, cfunc, ctx, is_func_body=True)
+    else:
+        # function shorthand notation
+        gen_return = xy.Return(node.body)
+        obj_ret = compile_return(gen_return, cast, cfunc, ctx)
+        cfunc.body.append(obj_ret.c_node)
+        cfunc.rtype = obj_ret.infered_type.c_name
+    ctx.current_fobj = None
+
     cast.funcs.append(cfunc)
 
-def compile_body(body, cast, cfunc, ctx):
+def compile_body(body, cast, cfunc, ctx, is_func_body=False):
+    ctx.enter_block()
     for node in body:
         if isinstance(node, xy.Comment):
             continue
         if isinstance(node, xy.Return):
-            ret = c.Return()
-            if node.value:
-                ret.value = compile_expr(node.value, cast, cfunc, ctx).c_node
-            cfunc.body.append(ret)
+            obj = compile_return(node, cast, cfunc, ctx)
+            cfunc.body.append(obj.c_node)
+        elif isinstance(node, xy.Error):
+            obj = compile_error(node, cast, cfunc, ctx)
+            cfunc.body.append(obj.c_node)
         elif isinstance(node, xy.VarDecl):
             cvar = c.VarDecl(name=node.name, type=None, varying=node.varying)
             value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
@@ -582,13 +640,14 @@ def compile_body(body, cast, cfunc, ctx):
                 cvar.value = c.InitList()
 
             cfunc.body.append(cvar)
-        elif isinstance(node, xy.FuncCall):
-            compiled = compile_expr(node, cast, cfunc, ctx).c_node
-            cfunc.body.append(compiled)
         else:
             expr_obj = compile_expr(node, cast, cfunc, ctx)
             if expr_obj.c_node is not None:
                 cfunc.body.append(expr_obj.c_node)
+    if is_func_body and ctx.current_fobj.etype_obj is not None:
+        if len(body) == 0 or not isinstance(body[-1], xy.Return):
+            cfunc.body.append(c.Return(ctx.current_fobj.etype_obj.init_value))
+    ctx.exit_block()
 
 
 def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
@@ -605,14 +664,22 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
             assert isinstance(expr.arg2, xy.Id)
             field_name = expr.arg2.name
-            res = c.Expr(arg1_obj.c_node, c.Id(field_name), op=expr.op)
-            struct_obj = arg1_obj.infered_type
-            if field_name not in struct_obj.fields:
-                raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
-            return ExprObj(
-                c_node=res,
-                infered_type=struct_obj.fields[field_name].type_desc
-            )
+            if isinstance(arg1_obj.infered_type, ImportObj):
+                assert arg1_obj.infered_type.is_external
+                res = c.Id(field_name)
+                return ExprObj(
+                    c_node=res,
+                    infered_type=None
+                )
+            else:
+                res = c.Expr(arg1_obj.c_node, c.Id(field_name), op=expr.op)
+                struct_obj = arg1_obj.infered_type
+                if field_name not in struct_obj.fields:
+                    raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
+                return ExprObj(
+                    c_node=res,
+                    infered_type=struct_obj.fields[field_name].type_desc
+                )
         else:
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
@@ -639,87 +706,16 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
                 c_node=c.Id(var_obj.c_node.name),
                 infered_type=var_obj
             )
+        elif isinstance(var_obj, ImportObj):
+            return ExprObj(
+                c_node=None,
+                xy_node=var_obj.xy_node,
+                infered_type=var_obj
+            )
         else:
-            raise CompilationError("Cannot pass to function", expr)
+            raise CompilationError("Invalid expression", expr)
     elif isinstance(expr, xy.FuncCall):
-        fspace = ctx.eval_to_fspace(expr.name)
-
-        arg_exprs = [
-            compile_expr(arg, cast, cfunc, ctx)
-            for arg in expr.args
-        ]
-        arg_infered_types = [
-            arg_expr.infered_type for arg_expr in arg_exprs
-        ]
-        
-        func_obj = fspace.find(expr, arg_infered_types, ctx)
-
-        if func_obj.builtin and func_obj.xy_node.name == "select":
-            # TODO what if args is more numerous
-            assert len(expr.args) == 2
-            res = c.Index(
-                arg_exprs[0].c_node,
-                arg_exprs[1].c_node,
-            )
-            return ExprObj(
-                c_node=res,
-                infered_type=func_obj.rtype_obj
-            )
-        elif func_obj.builtin and len(expr.args) == 2:
-            func_to_op_map = {
-                "add": '+',
-                "sub": '-',
-                "mul": '*',
-                "lt": '<',
-                "ltEqual": '<=',
-                "gt": '>',
-                "gtEqual": ">=",
-                "addEqual": "+=",
-                "subEqual": "-=",
-                "mulEqual": "*=",
-                "divEqual": "/=",
-            }
-            c_arg1 = arg_exprs[0].c_node
-            if len(func_obj.xy_node.returns) == 1 and func_obj.xy_node.returns[0].type.name == "Ptr":
-                # TODO what if Ptr has an attached type
-                c_arg1 = c.Cast(c_arg1, to="int8_t*")
-            res = c.Expr(
-                c_arg1, arg_exprs[1].c_node,
-                op=func_to_op_map[expr.name.name]
-            )
-            return ExprObj(
-                c_node=res,
-                infered_type=func_obj.rtype_obj
-            )
-        elif func_obj.builtin:
-            assert len(expr.args) == 1
-            func_to_op_map = {
-                "inc": '++',
-                "dec": '--',
-            }
-            res = c.UnaryExpr(
-                arg=arg_exprs[0].c_node,
-                op=func_to_op_map[expr.name.name]
-            )
-            return ExprObj(
-                c_node=res,
-                infered_type=func_obj.rtype_obj
-            )
-
-        res = c.FuncCall(name=func_obj.c_name)
-        if func_obj.xy_node is not None:
-            for xy_param, arg in zip(func_obj.xy_node.params, arg_exprs):
-                if not xy_param.is_pseudo:
-                    res.args.append(arg.c_node)
-        else:
-            # external c function
-            for arg in arg_exprs:
-                res.args.append(arg.c_node)
-
-        return ExprObj(
-            c_node=res,
-            infered_type=func_obj.rtype_obj
-        )
+        return compile_fcall(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.StructLiteral):
         type_obj = find_type(expr.name, ctx)
         ctypename = type_obj.c_name
@@ -782,6 +778,139 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         return compile_break(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
+    
+def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
+    fspace = ctx.eval_to_fspace(expr.name)
+
+    arg_exprs = [
+        compile_expr(arg, cast, cfunc, ctx)
+        for arg in expr.args
+    ]
+    arg_infered_types = [
+        arg_expr.infered_type for arg_expr in arg_exprs
+    ]
+    
+    func_obj = fspace.find(expr, arg_infered_types, ctx)
+
+    if func_obj.builtin and func_obj.xy_node.name == "select":
+        # TODO what if args is more numerous
+        assert len(expr.args) == 2
+        res = c.Index(
+            arg_exprs[0].c_node,
+            arg_exprs[1].c_node,
+        )
+        return ExprObj(
+            c_node=res,
+            infered_type=func_obj.rtype_obj
+        )
+    elif func_obj.builtin and len(expr.args) == 2:
+        func_to_op_map = {
+            "add": '+',
+            "sub": '-',
+            "mul": '*',
+            "lt": '<',
+            "ltEqual": '<=',
+            "gt": '>',
+            "gtEqual": ">=",
+            "addEqual": "+=",
+            "subEqual": "-=",
+            "mulEqual": "*=",
+            "divEqual": "/=",
+            "equal": "==",
+            "notEqual": "!=",
+        }
+        c_arg1 = arg_exprs[0].c_node
+        if len(func_obj.xy_node.returns) == 1 and func_obj.xy_node.returns[0].type.name == "Ptr":
+            # TODO what if Ptr has an attached type
+            c_arg1 = c.Cast(c_arg1, to="int8_t*")
+        res = c.Expr(
+            c_arg1, arg_exprs[1].c_node,
+            op=func_to_op_map[expr.name.name]
+        )
+        return ExprObj(
+            c_node=res,
+            infered_type=func_obj.rtype_obj
+        )
+    elif func_obj.builtin:
+        assert len(expr.args) == 1
+        func_to_op_map = {
+            "inc": '++',
+            "dec": '--',
+        }
+        res = c.UnaryExpr(
+            arg=arg_exprs[0].c_node,
+            op=func_to_op_map[expr.name.name]
+        )
+        return ExprObj(
+            c_node=res,
+            infered_type=func_obj.rtype_obj
+        )
+
+    res = c.FuncCall(name=func_obj.c_name)
+    if func_obj.xy_node is not None:
+        for xy_param, arg in zip(func_obj.xy_node.params, arg_exprs):
+            if not xy_param.is_pseudo:
+                res.args.append(arg.c_node)
+    else:
+        # external c function
+        for arg in arg_exprs:
+            res.args.append(arg.c_node)
+
+    if (
+        func_obj.xy_node is not None and
+        (func_obj.etype_obj is not None or len(func_obj.xy_node.returns) > 1)
+    ):
+        tmp_cid = None
+        if func_obj.rtype_obj is not ctx.void_obj:
+            tmp_obj = ctx.create_tmp_var(func_obj.rtype_obj, name_hint="res")
+            cfunc.body.append(tmp_obj.c_node)
+            tmp_cid = c.Id(tmp_obj.c_node.name)
+            res.args.append(c.UnaryExpr(op='&', prefix=True, arg=tmp_cid))
+
+        if func_obj.etype_obj is not None:
+            # error handling
+            err_obj = ctx.create_tmp_var(func_obj.etype_obj, name_hint="err")
+            err_obj.c_node.varying = False
+            err_obj.c_node.value = res
+            cfunc.body.append(err_obj.c_node)
+
+            check_error_fobj = ctx.eval_to_fspace(
+                xy.Id("to", src=expr.src, coords=expr.coords),
+                msg=f"Cannot handle error because there is no 'to' "
+                f"function to convert {func_obj.etype_obj.xy_node.name} to bool"
+            ).find(
+                xy.FuncCall(xy.Id("to"), args=[xy.Id(""), xy.Id("")]),
+                [func_obj.etype_obj, ctx.get_compiled_type(xy.Id("bool"))],
+                ctx
+            )
+            if check_error_fobj is None:
+                raise CompilationError("Cannot find how to check for error", expr)
+            check_if = c.If(
+                cond=c.FuncCall(
+                    name=check_error_fobj.c_name,
+                    args=[c.Id(err_obj.c_node.name)]
+                )
+            )
+            if func_obj.etype_obj is ctx.current_fobj.etype_obj:
+                check_if.body.append(c.Return(c.Id(err_obj.c_node.name)))
+            else:
+                cast.includes.append(c.Include("stdlib.h"))
+                check_if.body.append(c.FuncCall("abort"))
+            cfunc.body.append(check_if)
+
+        else:
+            cfunc.body.append(res)
+
+        return ExprObj(
+            c_node=tmp_cid,
+            xy_node=expr,
+            infered_type=func_obj.rtype_obj
+        )
+    else:
+        return ExprObj(
+            c_node=res,
+            infered_type=func_obj.rtype_obj
+        )
 
 def compile_if(ifexpr, cast, cfunc, ctx):
     c_if = c.If()
@@ -994,6 +1123,49 @@ def compile_break(xybreak, cast, cfunc, ctx):
         infered_type=ctx.void_obj,
     )
 
+def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
+    xy_func = ctx.current_fobj.xy_node
+    if xy_func.etype is None and len(xy_func.returns) <= 1:
+        ret = c.Return()
+        if xyreturn.value:
+            value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
+            ret.value = value_obj.c_node
+        return ExprObj(
+            xy_node=xyreturn,
+            c_node=ret,
+            infered_type=value_obj.infered_type
+        )
+    else:
+        # return through argument
+        for iret, ret in enumerate(xy_func.returns):
+            value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
+            param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
+            cfunc.body.append(c.Expr(
+                arg1=c.UnaryExpr(op="*", arg=c.Id(param_name), prefix=True),
+                arg2=value_obj.c_node,
+                op="="
+            ))
+        ret = c.Return()
+        if xy_func.etype is not None:
+            ret.value = ctx.current_fobj.etype_obj.init_value
+        return ExprObj(
+            xy_node=xyreturn,
+            c_node=ret,
+            infered_type=None
+        )
+
+
+def compile_error(xyerror, cast, cfunc, ctx):
+    ret = c.Return()
+    if xyerror.value:
+        value_obj = compile_expr(xyerror.value, cast, cfunc, ctx)
+        ret.value = value_obj.c_node
+    return ExprObj(
+        xy_node=xyerror,
+        c_node=ret,
+        infered_type=value_obj.infered_type
+    )
+
 def get_c_type(type_expr, ctx):
     id_desc = find_type(type_expr, ctx, required=True)
     return id_desc.c_name
@@ -1035,10 +1207,11 @@ class CompilationError(Exception):
         if fn.startswith(cwd):
             fn = fn[len(cwd)+1:]
         
+        src_line = node.src.code[line_loc:line_end].replace("\t", " ")
         self.error_message = msg
         self.fmt_msg = f"{fn}:{line_num}:{loc - line_loc + 1}: error: {msg}\n"
         if loc >= 0:
-            self.fmt_msg += f"| {node.src.code[line_loc:line_end]}\n"
+            self.fmt_msg += f"| {src_line}\n"
             self.fmt_msg += "  " + (" " * (loc-line_loc)) + ("^" * loc_len) + "\n"
 
         if notes is not None and len(notes) > 0:
@@ -1095,6 +1268,8 @@ def rewrite_op(binexpr, ctx):
         "-=": "subEqual",
         "*=": "mulEqual",
         "/=": "divEqual",
+        "==": "equal",
+        "!=": "notEqual",
     }.get(binexpr.op, None)
     if fname is None:
         raise CompilationError(f"Unrecognized operator '{binexpr.op}'", binexpr)

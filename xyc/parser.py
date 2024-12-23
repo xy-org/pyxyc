@@ -95,10 +95,11 @@ class ParsingError(Exception):
                 line_end = itoken.token_pos[i]
                 break
 
+        src_line = itoken.src.code[line_loc:line_end].replace("\t", " ")
         fn = itoken.src.filename
         self.error_message = msg
         self.fmt_msg = f"{fn}:{line_num}:{loc - line_loc + 1}: error: {msg}\n"
-        self.fmt_msg += f"| {itoken.src.code[line_loc:line_end]}\n"
+        self.fmt_msg += f"| {src_line}\n"
         self.fmt_msg += "  " + (" " * (loc-line_loc)) + ("^" * token_len) + "\n"
 
     def __str__(self):
@@ -137,6 +138,11 @@ def parse_code(src) -> Ast:
         elif tok == "from":
             raise ParsingError(
                 "The correct syntax to import a library is 'import <libname>'",
+                itoken
+            )
+        elif tok == ";":
+            raise ParsingError(
+                "Empty statements are not allowed. Please remove the semicolon.",
                 itoken
             )
         else:
@@ -193,7 +199,7 @@ def parse_ml_comment(itoken):
     return Comment(comment=comment, is_doc=True, src=itoken.src,
                    coords=[comment_start, comment_start+2])
 
-def parse_def(itoken):
+def parse_def(itoken: TokenIter):
     name_coords = itoken.peak_coords()
     name = itoken.consume()
     node = FuncDef(
@@ -205,15 +211,18 @@ def parse_def(itoken):
 
     itoken.check("=")
     value = parse_block(itoken)
-    if isinstance(value, Block):
-        node.returns = value.returns
-        node.etype = value.etype
-        node.in_guards = value.in_guards
-        node.out_guards = value.out_guards
-        node.body = value.body
-    else:
-        node.body = value
-        itoken.expect(";")
+    node.returns = value.returns
+    node.etype = value.etype
+    node.in_guards = value.in_guards
+    node.out_guards = value.out_guards
+    node.body = value.body
+
+    if itoken.has_more() and itoken.peak() == ";":
+        raise ParsingError(
+            "Function definitions don't require a terminating semicolon.",
+            itoken
+        )
+
     return node
 
 def parse_block(itoken):
@@ -235,7 +244,7 @@ def parse_block(itoken):
         else:
             block.returns = [VarDecl(name=None, type=parse_toplevel_type(itoken))]
 
-        if itoken.check("|"):
+        if itoken.check("||"):
             block.etype = parse_toplevel_type(itoken)
 
     num_empty = itoken.skip_empty_lines()
@@ -309,9 +318,9 @@ def parse_toplevel_type(itoken):
     # this new map is here purely to provide better error messages in cases like
     # def func() -> MyType{} {...}
     # or
-    # def func() -> Type1 | Type2 | Type3 {...}
+    # def func() -> Type1 || Type2 || Type3 {...}
     toplevel_precedence_map = {**operator_precedence}
-    del toplevel_precedence_map["|"]
+    del toplevel_precedence_map["||"]
     del toplevel_precedence_map["{"]
 
     type_expr = parse_expression(itoken, op_prec=toplevel_precedence_map)
@@ -327,7 +336,7 @@ operator_precedence = {
     "<": 6, "<=": 6, ">=": 6, ">": 6, ":": 6,
     "==": 5, "!=": 5, "in": 5,
     "&": 4,
-    "|": 3,
+    "|": 3, "||": 3,
     "=": 2, '+=': 2, '-=': 2, "|=": 2, '*=': 2, '/=': 2,
 }
 MIN_PRECEDENCE=2
@@ -696,11 +705,16 @@ def parse_body(itoken):
     itoken.expect("{")
     itoken.skip_empty_lines()
     while itoken.peak() != "}":
+        coords = itoken.peak_coords()
         if itoken.check("return"):
             expr = parse_expr_list(itoken)
             if len(expr) == 1:
                 expr = expr[0]
-            node = Return(expr)
+            node = Return(expr, src=itoken.src, coords=coords)
+            itoken.expect(";")
+        elif itoken.check("error"):
+            expr = parse_expression(itoken)
+            node = Error(expr, src=itoken.src, coords=coords)
             itoken.expect(";")
         elif itoken.peak() == "import":
             raise ParsingError("Imports are not allowed in functions", itoken)
@@ -717,7 +731,10 @@ def parse_body(itoken):
         else:
             node = parse_expression(itoken)
             if not itoken.check(";") and should_have_semicolon_after_expr(node):
-                raise ParsingError("Missing ';' at end of expression", itoken)
+                if itoken.peak() == "\n":
+                    raise ParsingError("Missing ';' at end of expression", itoken)
+                else:
+                    raise ParsingError("Malformed expression. Maybe missing operator or semicolon.", itoken)
                 
         body.append(node)
         itoken.skip_empty_lines()
@@ -750,7 +767,7 @@ def parse_tags(itoken):
         res.args = [tag]
     return res
 
-def parse_struct(itoken):
+def parse_struct(itoken: TokenIter):
     coords = itoken.peak_coords()
     name = itoken.consume()
     node = StructDef(name=name, src=itoken.src, coords=coords)
@@ -761,7 +778,7 @@ def parse_struct(itoken):
     itoken.skip_empty_lines()
     while itoken.peak() != "}":
         field = parse_expression(itoken, is_struct=True)
-        itoken.expect(";")
+        itoken.expect(";", msg="Missing ';' at end of field")
         node.fields.append(field)
         itoken.skip_empty_lines()
     itoken.expect("}")

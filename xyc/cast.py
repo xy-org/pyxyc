@@ -65,7 +65,7 @@ class Index:
 @dataclass
 class Func:
     name: str
-    rtype: str
+    rtype: str | None = None
     params: list[VarDecl] = field(default_factory=list)
     body: list = field(default_factory=list)
 

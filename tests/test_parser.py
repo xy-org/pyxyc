@@ -225,7 +225,7 @@ def test_parse_comments(code, exp_ast):
     ],
     [
         """
-        def main~EntryPoint(a: int, b: long) -> int | Error
+        def main~EntryPoint(a: int, b: long) -> int || Error
         >> a > b;
         {
             return a+b;
@@ -330,6 +330,32 @@ def test_parse_simple_func(code, exp_ast):
                     ast.param(type=ast.Id("int"), is_pseudo=True),
                 ],
                 body=ast.Const(0)
+            ),
+        ]
+    ],
+    [
+        """
+        def func(x: int) -> void || Error {
+            error Error{x};
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("func"),
+                params=[
+                    ast.param("x", type=ast.Id("int")),
+                ],
+                returns=[
+                    ast.VarDecl(type=ast.Id("void")),
+                ],
+                etype=ast.Id("Error"),
+                body=[
+                    ast.Error(ast.StructLiteral(
+                        name=ast.Id("Error"),
+                        args=[
+                            ast.Id("x")
+                        ]
+                    )),
+                ]
             ),
         ]
     ],
@@ -644,11 +670,11 @@ def test_expressions(code, exp_ast):
     ("""def func() -> void {
         a----b;
     }""",
-     "Missing ';' at end of expression"),
+     "Malformed expression."),
     ("""def func() -> void {
         a-- b;
     }""",
-     "Missing ';' at end of expression"),
+     "Malformed expression."),
     ("""def func() -> void {
         (b + (a+1)
     }""",

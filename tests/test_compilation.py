@@ -21,8 +21,8 @@ from xyc.compiler import CompilationError
     "dowhiles",
     #TODO "fors",
     "pointers",
-    "pseudoParams"
-    #TODO "errors",
+    "pseudoParams",
+    "errors",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

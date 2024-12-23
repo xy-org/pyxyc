@@ -2,9 +2,9 @@ struct Error {
     errorCode: int;
 }
 
-def to(err: Error, :bool) -> bool = err.errorCode != 0;
+def to(err: Error, :bool) err.errorCode != 0
 
-def power(x: int, y: int) -> int | Error {
+def power(x: int, y: int) -> int || Error {
     if (y < 0) {
         error Error{1};
     }
@@ -15,6 +15,20 @@ def power(x: int, y: int) -> int | Error {
     };
 }
 
-def errorPropagation(x: int, y: int) -> int | Error {
+def errorPropagation(x: int, y: int) -> int || Error {
     return power(x, y) - 1;
+}
+
+def doWork(x: int) -> void || Error {
+    y := power(x, x);
+    print(y);
+}
+
+def print(a: int) -> void {}
+
+def doNothing() -> void || Error {}
+
+def callReturningErrorButNoResult(a: int, b: int) -> int || Error {
+    doWork(a);
+    doWork(b);
 }

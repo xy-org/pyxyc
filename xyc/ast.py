@@ -179,6 +179,10 @@ class Return(Node):
     value: Node
 
 @dataclass
+class Error(Node):
+    value: Node
+
+@dataclass
 class VarDecl(Node):
     name: str | None = None
     type: Node | None = None
