@@ -674,7 +674,9 @@ def compile_module(builder, module_name, asts):
     ctx = CompilerContext(builder, module_name)
     res = c.Ast()
 
-    if module_name != "xy.builtins":
+    if module_name == "xy.builtins":
+        ctx.global_ns["c"] = ImportObj(is_external=True)
+    else:
         compile_import(xy.Import(lib="xy.builtins"), ctx, asts, res)
         ctx.void_obj = ctx.global_ns["void"]
         ctx.bool_obj = ctx.global_ns["bool"]
@@ -2266,7 +2268,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=c.UnaryExpr(arg=arg_exprs[0].c_node, op="&", prefix=True),
             infered_type=ctx.ptr_obj
         )
-    elif func_obj.builtin:
+    elif is_builtin_func(func_obj, "inc") or is_builtin_func(func_obj, "dec"):
         assert len(arg_exprs) == 1
         func_to_op_map = {
             "inc": '++',

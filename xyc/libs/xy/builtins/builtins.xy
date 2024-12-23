@@ -1,3 +1,5 @@
+# a symbol 'c' representing the C external space is automatically created
+
 ;; A type that means no-type
 struct void {
     # Implemented by the compiler
@@ -77,6 +79,16 @@ struct double {
     # Implemented by the compiler
 }
 
+# Limits
+
+def max(:int) -> int {
+    return c.INT32_MAX;
+}
+
+def max(:Size) -> Size {
+    return c.SIZE_MAX;
+}
+
 # Arithmatic operations
 
 def add(a: int, b: int) -> int {
@@ -154,6 +166,10 @@ def sub(a: int, b: int) -> int {
 }
 
 def sub(a: Size, b: int) -> Size {
+    # Implemented by the compiler
+}
+
+def sub(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
