@@ -550,9 +550,9 @@ def parse_while(itoken):
         while_expr.block = parse_expression(itoken)
     if itoken.check("else"):
         if itoken.peak() == "{":
-            while_expr.else_block = parse_body(itoken)
+            while_expr.else_node = parse_body(itoken)
         else:
-            while_expr.else_block = parse_expression(itoken)
+            while_expr.else_node = parse_expression(itoken)
     return while_expr
 
 def parse_do_while(itoken):
@@ -579,9 +579,9 @@ def parse_do_while(itoken):
 
     if itoken.check("else"):
         if itoken.peak() == "{":
-            dowhile_expr.else_block = parse_body(itoken)
+            dowhile_expr.else_node = parse_body(itoken)
         else:
-            dowhile_expr.else_block = parse_expression(itoken)
+            dowhile_expr.else_node = parse_expression(itoken)
     return dowhile_expr
 
 
@@ -606,9 +606,9 @@ def parse_for(itoken):
         for_expr.block = parse_expression(itoken)
     if itoken.check("else"):
         if itoken.peak() == "{":
-            for_expr.else_block = parse_body(itoken)
+            for_expr.else_node = parse_body(itoken)
         else:
-            for_expr.else_block = parse_expression(itoken)
+            for_expr.else_node = parse_expression(itoken)
     return for_expr
 
 

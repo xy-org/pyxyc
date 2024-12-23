@@ -1150,7 +1150,7 @@ def test_if(code, exp_ast):
                     block=[
                         ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
                     ],
-                    else_block=[
+                    else_node=[
                          ast.BinExpr(op='+=', arg1=ast.Id("b"), arg2=ast.Id("a")),
                     ]
                 )
@@ -1335,7 +1335,7 @@ def test_do_while(code, exp_ast):
                     ],
                     block=[
                     ],
-                    else_block=[
+                    else_node=[
                         ast.BinExpr(op="=", arg1=ast.Id("x"), arg2=ast.Id("b"))
                     ]
                 )

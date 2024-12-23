@@ -148,7 +148,7 @@ class ForExpr(Node):
     type: Node | Node = None
     name: Node | None = None
     block: Node | list | None = None
-    else_block: Node | list | None = None
+    else_node: Node | list | None = None
 
 @dataclass
 class WhileExpr(Node):
@@ -156,7 +156,7 @@ class WhileExpr(Node):
     type: Node | Node = None
     name: Node | None = None
     block: Node | list | None = None
-    else_block: Node | list | None = None
+    else_node: Node | list | None = None
 
 @dataclass
 class DoWhileExpr(WhileExpr):
