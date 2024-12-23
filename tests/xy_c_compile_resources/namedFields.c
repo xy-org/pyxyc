@@ -6,14 +6,6 @@ typedef struct namedFields_Person namedFields_Person;
 typedef struct namedFields_String namedFields_String;
 typedef struct namedFields_Color namedFields_Color;
 
-struct namedFields_Person {
-    namedFields_String m_firstName;
-    namedFields_String m_lastName;
-    int32_t m_age;
-    double m_height;
-    bool m_married;
-    namedFields_Color m_favoriteColorClothes;
-};
 struct namedFields_String {
     void* m_addr;
     size_t m_size;
@@ -22,6 +14,14 @@ struct namedFields_Color {
     uint8_t m_r;
     uint8_t m_g;
     uint8_t m_b;
+};
+struct namedFields_Person {
+    namedFields_String m_firstName;
+    namedFields_String m_lastName;
+    int32_t m_age;
+    double m_height;
+    bool m_married;
+    namedFields_Color m_favoriteColorClothes;
 };
 
 namedFields_String namedFields_string(void* addr, size_t size) {

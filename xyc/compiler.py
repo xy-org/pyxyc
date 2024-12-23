@@ -680,16 +680,17 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     type_obj.is_enum = type_obj.tags.get("xy_enum", None) is ctx.enum_obj
     type_obj.is_flags = type_obj.tags.get("xy_flags", None) is ctx.flags_obj
 
+    target_cast = None
     if not (type_obj.is_enum or type_obj.is_flags):
         cstruct = c.Struct(name=mangle_struct(type_obj.xy_node, ctx))
         type_obj.c_node = cstruct
         cast.type_decls.append(c.Typedef("struct " + cstruct.name, cstruct.name))
-        cast.structs.append(cstruct)
+        target_cast = cast.structs
     else:
         # use typedef and fill actual type latter
         cenum = c.Typedef(None, mangle_struct(type_obj.xy_node, ctx))
         type_obj.c_node = cenum
-        cast.type_decls.append(cenum)
+        target_cast = cast.type_decls
 
     # finaly compile fields
     if not (type_obj.is_enum or type_obj.is_flags):
@@ -698,6 +699,7 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
         compile_enum_fields(type_obj, ast, cast, ctx)
 
     type_obj.fully_compiled = True
+    target_cast.append(type_obj.c_node)
 
 def compile_struct_fields(type_obj, ast, cast, ctx):
     node = type_obj.xy_node
