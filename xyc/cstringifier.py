@@ -151,6 +151,9 @@ def stringify_expr(expr, frags):
         frags.append("]")
     elif isinstance(expr, Break):
         frags.append("break")
+    elif isinstance(expr, Cast):
+        frags.extend(("(", expr.to, ")"))
+        stringify_expr(expr.what, frags)
     else:
         raise CGenerationError(f"Unknown expression {type(expr).__name__}")
 

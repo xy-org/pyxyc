@@ -19,6 +19,7 @@ from xyc.compiler import CompilationError
     "ifs",
     "whiles",
     "dowhiles",
+    "pointers",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

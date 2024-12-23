@@ -400,10 +400,13 @@ def import_builtins(ctx, cast):
     cast.includes.append(c.Include("stddef.h"))
     cast.includes.append(c.Include("stdbool.h"))
 
-    num_types = [
+    int_types = [
        "int", "uint",
        "long", "ulong",
-       "Size",
+       "Size", 
+    ]
+    num_types = [
+       *int_types,
        "float", "double"
     ]
 
@@ -445,6 +448,20 @@ def import_builtins(ctx, cast):
                 desc = register_func(func, ctx)
                 desc.builtin = True
                 desc.rtype_obj = ctx.id_table[rtype_name]
+
+    for type in int_types:
+        for fname in ["add", "sub"]:
+            func = xy.FuncDef(
+                fname,
+                params=[
+                    xy.Param("x", xy.Id("Ptr")),
+                    xy.Param("y", xy.Id(type))
+                ],
+                returns=xy.SimpleRType("Ptr")
+            )
+            desc = register_func(func, ctx)
+            desc.builtin = True
+            desc.rtype_obj = ctx.id_table["Ptr"]
     
     # fill in ++(inc) and --(dec)
     for type1 in num_types:
@@ -635,6 +652,7 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
         elif func_obj.builtin and len(expr.args) == 2:
             func_to_op_map = {
                 "add": '+',
+                "sub": '-',
                 "mul": '*',
                 "lt": '<',
                 "ltEqual": '<=',
@@ -645,8 +663,12 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
                 "mulEqual": "*=",
                 "divEqual": "/=",
             }
+            c_arg1 = arg_exprs[0].c_node
+            if len(func_obj.xy_node.returns) == 1 and func_obj.xy_node.returns[0].type.name == "Ptr":
+                # TODO what if Ptr has an attached type
+                c_arg1 = c.Cast(c_arg1, to="int8_t*")
             res = c.Expr(
-                arg_exprs[0].c_node, arg_exprs[1].c_node,
+                c_arg1, arg_exprs[1].c_node,
                 op=func_to_op_map[expr.name.name]
             )
             return ExprObj(

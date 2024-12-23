@@ -1,0 +1,3 @@
+def pointerFun(a: Ptr) -> Ptr {
+    return a + 1;
+}

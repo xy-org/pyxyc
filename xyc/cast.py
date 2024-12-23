@@ -94,6 +94,11 @@ class Break:
     pass
 
 @dataclass
+class Cast:
+    what: any = None
+    to: str = ""
+
+@dataclass
 class Ast:
     includes: list[Include] = field(default_factory=list)
     struct_decls: list[Struct] = field(default_factory=list)
