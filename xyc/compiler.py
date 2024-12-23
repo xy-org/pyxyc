@@ -3371,7 +3371,8 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     next_c_if = c_if
     while isinstance(next_if, xy.IfExpr):
         gen_if = c.If()
-        gen_if.cond = compile_expr(next_if.cond, cast, cfunc, ctx).c_node
+        next_c_if.else_body = c.Block()
+        gen_if.cond = compile_expr(next_if.cond, cast, next_c_if.else_body, ctx).c_node
         if not next_if.block.is_embedded:
             compile_body(next_if.block.body, cast, gen_if, ctx)
         elif next_if.block is not None:
@@ -3380,7 +3381,11 @@ def compile_if(ifexpr, cast, cfunc, ctx):
             # TODO compare types
             gen_if.body.append(res_assign)
 
-        next_c_if.else_body = gen_if
+        if len(next_c_if.else_body.body) > 0:
+            next_c_if.else_body.body.append(gen_if)
+        else:
+            # optimize for else if chaines
+            next_c_if.else_body = gen_if
         next_c_if = gen_if
         next_if = next_if.else_node
 

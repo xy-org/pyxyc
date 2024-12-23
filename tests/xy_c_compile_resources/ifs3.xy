@@ -1,0 +1,27 @@
+def compute(a: int, b: int, c: int) -> int {
+    return a + b * c;
+}
+
+def helper1() = 1
+def helper2() = 2
+def helper3() = 3
+
+def test1() -> int {
+    return if (compute(helper1(), helper2(), helper3()) > 0) 1 else 0;
+}
+
+def test2() -> int {
+    return if (compute(helper1(), helper2(), helper3()) > 0) 0
+        elif (compute(helper3(), helper2(), helper1()) < 0) 1
+        else 2;
+}
+
+def test3() -> int {
+    return if (compute(helper1(), helper2(), helper3()) > 0) 0
+        elif (compute(helper3(), helper2(), helper1()) == 0) compute(helper3(), helper2(), helper1())
+        else 2;
+}
+
+def test4() {
+    if (compute(helper1(), helper2(), helper3()) > 0) compute(helper3(), helper2(), helper1());
+}

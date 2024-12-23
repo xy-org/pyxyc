@@ -20,6 +20,7 @@ from xyc.compiler import CompilationError
     "cimport",
     "ifs",
     "ifs2",
+    "ifs3",
     "whiles",
     "dowhiles",
     "slices",
