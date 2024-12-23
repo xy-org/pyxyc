@@ -246,7 +246,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
         # Array literal
         coords = itoken.peak_coords()
         itoken.consume()
-        args, kwargs = parse_args(itoken)
+        args, kwargs = parse_args_kwargs(itoken)
         itoken.expect("]")
         if len(kwargs) > 0:
             raise ParsingError(
@@ -293,7 +293,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
             if not isinstance(arg1, Id):
                 itoken.i -= 1
                 raise ParsingError("Only functions are callable.", itoken)
-            args, kwargs = parse_args(itoken)
+            args, kwargs = parse_args_kwargs(itoken)
             itoken.expect(")")
             fcall = FuncCall(arg1.name, args, src=itoken.src, coords=arg1.coords)
             fcall.kwargs = kwargs
@@ -303,7 +303,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
             fname = itoken.consume()
             fcall = FuncCall(fname, [arg1], src=itoken.src, coords=f_coords)
             if itoken.check("("):
-                args, kwargs = parse_args(itoken)
+                args, kwargs = parse_args_kwargs(itoken)
                 fcall.args.extend(args)
                 fcall.kwargs = kwargs
                 itoken.expect(")")
@@ -339,7 +339,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
             decl.value = parse_expression(itoken)
             arg1 = decl
         elif op == "[":
-            args, kwargs = parse_args(itoken)
+            args, kwargs = parse_args_kwargs(itoken)
             itoken.expect("]")
             select = Select(
                 arg1, Args(args, kwargs), src=itoken.src, coords=op_coords
@@ -354,7 +354,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
                     TagList([arg2]),
                 )
             elif itoken.check("["):
-                args, kwargs = parse_args(itoken)
+                args, kwargs = parse_args_kwargs(itoken)
                 itoken.expect("]")
                 attach_tags = AttachTags(arg1, TagList(args, kwargs))
                 arg1 = attach_tags
@@ -391,7 +391,7 @@ def expr_to_type(expr):
     return expr
 
 def parse_struct_literal(itoken, struct_expr):
-    args, kwargs = parse_args(itoken)
+    args, kwargs = parse_args_kwargs(itoken)
     itoken.expect("}")
     return StructLiteral(
         struct_expr, args, kwargs, src=itoken.src, coords=struct_expr.coords
@@ -408,7 +408,7 @@ def parse_str_literal(prefix, prefix_start, itoken):
                 lit = itoken.src.code[part_start:part_end]
                 res.parts.append(Const(lit))
 
-            args, kwargs = parse_args(itoken)
+            args, kwargs = parse_args_kwargs(itoken)
             if (len(kwargs) == 0 and len(args) == 1):
                 res.parts.append(args[0])
             else:
@@ -428,7 +428,7 @@ def parse_str_literal(prefix, prefix_start, itoken):
     res.coords = (prefix_start, part_end+1)
     return res
 
-def parse_args(itoken):
+def parse_args_kwargs(itoken):
     positional, named = [], {}
     while itoken.peak() not in {")", "]", "}"}:
         expr = parse_expression(itoken)
@@ -464,7 +464,7 @@ def parse_body(itoken):
 def parse_tags(itoken):
     res = TagList()
     if itoken.check("["):
-        args, kwargs = parse_args(itoken)
+        args, kwargs = parse_args_kwargs(itoken)
         res.args = args
         res.kwargs = kwargs
         itoken.expect("]")
