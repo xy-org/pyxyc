@@ -45,6 +45,14 @@ class TokenIter:
             raise ParsingError(f"Unexpected token (expected '{token}')", self)
         self.i += 1
 
+    def expect_semicolon(self, msg=None):
+        if not self.has_more():
+            raise ParsingError("Unexpected end of file", self)
+        if not self.check_semicolon():
+            if msg:
+                raise ParsingError(msg, self)
+            raise ParsingError(f"Unexpected token (expected semicolon)", self)
+
     def expect_eol(self):
         if not self.peak_eol():
             raise ParsingError(f"Unexpected token (expected EoL)", self)
@@ -58,6 +66,9 @@ class TokenIter:
             self.i += 1
             return True
         return False
+    
+    def check_semicolon(self):
+        return self.check(";") or self.peak() == ";;"
     
     def skip_until(self, delim):
         while self.has_more() and self.consume() != delim:
@@ -109,46 +120,14 @@ class ParsingError(Exception):
 def parse_code(src) -> Ast:
     if isinstance(src, str):
         src = Source("<unknown>", src)
-    ast = []
     tokens, token_pos = split_tokens(src.code)
     itoken = TokenIter(tokens, token_pos, src)
-    while itoken.check("\n"):
-        pass
-    while itoken.has_more():
-        tok = itoken.peak()
-        if tok == "import":
-            node = parse_import(itoken)
-            ast.append(node)
-        elif tok == "#":
-            itoken.consume()
-            node = parse_sl_comment(itoken)
-            ast.append(node)
-        elif tok == ";;":
-            itoken.consume()
-            node = parse_ml_comment(itoken)
-            ast.append(node)
-        elif tok == "def":
-            itoken.consume()
-            node = parse_def(itoken)
-            ast.append(node)
-        elif tok == "struct":
-            itoken.consume()
-            node = parse_struct(itoken)
-            ast.append(node)
-        elif tok == "from":
-            raise ParsingError(
-                "The correct syntax to import a library is 'import <libname>'",
-                itoken
-            )
-        elif tok == ";":
-            raise ParsingError(
-                "Empty statements are not allowed. Please remove the semicolon.",
-                itoken
-            )
-        else:
-            raise ParsingError("Unknown token", itoken)
-        while itoken.check("\n"):
-            pass
+
+    ast = parse_stmt_list(itoken)
+
+    if itoken.has_more():
+        raise ParsingError("Unexpected token", itoken)
+
     return ast
         
 def parse_import(itoken):
@@ -257,7 +236,7 @@ def parse_block(itoken):
             block.out_guards.append(guard_expr)
         else:
             block.in_guards.append(guard_expr)
-        itoken.expect(";")
+        itoken.expect_semicolon()
         num_empty = itoken.skip_empty_lines()
 
     block.coords = itoken.peak_coords()
@@ -701,17 +680,38 @@ def parse_expr_list(itoken, ignore_eols=True):
     return res
 
 def parse_body(itoken):
-    body = []
     itoken.expect("{")
+    body = parse_stmt_list(itoken)
+    itoken.expect("}")
+    return body
+
+def parse_stmt_list(itoken: TokenIter):
+    body = []
     itoken.skip_empty_lines()
-    while itoken.peak() != "}":
+    while itoken.has_more() and itoken.peak() != "}":
         coords = itoken.peak_coords()
-        if itoken.check("return"):
+
+        if itoken.peak() == "import":
+            node = parse_import(itoken)
+        elif itoken.check("#"):
+            node = parse_sl_comment(itoken)
+        elif itoken.check(";;"):
+            node = parse_ml_comment(itoken)
+        elif itoken.check("def"):
+            node = parse_def(itoken)
+        elif itoken.check("struct"):
+            node = parse_struct(itoken)
+        elif itoken.check("from"):
+            raise ParsingError(
+                "The correct syntax to import a library is 'import <libname>'",
+                itoken
+            )
+        elif itoken.check("return"):
             expr = parse_expr_list(itoken)
             if len(expr) == 1:
                 expr = expr[0]
             node = Return(expr, src=itoken.src, coords=coords)
-            itoken.expect(";")
+            itoken.expect_semicolon()
         elif itoken.check("error"):
             exprs = parse_expr_list(itoken)
             if len(exprs) == 0:
@@ -719,9 +719,7 @@ def parse_body(itoken):
             if len(exprs) > 1:
                 raise ParsingError("Only one error can be issued", itoken)
             node = Error(exprs[0], src=itoken.src, coords=coords)
-            itoken.expect(";")
-        elif itoken.peak() == "import":
-            raise ParsingError("Imports are not allowed in functions", itoken)
+            itoken.expect_semicolon()
         elif itoken.peak() == "#":
             itoken.consume()
             node = parse_sl_comment(itoken)
@@ -732,17 +730,21 @@ def parse_body(itoken):
             raise ParsingError("Functions in functions are not allowed", itoken)
         elif itoken.peak() == "struct":
             raise ParsingError("Structs in functions are not allowed", itoken)
+        elif itoken.peak() == ";":
+            raise ParsingError(
+                "Empty statements are not allowed. Please remove the semicolon.",
+                itoken
+            )
         else:
             node = parse_expression(itoken)
-            if not itoken.check(";") and should_have_semicolon_after_expr(node):
+            if not itoken.check_semicolon() and should_have_semicolon_after_expr(node):
                 if itoken.peak() == "\n":
                     raise ParsingError("Missing ';' at end of expression", itoken)
                 else:
                     raise ParsingError("Malformed expression. Maybe missing operator or semicolon.", itoken)
-                
+
         body.append(node)
         itoken.skip_empty_lines()
-    itoken.expect("}")
     return body
 
 def should_have_semicolon_after_expr(node):

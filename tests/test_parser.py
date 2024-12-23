@@ -719,6 +719,15 @@ def test_invalid_expressions(code, err_msg):
             )),
         ]
     ],
+    [
+        "struct Count~Unit {} ;; Units of count i.e. 1, 2, 3 of something\n",
+        [
+            ast.StructDef(name="Count", fields=[], tags=ast.TagList(
+                [ast.Id("Unit")]
+            )),
+            ast.Comment(";; Units of count i.e. 1, 2, 3 of something", is_doc=True)
+        ]
+    ],
 ])
 def test_parse_struct(code, exp_ast):
     act_ast = parse_code(code)
@@ -1496,5 +1505,26 @@ def test_do_while(code, exp_ast):
     ],
 ])
 def test_for(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        pi := 3.14;
+        c := 299792458~mps;
+        """,
+        [
+            ast.VarDecl("pi", value=ast.Const(3.14)),
+            ast.VarDecl("c", value=ast.AttachTags(
+                ast.Const(299792458), tags=ast.TagList(
+                    [ast.Id("mps")]
+                )
+            ))
+        ]
+    ],
+])
+def test_global_constants(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast

@@ -155,14 +155,19 @@ from xyc.tokenizer import split_tokens
     ),
     (
         'a *= 2 ;; comment',
-        ['a', '*=', '2', ';', ';;', 'comment'],
-        [0, 2, 5, 7, 7, 10]
+        ['a', '*=', '2', ';;', 'comment'],
+        [0, 2, 5, 7, 10]
     ),
     (
         'i *= i; ;; square i',
         ['i', '*=', 'i', ';', ';;', 'square', 'i'],
         None
-    )
+    ),
+    (
+        "struct Type~Tag {} ;; comment\n",
+        ['struct', 'Type', '~', 'Tag', '{', '}', ';;', 'comment', '\n'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)
