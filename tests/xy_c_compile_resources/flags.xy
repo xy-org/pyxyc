@@ -49,9 +49,14 @@ def testFlags() {
     open("file.txt");
     open("file.txt", OpenFlags.readOnly);
     open("file.txt", OpenFlags.readOnly | OpenFlags.writeOnly);
-    # open("file.txt", OpenFlags{.writeOnly, .append});
-    # flags: OpenFlags;
-    # flags.writeOnly = true;
-    # open("file.txt", flags);
-    # open("file.txt", flags{.append});
+    open("file.txt", OpenFlags{.writeOnly, .append});
+    flags: OpenFlags;
+    flags.writeOnly = true;
+    open("file.txt", flags);
+    open("file.txt", flags{.append});
+    open("file.txt", flags{});
+    open("file.txt", flags | OpenFlags{.readOnly});
+    flags2 := OpenFlags{.append};
+    open("file.txt", flags | flags2);
+    open("file.txt", flags & flags2);
 }

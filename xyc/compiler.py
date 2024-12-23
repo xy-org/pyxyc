@@ -746,7 +746,7 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     elif not (type_obj.is_enum or type_obj.is_flags):
         compile_struct_fields(type_obj, ast, cast, ctx)
     else:
-        compile_enum_fields(type_obj, ast, cast, ctx)
+        compile_enumflags_fields(type_obj, ast, cast, ctx)
         autogenerate_ops(type_obj, ast, cast, ctx)
 
     type_obj.fully_compiled = True
@@ -820,7 +820,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
     )
     type_obj.is_init_value_zeros = all_zeros
 
-def compile_enum_fields(type_obj, ast, cast, ctx):
+def compile_enumflags_fields(type_obj, ast, cast, ctx):
     node = type_obj.xy_node
 
     base_field = None
@@ -851,6 +851,9 @@ def compile_enum_fields(type_obj, ast, cast, ctx):
     fields = {}
     next_num = 0
     init_value = None
+    if type_obj.is_flags:
+        init_value = base_type_obj.init_value
+
     for field in node.fields:
         if not field.is_pseudo:
             # this is the base field
@@ -883,6 +886,11 @@ def compile_enum_fields(type_obj, ast, cast, ctx):
             xy_node=field,
             c_node=cfield,
             type_desc=type_obj,
+            default_value_obj=ExprObj(
+                xy_node=field,
+                c_node=c.Id(cfield.name),
+                infered_type=type_obj,
+            )
         )
         cast.consts.append(cfield)
 
@@ -935,6 +943,18 @@ def autogenerate_ops(type_obj: TypeObj, ast, cast, ctx):
         builtin=True,
     )
     ctx.ensure_func_space(xy.Id("or")).append(gen_or_obj)
+
+    gen_or_obj = FuncObj(
+        xy_node=xy.FuncDef(
+            name="band",
+            src=xy_node.src, coords=xy_node.coords,
+        ),
+        rtype_obj=type_obj,
+        etype_obj=None,
+        param_objs=[VarObj(type_desc=type_obj), VarObj(type_desc=type_obj)],
+        builtin=True,
+    )
+    ctx.ensure_func_space(xy.Id("and")).append(gen_or_obj)
 
 def compile_func_prototype(node, cast, ctx):
     func_space = ctx.ensure_func_space(node.name)
@@ -1389,10 +1409,8 @@ c_symbol_type = TypeInferenceError(
     "The types of c symbols cannot be inferred. Please be explicit and specify the type."
 )
 
-def compile_expr(expr, cast, cfunc, ctx: CompilerContext, rhs=False) -> ExprObj:
+def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
     if isinstance(expr, xy.Const):
-        # if expr.value_str == "True":
-            # import pdb; pdb.set_trace()
         return ExprObj(
             xy_node=expr,
             c_node=c.Const(expr.value_str),
@@ -1424,56 +1442,18 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, rhs=False) -> ExprObj:
                 struct_obj = arg1_obj.infered_type
                 if field_name not in struct_obj.fields:
                     raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
-                field_obj = struct_obj.fields[field_name]
-                if not (struct_obj.is_enum or struct_obj.is_flags):
-                    # normal field
-                    if not field_obj.is_pseudo:
-                        res = c_deref(arg1_obj.c_node, field=c.Id(field_obj.c_node.name))
-                    else:
-                        ref_obj = RefObj(
-                            container=arg1_obj,
-                            ref=field_obj.default_value_obj,
-                            xy_node=expr.arg1,
-                        )
-                        if rhs:
-                            return ref_obj
-                        else:
-                            return ref_get(ref_obj, cast, cfunc, ctx)
-                elif struct_obj.is_enum:
-                    # field of an enum
-                    if arg1_obj.infered_type is arg1_obj.compiled_obj:
-                        res = c.Id(field_obj.c_node.name)
-                    else:
-                        res = c.Expr(
-                            op='==',
-                            arg1=arg1_obj.c_node,
-                            arg2=c.Id(field_obj.c_node.name)
-                    )
-                else:
-                    assert struct_obj.is_flags
-                    if arg1_obj.infered_type is arg1_obj.compiled_obj:
-                        res = c.Id(field_obj.c_node.name)
-                    else:
-                        res = c.Expr(
-                            op='&',
-                            arg1=arg1_obj.c_node,
-                            arg2=c.Id(field_obj.c_node.name)
-                        )
-                return ExprObj(
-                    c_node=res,
-                    infered_type=field_obj.type_desc
-                )
+                return field_get(arg1_obj, struct_obj.fields[field_name], cast, cfunc, ctx, lhs)
         elif expr.op == '.=':
             if not (isinstance(expr.arg2, xy.StructLiteral) and expr.arg2.name is None):
                 raise CompilationError("The right hand side of the '.=' operator must be an anonymous struct literal")
-            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, rhs=True)
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, lhs=True)
             val_obj = do_compile_struct_literal(expr.arg2, arg1_obj.infered_type, arg1_obj, cast, cfunc, ctx)
             return ExprObj(
                 c_node=None,
                 infered_type=arg1_obj.infered_type
             ) 
         else:
-            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, rhs=True)
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, lhs=True)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
             if isinstance(arg1_obj, RefObj):
                 return ref_set(arg1_obj, arg2_obj, cast, cfunc, ctx)
@@ -1494,11 +1474,13 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, rhs=False) -> ExprObj:
             if var_obj.passed_by_ref:
                 c_node = c.UnaryExpr(c_node, op="*", prefix=True)
             return ExprObj(
+                xy_node=expr,
                 c_node=c_node,
                 infered_type=var_obj.type_desc
             )
         elif isinstance(var_obj, TypeObj):
             return ExprObj(
+                xy_node=expr,
                 c_node=c.Id(var_obj.c_node.name),
                 infered_type=var_obj,
                 compiled_obj=var_obj
@@ -1568,25 +1550,65 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, rhs=False) -> ExprObj:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
     
 def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
-    return find_and_call(
-        "get",
-        ArgList([
-            ref_obj.container,
-            ref_obj.ref,
-        ]),
-        cast, cfunc, ctx, ref_obj.xy_node
+    obj = ref_obj.container
+    struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
+    if not (struct_obj.is_enum or struct_obj.is_flags):
+        return find_and_call(
+            "get",
+            ArgList([
+                ref_obj.container,
+                ref_obj.ref,
+            ]),
+            cast, cfunc, ctx, ref_obj.xy_node
+        )
+    elif struct_obj.is_enum:
+        # field of an enum
+        if isinstance(ref_obj.container, TypeObj) or isinstance(ref_obj.container, ExprObj) and struct_obj is obj.compiled_obj:
+            res = c.Id(ref_obj.ref.c_node.name)
+        else:
+            res = c.Expr(
+                op='==',
+                arg1=obj.c_node,
+                arg2=c.Id(ref_obj.ref.c_node.name)
+            )
+    else:
+        assert struct_obj.is_flags
+        if isinstance(obj, TypeObj) or isinstance(obj, ExprObj) and struct_obj is obj.compiled_obj:
+            res = c.Id(ref_obj.ref.c_node.name)
+        else:
+            res = c.Expr(
+                op='&',
+                arg1=obj.c_node,
+                arg2=c.Id(ref_obj.ref.c_node.name)
+            )
+
+    return ExprObj(
+        c_node=res,
+        xy_node=ref_obj.xy_node,
+        infered_type=struct_obj
     )
 
 def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
-    return find_and_call(
-        "set",
-        ArgList([
-            ref_obj.container,
-            ref_obj.ref,
-            val_obj,
-        ]),
-        cast, cfunc, ctx, ref_obj.xy_node
-    )
+    if not ref_obj.container.infered_type.is_flags:
+        return find_and_call(
+            "set",
+            ArgList([
+                ref_obj.container,
+                ref_obj.ref,
+                val_obj,
+            ]),
+            cast, cfunc, ctx, ref_obj.xy_node
+        )
+    else:
+        return ExprObj(
+            xy_node=ref_obj.xy_node,
+            infered_type=ref_obj.container.infered_type,
+            c_node=c.Expr(
+                arg1=ref_obj.container.c_node,
+                arg2=ref_obj.ref.c_node,
+                op="|=",
+            )
+        )
 
 def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ctx: CompilerContext):
     if isinstance(obj, VarObj):
@@ -1640,6 +1662,52 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
             xy_node=val.xy_node,
         )
         return ref_set(ref_obj, val, cast, cfunc, ctx)
+    
+def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerContext, lhs=False):
+    struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
+    if field_obj.xy_node.is_pseudo:
+        ref_obj = RefObj(
+            container=obj,
+            ref=field_obj.default_value_obj,
+            xy_node=obj.xy_node,
+        )
+        if obj.xy_node is None:
+            import pdb; pdb.set_trace()
+        if lhs:
+            return ref_obj
+        else:
+            return ref_get(ref_obj, cast, cfunc, ctx)
+
+    if not (struct_obj.is_enum or struct_obj.is_flags):
+        # normal field
+        res = c_deref(obj.c_node, field=c.Id(field_obj.c_node.name))
+    elif struct_obj.is_enum:
+        # field of an enum
+        if isinstance(obj, TypeObj) or isinstance(obj, ExprObj) and struct_obj is obj.compiled_obj:
+            res = c.Id(field_obj.c_node.name)
+        else:
+            res = c.Expr(
+                op='==',
+                arg1=obj.c_node,
+                arg2=c.Id(field_obj.c_node.name)
+        )
+    else:
+        assert struct_obj.is_flags
+        if isinstance(obj, TypeObj) or isinstance(obj, ExprObj) and struct_obj is obj.compiled_obj:
+            res = c.Id(field_obj.c_node.name)
+        else:
+            res = c.Expr(
+                op='&',
+                arg1=obj.c_node,
+                arg2=c.Id(field_obj.c_node.name)
+            )
+
+    return ExprObj(
+        c_node=res,
+        xy_node=obj.xy_node,
+        infered_type=field_obj.type_desc
+    )
+    
 
 def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
     type_obj = ctx.eval(expr.name, msg="Cannot find type")
@@ -1648,14 +1716,20 @@ def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
         assert isinstance(type_obj, VarObj)
         var_obj = type_obj
         type_obj = type_obj.type_desc
-        tmp_obj = ctx.create_tmp_var(type_obj)
-        tmp_obj.c_node.value = c.Id(var_obj.c_node.name)
-        cfunc.body.append(tmp_obj.c_node)
+        if not type_obj.is_flags:
+            tmp_obj = ctx.create_tmp_var(type_obj)
+            tmp_obj.c_node.value = c.Id(var_obj.c_node.name)
+            cfunc.body.append(tmp_obj.c_node)
+        else:
+            tmp_obj = var_obj
 
     return do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx)
 
 def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: CompilerContext):
     fully_compile_type(type_obj, cast, None, ctx)
+    if type_obj.is_flags:
+        return do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx)
+
     expr_args = expr.args
     expr_kwargs = copy(expr.kwargs)
 
@@ -1746,6 +1820,44 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         res = c.Id(tmp_obj.c_node.name)
 
     
+    return ExprObj(
+        xy_node=expr,
+        c_node=res,
+        infered_type=type_obj
+    )
+
+def do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: CompilerContext):
+    res = None if tmp_obj is None else c.Id(tmp_obj.c_node.name)
+    field_objs = list(type_obj.fields)
+    for i, arg in enumerate(expr.args):
+        if field_objs[i].xy_node.is_pseudo:
+            val_obj = field_get(type_obj, field_objs[i], cast, cfunc, ctx)
+            if res is not None:
+                res = c.Expr(
+                    res,
+                    val_obj.c_node,
+                    op="|"
+                )
+            else:
+                res = val_obj.c_node
+
+    for fname, arg in expr.kwargs.items():
+        if fname not in type_obj.fields:
+            raise CompilationError(f"No field '{fname}'", arg)
+        if type_obj.fields[fname].xy_node.is_pseudo:
+            val_obj = field_get(type_obj, type_obj.fields[fname], cast, cfunc, ctx)
+            if res is not None:
+                res = c.Expr(
+                    res,
+                    val_obj.c_node,
+                    op="|"
+                )
+            else:
+                res = val_obj.c_node
+
+    if res is None:
+        res = c.Const(0)
+
     return ExprObj(
         xy_node=expr,
         c_node=res,
