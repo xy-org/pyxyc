@@ -451,6 +451,8 @@ def parse_expression(
     elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"++", "--"}:
             raise ParsingError("Prefix increment and decrement are not supported. "
                             "More infor at TBD", itoken)
+    elif itoken.peak() == "." and precedence == op_prec["."]:
+        arg1 = None  # unary "."
     else:
         if is_end_of_expr(itoken):
             raise ParsingError("Unexpected end of expression.", itoken)
@@ -583,6 +585,14 @@ def parse_expression(
                 )
         elif op in {"++", "--"}:
             arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
+        elif op == "." and arg1 is None:
+            # unary . aka toggle
+            arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+            end_coord = arg2.coords[1] if arg2 is not None else op_coords[1]
+            toggle_op = UnaryExpr(
+                arg2, op=".", src=itoken.src, coords=[op_coords[0], end_coord]
+            )
+            arg1 = toggle_op
         else:
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             end_coord = arg2.coords[1] if arg2 is not None else arg1.coords[0] + len(op)
@@ -890,6 +900,10 @@ def parse_struct(itoken: TokenIter):
     itoken.skip_empty_lines()
     while itoken.peak() != "}":
         field = parse_expression(itoken, is_struct=True)
+        if isinstance(field, Id):
+            # Id's are VarDecls in the context of enums and flags
+            field = VarDecl(field.name, tags=field.tags, 
+                            src=field.src, coords=field.coords)
         itoken.expect(";", msg="Missing ';' at end of field")
         node.fields.append(field)
         itoken.skip_empty_lines()

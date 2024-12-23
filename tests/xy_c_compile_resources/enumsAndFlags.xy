@@ -1,52 +1,64 @@
-# --- Enums ---
+# --- Type Enums ---
 
 struct Status~Enum {
-    pending;
-    processed;
-    canceled;
-} ;; the Enum tag will generate the & method
+    pending : pseudo;
+    canceled : pseudo;
+    processed : pseudo;
+
+    value: int;
+}
+
+def printStatus(st: Status) {
+    if (st.pending) {
+        # ...
+    } elif (st.canceled) {
+        # ...
+    } elif (st.processed) {
+        # ...
+    }
+}
 
 def testEnums(a: int) {
     orderStatus := Status.pending;
     printStatus(orderStatus);
-    printStatus(.processed);
 
-    type : Status = .canceled;
+    # Maybe implement this shortcut?
+    # It may be useful because there is no need for the Status to be spelt out.
+    # printStatus(.processed);
+    printStatus(Status.processed);
+
+    st : var = Status.canceled;
     if (a > 0) {
-        type = .processed;
+        st = Status.processed;
     }
+    printStatus(st);
 }
 
-# --- Flags ---
+# ---- Value Enumerations ----
 
-struct OpenFlags~Flags {
-    read : bit~[xy_bitmask=c.O_READ] = 0;
-    write : bit~[xy_bitmask=c.O_WRITE] = 0;
-    append : bit~[xy_bitmask=c.O_APPEND] = 0;
-} ;; the Flags tag will generatte the | operator
-
-def String {
-    addr: Ptr;
-    size: Size;
-}
-
-def string~[StringCtor{prefix=""}](addr: Ptr, size: Size) = String{addr, size}
-
-def open(fn: String, flags=OpenFlags{.read}) {
-    if (flags.read & flags.write) {
-        # reading and writing
-    } if (flags == OpenFlags{.read, .append}) {
-        # reading and appending ...
-    } elif (flags.read) {
-        # reading ...
-    } elif (flags.write) {
-        # writing ...
-    }
-}
-
-def testFlags() {
-    open("file.txt")
-    open("file.txt", OpenFlags.read);
-    open("file.txt", OpenFlags.read | OpenFlags.write);
-    open("file.txt", .read | .write);
-}
+# struct Color {
+#     r: float;
+#     g: float;
+#     b: float;
+# }
+# 
+# def printColor(c: Color) {
+#     # ...
+# }
+# 
+# struct PaletteType {
+#     red    := Color{1f, 0f, 0f};
+#     green  := Color{0f, 2f, 0f};
+#     blue   := Color{0f, 0f, 1f};
+#     orange := Color{1f, 0.647f, 0f};
+#     white  := Color{1f, 1f, 1f};
+# }
+# 
+# Palette := PaletteType{}
+# 
+# def testValueEnumerations() {
+#     c1 := Color{.2f, .2f, 1f};
+#     c2 := Palette.blue;
+#     printColor(c1);
+#     printColor(c2);
+# }

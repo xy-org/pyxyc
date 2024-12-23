@@ -98,6 +98,7 @@ class ImportObj(CompiledObj):
 @dataclass
 class ExprObj(CompiledObj):
     infered_type: CompiledObj | str = "Cannot deduce type"
+    compiled_obj: CompiledObj | None = None
 
 @dataclass
 class FCallObj(ExprObj):
@@ -317,6 +318,7 @@ class CompilerContext:
     bool_obj: any = None
     ptr_obj: any = None
     size_obj: any = None
+    enum_obj: any = None
 
     stdlib_included = False
 
@@ -400,6 +402,9 @@ class CompilerContext:
                 if tag_obj.type_obj is not self.tagctor_obj:
                     continue
                 label = tag_obj.type_obj.tags["xyTag"].fields["label"].as_str()
+            else:
+                assert isinstance(tag_obj, TypeObj)
+                label = tag_obj.tags["xyTag"].fields["label"].as_str()
 
             res[label] = tag_obj
         return res
@@ -570,6 +575,7 @@ def compile_module(builder, module_name, asts):
     ctx.size_obj = ctx.global_ns["Size"]
     ctx.tagctor_obj = ctx.global_ns["TagCtor"]
     ctx.uint_obj = ctx.global_ns["uint"]
+    ctx.int_obj = ctx.global_ns["int"]
     ctx.prim_int_objs = (
         # ctx.global_ns["byte"],
         # ctx.global_ns["ubyte"],
@@ -580,6 +586,7 @@ def compile_module(builder, module_name, asts):
         ctx.global_ns["long"],
         ctx.global_ns["ulong"],
     )
+    ctx.enum_obj = ctx.global_ns["Enum"]
 
     compile_header(ctx, asts, res)
     
@@ -657,73 +664,20 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
     return cast
 
-def compile_structs(ctx: CompilerContext, asts, cast):
+def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
     # 1st pass - compile just the names
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.StructDef):
-                cstruct = c.Struct(name=mangle_struct(node, ctx))
                 type_obj = TypeObj(
                     xy_node = node,
-                    c_node = cstruct,
                 )
                 ctx.module_ns[node.name] = type_obj
 
+                # XXX hack for types that reference each other 
                 type_obj.tags = ctx.eval_tag_ctors(node.tags)
 
-                cast.struct_decls.append(cstruct)
-                cast.structs.append(cstruct)
-
-    # 2nd pass - compile fields   
-    for ast in asts:
-        for node in ast:
-            if isinstance(node, xy.StructDef):
-                type_obj = ctx.module_ns[node.name]
-                cstruct = type_obj.c_node
-                fields = {}
-                default_values = []
-                for field in node.fields:
-                    field_type_obj = None
-                    if field.type is not None:
-                        field_type_obj = find_type(field.type, ctx)
-
-                    if field.value is not None:
-                        default_value_obj = ctx.eval(field.value)
-                        if field_type_obj is None:
-                            field_type_obj = default_value_obj.infered_type
-                        elif field_type_obj is not default_value_obj.infered_type:
-                            raise CompilationError("Specified and infered types differ", field)
-                        default_values.append(default_value_obj.c_node)
-                    else:
-                        default_values.append(field_type_obj.init_value)
-
-                    cfield = c.VarDecl(
-                        name=mangle_field(field),
-                        type=field_type_obj.c_name
-                    )
-                    fields[field.name] = VarObj(
-                        xy_node=field,
-                        c_node=cfield,
-                        type_desc=field_type_obj,
-                    )
-                    cstruct.fields.append(cfield)
-                type_obj.fields = fields
-
-                if len(fields) == 0:
-                    cstruct.fields.append(c.VarDecl(
-                        name="__empty_structs_are_not_allowed_in_c__",
-                        type="char"
-                    ))
-
-                all_zeros = all((isinstance(dv, c.Const) and dv.value == 0)
-                                for dv in default_values)
-                c_init_args = [c.Const(0)] if all_zeros else default_values
-                type_obj.init_value = c.StructLiteral(
-                    name=cstruct.name,
-                    args=c_init_args
-                )
-
-    # 3rd pass - compile tags:
+    # 2nd pass - compile tags:
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.StructDef):
@@ -731,6 +685,144 @@ def compile_structs(ctx: CompilerContext, asts, cast):
                 tag_specs, tag_objs = ctx.split_and_eval_tags(node.tags)
                 type_obj.tags.update(tag_objs)
                 type_obj.tag_specs = tag_specs
+
+                type_obj.is_enum = type_obj.tags.get("xy_enum", None) is ctx.enum_obj
+
+                if not type_obj.is_enum:
+                    cstruct = c.Struct(name=mangle_struct(node, ctx))
+                    type_obj.c_node = cstruct
+                    cast.type_decls.append(c.Typedef("struct " + cstruct.name, cstruct.name))
+                    cast.structs.append(cstruct)
+                else:
+                    # use typedef and fill actual type latter
+                    cenum = c.Typedef(None, mangle_struct(node, ctx))
+                    type_obj.c_node = cenum
+                    cast.type_decls.append(cenum)
+
+
+    # 3rd pass - compile fields   
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.StructDef):
+                type_obj = ctx.module_ns[node.name]
+                
+                if not type_obj.is_enum:
+                    compile_struct_fields(type_obj, ast, cast, ctx)
+                else:
+                    compile_enum_fields(type_obj, ast, cast, ctx)
+
+
+def compile_struct_fields(type_obj, ast, cast, ctx):
+    node = type_obj.xy_node
+    cstruct = type_obj.c_node
+    fields = {}
+    default_values = []
+    for field in node.fields:
+        field_type_obj = None
+        if field.type is not None:
+            field_type_obj = find_type(field.type, ctx)
+
+        if field.value is not None:
+            default_value_obj = ctx.eval(field.value)
+            if field_type_obj is None:
+                field_type_obj = default_value_obj.infered_type
+            elif field_type_obj is not default_value_obj.infered_type:
+                raise CompilationError("Specified and infered types differ", field)
+            default_values.append(default_value_obj.c_node)
+        else:
+            default_values.append(field_type_obj.init_value)
+
+        cfield = c.VarDecl(
+            name=mangle_field(field),
+            type=field_type_obj.c_name
+        )
+        fields[field.name] = VarObj(
+            xy_node=field,
+            c_node=cfield,
+            type_desc=field_type_obj,
+        )
+        cstruct.fields.append(cfield)
+    type_obj.fields = fields
+
+    if len(fields) == 0:
+        cstruct.fields.append(c.VarDecl(
+            name="__empty_structs_are_not_allowed_in_c__",
+            type="char"
+        ))
+
+    all_zeros = all((isinstance(dv, c.Const) and dv.value == 0)
+                    for dv in default_values)
+    c_init_args = [c.Const(0)] if all_zeros else default_values
+    type_obj.init_value = c.StructLiteral(
+        name=cstruct.name,
+        args=c_init_args
+    )
+
+def compile_enum_fields(type_obj, ast, cast, ctx):
+    node = type_obj.xy_node
+
+    base_field = None
+
+    # first we need to find the one non pseudo field:
+    for field in node.fields:
+        if not field.is_pseudo:
+            if base_field is None:
+                base_field = field
+            else:
+                raise CompilationError("Enums can have only 1 non pseudo field", field)
+
+    base_type_obj = None
+    if field.type is not None:
+        base_type_obj = find_type(field.type, ctx)
+    else:
+        raise CompilationError("An explicit type must be specified", field)
+
+    if field.value is not None:
+        raise CompilationError(
+            "The default value for the enum is the value associated "
+            "with the first flag", field)
+
+    type_obj.c_node.typename = base_type_obj.c_name
+
+    # go though the pseudo fields
+    fields = {}
+    next_num = 0
+    init_value = None
+    for field in node.fields:
+        if not field.is_pseudo:
+            continue
+
+        if field.type is not None:
+            field_type = find_type(field.type, ctx)
+            if field_type is not base_type_obj:
+                raise CompilationError("Type mismatch", field)
+
+        c_value = c.Const(next_num)
+        if field.value is not None:
+            state_obj = ctx.eval(field.value)
+            c_value = state_obj.c_node
+            if isinstance(c_value, c.Const) and isinstance(c_value.value, (float, int)):
+                next_num = c_value.value
+        if init_value is None:
+            init_value = c_value
+
+        cfield = c.Define(
+            f"{type_obj.c_node.name}__{field.name}",
+            value=c_value,
+        )
+        fields[field.name] = VarObj(
+            xy_node=field,
+            c_node=cfield,
+            type_desc=type_obj,
+        )
+        cast.consts.append(cfield)
+
+        next_num += 1
+    type_obj.fields = fields
+
+    if init_value is None:
+        init_value = base_type_obj.init_value
+    type_obj.init_value = init_value
 
 
 def compile_func_prototype(node, cast, ctx):
@@ -1064,6 +1156,16 @@ def import_builtins(ctx: CompilerContext, cast):
         VarObj()
     ]
 
+    # Enum
+    enum = xy.StructDef(name="Enum")
+    enum_ojb = TypeObj(enum, builtin=True)
+    enum_ojb.tags["xyTag"] = InstanceObj(
+        fields={
+            "label": StrObj(parts=[ConstObj(value="xy_enum")])
+        }
+    )
+    ctx.module_ns["Enum"] = enum_ojb
+
 def compile_funcs(ctx, ast, cast):
     for node in ast:
         if isinstance(node, xy.FuncDef):
@@ -1190,7 +1292,16 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
                 if field_name not in struct_obj.fields:
                     raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
                 field_obj = struct_obj.fields[field_name]
-                res = c_deref(arg1_obj.c_node, field=c.Id(field_obj.c_node.name))
+                if not struct_obj.is_enum:
+                    res = c_deref(arg1_obj.c_node, field=c.Id(field_obj.c_node.name))
+                elif arg1_obj.infered_type is arg1_obj.compiled_obj:
+                    res = c.Id(field_obj.c_node.name)
+                else:
+                    res = c.Expr(
+                        op='==',
+                        arg1=arg1_obj.c_node,
+                        arg2=c.Id(field_obj.c_node.name)
+                    )
                 return ExprObj(
                     c_node=res,
                     infered_type=field_obj.type_desc
@@ -1219,7 +1330,8 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         elif isinstance(var_obj, TypeObj):
             return ExprObj(
                 c_node=c.Id(var_obj.c_node.name),
-                infered_type=var_obj
+                infered_type=var_obj,
+                compiled_obj=var_obj
             )
         elif isinstance(var_obj, ImportObj):
             return ExprObj(

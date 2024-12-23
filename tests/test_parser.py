@@ -1719,3 +1719,77 @@ def test_for(code, exp_ast):
 def test_global_constants(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        struct TaskStatus~Enum {
+            start;
+            pending;
+            end;
+        }
+
+        def test() {
+            a : var = Status.start;
+            a =.pending;
+            a = .end;
+            a = . end;
+        }
+        """,
+        [
+            ast.StructDef(
+                "TaskStatus",
+                tags=ast.TagList(
+                    args=[
+                        ast.Id("Enum"),
+                    ]
+                ),
+                fields=[
+                    ast.VarDecl("start"),
+                    ast.VarDecl("pending"),
+                    ast.VarDecl("end"),
+                ]
+            ),
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl(
+                        "a", varying=True, value=ast.BinExpr(
+                            arg1=ast.Id("Status"),
+                            arg2=ast.Id("start"),
+                            op=".",
+                        )
+                    ),
+                    ast.BinExpr(
+                        ast.Id("a"),
+                        ast.UnaryExpr(
+                            op=".",
+                            arg=ast.Id("pending"),
+                        ),
+                        op="=",
+                    ),
+                    ast.BinExpr(
+                        ast.Id("a"),
+                        ast.UnaryExpr(
+                            op=".",
+                            arg=ast.Id("end"),
+                        ),
+                        op="=",
+                    ),
+                    ast.BinExpr(
+                        ast.Id("a"),
+                        ast.UnaryExpr(
+                            op=".",
+                            arg=ast.Id("end"),
+                        ),
+                        op="=",
+                    ),
+                ]
+            )
+        ]
+    ],
+])
+def test_toggles(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast

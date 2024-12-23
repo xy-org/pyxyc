@@ -1,0 +1,33 @@
+# --- Flags ---
+
+# struct OpenFlags~Flags {
+#     read : bit~[xy_bitmask=c.O_READ] = false;
+#     write : bit~[xy_bitmask=c.O_WRITE] = flase;
+#     append : bit~[xy_bitmask=c.O_APPEND] = false;
+# } ;; the Flags tag will generatte the | operator
+# 
+# struct String {
+#     addr: Ptr;
+#     size: Size;
+# }
+# 
+# def string~[StringCtor{prefix=""}](addr: Ptr, size: Size) = String{addr, size}
+# 
+# def open(fn: String, flags:=OpenFlags{.read}) {
+#     if (flags.read & flags.write) {
+#         # reading and writing
+#     } if (flags == OpenFlags{.read, .append}) {
+#         # reading and appending ...
+#     } elif (flags.read) {
+#         # reading ...
+#     } elif (flags.write) {
+#         # writing ...
+#     }
+# }
+# 
+# def testFlags() {
+#     open("file.txt")
+#     open("file.txt", OpenFlags.read);
+#     open("file.txt", OpenFlags.read | OpenFlags.write);
+#     open("file.txt", OpenFlags{.read, .write});
+# }

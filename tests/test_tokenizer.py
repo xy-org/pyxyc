@@ -14,13 +14,13 @@ from xyc.tokenizer import split_tokens
     ),
     (
         "import xylib .module.str",
-        ["import", "xylib", " ", ".", "module", ".", "str"],
-        [0, 7, 12, 13, 14, 20, 21]
+        ["import", "xylib", ".", "module", ".", "str"],
+        [0, 7, 13, 14, 20, 21]
     ),
     (
         "import xylib. module.str",
-        ["import", "xylib", ".", " ", "module", ".", "str"],
-        [0, 7, 12, 13, 14, 20, 21]
+        ["import", "xylib", ".", "module", ".", "str"],
+        [0, 7, 12, 14, 20, 21]
     ),
     (
         " import.b,-:\n",
@@ -54,8 +54,8 @@ from xyc.tokenizer import split_tokens
     ),
     (
         "a := 5 + 0.3 + .3 - 4. + 3 .+ 4 .-",
-        ["a", ":", "=", "5", "+", "0.3", "+", ".3", "-", "4.", "+", "3", " ",
-         ".", "+", "4", " ", ".", "-"],
+        ["a", ":", "=", "5", "+", "0.3", "+", ".3", "-", "4.", "+", "3",
+         ".", "+", "4", ".", "-"],
         None
     ),
     (
@@ -166,6 +166,18 @@ from xyc.tokenizer import split_tokens
     (
         "struct Type~Tag {} ;; comment\n",
         ['struct', 'Type', '~', 'Tag', '{', '}', ';;', 'comment', '\n'],
+        None
+    ),
+    (
+        "a = .pending; a = . pending; a =. pending; a=.pending; \n",
+        ['a', '=', '.', 'pending', ';', 'a', '=', '.', 'pending', ';',
+         'a', '=', '.', 'pending', ';', 'a', '=', '.', 'pending', ';', "\n"],
+        None
+    ),
+    (
+        "a = 3.14; a = .14; a =.14; a = 3. 14;",
+        ['a', '=', '3.14', ';', "a", "=", ".14", ";",
+         "a", "=", ".14", ";", "a", "=", "3.", "14", ";"],
         None
     ),
 ])

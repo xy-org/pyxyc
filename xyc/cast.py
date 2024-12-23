@@ -116,9 +116,14 @@ class Define:
     value: any = None
 
 @dataclass
+class Typedef:
+    typename: str = None
+    name: str = None
+
+@dataclass
 class Ast:
     includes: list[Include] = field(default_factory=list)
-    struct_decls: list[Struct] = field(default_factory=list)
+    type_decls: list[Struct] = field(default_factory=list)
     func_decls: list[Func] = field(default_factory=list)
     consts: list[VarDecl | Define] = field(default_factory=list)
     structs: list[Struct] = field(default_factory=list)
@@ -131,7 +136,7 @@ class Ast:
                 self.includes.append(ink)
                 already_included.add(ink.path)
 
-        self.struct_decls.extend(other.struct_decls)
+        self.type_decls.extend(other.type_decls)
         self.func_decls.extend(other.func_decls)
         self.consts.extend(other.consts)
         self.structs.extend(other.structs)

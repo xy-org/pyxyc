@@ -12,10 +12,9 @@ def stringify(ast: Ast):
     if len(ast.includes) > 0:
         frags.append("\n")
 
-    for struct in ast.struct_decls:
-        frags.append("typedef struct ")
-        frags.extend([struct.name, " ", struct.name, ";\n"])
-    if len(ast.struct_decls) > 0:
+    for typedef in ast.type_decls:
+        frags.append(f"typedef {typedef.typename} {typedef.name};\n")
+    if len(ast.type_decls) > 0:
         frags.append("\n")
 
     for node in ast.consts:
