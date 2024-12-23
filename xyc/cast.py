@@ -68,6 +68,12 @@ class Return:
     value: any = None
 
 @dataclass
+class If:
+    cond: any = None
+    body: list = field(default_factory=list)
+    else_body: any = None
+
+@dataclass
 class Ast:
     includes: list[Include] = field(default_factory=list)
     struct_decls: list[Struct] = field(default_factory=list)

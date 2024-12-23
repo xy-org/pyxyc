@@ -62,6 +62,18 @@ def stringify_body(body, frags, ident=1):
                 frags.append(" = ")
                 stringify_expr(stmt.value, frags)
             frags.append(";\n")
+        elif isinstance(stmt, If):
+            frags.append(" " * ident * 4)
+            frags.append("if (")
+            stringify_expr(stmt.cond, frags)
+            frags.append(") {\n")
+            stringify_body(stmt.body, frags, ident=ident+1)
+            frags.extend((" " * ident * 4, "}"))
+            if isinstance(stmt.else_body, list):
+                frags.append(" else {\n")
+                stringify_body(stmt.else_body, frags, ident=ident+1)
+                frags.extend((" " * ident * 4, "}"))
+            frags.append("\n")
         else:
             frags.append(" " * (ident*4))
             stringify_expr(stmt, frags)

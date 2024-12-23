@@ -278,7 +278,7 @@ def parse_expression(
         itoken, precedence=MIN_PRECEDENCE, is_struct=False,
         op_prec=operator_precedence
 ):
-    if itoken.check("if"):
+    if itoken.peak() == "if":
         return parse_if(itoken)
     elif itoken.peak() in {"else", "elif"}:
         raise ParsingError("Missing corresponding if", itoken)
@@ -467,7 +467,14 @@ def is_end_of_expr(itoken):
     return itoken.peak() in {";", ")", "]", "}", "="}
 
 def parse_if(itoken):
-    if_expr = IfExpr()
+    if_coords = itoken.peak_coords()
+    itoken.consume()  # "if"/"elif" token
+    if_expr = IfExpr(src=itoken.src, coords=if_coords)
+    if itoken.peak() != "(":
+        name_coords = itoken.peak_coords()
+        if_expr.name = Id(
+            itoken.consume(), src=itoken.src, coords=name_coords
+        )
     itoken.expect("(")
     if_expr.cond = parse_expression(itoken)
     itoken.expect(")", msg="Missing closing bracket")
@@ -483,7 +490,7 @@ def parse_if(itoken):
             if_expr.else_block = parse_body(itoken)
         else:
             if_expr.else_block = parse_expression(itoken)
-    elif itoken.check("elif"):
+    elif itoken.peak() == "elif":
         if_expr.else_block = parse_if(itoken)
     return if_expr
 

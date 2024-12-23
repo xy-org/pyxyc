@@ -394,7 +394,7 @@ def import_builtins(ctx, cast):
             if "Size" in types and ("float" in types or "double" in types):
                 continue
             rtype_name = type1 if p1 > p2 else type2
-            for fname in ["add", "mul"]:
+            for fname in ["add", "mul", "lt"]:
                 func = xy.FuncDef(
                     fname,
                     params=[
@@ -509,10 +509,9 @@ def compile_body(body, cast, cfunc, ctx):
             compiled = compile_expr(node, cast, cfunc, ctx).c_node
             cfunc.body.append(compiled)
         else:
-            raise CompilationError(
-                f"Unsupported statement {type(node).__name__} in function body",
-                node
-            )
+            expr_obj = compile_expr(node, cast, cfunc, ctx)
+            if expr_obj.c_node is not None:
+                cfunc.body.append(expr_obj.c_node)
 
 
 def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
@@ -569,6 +568,10 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
             func_to_op_map = {
                 "add": '+',
                 "mul": '*',
+                "lt": '<',
+                "lte": '<=',
+                "gt": '>',
+                "gte": ">="
             }
             res = c.Expr(
                 arg_exprs[0].c_node, arg_exprs[1].c_node,
@@ -638,9 +641,34 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
     elif isinstance(expr, xy.Select):
         rewritten = rewrite_select(expr, ctx)
         return compile_expr(rewritten, cast, cfunc, ctx)
+    elif isinstance(expr, xy.IfExpr):
+        return compile_if(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
 
+def compile_if(ifexpr, cast, cfunc, ctx):
+    c_if = c.If()
+    cond_obj = compile_expr(ifexpr.cond, cast, cfunc, ctx)
+    # TODO check type is bool
+    c_if.cond = cond_obj.c_node
+    cfunc.body.append(c_if)
+
+    body_to_compile = ifexpr.block
+    if not isinstance(body_to_compile, list):
+        body_to_compile = [body_to_compile]
+    compile_body(body_to_compile, cast, c_if, ctx)
+
+    if isinstance(ifexpr.else_block, list):
+        # XXX fix that
+        hack_if = c.If()
+        compile_body(ifexpr.else_block, cast, hack_if, ctx)
+        c_if.else_body = hack_if.body
+
+    return ExprObj(
+        xy_node=ifexpr,
+        c_node=None,
+        infered_type=find_type(xy.Id("void"), ctx)  # TODO remove this call to find type
+    )
 
 def get_c_type(type_expr, ctx):
     id_desc = find_type(type_expr, ctx)
@@ -729,6 +757,10 @@ def rewrite_op(binexpr, ctx):
     fname = {
         "+": "add",
         "*": "mul",
+        "<": "lt",
+        ">": "gt",
+        "<=": "lte",
+        ">=": "gte"
     }[binexpr.op]
     fcall = xy.FuncCall(
         xy.Id(fname, src=binexpr.src, coords=binexpr.coords),

@@ -998,6 +998,41 @@ def test_arrays(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def main() -> void {
+            a := if res(cond) -> int {
+                res = func1();
+                func2();
+            } else {
+                res = func3();
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.VarDecl(name="a", value=ast.IfExpr(
+                    name=ast.Id("res"),
+                    cond=ast.Id("cond"),
+                    type=ast.Id("int"),
+                    block=[
+                        ast.BinExpr(
+                            op="=",
+                            arg1=ast.Id("res"),
+                            arg2=ast.FuncCall(name=ast.Id("func1")),
+                        ),
+                        ast.FuncCall(name=ast.Id("func2")),
+                    ],
+                    else_block=[
+                        ast.BinExpr(
+                            op="=",
+                            arg1=ast.Id("res"),
+                            arg2=ast.FuncCall(name=ast.Id("func3")),
+                        )
+                    ],
+                ))
+            ]),
+        ]
+    ],
 ])
 def test_if(code, exp_ast):
     act_ast = parse_code(code)
