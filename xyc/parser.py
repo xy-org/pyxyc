@@ -110,7 +110,6 @@ def parse_code(src):
     while itoken.has_more():
         tok = itoken.peak()
         if tok == "import":
-            itoken.consume()
             node = parse_import(itoken)
             ast.append(node)
         elif tok == "#":
@@ -141,15 +140,30 @@ def parse_code(src):
     return ast
         
 def parse_import(itoken):
+    coords = itoken.peak_coords()
+    itoken.consume()  # "import"
     lib = itoken.consume()
     while not itoken.peak_eol() and itoken.peak() == ".":
         itoken.consume()
         lib += "." + itoken.consume()
+
+    tags = TagList()
+    if itoken.check("~"):
+        tags = parse_tags(itoken)
+    if itoken.has_more() and itoken.peak() == "{":
+        raise ParsingError(
+            "Ambiguous brackets. Please be explicit and seprate the tags in square brackets.",
+            itoken
+        )
+
     in_name = None
     if itoken.check("in"):
         in_name = itoken.consume()
     itoken.expect_eol()
-    return Import(lib=lib, in_name=in_name)
+
+    return Import(
+        lib=lib, in_name=in_name, tags=tags, src=itoken.src, coords=coords
+    )
 
 def parse_sl_comment(itoken):
     comment_start = itoken.token_pos[itoken.i-1]+1
@@ -230,7 +244,7 @@ def parse_toplevel_type(itoken):
     toplevel_precedence_map = {**operator_precedence}
     del toplevel_precedence_map["|"]
     del toplevel_precedence_map["{"]
-    
+
     type_expr = parse_expression(itoken, op_prec=toplevel_precedence_map)
     return expr_to_type(type_expr)
 
@@ -300,18 +314,15 @@ def parse_expression(
     while op in op_prec and op_prec[op] == precedence:
         itoken.consume()  # operator
         if op == "(":
-            if not isinstance(arg1, Id):
-                itoken.i -= 1
-                raise ParsingError("Only functions are callable.", itoken)
             args, kwargs = parse_args_kwargs(itoken)
             itoken.expect(")")
-            fcall = FuncCall(arg1.name, args, src=itoken.src, coords=arg1.coords)
+            fcall = FuncCall(arg1, args, src=itoken.src, coords=arg1.coords)
             fcall.kwargs = kwargs
             arg1 = fcall
         elif op == "'":
             f_coords = itoken.peak_coords()
             fname = itoken.consume()
-            fcall = FuncCall(fname, [arg1], src=itoken.src, coords=f_coords)
+            fcall = FuncCall(Id(fname), [arg1], src=itoken.src, coords=f_coords)
             if itoken.check("("):
                 args, kwargs = parse_args_kwargs(itoken)
                 fcall.args.extend(args)
@@ -321,7 +332,7 @@ def parse_expression(
         elif op == "\\":
             f_coords = itoken.peak_coords()
             fname = itoken.consume()
-            fcall = FuncCall(fname, [arg1], src=itoken.src, coords=f_coords)
+            fcall = FuncCall(Id(fname), [arg1], src=itoken.src, coords=f_coords)
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             fcall.args.append(arg2)
             arg1 = fcall

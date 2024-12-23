@@ -342,7 +342,7 @@ def compile_expr(expr, cast, cfunc, ctx):
         res = c.Id(expr.name)
         return res
     elif isinstance(expr, xy.FuncCall):
-        fspace = ctx.get_func_space(expr)
+        fspace = ctx.get_func_space(expr.name)
         func_obj = fspace.find(expr, ctx)
 
         if func_obj.builtin and func_obj.xy_node.name == "select":
@@ -506,7 +506,7 @@ def ct_eval(expr, ctx):
     raise CompilationError("Cannot Compile-Time Evaluate", expr)
 
 def find_func(fcall, ctx):
-    fspace = ctx.get_func_space(fcall)
+    fspace = ctx.get_func_space(fcall.name)
     return fspace.find(fcall, ctx)
 
 def rewrite_op(binexpr, ctx):
@@ -514,14 +514,14 @@ def rewrite_op(binexpr, ctx):
         "+": "add",
         "*": "mult",
     }[binexpr.op]
-    fcall = xy.FuncCall(fname, args=[
+    fcall = xy.FuncCall(xy.Id(fname), args=[
         binexpr.arg1, binexpr.arg2
     ], src=binexpr.src, coords=binexpr.coords)
     return fcall
 
 def rewrite_select(select, ctx):
     fcall = xy.FuncCall(
-        "select", args=[select.base, *select.args.args],
+        xy.Id("select"), args=[select.base, *select.args.args],
         kwargs=select.args.kwargs,
         src=select.src,
         coords=select.coords

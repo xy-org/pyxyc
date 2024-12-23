@@ -22,6 +22,21 @@ code_ast = [
             ast.Import(lib="xylib", in_name="xy"),
         ],
     ],
+    [
+        "import libc~[CLib{headers=[c\"unistd.h\"]}] in c",
+        [
+            ast.Import(lib="libc", in_name="c", tags=ast.TagList(
+                args=[ast.StructLiteral(
+                    ast.Id("CLib"),
+                    kwargs={
+                        "headers": ast.ArrayLit([
+                            ast.StrLiteral(prefix="c", parts=[ast.Const("unistd.h")])
+                        ])
+                    }
+                )]
+            )),
+        ],
+    ],
 ]
 @pytest.mark.parametrize("code, exp_ast", code_ast)
 def test_parse_import(code, exp_ast):
@@ -104,7 +119,7 @@ def test_parse_comments(code, exp_ast):
         """,
         [
             ast.FuncDef(name="main", params=[], rtype=ast.Id("void"), body=[
-                ast.FuncCall(name="print", args=[
+                ast.FuncCall(name=ast.Id("print"), args=[
                     ast.StrLiteral(parts=[ast.Const("abc")])
                 ])
             ])
@@ -189,10 +204,10 @@ def test_parse_simple_func(code, exp_ast):
         """,
         [
             ast.FuncDef(name="main", rtype=ast.Id("void"), body=[
-                ast.FuncCall("func", args=[ast.Id("a")]),
-                ast.FuncCall("func", args=[ast.Id("a")]),
-                ast.FuncCall("func", args=[ast.Id("a"), ast.Id("b")]),
-                ast.FuncCall("func", args=[ast.Id("a"), ast.Id("b")]),
+                ast.FuncCall(ast.Id("func"), args=[ast.Id("a")]),
+                ast.FuncCall(ast.Id("func"), args=[ast.Id("a")]),
+                ast.FuncCall(ast.Id("func"), args=[ast.Id("a"), ast.Id("b")]),
+                ast.FuncCall(ast.Id("func"), args=[ast.Id("a"), ast.Id("b")]),
             ]),
         ]
     ],
@@ -256,7 +271,7 @@ def test_parse_func_call(code, exp_ast):
                             ast.Id("Ptr"), tags=ast.TagList([ast.Id("int")])
                         )]),
                     ),
-                    value=ast.FuncCall("addr", args=[ast.Id("ptr")]),
+                    value=ast.FuncCall(ast.Id("addr"), args=[ast.Id("ptr")]),
                 ),
             ]),
         ]
@@ -345,25 +360,25 @@ def test_parse_var_decl(code, exp_ast):
                     op = "+"
                 )),
                 ast.VarDecl("f", type=None, value=ast.FuncCall(
-                    "func2",
+                    ast.Id("func2"),
                     [
-                        ast.FuncCall("func1", [ast.Id("a")]),
-                        ast.FuncCall("func2", [ast.Id("b")]),
+                        ast.FuncCall(ast.Id("func1"), [ast.Id("a")]),
+                        ast.FuncCall(ast.Id("func2"), [ast.Id("b")]),
                     ]
                 )),
                 ast.VarDecl("g", type=None, value=ast.FuncCall(
-                    "func3",
+                    ast.Id("func3"),
                     [
-                        ast.FuncCall("func2", [ast.FuncCall("func1", [
+                        ast.FuncCall(ast.Id("func2"), [ast.FuncCall(ast.Id("func1"), [
                             ast.BinExpr(ast.Id("a"), ast.Id("b"), "+")
                         ])]),
-                        ast.FuncCall("func4", [ast.Id("c")])
+                        ast.FuncCall(ast.Id("func4"), [ast.Id("c")])
                     ]
                 )),
-                ast.FuncCall("func", [
+                ast.FuncCall(ast.Id("func"), [
                     ast.Id("a"),
-                    ast.FuncCall("func", [ast.Id("b")]),
-                    ast.FuncCall("add", [ast.Id("d"), ast.Id("c")]),
+                    ast.FuncCall(ast.Id("func"), [ast.Id("b")]),
+                    ast.FuncCall(ast.Id("add"), [ast.Id("d"), ast.Id("c")]),
                 ])
             ]),
         ]
@@ -433,7 +448,7 @@ def test_parse_struct(code, exp_ast):
                 ast.VarDecl("p", type=None, value=ast.StructLiteral(
                     name=ast.Id("Pair"), args=[ast.Const(1), ast.Id("a")]
                 )),
-                ast.FuncCall("func2", args=[
+                ast.FuncCall(ast.Id("func2"), args=[
                     ast.BinExpr(
                         arg1=ast.StructLiteral(
                             name=ast.Id("Pair"), args=[ast.Const(3), ast.Const(4)]

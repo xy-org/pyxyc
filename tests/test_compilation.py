@@ -18,7 +18,7 @@ def resource_dir(request):
     "stringCtor",
     "entrypoint",
     "arrays",
-    # "cimport",
+    "cimport",
 ])
 def test_c_compilation(resource_dir, filename):
     project = xyc.parse_project(
