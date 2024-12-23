@@ -15,8 +15,8 @@ def resource_dir(request):
     "typeInferenceAdvanced",
     "funcOverloadingSimple",
     "stringCtor",
-    # "cimport",  # TODO
-    # "entry_point",  # TODO
+    "entrypoint",
+    # "cimport",
 ])
 def test_c_compilation(resource_dir, filename):
     project = xyc.parse_project(

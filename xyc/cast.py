@@ -11,7 +11,7 @@ class VarDecl:
     name: str
     type: str
     varying: bool = False
-    value = None
+    value: any = None
 
 @dataclass
 class Struct:
@@ -51,7 +51,7 @@ class Func:
 
 @dataclass
 class Return:
-    value = None
+    value: any = None
 
 @dataclass
 class Ast:

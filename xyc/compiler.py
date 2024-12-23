@@ -4,21 +4,25 @@ from xyc import cast as c
 from dataclasses import dataclass, field
 
 @dataclass
-class TypeDesc:
+class CompiledObj:
+    tags: dict[str, 'CompiledObj'] = field(kw_only=True, default_factory=dict)
+
+@dataclass
+class TypeDesc(CompiledObj):
     xy_struct : any = None
     c_struct : any = None
     c_name : str | None = None
     builtin : bool = False
 
 @dataclass
-class FuncDesc:
+class FuncDesc(CompiledObj):
     xy_func: any = None
     c_func: any = None
     c_name : str | None = None
     rtype_desc: TypeDesc = None
 
 @dataclass
-class VarDesc:
+class VarDesc(CompiledObj):
     xy_node: any = None
     c_node: any = None
     type_desc: TypeDesc | None = None
@@ -61,6 +65,11 @@ class FuncSpace:
                 if desc.xy_func == node:
                     return desc
             raise "Cannot find func"
+
+
+# XXX
+entrypoint_obj = None
+
 
 def cmp_call_def(fcall, fcall_args_types, fdef, ctx):
     # TODO what about kwargs
@@ -116,6 +125,7 @@ def compile_module(module_name, ast):
     
     compile_header(ctx, ast, res)
     compile_funcs(ctx, ast, res)
+    maybe_add_main(ctx, ast, res)
 
     return res
 
@@ -172,8 +182,16 @@ def compile_header(ctx: CompilerContext, ast, cast):
                         str_lit = tag.kwargs["prefix"]
                         prefix = str_lit.parts[0] if len(str_lit.parts) else ""
                         ctx.str_prefix_reg[prefix] = compiled
+                elif isinstance(tag, xy.Id):
+                    # XXX
+                    compiled.tags["xi.entrypoint"] = ctx.id_table[tag.name]
+                    # XXX
+                    if tag.name == "EntryPoint":
+                        global entrypoint_obj
+                        entrypoint_obj = compiled
+
                 else:
-                    raise "NYI"
+                    raise CompilationError("NYI", tag)
 
             func_space.append(compiled)
 
@@ -230,6 +248,10 @@ def import_builtins(ctx, cast):
     ])
     str_obj = TypeDesc(str_ctor, None, c_name="StringCtor", builtin=True)
     ctx.id_table["StrCtor"] = str_obj
+
+    entrypoint = xy.StructDef(name="EntryPoint")
+    ep_obj = TypeDesc(entrypoint, builtin=True)
+    ctx.id_table["EntryPoint"] = ep_obj
 
 def compile_funcs(ctx, ast, cast):
     for node in ast:
@@ -419,3 +441,17 @@ def rewrite_op(binexpr, ctx):
         binexpr.arg1, binexpr.arg2
     ], src=binexpr.src, coords=binexpr.coords)
     return fcall
+
+def maybe_add_main(ctx, ast, cast):
+    if entrypoint_obj is not None:
+        main = c.Func(
+            name="main", rtype="int",
+            params=[
+                c.VarDecl("argc", "int"),
+                c.VarDecl("argv", "char**")
+            ], body=[
+                c.VarDecl("res", "int", value=c.FuncCall(entrypoint_obj.c_name)),
+                c.Return(c.Name("res")),
+            ]
+        )
+        cast.funcs.append(main)
