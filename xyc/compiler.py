@@ -77,6 +77,7 @@ class FuncObj(CompiledObj):
     param_objs: list['VarObj'] = field(default_factory=list)
     builtin: bool = False
     move_args_to_temps: bool = False
+    module_header: 'ModuleHeader' = None  # None means current module
 
     @property
     def c_name(self):
@@ -129,7 +130,11 @@ class IdTable(dict):
             if isinstance(value, ImportObj):
                 continue # imports are not sticky
             elif current is None:
-                self[key] = value
+                if isinstance(value, FuncSpace):
+                    self[key] = FuncSpace()
+                    self[key]._funcs.extend(value._funcs)
+                else:
+                    self[key] = value
             elif isinstance(current, FuncSpace):
                 if isinstance(value, FuncSpace):
                     current._funcs.extend(value._funcs)
@@ -292,7 +297,9 @@ def func_sig(fobj: FuncObj):
 @dataclass
 class ModuleHeader:
     namespace: IdTable
+    module_name: str = None
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
+    ctx: 'CompilerContext' = None
 
 @dataclass
 class CompilerContext:
@@ -581,9 +588,17 @@ def compile_module(builder, module_name, asts):
     
     maybe_add_main(ctx, res)
 
-    return ModuleHeader(
-        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg
-    ), res
+    mh = ModuleHeader(
+        module_name=module_name,
+        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg, ctx=ctx
+    )
+
+    for obj in ctx.module_ns.values():
+        if isinstance(obj, FuncSpace):
+            for func_obj in obj._funcs:
+                func_obj.module_header = mh
+
+    return mh, res
 
 def compile_builtins(builder, module_name):
     ctx = CompilerContext(builder, module_name)
@@ -908,8 +923,8 @@ def import_builtins(ctx: CompilerContext, cast):
                 desc.builtin = True
                 desc.rtype_obj = ctx.module_ns[rtype_name]
                 desc.param_objs = [
-                    VarObj(type_desc=ctx.module_ns[type1]),
-                    VarObj(type_desc=ctx.module_ns[type2])
+                    VarObj(xy_node=xy.VarDecl(name="a"), type_desc=ctx.module_ns[type1]),
+                    VarObj(xy_node=xy.VarDecl(name="b"), type_desc=ctx.module_ns[type2])
                 ]
 
     for type in int_types:
@@ -1521,7 +1536,7 @@ def is_simple_cexpr(expr):
 def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     fobj = ctx.eval_to_fspace(
         xy.Id(name, src=xy_node.src, coords=xy_node.coords),
-        msg=f"Cannot find function {name}",
+        msg=f"Cannot find any functions {name}",
     ).find(
         xy.FuncCall(xy.Id(name), src=xy_node.src, coords=xy_node.coords),
         ArgList([obj.infered_type for obj in arg_objs]),
@@ -1612,11 +1627,14 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             infered_type=func_obj.rtype_obj
         )
 
+    default_val_ctx = ctx
+    if func_obj.module_header is not None:
+        default_val_ctx = func_obj.module_header.ctx
     res = c.FuncCall(name=func_obj.c_name)
     if func_obj.xy_node is not None:
-        ctx.push_ns()
+        default_val_ctx.push_ns()
         for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
-            ctx.ns[pobj.xy_node.name] = arg
+            default_val_ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:
@@ -1626,11 +1644,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
         for pobj in func_obj.param_objs[len(arg_exprs.args):]:
             if pobj.xy_node.name not in arg_exprs.kwargs:
-                default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, ctx)
+                default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, default_val_ctx)
                 res.args.append(default_obj.c_node)
             else:
                 res.args.append(arg_exprs.kwargs[pobj.xy_node.name].c_node)
-        ctx.pop_ns()
+        default_val_ctx.pop_ns()
     else:
         # external c function
         for arg in arg_exprs:
@@ -2334,7 +2352,6 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
         module_header = ctx.builder.import_module(imprt.lib)
         ctx.global_ns.merge(module_header.namespace)
         ctx.str_prefix_reg.update(module_header.str_prefix_reg)
-        
     
     if imprt.in_name:
         # XXX what about multiple in names

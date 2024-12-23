@@ -5,6 +5,7 @@ def test() {
     a := 5;
     func(a);
     func(a, 10);
+    func(a*10);
 
     myfunc(a);
     myfunc(a, 10);
