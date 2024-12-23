@@ -34,7 +34,7 @@ stringInterpolation_Str stringInterpolation_to(stringInterpolation_StrBuilder* b
 }
 
 stringInterpolation_StrBuilder stringInterpolation_fstr(void* addr, size_t size) {
-    return (stringInterpolation_StrBuilder){};
+    return (stringInterpolation_StrBuilder){0};
 }
 
 void stringInterpolation_createStrings(void) {

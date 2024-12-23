@@ -899,6 +899,7 @@ def test_ambiguous_tags(code, err_msg):
             f := f"before{a + b}after";
             g := f"complex {a + b, 2, arg=3}";
             h := f"literal {arg=MyStruct{field=10}}";
+            i := f"{a}{b} {c}\n{d} ";
         }
         """,
         [
@@ -939,6 +940,19 @@ def test_ambiguous_tags(code, err_msg):
                         }),
                     ],
                     full_str="literal {arg=MyStruct{field=10}}"
+                )),
+                ast.VarDecl("i", type=None, value=ast.StrLiteral(
+                    prefix="f",
+                    parts=[
+                        ast.Id("a"),
+                        ast.Id("b"),
+                        ast.Const(" "),
+                        ast.Id("c"),
+                        ast.Const("\n"),
+                        ast.Id("d"),
+                        ast.Const(" "),
+                    ],
+                    full_str="{a}{b} {c}\n{d} "
                 )),
             ]),
         ]

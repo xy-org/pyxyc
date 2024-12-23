@@ -90,7 +90,9 @@ class IdTable(dict):
     def merge(self, other: 'IdTable'):
         for key, value in other.items():
             current = self.get(key, None)
-            if current is None:
+            if isinstance(value, ImportObj):
+                continue # imports are not sticky
+            elif current is None:
                 self[key] = value
             elif isinstance(current, FuncSpace):
                 if isinstance(value, FuncSpace):
@@ -790,6 +792,8 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
             name=ctypename,
             args=[compile_expr(arg, cast, cfunc, ctx).c_node for arg in expr.args]
         )
+        if len(res.args) == 0:
+            res.args = [c.Const(0)]  # empty {} is valid only in C2X
         # TODO what about kwargs
         return ExprObj(
             c_node=res,
@@ -857,18 +861,10 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
     
     if not interpolation:
         str_const = expr.parts[0].value if len(expr.parts) else ""
-        str_len = 0
-        str_i = 0
-        while str_i < len(str_const):
-            str_len += 1
-            if str_const[str_i] == '\\':
-                str_i += 2
-            else:
-                str_i += 1
 
         c_func = c.FuncCall(func_desc.c_name, args=[
             c.Const('"' + str_const + '"'),
-            c.Const(str_len)
+            c.Const(cstr_len(str_const))
         ])
         return ExprObj(
             c_node=c_func,
@@ -886,7 +882,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             func_obj=func_desc,
             arg_exprs=[
                 ConstObj(c_node=c.Const(f'"{expr.full_str}"'), value=""),
-                ConstObj(c_node=c.Const(len(expr.full_str)), value=0)
+                ConstObj(c_node=c.Const(cstr_len(expr.full_str)), value=0)
             ],
             cast=cast,
             cfunc=cfunc,
@@ -909,7 +905,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                     arg_exprs=[
                         builder_tmpvar_id,
                         ExprObj(c_node=c.Const('"' + part.value + '"')),
-                        ExprObj(c_node=c.Const(len(part.value)))
+                        ExprObj(c_node=c.Const(cstr_len(part.value)))
                     ],
                     cast=cast, cfunc=cfunc, ctx=ctx
                 )
@@ -959,6 +955,17 @@ def ct_isTrue(obj: CompiledObj):
         "Should be true or false",
         obj.xy_node
     )
+
+def cstr_len(s: str) -> int:
+    res = 0
+    i = 0
+    while i < len(s):
+        res += 1
+        if s[i] == '\\':
+            i += 2
+        else:
+            i += 1
+    return res
 
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     fspace = ctx.eval_to_fspace(expr.name)

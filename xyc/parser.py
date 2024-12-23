@@ -635,10 +635,11 @@ def parse_str_literal(prefix, prefix_start, itoken):
     res = StrLiteral(prefix=prefix, src=itoken.src)
     part_start = itoken.peak_coords()[0]
     part_end = part_start
-    while not itoken.check('"'):
+    while itoken.peak() != '"':
+        part_end = itoken.peak_coords()[0]
+
         if itoken.check("{"):
             if part_start < part_end:
-                part_end = itoken.peak_coords()[0] - 1
                 lit = itoken.src.code[part_start:part_end]
                 res.parts.append(Const(lit))
 
@@ -647,15 +648,15 @@ def parse_str_literal(prefix, prefix_start, itoken):
                 res.parts.append(args[0])
             else:
                 res.parts.append(Args(args, kwargs, src=itoken.src))
-            itoken.expect("}")
 
-            if part_start < part_end:
-                part_start = itoken.peak_coords()[0]
-            part_end = itoken.peak_coords()[1] - 1
+            part_start = itoken.peak_coords()[0] + 1
+            itoken.expect("}")
         else:
             itoken.check("\\")
-            part_end = itoken.peak_coords()[1]
             itoken.consume()
+
+    part_end = itoken.peak_coords()[0]
+    itoken.expect('"')
 
     if part_start < part_end:
         lit = itoken.src.code[part_start:part_end]
@@ -663,8 +664,6 @@ def parse_str_literal(prefix, prefix_start, itoken):
     
     res.coords = (prefix_start, part_end+1)
     res.full_str = itoken.src.code[prefix_start+len(prefix)+1:part_end]
-    if res.full_str == "complex ":
-        import pdb; pdb.set_trace()
     return res
 
 def parse_args_kwargs(itoken):
