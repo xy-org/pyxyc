@@ -11,7 +11,7 @@ int32_t ifs_statementLike(int32_t x, int32_t y) {
 }
 
 int32_t ifs_expressionLike(int32_t x, int32_t y) {
-    int32_t __tmp0;
+    int32_t __tmp0 = 0;
     if (x < y) {
         __tmp0 = x * y * 3;
     } else {
@@ -21,7 +21,7 @@ int32_t ifs_expressionLike(int32_t x, int32_t y) {
 }
 
 int32_t ifs_namedIf(int32_t x, int32_t y) {
-    int32_t __tmp_res0;
+    int32_t __tmp_res0 = 0;
     if (x < y) {
         __tmp_res0 = x * y * 3;
     } else {
@@ -32,7 +32,7 @@ int32_t ifs_namedIf(int32_t x, int32_t y) {
 }
 
 int32_t ifs_chainedIfs(int32_t x, int32_t y) {
-    int32_t __tmp0;
+    int32_t __tmp0 = 0;
     if (x > y) {
         __tmp0 = 1;
     } else if (x < y) {

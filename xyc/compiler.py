@@ -13,6 +13,7 @@ class CompiledObj:
 class TypeObj(CompiledObj):
     builtin : bool = False
     fields: dict[str, 'VarObj'] = field(default_factory=list)
+    init_value: any = None
 
     @property
     def c_name(self):
@@ -293,6 +294,9 @@ class CompilerContext:
         else:
             c_tmp.type = type_obj.c_name
 
+        if type_obj.init_value is not None:
+            c_tmp.value = type_obj.init_value
+
         return VarObj(None, c_tmp, type_obj)
             
 
@@ -409,7 +413,8 @@ def import_builtins(ctx, cast):
         ctx.id_table[xtype] = TypeObj(
             xy_node=xy.StructDef(name=xtype),
             c_node=c.Struct(name=ctype),
-            builtin=True
+            builtin=True,
+            init_value=c.Const(0)
         )
     ctx.void_obj = ctx.id_table["void"]
 

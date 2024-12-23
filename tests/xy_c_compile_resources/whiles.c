@@ -12,7 +12,7 @@ int32_t whiles_func1(int32_t x, int32_t y) {
 }
 
 int32_t whiles_func2(int32_t x, int32_t y) {
-    int32_t __tmp_i0;
+    int32_t __tmp_i0 = 0;
     while (x < y) {
         x += 10;
         __tmp_i0++;
