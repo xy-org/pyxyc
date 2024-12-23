@@ -1485,7 +1485,7 @@ c_symbol_type = TypeInferenceError(
     "The types of c symbols cannot be inferred. Please be explicit and specify the type."
 )
 
-def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
+def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
     if isinstance(expr, xy.Const):
         return ExprObj(
             xy_node=expr,
@@ -1512,14 +1512,12 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                 struct_obj = arg1_obj.infered_type
                 if field_name not in struct_obj.fields:
                     raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
-                return field_get(arg1_obj, struct_obj.fields[field_name], cast, cfunc, ctx, lhs)
+                fget_obj = field_get(arg1_obj, struct_obj.fields[field_name], cast, cfunc, ctx)
+                return maybe_deref(fget_obj, deref, cast, cfunc, ctx)
         elif expr.op == '.=':
             if not (isinstance(expr.arg2, xy.StructLiteral) and expr.arg2.name is None):
                 raise CompilationError("The right hand side of the '.=' operator must be an anonymous struct literal")
-            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, lhs=True)
-            if isinstance(arg1_obj, RefObj):
-                # TODO that check chould be here
-                arg1_obj = ref_get(arg1_obj, cast, cfunc, ctx)
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             _ = do_compile_struct_literal(expr.arg2, arg1_obj.infered_type, arg1_obj, cast, cfunc, ctx)
             return ExprObj(
                 c_node=None,
@@ -1527,14 +1525,14 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
             )
         elif expr.op == "=":
             if isinstance(expr.arg1, xy.Select):
-                container_obj = compile_expr(expr.arg1.base, cast, cfunc, ctx, lhs=True)
+                container_obj = compile_expr(expr.arg1.base, cast, cfunc, ctx, deref=False)
                 assert len(expr.arg1.args.args) == 1
                 assert len(expr.arg1.args.kwargs) == 0
-                ref_obj = compile_expr(expr.arg1.args.args[0], cast, cfunc, ctx)
+                ref_obj = compile_expr(expr.arg1.args.args[0], cast, cfunc, ctx, deref=None)
                 value_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
                 return ref_set(RefObj(xy_node=expr, container=container_obj, ref=ref_obj), value_obj, cast, cfunc, ctx)
 
-            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, lhs=True)
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
 
             if isinstance(arg1_obj, RefObj):
@@ -1564,7 +1562,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                     infered_type=tag_obj.infered_type,
                 )
     elif isinstance(expr, xy.UnaryExpr) and expr.op == '&':
-        arg_obj = compile_expr(expr.arg, cast, cfunc, ctx, lhs=True)
+        arg_obj = compile_expr(expr.arg, cast, cfunc, ctx, deref=False)
         if isinstance(arg_obj, RefObj):
             return ExprObj(
                 expr,
@@ -1616,11 +1614,14 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                 compiled_obj=var_obj,
             )
         elif isinstance(var_obj, ExprObj):
-            return var_obj
+            return maybe_deref(var_obj, deref, cast, cfunc, ctx)
         else:
             raise CompilationError("Invalid expression", expr)
     elif isinstance(expr, xy.FuncCall):
-        return compile_fcall(expr, cast, cfunc, ctx)
+        return maybe_deref(
+            compile_fcall(expr, cast, cfunc, ctx),
+            deref, cast, cfunc, ctx
+        )
     elif isinstance(expr, xy.StructLiteral):
         return compile_struct_literal(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.StrLiteral):
@@ -1681,6 +1682,13 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
         return compile_fcall(slice_ctor_fcall, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
+    
+def maybe_deref(obj: CompiledObj, deref: bool, cast, cfunc, ctx):
+    if not deref:
+        return obj
+    if not isinstance(obj, RefObj):
+        return obj
+    return ref_get(obj, cast, cfunc, ctx)
 
 def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     obj = ref_obj.container
@@ -1733,9 +1741,6 @@ def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     )
 
 def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
-    if isinstance(val_obj, RefObj):
-        # TODO that check should be here
-        val_obj = ref_get(val_obj, cast, cfunc, ctx)
     if not ref_obj.container.infered_type.is_flags:
         if is_ptr_type(ref_obj.ref.infered_type, ctx):
             return ExprObj(
@@ -1835,10 +1840,7 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
         )
         return ref_set(ref_obj, val, cast, cfunc, ctx)
     
-def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerContext, lhs=False):
-    if isinstance(obj, RefObj):
-        obj.c_node = ref_get(obj, cast, cfunc, ctx).c_node
-
+def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerContext):
     struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
     if field_obj.xy_node.is_pseudo:
         ref_obj = RefObj(
@@ -1848,10 +1850,7 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
         )
         if obj.xy_node is None:
             import pdb; pdb.set_trace()
-        if lhs:
-            return ref_obj
-        else:
-            return ref_get(ref_obj, cast, cfunc, ctx)
+        return ref_get(ref_obj, cast, cfunc, ctx)
 
     if not (struct_obj.is_enum or struct_obj.is_flags):
         # normal field
@@ -2240,9 +2239,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     expr_to_move_idx = None
     for i in range(len(expr.args)):
         obj = compile_expr(expr.args[i], cast, cfunc, ctx)
-        # TODO should that check be here
-        if isinstance(obj, RefObj):
-            obj.c_node = ref_get(obj, cast, cfunc, ctx).c_node
+        assert not isinstance(obj, RefObj)
 
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
             is_builitin_math = (
@@ -2988,7 +2985,7 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                     pass # TODO
             else:
                 # not a slice but somesort of collection
-                collection_obj = compile_expr(collection_node, cast, cfunc, ctx, lhs=True)
+                collection_obj = compile_expr(collection_node, cast, cfunc, ctx, deref=False)
                 iter_arg_objs = []
                 if is_iter_ctor_call(collection_obj):
                     ictor_obj = collection_obj
