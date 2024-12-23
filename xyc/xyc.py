@@ -11,15 +11,17 @@ def main(cli_args=None):
     )
     parser.add_argument('path')
     parser.add_argument('-o', '--output', required=False)
+    parser.add_argument('-P', "--package-path", action="append", default=list())
     parser.add_argument(
-        '-C', '--compile-only', action='store_true', default=False,
+        '-c', '--compile-only', action='store_true', default=False,
         help="Run only the xy to c compilation, producing c source files"
     )
     args = parser.parse_args(args=cli_args)
 
     builder = Builder(
         input=args.path, output=args.output,
-        compile_only=args.compile_only
+        compile_only=args.compile_only,
+        package_paths=args.package_path
     )
     try:
         builder.build()

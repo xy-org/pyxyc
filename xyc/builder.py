@@ -15,14 +15,15 @@ class CompiledModule:
 
 class Builder:
     def __init__(self, input: str, output: str | None = None,
-                 compile_only=False, work_dir=".xyc_build"):
+                 compile_only=False, work_dir=".xyc_build",
+                 package_paths: list[str] = []):
         self.input = input
         self.output = output
         self.project_name = path.splitext(path.basename(path.abspath(input)))[0]
         if not output:
             self.output = self.project_name
         self.module_cache = {}
-        self.search_paths = []
+        self.search_paths = package_paths[:]
         self.compile_only = compile_only
         self.work_dir = work_dir
 
@@ -58,7 +59,7 @@ class Builder:
             module_path = os.path.join(path, *(module_name.split('.')))
             if os.path.exists(module_path):
                 return module_path
-        raise ValueError(f"Cannot find module {'.'.join(module_name)}")
+        raise ValueError(f"Cannot find module {module_name}")
     
     def do_build(self):
         if self.compile_only:

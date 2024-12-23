@@ -93,6 +93,7 @@ class IdTable(dict):
                 else:
                     raise ValueError("NYI")
             else:
+                import pdb; pdb.set_trace()
                 raise ValueError("NYI")
 
 class FuncSpace:
@@ -164,6 +165,7 @@ def func_sig(fdef):
 @dataclass
 class ModuleHeader:
     namespace: IdTable
+    str_prefix_reg: dict[str, any] = field(default_factory=dict)
 
 @dataclass
 class CompilerContext:
@@ -219,8 +221,12 @@ class CompilerContext:
             return name.name
         raise CompilationError("Cannot determine identifier", name)
 
-    def get_compiled_type(self, name: xy.Id):
-        res = self.id_table.get(name.name, None)
+    def get_compiled_type(self, name: xy.Id | str):
+        symbol_name = name.name if isinstance(name, xy.Id) else name
+        res = self.id_table.get(symbol_name, None)
+        if res is None:
+            res = self.global_ns.get(symbol_name, None)
+
         if res is not None:
             return res
         raise CompilationError(f"Cannot find type '{name.name}'", name)
@@ -288,6 +294,7 @@ class CompilerContext:
                 # XXX assume c library
                 return ExtSpace(node.arg2.name)
         else:
+            import pdb; pdb.set_trace()
             raise CompilationError(
                 "Cannot evaluate at compile time. "
                 f"Unknown expression type '{type(node).__name__}'",
@@ -331,7 +338,9 @@ def compile_module(builder, module_name, asts):
     
     maybe_add_main(ctx, res)
 
-    return ModuleHeader(namespace=ctx.id_table), res
+    return ModuleHeader(
+        namespace=ctx.id_table, str_prefix_reg=ctx.str_prefix_reg
+    ), res
 
 def compile_header(ctx: CompilerContext, asts, cast):
     import_builtins(ctx, cast)
@@ -438,7 +447,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
     return cast
 
-def import_builtins(ctx, cast):
+def import_builtins(ctx: CompilerContext, cast):
     # always include it as it is everywhere
     cast.includes.append(c.Include("stdint.h"))
     cast.includes.append(c.Include("stddef.h"))
@@ -464,13 +473,13 @@ def import_builtins(ctx, cast):
     }
 
     for xtype, ctype in ctype_map.items():
-        ctx.id_table[xtype] = TypeObj(
+        ctx.global_ns[xtype] = TypeObj(
             xy_node=xy.StructDef(name=xtype),
             c_node=c.Struct(name=ctype),
             builtin=True,
             init_value=c.Const(0)
         )
-    ctx.void_obj = ctx.id_table["void"]
+    ctx.void_obj = ctx.global_ns["void"]
 
     # fill in base math operations
     for p1, type1 in enumerate(num_types):
@@ -497,7 +506,7 @@ def import_builtins(ctx, cast):
                 )
                 desc = register_func(func, ctx)
                 desc.builtin = True
-                desc.rtype_obj = ctx.id_table[rtype_name]
+                desc.rtype_obj = ctx.global_ns[rtype_name]
 
     for type in int_types:
         for fname in ["add", "sub"]:
@@ -511,7 +520,7 @@ def import_builtins(ctx, cast):
             )
             desc = register_func(func, ctx)
             desc.builtin = True
-            desc.rtype_obj = ctx.id_table["Ptr"]
+            desc.rtype_obj = ctx.global_ns["Ptr"]
     
     # fill in ++(inc) and --(dec)
     for type1 in num_types:
@@ -525,7 +534,7 @@ def import_builtins(ctx, cast):
             )
             desc = register_func(func, ctx)
             desc.builtin = True
-            desc.rtype_obj = ctx.id_table[rtype_name]
+            desc.rtype_obj = ctx.global_ns[rtype_name]
     
     select = xy.FuncDef(name="select", params=[
         xy.VarDecl("arr", xy.ArrayType(base=None)),
@@ -534,7 +543,7 @@ def import_builtins(ctx, cast):
     select_obj = register_func(select, ctx)
     select_obj.builtin = True
     # XXX
-    select_obj.rtype_obj = ctx.id_table["int"]
+    select_obj.rtype_obj = ctx.global_ns["int"]
 
     # string construction
     str_ctor = xy.StructDef(name="StrCtor", fields=[
@@ -546,7 +555,7 @@ def import_builtins(ctx, cast):
             "label": StrObj(parts=[ConstObj(value="xy.string")])
         }
     )
-    ctx.id_table["StrCtor"] = str_obj
+    ctx.global_ns["StrCtor"] = str_obj
 
     # entry point
     entrypoint = xy.StructDef(name="EntryPoint")
@@ -556,7 +565,7 @@ def import_builtins(ctx, cast):
             "label": StrObj(parts=[ConstObj(value="xy.entrypoint")])
         }
     )
-    ctx.id_table["EntryPoint"] = ep_obj
+    ctx.global_ns["EntryPoint"] = ep_obj
 
     # clib
     clib = xy.StructDef(name="CLib")
@@ -566,7 +575,7 @@ def import_builtins(ctx, cast):
             "label": StrObj(parts=[ConstObj(value="xyc.lib")])
         }
     )
-    ctx.id_table["CLib"] = clib_ojb
+    ctx.global_ns["CLib"] = clib_ojb
 
 def compile_funcs(ctx, ast, cast):
     for node in ast:
@@ -654,7 +663,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
     if isinstance(expr, xy.Const):
         return ExprObj(
             c_node=c.Const(expr.value_str),
-            infered_type=ctx.id_table[expr.type]
+            infered_type=ctx.get_compiled_type(expr.type)
         )
     elif isinstance(expr, xy.BinExpr):
         if expr.op not in {'.', '='}:
@@ -731,7 +740,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
     elif isinstance(expr, xy.StrLiteral):
         if expr.prefix not in ctx.str_prefix_reg:
             raise CompilationError(
-                f"No string constructor registered for prefix '{expr.prefix}'",
+                f"No string constructor registered for prefix \"{expr.prefix}\"",
                 expr
             )
         func_desc = ctx.str_prefix_reg[expr.prefix]
@@ -1301,7 +1310,7 @@ def rewrite_select(select, ctx):
     )
     return fcall
 
-def compile_import(imprt, ctx, ast, cast):
+def compile_import(imprt, ctx: CompilerContext, ast, cast):
     compiled_tags = ctx.eval_tags(imprt.tags)
     import_obj = None
     if "xyc.lib" in compiled_tags:
@@ -1318,6 +1327,7 @@ def compile_import(imprt, ctx, ast, cast):
         assert imprt.in_name is None
         module_header = ctx.builder.import_module(imprt.lib)
         ctx.global_ns.merge(module_header.namespace)
+        ctx.str_prefix_reg.update(module_header.str_prefix_reg)
         
     
     if imprt.in_name:
