@@ -47,13 +47,19 @@ def stringify(ast: Ast):
 def stringify_body(body, frags, ident=1):
     for stmt in body:
         if isinstance(stmt, Return):
-            frags.append(" " * (ident*4) + "return ")
-            stringify_expr(stmt.value, frags)
+            frags.append(" " * (ident*4) + "return")
+            if stmt.value is not None:
+                frags.append(" ")
+                stringify_expr(stmt.value, frags)
             frags.append(";\n")
         elif isinstance(stmt, VarDecl):
             frags.append(" " * ident * 4)
-            frags.extend([stmt.type, " ", stmt.name, " = "])
+            frags.extend([stmt.type, " ", stmt.name])
+            if stmt.is_array:
+                for dim in stmt.dims:
+                    frags.extend(["[", str(dim), "]"])
             if stmt.value is not None:
+                frags.append(" = ")
                 stringify_expr(stmt.value, frags)
             frags.append(";\n")
         else:
@@ -85,6 +91,18 @@ def stringify_expr(expr, frags):
             frags.append(", ")
         frags.pop()
         frags.append("}")
+    elif isinstance(expr, InitList):
+        frags.append("{")
+        for i, elem in enumerate(expr.elems):
+            if i > 0:
+                frags.append(", ")
+            stringify_expr(elem, frags)
+        frags.append("}")
+    elif isinstance(expr, Index):
+        stringify_expr(expr.expr, frags)
+        frags.append("[")
+        stringify_expr(expr.index, frags)
+        frags.append("]")
     else:
         raise CGenerationError(f"Unknown expression {type(expr).__name__}")
 

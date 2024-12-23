@@ -1,6 +1,8 @@
-cimport unistd.h, errno.h in c
+import posix~[CLib{headers=[c"unistd.h"]}] in c
+import libc~[CLib{headers=[c"errno.h"]}] in c
 
-def main~EntryPoint(args: str[]) -> int {
-    c.write(0, "Hello World\n", 12);
+
+def main~EntryPoint() -> int {
+    c.write(0, c"Hello World\n", 12);
     return 0;
 }

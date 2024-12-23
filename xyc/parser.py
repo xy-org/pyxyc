@@ -16,6 +16,9 @@ class TokenIter:
     def peak(self):
         return self.tokens[self.i]
     
+    def peakn(self, n: int):
+        return self.tokens[self.i:self.i+n]
+    
     def peak_coords(self):
         return (
             self.token_pos[self.i],
@@ -178,9 +181,9 @@ def parse_def(itoken):
     node.params = parse_params(itoken)
     itoken.expect("->", "Missing -> in func def."
                   " Please put '-> void' if the func doesn't return anything.")
-    node.rtype = parse_type(itoken)
+    node.rtype = parse_return_type(itoken)
     if itoken.check("|"):
-        node.etype = parse_type(itoken)
+        node.etype = parse_return_type(itoken)
     num_empty = itoken.skip_empty_lines()
     while itoken.peak() in {">>", "<<"}:
         guard_token = itoken.consume()
@@ -216,11 +219,27 @@ def parse_params(itoken):
     return res
 
 def parse_type(itoken):
-    name = itoken.consume()
-    res = Type(name=name, src=itoken.src)
-    if itoken.check("~"):
-        res.tags = parse_tags(itoken)
-    return res
+    type_expr = parse_expression(itoken)
+
+    if isinstance(type_expr, Id):
+        return Type(name=type_expr.name, src=type_expr.src, coords=type_expr.coords)
+    else:
+        return expr_to_type(type_expr)
+    
+def parse_return_type(itoken):
+    # This function has a really bad smell
+    name, next = itoken.peakn(2)
+    if next in {"|", "{", "~", "\n"}:
+        itoken.consume()  # name
+        res = Type(name=name, src=itoken.src)
+        if next == "~":
+            res.tags = parse_tags(itoken)
+        return res
+    
+    if name == "(":
+        return parse_type(itoken)
+
+    raise ParsingError("Return type expressions need to be enclosed in brackets", itoken)
 
 operator_precedence = {
     "~": 11,
@@ -382,7 +401,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
 
 def expr_to_type(expr):
     if isinstance(expr, Select):
-        return ArrType(expr.base, expr.args.args)
+        return ArrType(expr.base, expr.args.args, src=expr.src, coords=expr.coords)
     return expr
 
 def parse_struct_literal(itoken, struct_expr):

@@ -10,8 +10,13 @@ class Include:
 class VarDecl:
     name: str
     type: str
+    dims: list = field(default_factory=list)
     varying: bool = False
     value: any = None
+
+    @property
+    def is_array(self):
+        return len(self.dims) > 0
 
 @dataclass
 class Struct:
@@ -38,9 +43,18 @@ class Const:
     value: str | int | float
 
 @dataclass
+class InitList:
+    elems: list = field(default_factory=list)
+
+@dataclass
 class FuncCall:
     name: str
     args: list = field(default_factory=list)
+
+@dataclass
+class Index:
+    expr: any
+    index: any
 
 @dataclass
 class Func:

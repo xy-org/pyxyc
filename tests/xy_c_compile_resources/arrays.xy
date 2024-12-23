@@ -1,0 +1,7 @@
+def constructingArrays() -> void {
+    arr := [0, 1, 2];
+    brr: int[3] = [3, 4, 5];
+    crr: int[3] = [6, 7, 8];
+    drr: int[3];
+    return arr[0] + brr[1] + crr[2] + drr[0];
+}
