@@ -16,7 +16,7 @@ float pseudoFields_get(pseudoFields_Point p, pseudoFields_CoordField f) {
     return p.m_coords[f.m_i];
 }
 
-float pseudoFields_set(pseudoFields_Point* p, pseudoFields_CoordField f, float val) {
+void pseudoFields_set(pseudoFields_Point* p, pseudoFields_CoordField f, float val) {
     return p->m_coords[f.m_i] = val;
 }
 

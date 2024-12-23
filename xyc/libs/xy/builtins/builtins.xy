@@ -279,15 +279,20 @@ struct Flags {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-def select(arr: ?, index: int) -> void {
+def get(arr: pseudo ?, index: int) -> ref(arr) Ptr {
     # Implemented by the compiler
 }
 
-def select(arr: ?, index: uint) -> void {
+def get(arr: pseudo ?, index: uint) -> ref(arr) Ptr {
     # Implemented by the compiler
 }
 
-def select(arr: ?, index: Size) -> void {
+def get(arr: pseudo ?, index: Size) -> ref(arr) Ptr {
+    # Implemented by the compiler
+}
+
+;; Set element at position {index} of the array {arr}
+def set(arr: pseudo ?, index: uint, val: pseudo ?) -> void {
     # Implemented by the compiler
 }
 

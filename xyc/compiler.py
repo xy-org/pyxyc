@@ -1342,6 +1342,14 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                 infered_type=arg1_obj.infered_type
             )
         else:
+            if isinstance(expr.arg1, xy.Select):
+                container_obj = compile_expr(expr.arg1.base, cast, cfunc, ctx, lhs=True)
+                assert len(expr.arg1.args.args) == 1
+                assert len(expr.arg1.args.kwargs) == 0
+                ref_obj = compile_expr(expr.arg1.args.args[0], cast, cfunc, ctx)
+                value_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
+                return ref_set(RefObj(xy_node=expr, container=container_obj, ref=ref_obj), value_obj, cast, cfunc, ctx)
+
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, lhs=True)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
 
@@ -2066,27 +2074,21 @@ def find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     )
 
 def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
-    if is_builtin_func(func_obj, "select"):
-        # TODO what if args is more numerous
-        assert len(arg_exprs) == 2
-        base_cnode = arg_exprs[0].c_node
-        index_cnode = arg_exprs[1].c_node
-
-        if isinstance(arg_exprs[0].infered_type, ArrTypeObj) and isinstance(base_cnode, c.InitList):
-            # convert InitList to compuond literal to keep c happy
-            base_type = c.Id(arg_exprs[0].infered_type.base_type_obj.c_name)
-            for dim in arg_exprs[0].infered_type.dims:
-                base_type = c.Index(base_type, c.Const(dim))
-            base_cnode = c.CompoundLiteral(
-                base_type,
-                base_cnode.elems,
-            )
-
-        res = c.Index(base_cnode, index_cnode)
+    if is_builtin_func(func_obj, "get"):
+        return compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+    elif is_builtin_func(func_obj, "set"):
+        assert len(arg_exprs) == 3
+        get_obj = compile_builtin_get(
+            expr, func_obj, ArgList(args=arg_exprs.args[:2]), cast, cfunc, ctx
+        )
         return ExprObj(
             xy_node=expr,
-            c_node=res,
-            infered_type=arg_exprs[0].infered_type.base_type_obj
+            c_node=c.Expr(
+                get_obj.c_node,
+                arg_exprs[2].c_node,
+                op="="
+            ),
+            infered_type=ctx.void_obj,
         )
     elif is_builtin_func(func_obj, "typeEqs"):
         return typeEqs(expr, arg_exprs, cast, cfunc, ctx)
@@ -2301,6 +2303,29 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     func_ctx.pop_ns()
 
     return res_obj
+
+def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
+    # TODO what if args is more numerous
+    assert len(arg_exprs) == 2
+    base_cnode = arg_exprs[0].c_node
+    index_cnode = arg_exprs[1].c_node
+
+    if isinstance(arg_exprs[0].infered_type, ArrTypeObj) and isinstance(base_cnode, c.InitList):
+        # convert InitList to compuond literal to keep c happy
+        base_type = c.Id(arg_exprs[0].infered_type.base_type_obj.c_name)
+        for dim in arg_exprs[0].infered_type.dims:
+            base_type = c.Index(base_type, c.Const(dim))
+        base_cnode = c.CompoundLiteral(
+            base_type,
+            base_cnode.elems,
+        )
+
+    res = c.Index(base_cnode, index_cnode)
+    return ExprObj(
+        xy_node=expr,
+        c_node=res,
+        infered_type=arg_exprs[0].infered_type.base_type_obj
+    )
 
 def is_builtin_func(func_obj, name):
     return func_obj.builtin and func_obj.xy_node.name.name == name
@@ -2792,7 +2817,11 @@ def mangle_def(fdef: xy.FuncDef, param_objs: list[VarObj], ctx, expand=False):
         mangled = [mangled]
         for param_obj in param_objs:
             mangled.append("__")
-            mangled.append(param_obj.type_desc.xy_node.name)
+            if isinstance(param_obj.type_desc.xy_node, xy.ArrayType):
+                mangled.append(param_obj.type_desc.xy_node.dims[0].value_str)
+                mangled.append(param_obj.type_desc.xy_node.base.name)
+            else:
+                mangled.append(param_obj.type_desc.xy_node.name)
         mangled = "".join(mangled)
     return mangled
 
@@ -2954,7 +2983,7 @@ def rewrite_unaryop(expr, ctx):
 
 def rewrite_select(select, ctx):
     fcall = xy.FuncCall(
-        xy.Id("select"), args=[select.base, *select.args.args],
+        xy.Id("get"), args=[select.base, *select.args.args],
         kwargs=select.args.kwargs,
         src=select.src,
         coords=select.coords
