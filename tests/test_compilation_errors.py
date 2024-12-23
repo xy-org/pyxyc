@@ -94,6 +94,8 @@ src.xy:4:19: error: Expression doesn't evaluate to a ref
 #     return ptr;
 # }
 
+# using a ? param in type expression
+
 #     ("""
 #         def func(arg: pseudo ?, ptr: Ptr~[arg'typeof]) -> Ptr~[arg'typeof] {
 #             return ptr;

@@ -19,7 +19,7 @@ def max(a: Size, b: Size) -> Size {
 def ensureCapacity(
     arr: inout Array,
     requiredCap: Size,
-    elemSize : Size = arr'tagsof.elemType'sizeof
+    elemSize : Size = arr'typeof'tagsof.elemType'sizeof
 ) {
     minRequiredSize := requiredCap * elemSize;
     if (arr.mem.size < minRequiredSize) {
@@ -30,10 +30,10 @@ def ensureCapacity(
 def push(
     arr: inout Array,
     elem: pseudo ?,
-    elemMem := elem'addrof,
+    elemMem: Ptr = elem'addrof,
     elemSize := elem'sizeof
 )
-# >> ctti.compatible(arr'tagsof.elemType, elem'typeof, arr, elem)
+# >> ctti.compatible(arr'typeof'tagsof.elemType, elem'typeof, arr, elem)
 {
     arr'ensureCapacity(arr.len + 1, elemSize=elemSize);
     arr.mem[arr.len * elemSize +: elemSize] = elemMem;
@@ -44,14 +44,14 @@ def push(
 def get(
     arr: Array, i: Size,
     elemSize : Size = arr'typeof'tagsof.elemType'sizeof
-) -> ref(arr) Ptr~[arr'typeof'tagsof.elemType] {
+) -> ref(arr) Ptr~[<< arr'typeof'tagsof.elemType] {
     return arr.mem.addr + i * elemSize;
 }
 
 def get(
     arr: Array, i: int,
     elemSize : Size = arr'typeof'tagsof.elemType'sizeof
-) -> ref(arr) Ptr~[arr'typeof'tagsof.elemType] {
+) -> ref(arr) Ptr~[<< arr'typeof'tagsof.elemType] {
     return arr.mem.addr + i * elemSize;
 }
 
@@ -69,7 +69,7 @@ def valid(iter: ArrayIter, arr: Array) = iter.idx < arr'len
 
 def next(iter: ArrayIter, arr: pseudo Array) = ArrayIter{iter.idx+1}
 
-def deref(iter: ArrayIter, arr: Array, elemSize : Size = arr'typeof'tagsof.elemType'sizeof) -> ref(arr) Ptr~[arr'typeof'tagsof.elemType] {
+def deref(iter: ArrayIter, arr: Array, elemSize : Size = arr'typeof'tagsof.elemType'sizeof) -> ref(arr) Ptr~[<< arr'typeof'tagsof.elemType] {
 #    return arr.mem'at(i * elemSize)'as(outin);
 }
 
@@ -92,7 +92,7 @@ def main~EntryPoint() -> int {
 
     res : int;
     for (i in :100) {
-        #res *= (points[i].x - points[i].y) * ints[i] - i;
+        res *= (points[i].x - points[i].y) * ints[i] - i;
         res *= (points[i].x - points[i].y);
     }
 

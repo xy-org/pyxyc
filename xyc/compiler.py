@@ -55,7 +55,7 @@ class ArrTypeObj(TypeObj):
         return self.base_type_obj.name + '[' + ']'
     
 tag_list_type_obj = TypeObj(builtin=True)
-any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("any"))
+any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE"))
 calltime_expr_obj = TypeObj(builtin=True)
     
 @dataclass
@@ -608,7 +608,9 @@ class CompilerContext:
                         raise CompilationError(f"No field {node.arg2.name}", node.arg2)
                     return base.type_desc.fields[node.arg2.name]
                 elif base.infered_type is tag_list_type_obj:
-                    return base.tags[node.arg2.name]
+                    if node.arg2.name in base.tags:
+                        return base.tags[node.arg2.name]
+                    raise CompilationError(f"Cannot find tag '{node.arg2.name}'", node.arg1)
                 else:
                     raise CompilationError("Cannot evaluate", node)
         elif isinstance(node, xy.AttachTags):
@@ -1864,6 +1866,7 @@ def is_ptr_type(type_obj, ctx):
 def ptr_type_to(type_obj, ctx):
     ptr_type = copy(ctx.ptr_obj)
     ptr_type.base_type_obj = ctx.ptr_obj
+    ptr_type.tags = {}
     ptr_type.tags["to"] = type_obj
     return ptr_type
 
@@ -2466,6 +2469,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             ))
 
     rtype_obj = func_obj.rtype_obj
+    cast_result = False
     if (func_obj.xy_node is not None and len(func_obj.xy_node.returns) > 0 and
         func_obj.has_calltime_tags
     ):
@@ -2474,11 +2478,12 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
         eval_stored_value = func_ctx.eval_calltime_exprs
         func_ctx.eval_calltime_exprs = True
-        rtype_obj.tags.update(func_ctx.eval_tags(
+        rtype_obj.tags = func_ctx.eval_tags(
             func_obj.xy_node.returns[0].type.tags,
             tag_specs=rtype_obj.base_type_obj.tag_specs,
-        ))
+        )
         func_ctx.eval_calltime_exprs = eval_stored_value
+        cast_result = True
 
     if (
         func_obj.xy_node is not None and
@@ -2535,9 +2540,12 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             cfunc.body.append(res)
 
         res = tmp_cid
-
-    # else if a call to a function that has no error handling
-    # no need to do anything the res already has the needed c fcall
+    else:
+        # else if a call to a function that has no error handling
+        # no need to do anything the res already has the needed c fcall
+        # only cast the result if needed
+        if cast_result:
+            res = c.Cast(what=res, to=rtype_obj.c_name)
 
     # finally eval out_guards
     for guard in out_guards:
@@ -2598,7 +2606,7 @@ def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
     )
 
 def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx):
-    if isinstance(arg_obj.compiled_obj, VarObj):
+    if isinstance(arg_obj.compiled_obj, VarObj) and arg_obj.compiled_obj.c_node is not None:
         # Pointers in xy don't have any constness attached to them so
         # any const variables must be made non-const 
         arg_obj.compiled_obj.c_node.qtype.is_const = False
