@@ -66,4 +66,7 @@ void stringInterpolation_createStrings(void) {
     stringInterpolation_append__StrBuilder__Ptr__Size(&tmp_fstr7, "pi=", 3);
     stringInterpolation_append__StrBuilder__float__int(&tmp_fstr7, pi, 2);
     const stringInterpolation_Str str8 = stringInterpolation_to(&tmp_fstr7);
+    stringInterpolation_StrBuilder tmp_fstr8 = stringInterpolation_fstr("Test{f};\n", 9);
+    stringInterpolation_append__StrBuilder__Ptr__Size(&tmp_fstr8, "Test{f};\n", 9);
+    const stringInterpolation_Str str9 = stringInterpolation_to(&tmp_fstr8);
 }

@@ -2131,6 +2131,8 @@ def tag_get(expr, obj, tag_label, ctx):
     return tag_obj
 
 def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
+    if expr.name is None:
+        raise CompilationError("Anonymous struct literals are not supported", expr)
     type_obj = ctx.eval(expr.name, msg="Cannot find type")
     tmp_obj = None
     if not isinstance(type_obj, TypeObj):
@@ -2344,7 +2346,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             )
     
     if not interpolation:
-        str_const = expr.parts[0].value if len(expr.parts) else ""
+        str_const = remove_xy_escapes(expr.parts[0].value if len(expr.parts) else "")
         c_func = c.FuncCall(func_desc.c_name, args=[
             c.Const(f'"{str_const}"'),
             c.Const(cstr_len(str_const)),
@@ -2362,12 +2364,13 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             c_node=c.Id(builder_tmpvar.c_node.name),
             infered_type=func_desc.rtype_obj
         )
+        full_str = remove_xy_escapes(expr.full_str)
         builder_tmpvar.c_node.value = do_compile_fcall(
             expr=expr,
             func_obj=func_desc,
             arg_exprs=ArgList([
-                ConstObj(c_node=c.Const(f'"{expr.full_str}"'), value=""),
-                ConstObj(c_node=c.Const(cstr_len(expr.full_str)), value=0)
+                ConstObj(c_node=c.Const(f'"{full_str}"'), value=""),
+                ConstObj(c_node=c.Const(cstr_len(full_str)), value=0)
             ]),
             cast=cast,
             cfunc=cfunc,
@@ -2375,12 +2378,13 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
         ).c_node
         for part in expr.parts:
             if is_str_const(part):
+                part_value = remove_xy_escapes(part.value)
                 append_call = find_and_call(
                     "append",
                     ArgList([
                         builder_tmpvar_id,
-                        ExprObj(c_node=c.Const('"' + part.value + '"'), infered_type=ctx.ptr_obj),
-                        ExprObj(c_node=c.Const(cstr_len(part.value)), infered_type=ctx.size_obj),
+                        ExprObj(c_node=c.Const('"' + part_value + '"'), infered_type=ctx.ptr_obj),
+                        ExprObj(c_node=c.Const(cstr_len(part_value)), infered_type=ctx.size_obj),
                     ]),
                     cast,
                     cfunc,
@@ -2456,6 +2460,9 @@ def cstr_len(s: str) -> int:
         else:
             i += 1
     return res
+
+def remove_xy_escapes(s: str) -> str:
+    return s.replace("\{", "{")
 
 def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
     arg_infered_types = ArgList(

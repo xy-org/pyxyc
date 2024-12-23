@@ -55,4 +55,5 @@ def createStrings() {
     str6 := f"{pi, 2}";
     str7 := f"{pi, precision=2}";
     str8 := f"{=pi, precision=2}";
+    str9 := f"Test\{f};\n";
 }
