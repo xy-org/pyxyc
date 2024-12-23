@@ -3,7 +3,8 @@ import pytest
 import xyc.xyc as xyc
 
 @pytest.mark.parametrize("testname, output", [
-    ("helloworldSelfContained", "Hello World\n")
+    ("helloworldSelfContained", "Hello World\n"),
+    ("helloworldSelfContained2", "Hello World\n"),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir):
     test_base = resource_dir / "end_to_end" / testname

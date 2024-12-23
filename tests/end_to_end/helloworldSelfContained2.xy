@@ -1,0 +1,49 @@
+import posix~[CLib{headers=["unistd.h", "errno.h"]}] in c
+
+;; Struct representing a file handle.
+struct File {
+    fd: int = -1;
+}
+
+struct Str {
+    addr: Ptr;
+    len: Size;
+}
+
+def str~[StrCtor{prefix="", interpolation=False}] (
+    addr: Ptr, size: Size
+) -> Str {
+    return Str{addr, size};
+}
+
+struct ErrnoError {
+    code: int;
+}
+
+def to(err: ErrnoError, :bool) -> bool {
+	return err.code!= 0;
+}
+
+;; Writes `msg` to `f`
+def write(f: File, msg: Str) -> void || ErrnoError {
+    total : var = 0;
+    while (total < msg.len) {
+        written : Size = c.write(
+            f.fd, msg.addr + total, msg.len - total
+        );
+        if (written < 0) {
+            error ErrnoError{c.errno};
+        }
+        total += written;
+    }
+}
+
+def print(msg: Str) -> void {
+    stdout := File{1};
+    stdout'write(msg);
+}
+
+def main~EntryPoint() -> int {
+    print("Hello World\n");
+    return 0;
+}
