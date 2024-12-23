@@ -2545,9 +2545,13 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     if fspace is None:
         call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types, expr.inject_args)
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
+    
+    if isinstance(fspace, ExtSymbolObj):
+            fspace = ExtSpace(fspace.symbol)
 
     if isinstance(fspace, RefObj):
         fspace = ref_get(fspace, cast, cfunc, ctx)
+
     if not isinstance(fspace, ExtSpace):
         for arg in arg_exprs.args:
             assert_has_type(arg)
@@ -2560,7 +2564,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
                 compile_func_prototype(fobj, cast, ctx)
 
         func_obj = fspace.find(expr, arg_infered_types, ctx, partial_matches=expr.inject_args)
-    elif not isinstance(fspace, ExtSymbolObj):
+    else:
         if isinstance(fspace, VarObj):
             if not isinstance(fspace.type_desc, FuncTypeObj):
                 raise CompilationError("Not a callback", expr)
