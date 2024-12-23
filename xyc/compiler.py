@@ -88,6 +88,26 @@ class ImportObj(CompiledObj):
 class ExprObj(CompiledObj):
     infered_type: CompiledObj | str = "Cannot deduce type"
 
+@dataclass
+class ArgList:
+    args: list[ExprObj] = field(default_factory=list)
+    kwargs: dict[str, ExprObj] = field(default_factory=dict)
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self.args[key]
+        else:
+            return self.kwargs[key]
+        
+    def __setitem__(self, key, value):
+        if isinstance(key, int):
+            self.args[key] = value
+        else:
+            self.kwargs[key] = value
+        
+    def __len__(self):
+        return len(self.args) + len(self.kwargs)
+
 class IdTable(dict):
     def merge(self, other: 'IdTable'):
         for key, value in other.items():
@@ -191,19 +211,40 @@ class ExtSpace(FuncSpace):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
 
-def cmp_call_def(fcall_args_types, fobj: FuncObj, ctx):
-    # TODO what about kwargs
+def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
     if len(fcall_args_types) > len(fobj.param_objs):
         return False
-    for type_obj, param_obj in zip(fcall_args_types, fobj.param_objs):
+    satisfied_params = set()
+
+    # go through positional
+    for type_obj, param_obj in zip(fcall_args_types.args, fobj.param_objs):
         # XXX
         if isinstance(type_obj, ArrTypeObj):
             continue
         if type_obj is not param_obj.type_desc:
             return False
-    for p in fobj.xy_node.params[len(fcall_args_types):]:
-        if p.value is None:
+        if param_obj.xy_node is not None and param_obj.xy_node.name is not None:
+            satisfied_params.add(param_obj.xy_node.name)
+
+    # go through named
+    pobjs_dict = {pobj.xy_node.name: pobj for pobj in fobj.param_objs if pobj.xy_node is not None and pobj.xy_node.name is not None}
+    for pname, type_obj in fcall_args_types.kwargs.items():
+        param_obj = pobjs_dict.get(pname, None)
+        if param_obj is None:
             return False
+        # XXX
+        if isinstance(type_obj, ArrTypeObj):
+            continue
+        if type_obj is not param_obj.type_desc:
+            return False
+        if pname in satisfied_params:
+            return False
+        satisfied_params.add(pname)
+
+    for p in fobj.xy_node.params[len(fcall_args_types):]:
+        if p.name not in satisfied_params and p.value is None:
+            return False
+
     return True
 
 def func_sig(fdef):
@@ -1101,10 +1142,10 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
         builder_tmpvar.c_node.value = do_compile_fcall(
             expr=expr,
             func_obj=func_desc,
-            arg_exprs=[
+            arg_exprs=ArgList([
                 ConstObj(c_node=c.Const(f'"{expr.full_str}"'), value=""),
                 ConstObj(c_node=c.Const(cstr_len(expr.full_str)), value=0)
-            ],
+            ]),
             cast=cast,
             cfunc=cfunc,
             ctx=ctx
@@ -1113,11 +1154,11 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             if is_str_const(part):
                 append_call = find_and_call(
                     "append",
-                    [
+                    ArgList([
                         builder_tmpvar_id,
                         ExprObj(c_node=c.Const('"' + part.value + '"'), infered_type=ctx.ptr_obj),
                         ExprObj(c_node=c.Const(cstr_len(part.value)), infered_type=ctx.size_obj),
-                    ],
+                    ]),
                     cast,
                     cfunc,
                     ctx,
@@ -1128,7 +1169,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                 part_expr_obj = compile_expr(part, cast, cfunc, ctx)
                 append_call = find_and_call(
                     "append",
-                    [builder_tmpvar_id, part_expr_obj],
+                    ArgList([builder_tmpvar_id, part_expr_obj]),
                     cast,
                     cfunc,
                     ctx,
@@ -1140,13 +1181,13 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
         if to_obj is not None:
             return find_and_call(
                 "to",
-                [
+                ArgList([
                     builder_tmpvar_id,
                     ExprObj(
                         c_node=c.Id(to_obj.c_node.name),
                         infered_type=to_obj
                     )
-                ],
+                ]),
                 cast,
                 cfunc,
                 ctx,
@@ -1179,9 +1220,7 @@ def cstr_len(s: str) -> int:
     return res
 
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
-    fspace = ctx.eval_to_fspace(expr.name)
-
-    arg_exprs = []
+    arg_exprs = ArgList()
     expr_to_move_idx = None
     for i in range(len(expr.args)):
         obj = compile_expr(expr.args[i], cast, cfunc, ctx)
@@ -1191,11 +1230,22 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
                 arg_exprs[expr_to_move_idx] = tmp_obj
             expr_to_move_idx = i
 
-        arg_exprs.append(obj)
-    arg_infered_types = [
-        arg_expr.infered_type for arg_expr in arg_exprs
-    ]
+        arg_exprs.args.append(obj)
+    if len(expr.kwargs) > 0 and expr_to_move_idx is not None:
+        arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
+            arg_exprs[expr_to_move_idx], cast, cfunc, ctx
+        )
+        expr_to_move_idx = None
+    for pname, pexpr in expr.kwargs.items():
+        obj = compile_expr_for_arg(pexpr, cast, cfunc, ctx)
+        arg_exprs.kwargs[pname] = obj
 
+    arg_infered_types = ArgList(
+        args=[arg.infered_type for arg in arg_exprs.args],
+        kwargs={key: arg.infered_type for key, arg in arg_exprs.kwargs.items()}
+    )
+
+    fspace = ctx.eval_to_fspace(expr.name)
     func_obj = fspace.find(expr, arg_infered_types, ctx)
 
     if expr_to_move_idx is not None and func_obj.move_args_to_temps:
@@ -1246,7 +1296,7 @@ def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
         msg=f"Cannot find function {name}",
     ).find(
         xy.FuncCall(xy.Id(name), src=xy_node.src, coords=xy_node.coords),
-        [obj.infered_type for obj in arg_objs],
+        ArgList([obj.infered_type for obj in arg_objs]),
         ctx
     )
     return do_compile_fcall(
@@ -1256,7 +1306,7 @@ def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
         cast=cast, cfunc=cfunc, ctx=ctx
     )
 
-def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, ctx):
+def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if func_obj.builtin and func_obj.xy_node.name == "select":
         # TODO what if args is more numerous
         assert len(arg_exprs) == 2
@@ -1316,7 +1366,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, 
     res = c.FuncCall(name=func_obj.c_name)
     if func_obj.xy_node is not None:
         ctx.push_ns()
-        for pobj, arg in zip(func_obj.param_objs, arg_exprs):
+        for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
             ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_pseudo:
                 continue
@@ -1324,9 +1374,13 @@ def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, 
                 res.args.append(c_getref(arg.c_node))
             else:
                 res.args.append(arg.c_node)
-        for pobj in func_obj.param_objs[len(arg_exprs):]:
-            default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, ctx)
-            res.args.append(default_obj.c_node)
+
+        for pobj in func_obj.param_objs[len(arg_exprs.args):]:
+            if pobj.xy_node.name not in arg_exprs.kwargs:
+                default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, ctx)
+                res.args.append(default_obj.c_node)
+            else:
+                res.args.append(arg_exprs.kwargs[pobj.xy_node.name].c_node)
         ctx.pop_ns()
     else:
         # external c function
@@ -1357,7 +1411,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, 
                 f"function to convert {func_obj.etype_obj.xy_node.name} to bool"
             ).find(
                 xy.FuncCall(xy.Id("to"), args=[xy.Id(""), xy.Id("")]),
-                [func_obj.etype_obj, ctx.get_compiled_type(xy.Id("bool"))],
+                ArgList([func_obj.etype_obj, ctx.get_compiled_type(xy.Id("bool"))]),
                 ctx
             )
             if check_error_fobj is None:

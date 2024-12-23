@@ -1,0 +1,18 @@
+def func(a: int, b := 1, c := 2) = a + b + c
+
+def func(a: int, b: int, c: int, d:int) = a*b*c*d
+
+def func(k := 1.0, m := 1.0) = k*m
+
+def testNamedArgs() {
+    a := func(0);
+    b := func(a, b=10);
+    c := func(b, c=10);
+    d := func(b, c=c, b=10);
+    e := func(a, b, c);
+    f := func(a=a, b=b, c=c);
+    g := func(c=c, b=b, a=a);
+    h := func(f, c=c, b=b);
+    i := func(1, 2, 3, 4);
+    j := func(k=5.0);
+}
