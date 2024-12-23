@@ -52,7 +52,7 @@ from xyc.compiler import CompilationError
     "arrayComprehension",
     "fieldsof",
     "injectScopeArgs",
-    "callbacks",
+    "callbacks1",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(
