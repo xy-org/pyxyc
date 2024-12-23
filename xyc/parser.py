@@ -225,6 +225,48 @@ def parse_def(itoken: TokenIter):
 
     return node
 
+def parse_func_select(itoken: TokenIter):
+    node = FuncSelect(
+        name=None,
+        src=itoken.src, coords=itoken.peak_coords()
+    )
+    assert itoken.check("def")
+
+    if itoken.check("*"):
+        node.multiple = True
+
+    if itoken.peak() not in {"(", "~"}:
+        name_coords = itoken.peak_coords()
+        name = itoken.consume()
+        node.name = Id(name, src=itoken.src, coords=name_coords)
+
+    if itoken.check("~"):
+        node.tags = parse_tags(itoken)
+    node.type.params = parse_params(itoken)
+
+    args = []
+    if itoken.check("->"):
+        if itoken.check("("):
+            args = parse_expr_list(itoken)
+            itoken.expect(")")
+        else:
+            args = [parse_toplevel_type_expr(itoken)]
+
+        if itoken.check("||"):
+            node.type.etype = parse_toplevel_type_expr(itoken)
+
+    for expr in args:
+        expr = expr_to_type(expr)
+        if isinstance(expr, VarDecl):
+            expr.varying = True
+            node.type.returns.append(expr)
+        else:
+            node.type.returns.append(
+                VarDecl(type=expr, src=expr.src, coords=expr.coords)
+            )
+
+    return node
+
 def parse_block(itoken):
     block = Block(src=itoken.src)
 
@@ -358,27 +400,61 @@ def parse_expression(
         raise ParsingError("... is not allowed in expressions", itoken)
 
     if precedence >= MAX_PRECEDENCE and itoken.check("("):
-        # bracketed expression
-        arg1 = parse_expression(itoken, is_toplevel=False)
+        # bracketed expression or func type
+        bracketed_exprs = parse_expr_list(itoken, is_toplevel=False)
         itoken.expect(")", msg="Missing closing bracket")
+        if itoken.peak() != "->":
+            # bracketed expression
+            if len(bracketed_exprs) > 1:
+                raise ParsingError("',' is used only to separate arguments or params not as operator", itoken)
+            arg1 = bracketed_exprs[0]
+        else:
+            # Func type
+            itoken.consume()
+            params = [
+                expr_to_param(expr, itoken)
+                for expr in bracketed_exprs
+            ]
+            arg1 = FuncType(params=params)
+            ret_args = []
+            if itoken.check("("):
+                ret_args = parse_expr_list(itoken)
+                itoken.expect(")")
+            else:
+                ret_args = [parse_toplevel_type_expr(itoken)]
+
+            if itoken.check("||"):
+                arg1.etype = parse_toplevel_type_expr(itoken)
+
+            for expr in ret_args:
+                expr = expr_to_type(expr)
+                if isinstance(expr, VarDecl):
+                    expr.varying = True
+                    arg1.returns.append(expr)
+                else:
+                    arg1.returns.append(
+                        VarDecl(type=expr, src=expr.src, coords=expr.coords)
+                    )
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "[":
         # Array literal or comprehension
         coords = itoken.peak_coords()
         itoken.consume() # [
         itoken.skip_empty_lines()
         maybe_list_comp = itoken.peak() == "for"
-        args = parse_expr_list(itoken)
+        ret_args = parse_expr_list(itoken)
         itoken.expect("]", msg="Missing closing bracket")
-        if maybe_list_comp and len(args) == 1 and isinstance(args[0], ForExpr):
-            arg1 = ListComprehension(loop=args[0], src=itoken.src, coords=coords)
+        if maybe_list_comp and len(ret_args) == 1 and isinstance(ret_args[0], ForExpr):
+            arg1 = ListComprehension(loop=ret_args[0], src=itoken.src, coords=coords)
         else:
-            arg1 = ArrayLit(args, src=itoken.src, coords=coords)
+            arg1 = ArrayLit(ret_args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "{":
         # announomous struct literal
         itoken.consume()
         arg1 = parse_struct_literal(itoken, None)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "ref":
         arg1 = parse_var_decl(itoken, Empty(), MIN_PRECEDENCE, op_prec)
+    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "def":
+        arg1 = parse_func_select(itoken)
     elif precedence >= MAX_PRECEDENCE:
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
@@ -443,9 +519,9 @@ def parse_expression(
     while op in op_prec and op_prec[op] == precedence:
         itoken.consume()  # operator
         if op == "(":
-            args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
             itoken.expect(")")
-            fcall = FuncCall(arg1, args, src=itoken.src, coords=arg1.coords)
+            fcall = FuncCall(arg1, ret_args, src=itoken.src, coords=arg1.coords)
             fcall.kwargs = kwargs
             fcall.inject_args = inject_args
             arg1 = fcall
@@ -456,8 +532,8 @@ def parse_expression(
                 Id(fname, src=itoken.src, coords=f_coords),
                 [arg1], src=itoken.src, coords=f_coords)
             if itoken.check("("):
-                args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
-                fcall.args.extend(args)
+                ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+                fcall.args.extend(ret_args)
                 fcall.kwargs = kwargs
                 fcall.inject_args = inject_args
                 itoken.expect(")")
@@ -516,17 +592,17 @@ def parse_expression(
         elif op == "[":
             itoken.skip_empty_lines()
             maybe_list_comp = itoken.peak() == "for"
-            args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
+            ret_args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
             itoken.expect("]")
-            if len(args) == 1 and len(kwargs) == 0 and isinstance(args[0], ForExpr):
+            if len(ret_args) == 1 and len(kwargs) == 0 and isinstance(ret_args[0], ForExpr):
                 # list comprehension with an explicit type
                 arg1 = ListComprehension(
                     list_type=arg1,
-                    loop=args[0], src=itoken.src, coords=op_coords
+                    loop=ret_args[0], src=itoken.src, coords=op_coords
                 )
             else:
                 arg1 = Select(
-                    arg1, Args(args, kwargs), src=itoken.src, coords=op_coords
+                    arg1, Args(ret_args, kwargs), src=itoken.src, coords=op_coords
                 )
         elif op == "~":
             if isinstance(arg1, AttachTags):
@@ -538,10 +614,10 @@ def parse_expression(
                     src=itoken.src, coords=op_coords
                 )
             elif itoken.check("["):
-                args, kwargs = parse_args_kwargs(itoken, is_taglist=True)
+                ret_args, kwargs = parse_args_kwargs(itoken, is_taglist=True)
                 itoken.expect("]")
                 attach_tags = AttachTags(
-                    arg1, TagList(args, kwargs), src=itoken.src, coords=op_coords
+                    arg1, TagList(ret_args, kwargs), src=itoken.src, coords=op_coords
                 )
                 arg1 = attach_tags
             else:
@@ -735,6 +811,18 @@ def expr_to_type(expr):
     if isinstance(expr, Select):
         return ArrayType(expr.base, expr.args.args, src=expr.src, coords=expr.coords)
     return expr
+
+def expr_to_param(expr, itoken):
+    if isinstance(expr, VarDecl):
+        return expr
+    if (isinstance(expr, SliceExpr) and expr.step is None and expr.end is not None):
+        decl = VarDecl(src=expr.src, coords=expr.coords, is_param=True, is_in=True)
+        if expr.start is not None:
+            decl.name = expr.start.name
+        decl.type = expr_to_type(expr.end)
+        return decl
+    else:
+        raise ParsingError("Invalid parameter", itoken)
 
 def parse_struct_literal(itoken, struct_expr):
     start_coords = itoken.peak_coords()

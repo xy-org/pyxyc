@@ -1126,6 +1126,139 @@ def test_expressions(code, exp_ast):
     assert act_ast == exp_ast
 
 
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def test() -> void {
+            cb1: (:int)->int;
+            cb2: (a:int, b:int)->void||Error;
+            cb3: (:inout int)->void;
+            cb4: Ptr~[()->Str||Error];
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("test"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("cb1", varying=True, type=ast.FuncType(
+                    params=[
+                        ast.VarDecl(type=ast.Id("int"), is_in=True, is_param=True),
+                    ],
+                    returns=[
+                        ast.VarDecl(type=ast.Id("int")),
+                    ]
+                )),
+                ast.VarDecl("cb2", varying=True, type=ast.FuncType(
+                    params=[
+                        ast.VarDecl(name="a", type=ast.Id("int"), is_in=True, is_param=True),
+                        ast.VarDecl(name="b", type=ast.Id("int"), is_in=True, is_param=True),
+                    ],
+                    returns=[
+                        ast.VarDecl(type=ast.Id("void")),
+                    ],
+                    etype=ast.Id("Error"),
+                )),
+                ast.VarDecl("cb3", varying=True, type=ast.FuncType(
+                    params=[
+                        ast.VarDecl(type=ast.Id("int"), is_inout=True),
+                    ],
+                    returns=[
+                        ast.VarDecl(type=ast.Id("void")),
+                    ],
+                )),
+                ast.VarDecl("cb4", varying=True, type=ast.AttachTags(
+                    arg=ast.Id("Ptr"),
+                    tags=ast.TagList(args=[
+                        ast.FuncType(
+                            params=[
+                            ],
+                            returns=[
+                                ast.VarDecl(type=ast.Id("Str")),
+                            ],
+                            etype=ast.Id("Error")
+                        ),
+                    ])
+                )),
+            ]),
+        ]
+    ],
+    [
+        """def test() -> void {
+            cb1 := def(:int, :int)->int;
+            cb2 := def name(:int, :inout long)->Str||Error;
+            cb3 := def* ~Test()->void||Error;
+            cb4 := def name~Tag();
+            sum := (def add(:int, :int))(1, 2);
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("test"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("cb1", value=ast.FuncSelect(
+                    name=None,
+                    type=ast.FuncType(
+                        params=[
+                            ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
+                            ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
+                        ],
+                        returns=[ast.VarDecl(type=ast.Id("int"))],
+                    )
+                )),
+                ast.VarDecl("cb2", value=ast.FuncSelect(
+                    name=ast.Id("name"),
+                    type=ast.FuncType(
+                        params=[
+                            ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
+                            ast.VarDecl(type=ast.Id("long"), is_param=True, is_inout=True, is_pseudo=True),
+                        ],
+                        returns=[ast.VarDecl(type=ast.Id("Str"))],
+                        etype=ast.Id("Error"),
+                    )
+                )),
+                ast.VarDecl("cb3", value=ast.FuncSelect(
+                    name=None,
+                    tags=ast.TagList(
+                        args=[
+                            ast.Id("Test"),
+                        ],
+                    ),
+                    type=ast.FuncType(
+                        params=[],
+                        returns=[ast.VarDecl(type=ast.Id("void"))],
+                        etype=ast.Id("Error"),
+                    ),
+                    multiple=True,
+                )),
+                ast.VarDecl("cb4", value=ast.FuncSelect(
+                    name=ast.Id("name"),
+                    tags=ast.TagList(
+                        args=[
+                            ast.Id("Tag"),
+                        ],
+                    ),
+                    type=ast.FuncType(
+                        params=[],
+                        returns=[],
+                    ),
+                )),
+                ast.VarDecl("sum", value=ast.FuncCall(
+                    name=ast.FuncSelect(
+                        name=ast.Id("add"),
+                        type=ast.FuncType(
+                            params=[
+                                ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
+                                ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
+                            ],
+                            returns=[],
+                        ),
+                    ),
+                    args=[ast.Const(1), ast.Const(2)]
+                )),
+            ]),
+        ]
+    ],
+])
+def test_parse_callbacks(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
 @pytest.mark.parametrize("code, err_msg", [
     ("""def func() -> void {
         ++a;

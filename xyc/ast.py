@@ -39,6 +39,18 @@ class Comment(Node):
         self.comment = comment
 
 @dataclass
+class FuncType:
+    params: list['VarDecl'] = field(default_factory=list)
+    returns: list['VarDecl'] = field(default_factory=list)
+    etype: Node | None = None
+
+@dataclass
+class FuncSelect(Node):
+    name: Node
+    type: 'FuncType' = field(default_factory=FuncType)
+    multiple: bool = False
+
+@dataclass
 class FuncDef(Node):
     name: Node
     params: list['VarDecl'] = field(default_factory=list)
