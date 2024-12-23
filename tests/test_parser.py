@@ -271,6 +271,13 @@ def test_parse_var_decl(code, exp_ast):
     [
         """def main() -> void {
             a := 0 + 1 * 2 + 3;
+            b := (0 + 1) * (2 + 3);
+            c := (0 + 1) * 2 + 3;
+            d := 0 * 1 + 2 * 3;
+            e := (a + b - a + b);
+            f := a'func1 \\func2 b'func2;
+            g := (a + b)'func1'func2 \\func3 c'func4;
+            func(a, b'func, d \\add c);
         }
         """,
         [
@@ -288,6 +295,76 @@ def test_parse_var_decl(code, exp_ast):
                     arg2 = ast.Const(3),
                     op = "+"
                 )),
+                ast.VarDecl("b", type=None, value=ast.BinExpr(
+                    arg1 = ast.BinExpr(
+                        arg1=ast.Const(0),
+                        arg2=ast.Const(1),
+                        op = "+"
+                    ),
+                    arg2 = ast.BinExpr(
+                        arg1=ast.Const(2),
+                        arg2=ast.Const(3),
+                        op = "+"
+                    ),
+                    op = "*"
+                )),
+                ast.VarDecl("c", type=None, value=ast.BinExpr(
+                    arg1 = ast.BinExpr(
+                        arg1=ast.BinExpr(
+                            ast.Const(0),
+                            ast.Const(1),
+                            "+"
+                        ),
+                        arg2=ast.Const(2),
+                        op = "*"
+                    ),
+                    arg2 = ast.Const(3),
+                    op = "+"
+                )),
+                ast.VarDecl("d", type=None, value=ast.BinExpr(
+                    arg1 = ast.BinExpr(
+                        ast.Const(0),
+                        ast.Const(1),
+                        "*"
+                    ),
+                    arg2 = ast.BinExpr(
+                        ast.Const(2),
+                        ast.Const(3),
+                        "*"
+                    ),
+                    op = "+"
+                )),
+                ast.VarDecl("e", type=None, value=ast.BinExpr(
+                    ast.BinExpr(
+                        ast.BinExpr(
+                            ast.Id("a"), ast.Id("b"), "+"
+                        ),
+                        ast.Id("a"), "-"
+                    ),
+                    ast.Id("b"),
+                    op = "+"
+                )),
+                ast.VarDecl("f", type=None, value=ast.FuncCall(
+                    "func2",
+                    [
+                        ast.FuncCall("func1", [ast.Id("a")]),
+                        ast.FuncCall("func2", [ast.Id("b")]),
+                    ]
+                )),
+                ast.VarDecl("g", type=None, value=ast.FuncCall(
+                    "func3",
+                    [
+                        ast.FuncCall("func2", [ast.FuncCall("func1", [
+                            ast.BinExpr(ast.Id("a"), ast.Id("b"), "+")
+                        ])]),
+                        ast.FuncCall("func4", [ast.Id("c")])
+                    ]
+                )),
+                ast.FuncCall("func", [
+                    ast.Id("a"),
+                    ast.FuncCall("func", [ast.Id("b")]),
+                    ast.FuncCall("add", [ast.Id("d"), ast.Id("c")]),
+                ])
             ]),
         ]
     ],

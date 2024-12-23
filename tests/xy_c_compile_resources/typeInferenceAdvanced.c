@@ -2,14 +2,12 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-
 typedef struct typeInferenceAdvanced_Pair typeInferenceAdvanced_Pair;
 
 struct typeInferenceAdvanced_Pair {
     int32_t a;
     int32_t b;
 };
-
 
 int32_t typeInferenceAdvanced_rng(void) {
     return 0;

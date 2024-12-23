@@ -218,8 +218,8 @@ def parse_type(itoken):
 
 operator_precedence = {
     "~": 11,
-    "++" : 10, "--": 10, ".": 10, "(": 10, "[": 10, "{": 10, "'": 10, "\\": 10,
-    "^": 9,
+    "++" : 10, "--": 10, ".": 10, "(": 10, "[": 10, "{": 10, "'": 10,
+    "^": 9, "\\": 9,
     "*": 8, "/": 8,
     "+": 7, "-": 7,
     "<": 6, "<=": 6, ">=": 6, ">": 6,
@@ -232,8 +232,11 @@ MIN_PRECEDENCE=2
 MAX_PRECEDENCE=11
 
 def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
-    # if precedence >= MAX_PRECEDENCE and itoken.peak() == "(":
-    if precedence >= MAX_PRECEDENCE:
+    if precedence >= MAX_PRECEDENCE and itoken.check("("):
+        # bracketed expression
+        arg1 = parse_expression(itoken)
+        itoken.expect(")")
+    elif precedence >= MAX_PRECEDENCE:
         if itoken.peak() != '-' and itoken.peak() in operator_precedence.keys():
             return None  # Reach a delimiter
         tk_coords = itoken.peak_coords()

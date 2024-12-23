@@ -10,6 +10,12 @@ class TypeDesc:
     c_name : str | None = None
     builtin : bool = False
 
+@dataclass
+class FuncDesc:
+    xy_func: any = None
+    c_func: any = None
+    c_name : str | None = None
+
 class IdTable(dict):
     pass
 
@@ -52,11 +58,15 @@ def compile_header(ctx, ast, cast):
 
     for node in ast:
         if isinstance(node, xy.FuncDef):
-            compile_func(node, ctx, ast, cast)
-        elif isinstance(node, xy.Comment):
-            pass
-        elif not isinstance(node, xy.StructDef):
-            raise CompilationError("NYI", node)
+            name = mangle(node.name, ctx)
+            rtype = get_c_type(node.rtype, ctx)
+            cfunc = c.Func(name=name, rtype=rtype)
+            for param in node.params:
+                cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
+                cfunc.params.append(cparam)
+            cast.func_decls.append(cfunc)
+            ctx.id_table[node.name] = FuncDesc(node, cfunc, name)
+
     return cast
 
 def import_builtins(ctx, cast):
@@ -65,29 +75,46 @@ def import_builtins(ctx, cast):
     cast.includes.append(c.Include("stddef.h"))
     cast.includes.append(c.Include("stdbool.h"))
 
-    ctx.id_table["int"] = TypeDesc(c_name = "int32_t", builtin=True)
-    ctx.id_table["uint"] = TypeDesc(c_name = "uint32_t", builtin=True)
-    ctx.id_table["long"] = TypeDesc(c_name = "int64_t", builtin=True)
-    ctx.id_table["ulong"] = TypeDesc(c_name = "uint64_t", builtin=True)
-    ctx.id_table["float"] = TypeDesc(c_name = "float", builtin=True)
-    ctx.id_table["double"] = TypeDesc(c_name = "double", builtin=True)
-    ctx.id_table["void"] = TypeDesc(c_name = "void", builtin=True)
-    ctx.id_table["Size"] = TypeDesc(c_name = "size_t", builtin=True)
-    ctx.id_table["Ptr"] = TypeDesc(c_name="void*", builtin=True)
-    ctx.id_table["bool"] = TypeDesc(c_name="bool", builtin=True)
+    num_types = {
+        "int": "int32_t", "uint": "uint32_t",
+        "long": "int64_t", "ulong": "uint64_t",
+        "Size": "size_t",
+        "float": "float", "double": "double",
+    }
+    misc_types = {
+        "Ptr": "void*", "bool": "bool",
+        "void": "void",
+    }
+    builtin_types = {**num_types, **misc_types}
+
+    for xtype, ctype in builtin_types.items():
+        ctx.id_table[xtype] = TypeDesc(c_name = ctype, builtin=True)
+
+
+    for xtype in ["int"]:
+        func = xy.FuncDef(
+            "add",
+            params=[
+                xy.Param("x", xy.Type(xtype)),
+                xy.Param("y", xy.Type(xtype))
+            ],
+            rtype=xy.Type(xtype)
+        )
+        _desc = register_func(func, ctx)
 
 def compile_funcs(ctx, ast, cast):
-    pass
+    for node in ast:
+        if isinstance(node, xy.FuncDef):
+            compile_func(node, ctx, ast, cast)
+        elif isinstance(node, xy.Comment):
+            pass
+        elif not isinstance(node, xy.StructDef):
+            raise CompilationError("NYI", node)
 
 def compile_func(node, ctx, ast, cast):
-    name = mangle(node.name, ctx)
-    rtype = get_c_type(node.rtype, ctx)
-    cfunc = c.Func(name=name, rtype=rtype)
-    cast.funcs.append(cfunc)
-    for param in node.params:
-        cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
-        cfunc.params.append(cparam)
+    cfunc = ctx.id_table[node.name].c_func
     compile_body(node.body, cast, cfunc, ctx)
+    cast.funcs.append(cfunc)
 
 def compile_body(body, cast, cfunc, ctx):
     for node in body:
@@ -129,8 +156,8 @@ def compile_expr(expr, cast, cfunc, ctx):
     elif isinstance(expr, xy.FuncCall):
         c_name = mangle(expr.name, ctx)
         res = c.FuncCall(name=c_name)
-        for i in range(len(expr.args)-1, -1, -1):
-            res.args.append(compile_expr(expr.args[i], cast, cfunc))
+        for i in range(len(expr.args)):
+            res.args.append(compile_expr(expr.args[i], cast, cfunc, ctx))
         return res
     elif isinstance(expr, xy.StructLiteral):
         ctypename = get_c_type(expr.name, ctx)
@@ -191,5 +218,29 @@ def infer_type(expr, ctx):
         return ctx.id_table[expr.type]
     elif isinstance(expr, xy.StructLiteral):
         return ctx.id_table[expr.name.name]
+    elif isinstance(expr, xy.FuncCall):
+        fdesc = find_func(expr, ctx)
+        return ctx.id_table[fdesc.xy_func.rtype.name]
+    elif isinstance(expr, xy.BinExpr):
+        fcall = rewrite_op(expr, ctx)
+        return infer_type(fcall, ctx)
     else:
         raise CompilationError("Cannot infer type", expr)
+
+
+def register_func(fdef, ctx):
+    ctx.id_table[fdef.name] = FuncDesc(fdef)
+
+
+def find_func(fcall, ctx):
+    return ctx.id_table[fcall.name]
+
+def rewrite_op(binexpr, ctx):
+    fname = {
+        "+": "add",
+        "*": "mult",
+    }[binexpr.op]
+    fcall = xy.FuncCall(fname, args=[
+        binexpr.arg1, binexpr.arg2
+    ])
+    return fcall

@@ -1,0 +1,13 @@
+def func(a: int) -> int {
+    return 0;
+}
+
+def func(b: double) -> int {
+    return 1;
+}
+
+def main() -> int {
+    a := func(0);
+    b := func(0.0);
+    return 0;
+}

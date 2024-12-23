@@ -73,7 +73,9 @@ def stringify_expr(expr, frags):
         stringify_expr(expr.arg2, frags)
     elif isinstance(expr, FuncCall):
         frags.extend((expr.name, "("))
-        for arg in expr.args:
+        for i, arg in enumerate(expr.args):
+            if i != 0:
+                frags.append(", ")
             stringify_expr(arg, frags)
         frags.append(")")
     elif isinstance(expr, StructLiteral):

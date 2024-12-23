@@ -13,6 +13,7 @@ def resource_dir(request):
     "noop",
     "typeInferenceBasic",
     "typeInferenceAdvanced",
+    # "funcOverloadingSimple",
     # "stringCtor",
     # "cimport",  # TODO
     # "entry_point",  # TODO
