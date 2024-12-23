@@ -38,7 +38,8 @@ from xyc.compiler import CompilationError
     "guards",
     "refs",
     "refValue",
-    "dtors",
+    "dtors1",
+    "dtors2",
     "paramsVsArgs",
     # TODO "properties",
 ])

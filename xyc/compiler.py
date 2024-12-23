@@ -620,7 +620,8 @@ class CompilerContext:
                 base_type = obj
                 obj = copy(obj)
                 obj.base_type_obj = base_type
-                obj.tags = self.eval_tags(node.tags, obj.tag_specs)
+                obj.tags = copy(obj.tags)
+                obj.tags.update(self.eval_tags(node.tags, obj.tag_specs))
             else:
                 raise CompilationError("Cannot assign tags", node)
             return obj
