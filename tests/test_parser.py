@@ -218,7 +218,7 @@ def test_parse_comments(code, exp_ast):
     [
         """
         def main~EntryPoint(a: int, b: long) -> int || Error
-        >> a > b;
+        >> a > b
         {
             return a+b;
         }

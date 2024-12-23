@@ -254,7 +254,7 @@ def parse_block(itoken):
             block.out_guards.append(guard_expr)
         else:
             block.in_guards.append(guard_expr)
-        itoken.expect_semicolon()
+        # itoken.expect_semicolon()
         num_empty = itoken.skip_empty_lines()
 
     block.coords = itoken.peak_coords()

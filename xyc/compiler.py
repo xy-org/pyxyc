@@ -2225,14 +2225,14 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             infered_type=func_obj.rtype_obj
         )
 
-    default_val_ctx = ctx
+    func_ctx = ctx
     if func_obj.module_header is not None:
-        default_val_ctx = func_obj.module_header.ctx
+        func_ctx = func_obj.module_header.ctx
     res = c.FuncCall(name=func_obj.c_name)
     if func_obj.xy_node is not None:
-        default_val_ctx.push_ns()
+        func_ctx.push_ns()
         for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
-            default_val_ctx.ns[pobj.xy_node.name] = arg
+            func_ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:
@@ -2242,11 +2242,22 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
         for pobj in func_obj.param_objs[len(arg_exprs.args):]:
             if pobj.xy_node.name not in arg_exprs.kwargs:
-                default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, default_val_ctx)
+                default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, func_ctx)
                 res.args.append(default_obj.c_node)
             else:
                 res.args.append(arg_exprs.kwargs[pobj.xy_node.name].c_node)
-        default_val_ctx.pop_ns()
+
+        # compile input guards
+        if len(func_obj.xy_node.in_guards) > 0:
+            cast.includes.append(c.Include("stdlib.h"))
+        for guard in func_obj.xy_node.in_guards:
+            guard_obj = compile_expr(guard, cast, cfunc, func_ctx)
+            cfunc.body.append(c.If(
+                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
+                body=[c.FuncCall("abort")]
+            ))
+
+        func_ctx.pop_ns()
     else:
         # external c function
         for arg in arg_exprs:

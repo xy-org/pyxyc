@@ -5,7 +5,7 @@ struct Point {
     w: float = 1.0;
 }
 
-def index(p: Point, idx: byte) -> ref(p) idx'typeof = idx
+def index(p: Point, idx: byte) -> ref(p) byte = idx
 
 def get(p: Point, idx: byte) {
     return [p.x, p.y, p.z, p.w][idx];
@@ -33,15 +33,16 @@ def testPoint(i: ubyte) {
     return p1.x + p2.w + p2.z + p1.w;
 }
 
-struct  Mesh {
+struct  PointCloud {
     mem: Ptr;
+    len: Size;
 }
 
-def select(t: Triangle, i: ubyte) -> ref(t) ubyte = ubyte
+def select(pc: PointCloud, i: Size) -> ref(pc) Size = Size
 
-def get(t: inout Triangle, i: ubyte) -> ref(t) Ptr~Point = t.addrof + i * sizeof(Point)
+def get(pc: inout PointCloud, i: Size) -> ref(pc) Ptr~Point = pc.mem.addr + i * sizeof(Point)
 
-def set(t: inout Triangle, i: ubyte, p: Point) {
+def set(pc: inout PointCloud, i: Size, p: Point) {
     # not implemented for brievity
 }
 
