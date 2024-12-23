@@ -1795,6 +1795,117 @@ def test_refs_returning(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        def test() {
+            a := [b];
+            [a] = 10;
+            [[a]];
+            [b + [a]];
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                returns=[],
+                params=[],
+                body=[
+                    ast.VarDecl(
+                        "a",
+                        value=ast.Select(
+                            base=None,
+                            args=ast.Args(args=[
+                                ast.Id("b"),
+                            ])
+                        )
+                    ),
+                    ast.BinExpr(
+                        arg1=ast.Select(base=None, args=ast.Args([ast.Id("a")])),
+                        arg2=ast.Const(10),
+                        op='=',
+                    ),
+                    ast.Select(base=None, args=ast.Args([
+                        ast.Select(base=None, args=ast.Args([ast.Id("a")]))
+                    ])),
+                    ast.Select(base=None, args=ast.Args([
+                        ast.BinExpr(
+                            arg1=ast.Id("b"),
+                            arg2=ast.Select(base=None, args=ast.Args([ast.Id("a")])),
+                            op="+"
+                        )
+                    ]))
+                ],
+            ),
+        ]
+    ],
+    [
+        """
+        def test() {
+            [b, 5, [c]] = 10;
+            [b + [a]] = [[[d]] + c];
+            [callback]();
+            a[i][j];
+            [a][i][j];
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                returns=[],
+                params=[],
+                body=[
+                    ast.BinExpr(
+                        arg1=ast.Select(base=None, args=ast.Args([
+                            ast.Id("b"),
+                            ast.Const(5),
+                            ast.Select(base=None, args=ast.Args([ast.Id("c")]))
+                        ])),
+                        arg2=ast.Const(10),
+                        op='='
+                    ),
+                    ast.BinExpr(
+                        arg1=ast.Select(base=None, args=ast.Args([
+                            ast.BinExpr(
+                                arg1=ast.Id("b"),
+                                arg2=ast.Select(base=None, args=ast.Args([ast.Id("a")])),
+                                op="+"
+                            )
+                        ])),
+                        arg2=ast.Select(base=None, args=ast.Args([
+                            ast.BinExpr(
+                                arg1=ast.Select(base=None, args=ast.Args([
+                                    ast.Select(base=None, args=ast.Args([ast.Id("d")]))
+                                ])),
+                                arg2=ast.Id("c"),
+                                op="+",
+                            )
+                        ])),
+                        op='=',
+                    ),
+                    ast.FuncCall(
+                        name=ast.Select(base=None, args=ast.Args([ast.Id("callback")]))
+                    ),
+                    ast.Select(
+                        base=ast.Select(base=ast.Id('a'), args=ast.Args([ast.Id("i")])),
+                        args=ast.Args([ast.Id("j")])
+                    ),
+                    ast.Select(
+                        base=ast.Select(
+                            base=ast.Select(base=None, args=ast.Args([ast.Id("a")])),
+                            args=ast.Args([ast.Id("i")]),
+                        ),
+                        args=ast.Args([ast.Id("j")])
+                    )
+                ],
+            ),
+        ]
+    ],
+])
+def test_indexing_syntax(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
 
 code_ast = [
     ("def func~Tag1~Tag2~Tag3() -> void {}",

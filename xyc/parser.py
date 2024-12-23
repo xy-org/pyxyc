@@ -360,7 +360,7 @@ def parse_toplevel_type_expr(itoken):
 var_qualifiers = {"var", "in", "out", "inout", "outin", "pseudo", "ref"}
 
 operator_precedence = {
-    "^": 12,
+    "^": 12, "unary[": 12,
     "~": 11, "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11,
     "unary+": 10, "unary-": 10, "!": 10, "&": 10, '%': 10,
     "\\": 9,
@@ -451,18 +451,13 @@ def parse_expression(
         else:
             arg1 = ArrayLit(ret_args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "[":
-        raise ParsingError("[] array literals are not supported.", itoken)
-        # Array literal or comprehension
+        # Indexing without a base i.e. derefing
         coords = itoken.peak_coords()
         itoken.consume() # [
         itoken.skip_empty_lines()
-        maybe_list_comp = itoken.peak() == "for"
-        ret_args = parse_expr_list(itoken)
+        ret_args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
         itoken.expect("]", msg="Missing closing bracket")
-        if maybe_list_comp and len(ret_args) == 1 and isinstance(ret_args[0], ForExpr):
-            arg1 = ListComprehension(loop=ret_args[0], src=itoken.src, coords=coords)
-        else:
-            arg1 = ArrayLit(ret_args, src=itoken.src, coords=coords)
+        arg1 = Select(base=None, args=Args(ret_args, kwargs), src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "{":
         # announomous struct literal
         itoken.consume()
