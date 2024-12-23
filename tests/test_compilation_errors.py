@@ -47,11 +47,11 @@ src.xy:6:21: error: Cannot find function 'get(Array, int)'
                       ^
 note: Candidates are:
     in module xy.builtins
-        get(Ptr, int) -> Ptr
-        get(Ptr, Size) -> Ptr
-        get(?[], int) -> Ptr
-        get(?[], uint) -> Ptr
-        get(?[], Size) -> Ptr
+        *get(Ptr, int) -> Ptr
+        *get(Ptr, Size) -> Ptr
+        *get(?[], int) -> Ptr
+        *get(?[], uint) -> Ptr
+        *get(?[], Size) -> Ptr
 """),
     ("""
         def func1(x: int) = x*2;
@@ -312,6 +312,7 @@ def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
 
 @pytest.mark.parametrize("package, exp_err_msg", [
     ("moduleVis", r".*Cannot find function 'func\(\)'.*"),
+    ("packageVis/package2", r".*Cannot find function 'func\(\)'.*"),
 ])
 def test_compilation_errors_multi_src(package, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

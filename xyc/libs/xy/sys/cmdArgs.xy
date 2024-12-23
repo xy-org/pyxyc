@@ -9,11 +9,11 @@
 ;; domain. So I plopped them here.
 
 ;; Return number of command line arguments
-def argc() -> int {
+def *argc() -> int {
     # Implemented by the compiler
 }
 
 ;; Return raw pointers to the command line arguments
-def argv() -> Ptr~Ptr {
+def *argv() -> Ptr~Ptr {
     # Implemented by the compiler
 }

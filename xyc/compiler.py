@@ -275,7 +275,11 @@ class FuncSpace:
         )
     
     def report_no_matches(self, candidate_fobjs, node, args_infered_types, ctx):
-        fsig = fcall_sig(node.name.name, args_infered_types, node.inject_args)
+        if hasattr(node.name, 'name'):
+            fname = node.name.name
+        else:
+            fname = node.name.src.code[node.name.coords[0]:node.name.coords[1]]
+        fsig = fcall_sig(fname, args_infered_types, node.inject_args)
         err_msg = f"Cannot find function '{fsig}'"
 
         candidates = ''
@@ -383,10 +387,14 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx)
 
     return True
 
-def is_func_visible(fobj, ctx):
-    if fobj.visibility == xy.ModuleVisibility:
+def is_func_visible(fobj, ctx: 'CompilerContext'):
+    if fobj.visibility in xy.ModuleVisibility:
         if fobj.module_header is not None:
             return False
+    if fobj.visibility == xy.PackageVisibility:
+        if fobj.module_header is not None:
+            if ctx.module_name.split('.')[0] != fobj.module_header.module_name.split('.')[0]:
+                return False
     return True
 
 def cmp_arg_param_types(arg_type, param_type):
@@ -2266,7 +2274,7 @@ def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
         var_obj = type_obj
         type_obj = type_obj.type_desc
         if not type_obj.is_flags:
-            tmp_obj = ctx.create_tmp_var(type_obj)
+            tmp_obj = ctx.create_tmp_var(type_obj, xy_node=expr)
             tmp_obj.c_node.value = c.Id(var_obj.c_node.name)
             cfunc.body.append(tmp_obj.c_node)
         else:
@@ -2479,6 +2487,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
         ])
         return ExprObj(
             c_node=c_func,
+            xy_node=expr,
             infered_type=func_desc.rtype_obj
         )
     else:
@@ -2776,8 +2785,8 @@ def move_to_temp(expr_obj, cast, cfunc, ctx):
             cfunc.body.append(tmp_obj.c_node)
             get_obj.c_node = c.UnaryExpr(arg=c.Id(tmp_obj.c_node.name), op="*", prefix=True)
             return get_obj
-            
-    tmp_obj = ctx.create_tmp_var(expr_obj.infered_type, name_hint="arg")
+
+    tmp_obj = ctx.create_tmp_var(expr_obj.infered_type, name_hint="arg", xy_node=expr_obj.xy_node)
     tmp_obj.c_node.value = expr_obj.c_node
     cfunc.body.append(tmp_obj.c_node)
     return ExprObj(
