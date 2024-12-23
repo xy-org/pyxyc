@@ -185,6 +185,8 @@ class CompilerContext:
     entrypoint_obj: any = None
     void_obj: any = None
 
+    stdlib_included = False
+
     def ensure_func_space(self, name: xy.Id):
         if name.name not in self.id_table:
             fspace = FuncSpace()
@@ -1179,16 +1181,34 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         )
 
 
-def compile_error(xyerror, cast, cfunc, ctx):
+def compile_error(xyerror, cast, cfunc, ctx: CompilerContext):
+    assert xyerror.value is not None
+    value_obj = compile_expr(xyerror.value, cast, cfunc, ctx)
+
+    if ctx.current_fobj.etype_obj is None or \
+        ctx.current_fobj.etype_obj is not value_obj.infered_type:
+        # error in function not returing an error
+        ret = compile_unhandled_error(xyerror, value_obj, cast, cfunc, ctx)
+        return ExprObj(
+            xy_node=xyerror,
+            c_node=ret,
+            infered_type=value_obj.infered_type
+        )
+
+    # normal error
     ret = c.Return()
-    if xyerror.value:
-        value_obj = compile_expr(xyerror.value, cast, cfunc, ctx)
-        ret.value = value_obj.c_node
+    ret.value = value_obj.c_node
     return ExprObj(
         xy_node=xyerror,
         c_node=ret,
         infered_type=value_obj.infered_type
     )
+
+def compile_unhandled_error(xyerror, value_obj, cast, cfunc, ctx):
+    if not ctx.stdlib_included:
+        cast.includes.append(c.Include("stdlib.h"))
+        ctx.stdlib_included = True
+    return c.FuncCall("abort")
 
 def get_c_type(type_expr, ctx):
     id_desc = find_type(type_expr, ctx, required=True)

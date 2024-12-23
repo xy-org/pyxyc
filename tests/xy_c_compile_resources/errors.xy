@@ -4,6 +4,8 @@ struct Error {
 
 def to(err: Error, :bool) err.errorCode != 0
 
+;; Simple Error Issuing
+
 def power(x: int, y: int) -> int || Error {
     if (y < 0) {
         error Error{1};
@@ -14,6 +16,8 @@ def power(x: int, y: int) -> int || Error {
         i++;
     };
 }
+
+;; Error Propagation
 
 def errorPropagation(x: int, y: int) -> int || Error {
     return power(x, y) - 1;
@@ -31,4 +35,29 @@ def doNothing() -> void || Error {}
 def callReturningErrorButNoResult(a: int, b: int) -> int || Error {
     doWork(a);
     doWork(b);
+}
+
+;; Errors in functions that issue no errors or issue errors of a different kind
+
+def errorInFuncThatDoesNotIssueAndError(x: int, y: int) -> int {
+    if (x < y) {
+        error Error{1};
+    }
+    return x * y;
+}
+
+struct Error2 {
+    errorCode: int;
+    a: int;
+    b: int;
+}
+
+def errorInFuncThatIssuesDifferentKindOfError(x: int, y: int) -> int || Error2 {
+    if (x > 2*y) {
+        error Error{1};
+    }
+    if (x >= y) {
+        error Error2{2, x, y};
+    }
+    return x + y;
 }

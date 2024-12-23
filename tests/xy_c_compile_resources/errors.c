@@ -1,11 +1,18 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 typedef struct errors_Error errors_Error;
+typedef struct errors_Error2 errors_Error2;
 
 struct errors_Error {
     int32_t xy_errorCode;
+};
+struct errors_Error2 {
+    int32_t xy_errorCode;
+    int32_t xy_a;
+    int32_t xy_b;
 };
 
 bool errors_to(errors_Error err) {
@@ -64,4 +71,22 @@ errors_Error errors_callReturningErrorButNoResult(int32_t a, int32_t b, int32_t*
         return __tmp_err1;
     }
     return (errors_Error){0};
+}
+
+int32_t errors_errorInFuncThatDoesNotIssueAndError(int32_t x, int32_t y) {
+    if (x < y) {
+        abort();
+    }
+    return x * y;
+}
+
+errors_Error2 errors_errorInFuncThatIssuesDifferentKindOfError(int32_t x, int32_t y, int32_t* _res0) {
+    if (x > 2 * y) {
+        abort();
+    }
+    if (x >= y) {
+        return (errors_Error2){2, x, y};
+    }
+    *_res0 = x + y;
+    return (errors_Error2){0};
 }
