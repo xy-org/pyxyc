@@ -66,6 +66,7 @@ code_ast = [
         return x + y;
     }
      
+
     def main() -> void {
         x : long = 0;
         y : int = 0;
@@ -73,6 +74,15 @@ code_ast = [
     }
     """,
     "Cannot find function"),
+    ("""
+    import posix~[CLib{headers=["errno.h"]}] in c
+
+    def main() -> int {
+        x := c.errno;
+        return x;
+    }
+    """,
+    "The types of c symbols cannot be inferred. Please be explicit and specify the type."),
 ]
 @pytest.mark.parametrize("code, err_msg", code_ast)
 def test_common_errors(code, err_msg, tmp_path):

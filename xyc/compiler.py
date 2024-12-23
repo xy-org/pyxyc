@@ -20,6 +20,10 @@ class TypeObj(CompiledObj):
         if self.c_node is not None:
             return self.c_node.name
         return None
+    
+@dataclass
+class TypeInferenceError:
+    msg: str = ""
 
 @dataclass
 class ConstObj(CompiledObj):
@@ -636,6 +640,11 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                         node
                     )
                 type_desc = value_obj.infered_type
+                if isinstance(type_desc, TypeInferenceError):
+                    raise CompilationError(
+                        type_desc.msg,
+                        node
+                    )
             if isinstance(type_desc, ArrTypeObj):
                 cvar.type = type_desc.base.c_name
                 cvar.dims = type_desc.dims
@@ -658,6 +667,9 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
             cfunc.body.append(c.Return(ctx.current_fobj.etype_obj.init_value))
     ctx.exit_block()
 
+c_symbol_type = TypeInferenceError(
+    "The types of c symbols cannot be inferred. Please be explicit and specify the type."
+)
 
 def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
     if isinstance(expr, xy.Const):
@@ -678,7 +690,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
                 res = c.Id(field_name)
                 return ExprObj(
                     c_node=res,
-                    infered_type=None
+                    infered_type=c_symbol_type
                 )
             else:
                 struct_obj = arg1_obj.infered_type
