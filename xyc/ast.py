@@ -6,7 +6,14 @@ class Source:
     code: str
 
 @dataclass
+class TagList:
+    args: list['Node'] = field(default_factory=list)
+    kwargs: dict[str, 'Node'] = field(default_factory=dict)
+
+@dataclass
 class Node:
+    tags: TagList = field(default_factory=TagList, kw_only=True)
+
     src: Source | None = field(
         init=True, compare=False, repr=False, kw_only=True, default=None
     )
@@ -28,14 +35,8 @@ class Comment(Node):
     is_doc : bool = False
 
 @dataclass
-class TagList(Node):
-    positional: list[Node] = field(default_factory=list)
-    named: dict[str, Node] = field(default_factory=dict)
-
-@dataclass
 class Type(Node):
     name: str
-    tags: TagList = field(default_factory=TagList)
 
 @dataclass
 class Param(Node):
@@ -47,7 +48,6 @@ class Param(Node):
 @dataclass
 class FuncDef(Node):
     name: str
-    tags: TagList = field(default_factory=TagList)
     params: list[Param] = field(default_factory=list)
     rtype: Type | None = None
     etype: Type | None = None
@@ -78,6 +78,7 @@ class Const(Node):
     type: str | None = None
 
     def __init__(self, value, value_str=None, type=None):
+        super().__init__()
         self.value = value
         self.value_str = value_str if value_str is not None else str(value)
         if type is None:
@@ -96,7 +97,12 @@ class BinExpr(Node):
 @dataclass
 class AttachTags(Node):
     arg: Node | None = None
-    tags: TagList = field(default_factory=TagList)
+
+    def __init__(self, arg, tags):
+        super().__init__()
+        self.arg = arg
+        if tags is not None:
+            self.tags = tags
 
 @dataclass
 class Return(Node):
@@ -118,5 +124,4 @@ class SliceExpr(Node):
 @dataclass
 class StructDef(Node):
     name: str
-    tags: TagList = field(default_factory=TagList)
     fields: list[VarDecl] = field(default_factory=list)

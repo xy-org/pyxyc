@@ -318,8 +318,8 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
             if isinstance(arg1, AttachTags):
                 # parse right to left
                 arg2 = parse_expression(itoken, precedence+1)
-                arg1.tags.positional[0] = AttachTags(
-                    arg1.tags.positional[0],
+                arg1.tags.args[0] = AttachTags(
+                    arg1.tags.args[0],
                     TagList([arg2]),
                 )
             elif itoken.check("["):
@@ -399,8 +399,8 @@ def parse_tags(itoken):
     res = TagList()
     if itoken.check("["):
         args, kwargs = parse_args(itoken)
-        res.positional = args
-        res.named = kwargs
+        res.args = args
+        res.kwargs = kwargs
         itoken.expect("]")
     else:
         tk_coords = itoken.peak_coords()
@@ -413,7 +413,7 @@ def parse_tags(itoken):
                 itoken
             )
         
-        res.positional = [tag]
+        res.args = [tag]
     return res
 
 def parse_struct(itoken):

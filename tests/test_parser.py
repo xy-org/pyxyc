@@ -136,7 +136,7 @@ def test_parse_comments(code, exp_ast):
             ast.Import(lib="xylib"),
             ast.FuncDef(
                 name="main",
-                tags=ast.TagList(positional=[ast.Id("EntryPoint")]),
+                tags=ast.TagList(args=[ast.Id("EntryPoint")]),
                 rtype=ast.Type("int"), body=[
                     ast.Return(value=ast.Const(0))
                 ]
@@ -154,7 +154,7 @@ def test_parse_comments(code, exp_ast):
         [
             ast.FuncDef(
                 name="main",
-                tags=ast.TagList(positional=[ast.Id("EntryPoint")]),
+                tags=ast.TagList(args=[ast.Id("EntryPoint")]),
                 params=[
                     ast.Param("a", type=ast.Type("int")),
                     ast.Param("b", type=ast.Type("long"))
@@ -244,7 +244,7 @@ def test_parse_func_call(code, exp_ast):
                 ast.VarDecl(
                     "ptr",
                     type=ast.AttachTags(
-                        ast.Id("Ptr"), ast.TagList([ast.Id("int")])
+                        ast.Id("Ptr"), tags=ast.TagList([ast.Id("int")])
                     ),
                     value=None, varying=True
                 ),
@@ -252,8 +252,8 @@ def test_parse_func_call(code, exp_ast):
                     "pp",
                     type=ast.AttachTags(
                         ast.Id("Ptr"),
-                        ast.TagList([ast.AttachTags(
-                            ast.Id("Ptr"), ast.TagList([ast.Id("int")])
+                        tags=ast.TagList([ast.AttachTags(
+                            ast.Id("Ptr"), tags=ast.TagList([ast.Id("int")])
                         )]),
                     ),
                     value=ast.FuncCall("addr", args=[ast.Id("ptr")]),
@@ -327,7 +327,7 @@ def test_expressions(code, exp_ast):
             ast.StructDef(name="MyName", fields=[
                 ast.VarDecl("name", type=ast.Id("Str"), varying=False),
             ], tags=ast.TagList(
-                named={"copy": ast.Id("False")}
+                kwargs={"copy": ast.Id("False")}
             )),
         ]
     ],
@@ -368,13 +368,13 @@ def test_parse_struct(code, exp_ast):
                     )
                 ]),
                 ast.VarDecl("b", type=ast.AttachTags(
-                    ast.Id("ComplexType"), ast.TagList([
+                    ast.Id("ComplexType"), tags=ast.TagList([
                         ast.StructLiteral(ast.Id("OtherType"), args=[])
                     ])
                 ), value=ast.Const(5)),
                 ast.VarDecl(
                     "c", varying=True, type=ast.AttachTags(
-                        ast.Id("Ptr"), ast.TagList([
+                        ast.Id("Ptr"), tags=ast.TagList([
                             ast.StructLiteral(
                                 ast.AttachTags(
                                     ast.Id("Type2"),
@@ -416,13 +416,13 @@ def test_struct_literals(code, exp_ast):
         [
             ast.FuncDef(
                 name="func", rtype=ast.Type("void"), body=[],
-                tags=ast.TagList(positional=[
+                tags=ast.TagList(args=[
                     ast.Id("Tag")
                 ])
             ),
             ast.FuncDef(
                 name="func", rtype=ast.Type("void"), body=[],
-                tags=ast.TagList(positional=[
+                tags=ast.TagList(args=[
                     ast.StructLiteral(
                         name=ast.Id("Tag"),
                         kwargs={
@@ -433,7 +433,7 @@ def test_struct_literals(code, exp_ast):
             ),
             ast.FuncDef(
                 name="func", rtype=ast.Type("void"), body=[],
-                tags=ast.TagList(positional=[
+                tags=ast.TagList(args=[
                     ast.StructLiteral(
                         name=ast.Id("Tag"),
                         kwargs={
