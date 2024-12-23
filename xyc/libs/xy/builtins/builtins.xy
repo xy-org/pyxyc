@@ -303,20 +303,20 @@ struct Flags {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-def get(arr: pseudo ?, index: int) -> ref(arr) Ptr {
+def get(arr: pseudo ?[], index: int) -> ref(arr) Ptr {
     # Implemented by the compiler
 }
 
-def get(arr: pseudo ?, index: uint) -> ref(arr) Ptr {
+def get(arr: pseudo ?[], index: uint) -> ref(arr) Ptr {
     # Implemented by the compiler
 }
 
-def get(arr: pseudo ?, index: Size) -> ref(arr) Ptr {
+def get(arr: pseudo ?[], index: Size) -> ref(arr) Ptr {
     # Implemented by the compiler
 }
 
 ;; Set element at position {index} of the array {arr}
-def set(arr: pseudo ?, index: uint, val: pseudo ?) -> void {
+def set(arr: pseudo ?[], index: uint, val: pseudo ?) -> void {
     # Implemented by the compiler
 }
 

@@ -244,7 +244,7 @@ def parse_block(itoken):
             block.returns.append(expr)
         else:
             block.returns.append(
-                VarDecl(type=expr)
+                VarDecl(type=expr, src=expr.src, coords=expr.coords)
             )
 
     num_empty = itoken.skip_empty_lines()
@@ -567,6 +567,8 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
     decl = VarDecl(src=itoken.src, coords=name_token.coords)
     if not isinstance(name_token, Empty):
         decl.name = name_token.name
+    else:
+        decl.coords = itoken.peak_coords()
 
     if itoken.check("var"):
         decl.varying = True

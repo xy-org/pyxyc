@@ -58,10 +58,10 @@ code_ast = [
     ("""def main() -> void {
         arr: int[];
     }""",
-    "Arrays must have a length known at compile time"),
+    "Only pseudo params are allowed to have a length not known at compile time"),
     ("""def func(nums: int[]) -> void {
     }""",
-    "Arrays must have a length known at compile time"),
+    "Only pseudo params are allowed to have a length not known at compile time"),
 ]
 @pytest.mark.parametrize("code, err_msg", code_ast)
 def test_arrays_common_errors(code, err_msg, tmp_path):

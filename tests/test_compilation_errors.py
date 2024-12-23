@@ -33,6 +33,22 @@ note: Candidates are:
     func(int) -> void
     func(ubyte) -> int
 """),
+    ("""
+        struct Array {
+        }
+        def main() {
+            arr := Array{};
+            a := arr[0];
+        }
+     """, """\
+src.xy:6:21: error: Cannot find function 'get(Array, int)'
+|             a := arr[0];
+                      ^
+note: Candidates are:
+    get(?[], int) -> Ptr
+    get(?[], uint) -> Ptr
+    get(?[], Size) -> Ptr
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

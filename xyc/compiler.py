@@ -54,7 +54,7 @@ class ArrTypeObj(TypeObj):
         return self.base_type_obj.name + '[' + ']'
     
 tag_list_type_obj = TypeObj(builtin=True)
-any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True)
+any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("any"))
     
 @dataclass
 class TypeInferenceError:
@@ -594,6 +594,8 @@ class CompilerContext:
                     if node.arg2.name not in base.type_desc.fields:
                         raise CompilationError(f"No field {node.arg2.name}", node.arg2)
                     return base.type_desc.fields[node.arg2.name]
+                elif base.infered_type is tag_list_type_obj:
+                    return base.tags[node.arg2.name]
                 else:
                     raise CompilationError("Cannot evaluate", node)
         elif isinstance(node, xy.AttachTags):
@@ -609,9 +611,15 @@ class CompilerContext:
                 raise CompilationError("Cannot assign tags", node)
             return obj
         else:
+            obj = compile_expr(node, None, None, self)
+            if isinstance(obj, TypeObj):
+                return obj
+            elif obj.infered_type is tag_list_type_obj:
+                return obj
+            elif obj.compiled_obj is not None:
+                return obj.compiled_obj
             raise CompilationError(
-                "Cannot evaluate at compile time. "
-                f"Unknown expression type '{type(node).__name__}'",
+                "Cannot evaluate at compile time.",
                 node)
         
     def create_tmp_var(self, type_obj, name_hint="") -> VarObj:
@@ -1073,6 +1081,7 @@ def compile_func_prototype(node: xy.FuncDef, cast, ctx):
         else:
             c_type = None
 
+        param_obj.is_pseudo = param.is_pseudo
         if not param.is_pseudo:
             cparam = c.VarDecl(param.name, c.QualType(c_type))
             cfunc.params.append(cparam)
@@ -1179,6 +1188,15 @@ def fill_param_default_values(fobj, cast, ctx):
 
         ctx.ns[pobj.xy_node.name] = pobj
     ctx.pop_ns()
+
+    for pobj in fobj.param_objs:
+        if isinstance(pobj.type_desc, ArrTypeObj) and len(pobj.type_desc.dims) == 0:
+            if not pobj.is_pseudo:
+                raise CompilationError(
+                    "Only pseudo params are allowed to have a length not known "
+                    "at compile time", pobj.xy_node
+                )
+            
     return fobj
 
 def compile_builtins(builder, module_name, asts):
@@ -1374,12 +1392,19 @@ def compile_vardecl(node, cast, cfunc, ctx):
                 node
             )
     if isinstance(type_desc, ArrTypeObj):
+        if len(type_desc.dims) == 0:
+            raise CompilationError(
+                "Only pseudo params are allowed to have a length not known "
+                    "at compile time", node)
         cvar.qtype.type.name = type_desc.base_type_obj.c_name
         cvar.qtype.type.dims = type_desc.dims
     elif isinstance(type_desc, TypeObj):
         cvar.qtype.type.name = type_desc.c_name
     else:
-        raise CompilationError("Invalid Type", node.type)
+        err_node = node.type if node.type is not None else node
+        err_msg = ("Compiler bug! Report to devs at TBD" if type_desc is None
+                   else "Not a type")
+        raise CompilationError(err_msg, err_node)
     
     needs_dtor = type_needs_dtor(type_desc)
 
@@ -1424,7 +1449,13 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                 )
             elif arg1_obj.infered_type is tag_list_type_obj:
                 if field_name not in arg1_obj.tags:
-                    raise CompilationError(f"No tag '{field_name}'", expr)
+                    available_tags = "Available Tags:" + "    \n".join(arg1_obj.tags.keys())
+                    raise CompilationError(
+                        f"No tag '{field_name}'", expr,
+                        notes=[
+                            (available_tags, None)
+                        ]
+                    )
                 tag_obj = arg1_obj.tags[field_name]
                 if isinstance(tag_obj, TypeObj):
                     return ExprObj(
@@ -1571,13 +1602,14 @@ def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     obj = ref_obj.container
     struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
     if not (struct_obj.is_enum or struct_obj.is_flags):
-        if not is_simple_cexpr(ref_obj.container.c_node):
-            import pdb; pdb.set_trace()
         if is_ptr_type(ref_obj.ref.infered_type, ctx):
+            ref_to_obj = ref_obj.ref.infered_type.tags.get("to", None)
+            if ref_to_obj is None:
+                raise CompilationError("Cannot deref untagged pointer", ref_obj.ref.xy_node)
             return ExprObj(
                 c_node=c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
                 xy_node=ref_obj.xy_node,
-                infered_type=ref_obj.ref.infered_type.tags["to"]
+                infered_type=ref_to_obj,
             )
         else:
             return find_and_call(
@@ -1762,7 +1794,7 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
     )
 
 def is_ptr_type(type_obj, ctx):
-    return type_obj.base_type_obj is ctx.ptr_obj 
+    return type_obj is ctx.ptr_obj or type_obj.base_type_obj is ctx.ptr_obj 
 
 def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
     type_obj = ctx.eval(expr.name, msg="Cannot find type")
@@ -2338,7 +2370,16 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
         for pobj in func_obj.param_objs[len(arg_exprs.args):]:
             if pobj.xy_node.name not in arg_exprs.kwargs:
-                default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, func_ctx)
+                try:
+                    default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, func_ctx)
+                except CompilationError as e:
+                    raise CompilationError(
+                        f"Cannot compile default value for param '{pobj.xy_node.name}'", expr,
+                        notes=[
+                            (e.error_message, e.xy_node),
+                            *(e.notes if e.notes is not None else [])
+                        ]
+                    )
                 res.args.append(default_obj.c_node)
             else:
                 res.args.append(arg_exprs.kwargs[pobj.xy_node.name].c_node)
@@ -2355,6 +2396,17 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
                 body=[c.FuncCall("abort")]
             ))
+
+    rtype_obj = func_obj.rtype_obj
+    if (func_obj.xy_node is not None and len(func_obj.xy_node.returns) > 0 and
+        isinstance(func_obj.xy_node.returns[0].type, xy.AttachTags)
+    ):
+        # TODO optimize this by evaluating only the values that need it
+        rtype_obj = copy(rtype_obj)
+        rtype_obj.tags.update(func_ctx.eval_tags(
+            func_obj.xy_node.returns[0].type.tags,
+            tag_specs=rtype_obj.base_type_obj.tag_specs
+        ))
 
     if (
         func_obj.xy_node is not None and
@@ -2427,7 +2479,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     raw_fcall_obj = FCallObj(
         c_node=res,
         xy_node=expr,
-        infered_type=func_obj.rtype_obj,
+        infered_type=rtype_obj,
         func_obj=func_obj
     )
 
@@ -2998,7 +3050,11 @@ def mangle_def(fdef: xy.FuncDef, param_objs: list[VarObj], ctx, expand=False):
         for param_obj in param_objs:
             mangled.append("__")
             if isinstance(param_obj.type_desc.xy_node, xy.ArrayType):
-                mangled.append(param_obj.type_desc.xy_node.dims[0].value_str)
+                if len(param_obj.type_desc.xy_node.dims) > 0:
+                    dim = param_obj.type_desc.xy_node.dims[0].value_str
+                else:
+                    dim = "0"
+                mangled.append(dim)
                 mangled.append(param_obj.type_desc.xy_node.base.name)
             else:
                 mangled.append(param_obj.type_desc.xy_node.name)
@@ -3027,7 +3083,7 @@ class CompilationError(Exception):
         self.fmt_msg = fmt_err_msg(f"error: {msg}", node)
 
         if notes is not None and len(notes) > 0:
-            self.fmt_msg += "\n".join(
+            self.fmt_msg += "".join(
                 fmt_err_msg(f"note: {n[0]}", n[1]) for n in notes
             )
 
@@ -3083,9 +3139,6 @@ def find_type(texpr, ctx, required=True):
         res = ctx.eval(texpr, msg="Cannot find type")
         return res
     else:
-        if len(texpr.dims) == 0:
-            raise CompilationError("Arrays must have a length known at compile time", texpr)
-
         base_type = find_type(texpr.base, ctx)
         dims = []
         for d in texpr.dims:

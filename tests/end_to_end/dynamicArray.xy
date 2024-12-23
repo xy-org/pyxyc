@@ -41,7 +41,19 @@ def push(
 }
 
 
-# def select(arr: Array, i: Size) -> ref(arr) Size = i
+def get(
+    arr: Array, i: Size,
+    elemSize : Size = arr'typeof'tagsof.elemType'sizeof
+) -> ref(arr) Ptr~[arr'typeof'tagsof.elemType] {
+    return arr.mem.addr + i * elemSize;
+}
+
+def get(
+    arr: Array, i: int,
+    elemSize : Size = arr'typeof'tagsof.elemType'sizeof
+) -> ref(arr) Ptr~[arr'typeof'tagsof.elemType] {
+    return arr.mem.addr + i * elemSize;
+}
 
 # def get(arr: Array, i:Size, elemSize := arr'tagsof.elemType'sizeof) -> Ptr~[arr'tagsof.elemType] {
 #     return arr.mem.addr + (i * elemSize);
@@ -57,9 +69,9 @@ def valid(iter: ArrayIter, arr: Array) = iter.idx < arr'len
 
 def next(iter: ArrayIter, arr: pseudo Array) = ArrayIter{iter.idx+1}
 
-#def deref(iter: ArrayIter, arr: Array, elemSize := arr'tagsof.elemType'sizeof) -> outin arr'tagsof.elemType {
+def deref(iter: ArrayIter, arr: Array, elemSize : Size = arr'typeof'tagsof.elemType'sizeof) -> ref(arr) Ptr~[arr'typeof'tagsof.elemType] {
 #    return arr.mem'at(i * elemSize)'as(outin);
-#}
+}
 
 # ----------------- test code -----------------
 
@@ -73,10 +85,16 @@ def main~EntryPoint() -> int {
     points: Array~Point;
     for (i in :100) {
         ints'push(i);
-        # points'push(Point{ints[ints'len -1 -i] + i, ints[i]});
+        points'push(Point{ints[ints'len -1 -i] + i, ints[i]});
     }
 
     print(f"len={ints'len}\n");
+
+    res : int;
+    for (i in :100) {
+        #res *= (points[i].x - points[i].y) * ints[i] - i;
+        res *= (points[i].x - points[i].y);
+    }
 
     #res := for (i in :, num in ints, point in points) -> (res := 0) {
     #    res *= (point.x - point.y) * num - i;

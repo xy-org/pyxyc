@@ -18,6 +18,7 @@ op_precedence = {
     '&=': 0, '^=': 0, '|=': 0,
     ',': -1
 }
+cast_precedence = 11
 
 def stringify(ast: Ast):
     frags = []
@@ -229,8 +230,12 @@ def stringify_expr(expr, frags, parent_op_precedence=-10):
     elif isinstance(expr, Break):
         frags.append("break")
     elif isinstance(expr, Cast):
+        if parent_op_precedence > cast_precedence:
+            frags.append("(")
         frags.extend(("(", expr.to, ")"))
-        stringify_expr(expr.what, frags)
+        stringify_expr(expr.what, frags, cast_precedence)
+        if parent_op_precedence > cast_precedence:
+            frags.append(")")
     else:
         raise CGenerationError(f"Unknown expression {type(expr).__name__}")
     
