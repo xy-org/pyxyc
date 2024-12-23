@@ -204,7 +204,7 @@ class CompilerContext:
             var_name = f" '{name.name}'" if isinstance(name, xy.Id) else ""
             raise CompilationError(f"Cannot find variable{var_name}", name)
         if not isinstance(var_obj, VarObj):
-            raise CompilationError(f"Not a function.", name)
+            raise CompilationError(f"Not a variable.", name)
         return var_obj
     
     def eval_to_id(self, name: xy.Node):
@@ -369,12 +369,16 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 cname = mangle_def(node, ctx, expand=expand_name)
                 if len(node.returns) > 1:
                     raise CompilationError("Multiple return types are NYI", node)
-                rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
+                if len(node.returns) == 1:
+                    rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
+                else:
+                    rtype_compiled = ctx.void_obj
                 rtype = rtype_compiled.c_name
                 cfunc = c.Func(name=cname, rtype=rtype)
                 for param in node.params:
-                    cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
-                    cfunc.params.append(cparam)
+                    if not param.is_pseudo:
+                        cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
+                        cfunc.params.append(cparam)
                 cast.func_decls.append(cfunc)
 
                 compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled)
@@ -587,7 +591,7 @@ def compile_body(body, cast, cfunc, ctx):
                 cfunc.body.append(expr_obj.c_node)
 
 
-def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
+def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
     if isinstance(expr, xy.Const):
         return ExprObj(
             c_node=c.Const(expr.value_str),
@@ -621,12 +625,22 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
         fcall = rewrite_unaryop(expr, ctx)
         return compile_expr(fcall, cast, cfunc, ctx)
     elif isinstance(expr, xy.Id):
-        var_obj = ctx.eval_to_var(expr)
-        res = c.Id(var_obj.c_node.name)
-        return ExprObj(
-            c_node=res,
-            infered_type=var_obj.type_desc
-        )
+        var_obj = ctx.eval(expr)
+        if var_obj is None:
+            var_name = f" '{expr.name}'" if isinstance(expr, xy.Id) else ""
+            raise CompilationError(f"Cannot find variable{var_name}", expr)
+        if isinstance(var_obj, VarObj):
+            return ExprObj(
+                c_node=c.Id(var_obj.c_node.name),
+                infered_type=var_obj.type_desc
+            )
+        elif isinstance(var_obj, TypeObj):
+            return ExprObj(
+                c_node=c.Id(var_obj.c_node.name),
+                infered_type=var_obj
+            )
+        else:
+            raise CompilationError("Cannot pass to function", expr)
     elif isinstance(expr, xy.FuncCall):
         fspace = ctx.eval_to_fspace(expr.name)
 
@@ -693,8 +707,15 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
             )
 
         res = c.FuncCall(name=func_obj.c_name)
-        for arg in arg_exprs:
-            res.args.append(arg.c_node)
+        if func_obj.xy_node is not None:
+            for xy_param, arg in zip(func_obj.xy_node.params, arg_exprs):
+                if not xy_param.is_pseudo:
+                    res.args.append(arg.c_node)
+        else:
+            # external c function
+            for arg in arg_exprs:
+                res.args.append(arg.c_node)
+
         return ExprObj(
             c_node=res,
             infered_type=func_obj.rtype_obj
@@ -980,8 +1001,9 @@ def get_c_type(type_expr, ctx):
 def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
     mangled = ctx.module_name.replace(".", "_") + "_" + fdef.name.name
     if expand:
-        mangled = [mangled, "__with__"]
+        mangled = [mangled, "__with"]
         for param in fdef.params:
+            mangled.append("__")
             mangled.append(param.type.name)
         mangled = "".join(mangled)
     return mangled

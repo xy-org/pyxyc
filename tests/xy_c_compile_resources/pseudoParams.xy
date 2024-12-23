@@ -10,13 +10,14 @@ def func2(x: int, :int) -> int {
     return x * 2;
 }
 
-def func2(x: int, y: float) -> int {
+def func2(x: int, y: double) -> int {
     return if (y > 0) x else x*2;
 }
 
 def test() {
-    func1(5, 0);
-    func1(5, true);
-    func2(5, 5);
-    func2(5, 5.0);
+     func1(5, 0);
+     func1(5, true);
+     func2(5, 5);
+     func2(5, int);
+     func2(5, 5.0);
 }
