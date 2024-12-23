@@ -128,7 +128,7 @@ class UnaryExpr(Node):
 class IfExpr(Node):
     cond: Node | None = None
     type: Node | None = None
-    if_block: Node | list | None = None
+    block: Node | list | None = None
     else_block: Node | list | None = None
 
 @dataclass

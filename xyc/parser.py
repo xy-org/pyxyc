@@ -460,9 +460,9 @@ def parse_if(itoken):
         if_expr.type = parse_toplevel_type(itoken)
     itoken.check("=")
     if itoken.peak() == "{":
-        if_expr.if_block = parse_body(itoken)
+        if_expr.block = parse_body(itoken)
     else:
-        if_expr.if_block = parse_expression(itoken)
+        if_expr.block = parse_expression(itoken)
     if itoken.check("else"):
         if itoken.peak() == "{":
             if_expr.else_block = parse_body(itoken)
@@ -655,8 +655,6 @@ def parse_body(itoken):
 def should_have_semicolon_after_expr(node):
     if not isinstance(node, (IfExpr, ForExpr, WhileExpr)):
         return True
-    if isinstance(node, IfExpr):
-        return not isinstance(node.if_block, list)
     return not isinstance(node.block, list)
 
 def parse_tags(itoken):

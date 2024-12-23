@@ -905,7 +905,7 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
                 ast.IfExpr(
                     cond=ast.Id("cond"),
-                    if_block=[ast.Id("expr")],
+                    block=[ast.Id("expr")],
                 )
             ]),
         ]
@@ -923,7 +923,7 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
                 ast.IfExpr(
                     cond=ast.Id("cond"),
-                    if_block=[ast.Id("expr1")],
+                    block=[ast.Id("expr1")],
                     else_block=[ast.Id("expr2")],
                 )
             ]),
@@ -944,10 +944,10 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
                 ast.IfExpr(
                     cond=ast.Id("cond1"),
-                    if_block=[ast.Id("expr1")],
+                    block=[ast.Id("expr1")],
                     else_block=ast.IfExpr(
                         cond=ast.Id("cond2"),
-                        if_block=[ast.Id("expr2")],
+                        block=[ast.Id("expr2")],
                         else_block=[ast.Id("expr3")],
                     ),
                 )
@@ -963,10 +963,10 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
                 ast.VarDecl(name="a", value=ast.IfExpr(
                     cond=ast.Id("cond1"),
-                    if_block=ast.Const(5),
+                    block=ast.Const(5),
                     else_block=ast.IfExpr(
                         cond=ast.Id("cond2"),
-                        if_block=ast.Const(6),
+                        block=ast.Const(6),
                         else_block=ast.Const(7),
                     ),
                 ))
@@ -987,7 +987,7 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
                 ast.VarDecl(name="a", value=ast.IfExpr(
                     cond=ast.Id("cond"),
-                    if_block=[
+                    block=[
                         ast.FuncCall(name=ast.Id("func1")),
                         ast.FuncCall(name=ast.Id("func2")),
                     ],
@@ -1112,7 +1112,7 @@ def test_if(code, exp_ast):
                         ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
                         ast.IfExpr(
                             cond=ast.BinExpr(op=">", arg1=ast.Id("a"), arg2=ast.Const(10)),
-                            if_block=ast.Break()
+                            block=ast.Break()
                         ),
                     ]
                 )
@@ -1142,7 +1142,7 @@ def test_if(code, exp_ast):
                             block=[
                                 ast.IfExpr(
                                     cond=ast.BinExpr(op="<", arg1=ast.Id("c"), arg2=ast.Id("d")),
-                                    if_block=[
+                                    block=[
                                         ast.Break(ast.Id("outer"))
                                     ]
                                 )
