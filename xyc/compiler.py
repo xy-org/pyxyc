@@ -31,6 +31,14 @@ class TypeObj(CompiledObj):
             return self.c_node.name
         return None
     
+@dataclass
+class ArrTypeObj(TypeObj):
+    dims : list = field(default_factory=list)
+
+    @property
+    def c_name(self):
+        self.base_type_obj.c_name + "*"
+    
 tag_list_type_obj = TypeObj(builtin=True)
 any_type_obj = TypeObj(builtin=True)
     
@@ -55,15 +63,6 @@ class StrObj(CompiledObj):
             assert len(self.parts) == 1
             return self.parts[0].value
         return ""
-
-@dataclass
-class ArrTypeObj(CompiledObj):
-    base : CompiledObj | None = None
-    dims : list = field(default_factory=list)
-
-    @property
-    def c_name(self):
-        self.base.c_name + "*"
 
 @dataclass
 class ArrayObj(CompiledObj):
@@ -530,12 +529,12 @@ class CompilerContext:
         self.tmp_var_i += 1
 
         # TODO rewrite expression and call other func
-        c_tmp = c.VarDecl(name=tmp_var_name, type=None, is_const=False)
+        c_tmp = c.VarDecl(name=tmp_var_name, type=c.QualType(None, is_const=False))
         if isinstance(type_obj, ArrTypeObj):
-            c_tmp.type = type_obj.base.c_name
+            c_tmp.type.name = type_obj.base.c_name
             c_tmp.dims = type_obj.dims
         else:
-            c_tmp.type = type_obj.c_name
+            c_tmp.type.name = type_obj.c_name
 
         if type_obj.init_value is not None:
             c_tmp.value = type_obj.init_value
@@ -681,7 +680,13 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     type_obj.is_flags = type_obj.tags.get("xy_flags", None) is ctx.flags_obj
 
     target_cast = None
-    if not (type_obj.is_enum or type_obj.is_flags):
+    if isinstance(type_obj, ArrTypeObj):
+        fully_compile_type(type_obj.base_type_obj, cast, ast, ctx)
+        type_obj.c_node = c.Type(
+            type_obj.base_type_obj.c_node,
+            dims=type_obj.dims,
+        )
+    elif not (type_obj.is_enum or type_obj.is_flags):
         cstruct = c.Struct(name=mangle_struct(type_obj.xy_node, ctx))
         type_obj.c_node = cstruct
         cast.type_decls.append(c.Typedef("struct " + cstruct.name, cstruct.name))
@@ -730,7 +735,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
 
         cfield = c.VarDecl(
             name=mangle_field(field),
-            type=field_type_obj.c_name
+            type=c.QualType(field_type_obj.c_name)
         )
         fields[field.name] = VarObj(
             xy_node=field,
@@ -743,7 +748,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
     if len(fields) == 0:
         cstruct.fields.append(c.VarDecl(
             name="__empty_structs_are_not_allowed_in_c__",
-            type="char"
+            type=c.QualType("char")
         ))
 
     all_zeros = all(default_values_zeros)
@@ -895,7 +900,7 @@ def compile_func_prototype(node, cast, ctx):
             c_type = None
 
         if not param.is_pseudo:
-            cparam = c.VarDecl(param.name, c_type)
+            cparam = c.VarDecl(param.name, c.QualType(c_type))
             cfunc.params.append(cparam)
             param_obj.c_node = cparam
 
@@ -923,7 +928,7 @@ def compile_func_prototype(node, cast, ctx):
                 assert len(node.returns) == 1
                 continue
             param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
-            retparam = c.VarDecl(param_name, get_c_type(ret.type, ctx) + "*")
+            retparam = c.VarDecl(param_name, c.QualType(get_c_type(ret.type, ctx) + "*"))
             cfunc.params.append(retparam)
             rtype_compiled = ctx.get_compiled_type(ret.type)
         if node.etype is not None:
@@ -996,7 +1001,7 @@ def fill_param_default_values(node, cast, ctx):
         c_type = pobj.type_desc.c_name
         if pobj.passed_by_ref:
             c_type = c_type + "*"
-        pobj.c_node.type = c_type
+        pobj.c_node.type = c.QualType(c_type)
 
         ctx.ns[pobj.xy_node.name] = pobj
     ctx.pop_ns()
@@ -1287,7 +1292,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
     ctx.exit_block()
 
 def compile_vardecl(node, cast, cfunc, ctx):
-    cvar = c.VarDecl(name=node.name, type=None, is_const=not node.varying)
+    cvar = c.VarDecl(name=node.name, type=c.QualType(None, is_const=not node.varying))
     value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
     type_desc = find_type(node.type, ctx) if node.type is not None else None
     if type_desc is None:
@@ -1303,10 +1308,10 @@ def compile_vardecl(node, cast, cfunc, ctx):
                 node
             )
     if isinstance(type_desc, ArrTypeObj):
-        cvar.type = type_desc.base.c_name
+        cvar.type.name = type_desc.base_type_obj.c_name
         cvar.dims = type_desc.dims
     else:
-        cvar.type = type_desc.c_name
+        cvar.type.name = type_desc.c_name
     res_obj = VarObj(node, cvar, type_desc)
     ctx.ns[node.name] = res_obj
 
@@ -1444,7 +1449,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
             arr_type = elem_expr.infered_type
         return ExprObj(
             c_node=res,
-            infered_type=ArrTypeObj(base=arr_type, dims=[len(expr.elems)])
+            infered_type=ArrTypeObj(base_type_obj=arr_type, dims=[len(expr.elems)])
         )
     elif isinstance(expr, xy.Select):
         rewritten = rewrite_select(expr, ctx)
@@ -1958,7 +1963,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         if func_obj.etype_obj is not None:
             # error handling
             err_obj = ctx.create_tmp_var(func_obj.etype_obj, name_hint="err")
-            err_obj.c_node.is_const = True
+            err_obj.c_node.type.is_const = True
             err_obj.c_node.value = res
             cfunc.body.append(err_obj.c_node)
 
@@ -2254,7 +2259,7 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
 
                     # compile start
                     start_value = start_obj.c_node if start_obj is not None else iter_type.init_value 
-                    iter_var_decl = c.VarDecl(iter_name, iter_type.c_name, is_const=False, value=start_value)
+                    iter_var_decl = c.VarDecl(iter_name, c.QualType(iter_type.c_name, is_const=False), value=start_value)
                     ctx.ns[iter_name] = VarObj(xy_node=iter_node, c_node=iter_var_decl, type_desc=iter_type)
                     if no_for_vars:
                         for_outer_block.body.append(iter_var_decl)
@@ -2330,7 +2335,7 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                 # deref in for body
                 deref_obj = find_and_call("deref", ArgList([iter_obj, *iter_arg_objs]), cast, cfunc, ctx, collection_node)
 
-                val_cdecl = c.VarDecl(iter_name, deref_obj.infered_type.c_node.name, value=deref_obj.c_node)
+                val_cdecl = c.VarDecl(iter_name, c.QualType(deref_obj.infered_type.c_node.name), value=deref_obj.c_node)
                 val_obj = VarObj(collection_node, val_cdecl, deref_obj.infered_type)
                 ctx.ns[iter_name] = val_obj
                 cfor.body.append(val_cdecl)
@@ -2542,7 +2547,7 @@ def find_type(texpr, ctx, required=True):
         for d in texpr.dims:
             dims.append(ct_eval(d, ctx))
         
-        return ArrTypeObj(base=base_type, dims=dims)
+        return ArrTypeObj(xy_node=texpr, base_type_obj=base_type, dims=dims)
 
 def ct_eval(expr, ctx):
     if isinstance(expr, xy.Const):
@@ -2656,10 +2661,10 @@ def maybe_add_main(ctx, cast):
         main = c.Func(
             name="main", rtype="int",
             params=[
-                c.VarDecl("argc", "int"),
-                c.VarDecl("argv", "char**")
+                c.VarDecl("argc", c.QualType("int",)),
+                c.VarDecl("argv", c.QualType("char**"))
             ], body=[
-                c.VarDecl("res", "int", value=c.FuncCall(ctx.entrypoint_obj.c_name)),
+                c.VarDecl("res", c.QualType("int", is_const=True), value=c.FuncCall(ctx.entrypoint_obj.c_name)),
                 c.Return(c.Id("res")),
             ]
         )

@@ -7,11 +7,17 @@ class Include:
     internal: bool = False
 
 @dataclass
+class QualType:
+    name: str
+    is_const: bool = True
+    is_volatile: bool = False
+    is_restricted: bool = False
+
+@dataclass
 class VarDecl:
     name: str
-    type: str
+    type: QualType = None
     dims: list = field(default_factory=list)
-    is_const: bool = True
     value: any = None
 
     @property

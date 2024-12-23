@@ -1,0 +1,27 @@
+struct Point {
+    coords: float[3];
+
+    x : pseudo = CoordField{0};
+    y : pseudo = CoordField{1};
+    z : pseudo = CoordField{2};
+}
+
+struct CoordField{
+    i: uint;
+}
+
+def get(p: Point, f: CoordField) = p.coords[f.i]
+def set(p: Point, f: CoordField, val: float) = p.coords[f.i] = val
+
+def test() {
+    p1: Point;
+    p1.x = 10.0f;
+    # p1.y = 20.0;
+    # p1.z = p1.x + p1.y;
+    # p1.x = p1.x;
+    # p1.x = p1.coords[0];
+
+    # p2 := Point{coords=[10f, 20f, 30f]}
+    # p3 := p1{x=10f, y=20f, z=30f};
+    # p4 := p3{x=p1.x+p3.z, y=p2.z + p3.x, z=0f};
+}

@@ -34,6 +34,7 @@ from xyc.compiler import CompilationError
     "namedArguments",
     "namedFields",
     "positionalTags",
+    # "pseudoFields",
     # TODO "guards",
     # TODO "refs",
     # TODO "properties",
