@@ -983,7 +983,10 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
     return cast
 
-keywords = {"if", "for", "while", "any", "def", "struct", "in", "inout", "outin", "out", "ref", "macro"}
+keywords = {
+    "if", "for", "while", "any", "def", "struct", "in", "inout", "outin", "out",
+    "ref", "macro", "yield"
+}
 
 def validate_name(node: xy.Node, ctx: CompilerContext):
     name = node.name
