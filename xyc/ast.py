@@ -13,6 +13,7 @@ class TagList:
 @dataclass
 class Node:
     tags: TagList = field(default_factory=TagList, kw_only=True)
+    comment: str = field(default_factory=str, kw_only=True)
 
     src: Source | None = field(
         init=True, compare=False, repr=False, kw_only=True, default=None
@@ -33,8 +34,9 @@ class Import(Node):
 
 @dataclass
 class Comment(Node):
-    comment: str
-    is_doc : bool = False
+    def __init__(self, comment, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.comment = comment
 
 @dataclass
 class FuncDef(Node):

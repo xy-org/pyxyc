@@ -195,7 +195,7 @@ def parse_ml_comment(itoken):
     comment_end = itoken.token_pos[itoken.i-1]
 
     comment = itoken.src.code[comment_start:comment_end]
-    return Comment(comment=comment, is_doc=True, src=itoken.src,
+    return Comment(comment=comment, src=itoken.src,
                    coords=[comment_start, comment_start+2])
 
 def parse_def(itoken: TokenIter):
@@ -809,6 +809,8 @@ def parse_body(itoken):
 
 def parse_stmt_list(itoken: TokenIter):
     body = []
+    attach_comment_to_prev = False
+    comment_node = None
     itoken.skip_empty_lines()
     while itoken.has_more() and itoken.peak() != "}":
         coords = itoken.peak_coords()
@@ -870,9 +872,25 @@ def parse_stmt_list(itoken: TokenIter):
                     "Malformed expression. Maybe missing operator or semicolon.",
                     itoken, notes=notes
                 )
+        if not isinstance(node, Comment):
+            if comment_node is not None:
+                node.comment = comment_node.comment
+            body.append(node)
+            comment_node = None
+        else:
+            if comment_node is not None:
+                body.append(comment_node)
+                comment_node = None
+            if attach_comment_to_prev and len(body) > 0:
+                body[-1].comment = node.comment
+                comment_node = None
+            else:
+                comment_node = node
+        lines_skipped = itoken.skip_empty_lines()
+        attach_comment_to_prev = lines_skipped == 0
 
-        body.append(node)
-        itoken.skip_empty_lines()
+    if comment_node is not None:
+        body.append(comment_node)
     return body
 
 def fuzzy_cmp(str1, str2):
@@ -913,14 +931,24 @@ def parse_struct(itoken: TokenIter):
     itoken.expect("{")
     # TODO should that be here
     itoken.skip_empty_lines()
+    comment = None
     while itoken.peak() != "}":
+        if itoken.check(";;"):
+            comment = parse_ml_comment(itoken).comment
         field = parse_expression(itoken, is_struct=True)
         if isinstance(field, Id):
             # Id's are VarDecls in the context of enums and flags
             field = VarDecl(field.name, tags=field.tags, 
                             src=field.src, coords=field.coords)
-        itoken.expect(";", msg="Missing ';' at end of field")
         node.fields.append(field)
+        itoken.expect_semicolon(msg="Missing ';' at end of field")
+
+        if itoken.check(";;"):
+            comment = parse_ml_comment(itoken).comment
+        if comment:
+            field.comment = comment
+
+        comment = None
         itoken.skip_empty_lines()
     itoken.expect("}")
     if itoken.peak() == ";":

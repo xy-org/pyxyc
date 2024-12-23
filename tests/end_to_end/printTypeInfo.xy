@@ -3,15 +3,16 @@ import libxy.strings
 import libxy.stdio
 
 struct MyStruct {
-    #;; My name
+    ;; My name
     name: Str;
 
-    #;; Some number
+    ;; Some number
     num: Size;
 
     integer: int = -1;
 
-    #;; Array of somethings
+    ;; Array of
+    ;; floats
     arr: float[10];
 
     next: Ptr~MyStruct;
@@ -22,6 +23,7 @@ struct FieldDesc{
     typename: Str;
     size: Size;
     offset: Size;
+    comment: Str;
 }
 
 def printTypeInfo(
@@ -33,6 +35,7 @@ def printTypeInfo(
             typename=nameof(%f),
             size=f'sizeof,
             offset=f'offsetof,
+            comment=f'commentof,
         }
     ],
     fieldsPtr : Ptr~FieldDesc = fields'addrof,
@@ -41,6 +44,9 @@ def printTypeInfo(
     print(f"struct {typeName} \{\n");
     for (i in :fieldsLen) {
         f := fieldsPtr[i];
+        if (f.comment.len > 0) {
+            print(f";; {f.comment}\n");
+        }
         print(f"    {f.name}: {f.typename}; # size={f.size} offset={f.offset}\n");
     }
     print("}\n");

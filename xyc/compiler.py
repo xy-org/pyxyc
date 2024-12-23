@@ -2623,6 +2623,20 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             ),
             cast, cfunc, ctx
         )
+    elif is_builtin_func(func_obj, "commentof"):
+        comment = ""
+        if arg_exprs[0].compiled_obj is not None:
+            comment = arg_exprs[0].compiled_obj.xy_node.comment
+        if not comment:
+            comment = arg_exprs[0].xy_node.comment
+        comment = fmt_comment(comment)  # delay parsing of comments because they may not be needed
+        return compile_expr(
+            xy.StrLiteral(
+                parts=[xy.Const(comment)], full_str=comment,
+                src=expr.src, coords=expr.coords,
+            ),
+            cast, cfunc, ctx
+        )
     elif is_builtin_func(func_obj, "max"):
         name_to_lim = {
             "byte": "INT8_MAX",
@@ -3696,3 +3710,32 @@ def maybe_add_main(ctx: CompilerContext, cast):
         cast.consts.append(c.VarDecl(global_argc_name, c.QualType("int", False)))
         cast.consts.append(c.VarDecl(global_argv_name, c.QualType("char**", False)))
         cast.funcs.append(main)
+
+def fmt_comment(comment):
+    if len(comment) < 2:
+        return comment
+    if comment[:2] != ";;":
+        return comment
+    i = 2
+    leading_blanks = 0
+    while i < len(comment) and comment[i].isspace():
+        i += 1
+        leading_blanks += 1
+
+    res = ""
+    i = 2 + leading_blanks
+    while i < len(comment):
+        if comment[i] == "\n":
+            res += "\\n"
+            i += 1
+            while i < len(comment) and comment[i].isspace():
+                i += 1
+        elif comment[i:i+2] == ";;":
+            i += 2
+            for _ in range(leading_blanks):
+                if i < len(comment) and comment[i].isspace():
+                    i += 1
+        else:
+            res += comment[i]
+            i += 1 
+    return res

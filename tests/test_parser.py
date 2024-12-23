@@ -88,7 +88,7 @@ def test_parse_import_error(code, err_msg):
 # comment 3
         """,
         [
-            ast.Comment(comment=";; comment 2", is_doc=True),
+            ast.Comment(comment=";; comment 2"),
         ]
     ],
     [
@@ -98,7 +98,7 @@ def test_parse_import_error(code, err_msg):
         """,
         [
             ast.Comment(
-                comment=";; comment part 1\n;; comment part 2", is_doc=True
+                comment=";; comment part 1\n;; comment part 2"
             ),
         ]
     ],
@@ -108,11 +108,9 @@ def test_parse_import_error(code, err_msg):
 def main() {}
         """,
         [
-            ast.Comment(
-                comment=";; function", is_doc=True
-            ),
             ast.FuncDef(
-                name=ast.Id("main")
+                name=ast.Id("main"),
+                comment=";; function"
             )
         ]
     ],
@@ -135,9 +133,9 @@ def main() -> int {
     [
         """
 def main(i: int) -> int {
-    i *= i; # square i
+    i *= i; # first square i
     i *= i; ;; square i
-    i *= i ;; square i
+    i *= i ;; square i again
     return i;
 }
         """,
@@ -147,10 +145,8 @@ def main(i: int) -> int {
                 params=[ast.param("i", type=ast.Id("int"))],
                 body=[
                     ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
-                    ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
-                    ast.Comment(";; square i", is_doc=True),
-                    ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
-                    ast.Comment(";; square i", is_doc=True),
+                    ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*=", comment=";; square i"),
+                    ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*=", comment=";; square i again"),
                     ast.Return(ast.Id("i")),
                 ],
                 returns=ast.SimpleRType("int"),
@@ -1157,8 +1153,35 @@ def test_invalid_expressions(code, err_msg):
         [
             ast.StructDef(name="Count", fields=[], tags=ast.TagList(
                 [ast.Id("Unit")]
-            )),
-            ast.Comment(";; Units of count i.e. 1, 2, 3 of something", is_doc=True)
+            ), comment=";; Units of count i.e. 1, 2, 3 of something"),
+        ]
+    ],
+    [
+        """struct Point2d{
+            x: float;; x coordinate
+            y: float;; y coordinate
+        }
+        """,
+        [
+            ast.StructDef(name="Point2d", fields=[
+                ast.VarDecl("x", type=ast.Id("float"), varying=False, comment=';; x coordinate',),
+                ast.VarDecl("y", type=ast.Id("float"), varying=False, comment=';; y coordinate',),
+            ]),
+        ]
+    ],
+    [
+        """struct Point2d{
+            ;; x coordinate
+            x: float;
+            ;; y coordinate
+            y: float;
+        }
+        """,
+        [
+            ast.StructDef(name="Point2d", fields=[
+                ast.VarDecl("x", type=ast.Id("float"), varying=False, comment=';; x coordinate',),
+                ast.VarDecl("y", type=ast.Id("float"), varying=False, comment=';; y coordinate',),
+            ]),
         ]
     ],
 ])
