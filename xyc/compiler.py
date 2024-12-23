@@ -147,6 +147,7 @@ class ExtSymbolObj(CompiledObj):
     
 any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 any_struct_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
+fieldarray_type_obj = TypeObj(xy_node=xy.Id("FieldArray"), builtin=True, c_node=c.Id("FIELD_TYPE_ARRAY_REPORT_IF_YOU_SEE_ME"))
 calltime_expr_obj = TypeObj(builtin=True)
 global_memory_type = TypeObj(xy_node=xy.Id("GLOBAL_MEM_REPORT_IF_YOU_SEE_ME"), builtin=True)
 global_memory = ExprObj(
@@ -731,6 +732,7 @@ def compile_module(builder, module_name, asts):
             ctx.global_ns["uint"],
             ctx.global_ns["long"],
             ctx.global_ns["ulong"],
+            ctx.global_ns["Size"],
         )
         ctx.enum_obj = ctx.global_ns["Enum"]
         ctx.flags_obj = ctx.global_ns["Flags"]
@@ -1605,7 +1607,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
         fcall = rewrite_unaryop(expr, ctx)
         return compile_expr(fcall, cast, cfunc, ctx)
     elif isinstance(expr, xy.Id):
-        var_obj = ctx.eval(expr)
+        var_obj = ctx.eval(expr, "Cannot find variable")
         if isinstance(var_obj, VarObj):
             c_node = c.Id(var_obj.c_node.name) if var_obj.c_node is not None else None
             if var_obj.passed_by_ref:
@@ -1670,27 +1672,55 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
         iter_var_name = expr.loop.over[0].arg1
         container_obj = compile_expr(container_node, cast, cfunc, ctx)
         container_obj = maybe_move_to_temp(container_obj, cast, cfunc, ctx)
-        if not isinstance(container_obj.infered_type, ArrTypeObj):
-            raise CompilationError("List comprehension is supported only on arrays", container_obj.xy_node)
-        arr_len = container_obj.infered_type.dims[0]
+        if isinstance(container_obj.infered_type, ArrTypeObj):
+            arr_len = container_obj.infered_type.dims[0]
 
-        c_node = c.InitList()
-        ctx.push_ns()
-        for i in range(arr_len):
-            ctx.ns[iter_var_name.name] = ExprObj(
-                xy_node=iter_var_name,
-                c_node=c.Index(expr=container_obj.c_node, index=c.Const(i)),
-                infered_type=container_obj.infered_type.base_type_obj,
+            c_node = c.InitList()
+            ctx.push_ns()
+            for i in range(arr_len):
+                ctx.ns[iter_var_name.name] = ExprObj(
+                    xy_node=iter_var_name,
+                    c_node=c.Index(expr=container_obj.c_node, index=c.Const(i)),
+                    infered_type=container_obj.infered_type.base_type_obj,
+                )
+                elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
+                c_node.elems.append(elem_obj.c_node)
+            ctx.pop_ns()
+
+            return ExprObj(
+                xy_node=expr,
+                c_node=c_node,
+                infered_type=container_obj.infered_type
             )
-            elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
-            c_node.elems.append(elem_obj.c_node)
-        ctx.pop_ns()
+        elif container_obj.infered_type is fieldarray_type_obj:
+            fields = container_obj.compiled_obj.infered_type.fields
+            arr_len = len(fields)
+            elem_type_obj = None
 
-        return ExprObj(
-            xy_node=expr,
-            c_node=c_node,
-            infered_type=container_obj.infered_type
-        )
+            c_node = c.InitList()
+            ctx.push_ns()
+            for fname, f in fields.items():
+                f_obj = field_get(container_obj.compiled_obj, f, cast, cfunc, ctx)
+                ctx.ns[iter_var_name.name] = ExprObj(
+                    xy_node=iter_var_name,
+                    c_node=f_obj.c_node,
+                    infered_type=f.type_desc,
+                )
+                elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
+                c_node.elems.append(elem_obj.c_node)
+                elem_type_obj = elem_obj.infered_type
+            ctx.pop_ns()
+
+            return ExprObj(
+                xy_node=expr,
+                c_node=c_node,
+                infered_type=ArrTypeObj(
+                    xy_node=expr, c_node=c_node, dims=[arr_len],
+                    base_type_obj=elem_type_obj
+                )
+            )
+        else:
+            raise CompilationError("List comprehension is supported only on arrays", container_obj.xy_node)
     elif isinstance(expr, xy.Select):
         rewritten = rewrite_select(expr, ctx)
         return compile_expr(rewritten, cast, cfunc, ctx)
@@ -1752,6 +1782,17 @@ def ref_decay_to_ptr_or_val(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     return ref_obj
 
 def ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
+    try:
+        return do_ref_get_once(ref_obj, cast, cfunc, ctx)
+    except CompilationError as e:
+        raise CompilationError(
+            f"Cannot decay 'ref({ref_obj.container.infered_type.name}) "
+            f"{ref_obj.ref.infered_type.name}' "\
+            f"because: {e.error_message}", e.xy_node,
+            notes=e.notes
+        )
+
+def do_ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     obj = ref_obj.container
     struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
     if not (struct_obj.is_enum or struct_obj.is_flags):
@@ -2146,7 +2187,10 @@ def c_deref(c_node, field=None):
         return c.Expr(c_node.arg, field, op='->') 
     return c.Expr(c_node, field, op='.')
 
-def c_getref(c_node):
+def c_getref(arg: ExprObj):
+    c_node = arg.c_node
+    if isinstance(arg.infered_type, ArrTypeObj):
+        return c_node
     if isinstance(c_node, c.UnaryExpr) and c_node.op == "*" and c_node.prefix:
         return c_node.arg
     return c.UnaryExpr(c_node, op='&', prefix=True)
@@ -2519,6 +2563,17 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             xy_node=expr,
             infered_type=func_obj.rtype_obj
         )
+    elif is_builtin_func(func_obj, "len"):
+        dims = arg_exprs[0].infered_type.dims
+        if len(dims) == 0:
+            raise CompilationError("Cannot determine array size", expr)
+        size = dims[0]
+        res = c.Const(size)
+        return ExprObj(
+            c_node=res,
+            xy_node=expr,
+            infered_type=ctx.size_obj
+        )
     elif is_builtin_func(func_obj, "sizeof"):
         return ExprObj(
             c_node=c.FuncCall("sizeof", [arg_exprs[0].c_node]),
@@ -2526,6 +2581,13 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         )
     elif is_builtin_func(func_obj, "addrof"):
         return compile_builtin_addrof(expr, arg_exprs[0], cast, cfunc, ctx)
+    elif is_builtin_func(func_obj, "fieldsof"):
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.Id("REPORT_IF_YOU_SEE_ME"),
+            infered_type=fieldarray_type_obj,
+            compiled_obj=arg_exprs[0],
+        )
     elif is_builtin_func(func_obj, "max"):
         name_to_lim = {
             "byte": "INT8_MAX",
@@ -2594,7 +2656,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:
-                res.args.append(c_getref(arg.c_node))
+                res.args.append(c_getref(arg))
             else:
                 res.args.append(arg.c_node)
 
@@ -2621,7 +2683,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             else:
                 value_obj = arg_exprs.kwargs[pobj.xy_node.name]
             
-            res.args.append(value_obj.c_node)
+            if not pobj.xy_node.is_pseudo:
+                res.args.append(value_obj.c_node)
             func_ctx.ns[pobj.xy_node.name] = value_obj
 
     # compile input guards if any
@@ -2757,26 +2820,32 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     return res_obj
 
 def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
-    # TODO what if args is more numerous
     assert len(arg_exprs) == 2
+
     base_cnode = arg_exprs[0].c_node
+    infered_type = None
+    if isinstance(arg_exprs[0].infered_type, ArrTypeObj):
+        if isinstance(base_cnode, c.InitList):
+            # convert InitList to compuond literal to keep c happy
+            base_type = c.Id(arg_exprs[0].infered_type.base_type_obj.c_name)
+            for dim in arg_exprs[0].infered_type.dims:
+                base_type = c.Index(base_type, c.Const(dim))
+            base_cnode = c.CompoundLiteral(
+                base_type,
+                base_cnode.elems,
+            )
+        infered_type=arg_exprs[0].infered_type.base_type_obj
+    else:
+        assert is_ptr_type(arg_exprs[0].infered_type, ctx)
+        base_cnode = arg_exprs[0].c_node
+        infered_type=arg_exprs[0].infered_type.tags["to"]
+
     index_cnode = arg_exprs[1].c_node
-
-    if isinstance(arg_exprs[0].infered_type, ArrTypeObj) and isinstance(base_cnode, c.InitList):
-        # convert InitList to compuond literal to keep c happy
-        base_type = c.Id(arg_exprs[0].infered_type.base_type_obj.c_name)
-        for dim in arg_exprs[0].infered_type.dims:
-            base_type = c.Index(base_type, c.Const(dim))
-        base_cnode = c.CompoundLiteral(
-            base_type,
-            base_cnode.elems,
-        )
-
     res = c.Index(base_cnode, index_cnode)
     return ExprObj(
         xy_node=expr,
         c_node=res,
-        infered_type=arg_exprs[0].infered_type.base_type_obj
+        infered_type=infered_type
     )
 
 def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx):
@@ -2784,9 +2853,15 @@ def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx):
         # Pointers in xy don't have any constness attached to them so
         # any const variables must be made non-const 
         arg_obj.compiled_obj.c_node.qtype.is_const = False
+    type_obj = arg_obj.infered_type
+    if isinstance(type_obj, ArrTypeObj):
+        type_obj = type_obj.base_type_obj
+        c_node=arg_obj.c_node
+    else:
+        c_node=c.UnaryExpr(arg=arg_obj.c_node, op="&", prefix=True)
     return ExprObj(
-        c_node=c.UnaryExpr(arg=arg_obj.c_node, op="&", prefix=True),
-        infered_type=ptr_type_to(arg_obj.infered_type, ctx)
+        c_node=c_node,
+        infered_type=ptr_type_to(type_obj, ctx)
     )
 
 def is_builtin_func(func_obj, name):

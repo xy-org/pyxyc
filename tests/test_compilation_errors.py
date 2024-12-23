@@ -46,6 +46,7 @@ src.xy:6:21: error: Cannot find function 'get(Array, int)'
                       ^
 note: Candidates are:
     get(Ptr, int) -> Ptr
+    get(Ptr, Size) -> Ptr
     get(?[], int) -> Ptr
     get(?[], uint) -> Ptr
     get(?[], Size) -> Ptr

@@ -2,6 +2,14 @@ def sizeof(arg: ?) -> Size {
     # Implemented by the compiler
 }
 
+struct FieldArray {
+    # Implemented by the compiler
+}
+
+def fieldsof(arg: pseudo ?) -> FieldArray {
+    # Implemented by the compiler
+}
+
 ;; Compares two types. Returns true if types are identical including tags.
 ;; TODO should be renamed to cmp or something. Maybe don't use.
 def typeEqs(a: pseudo ?, b: pseudo ?) -> bool {

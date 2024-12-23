@@ -48,6 +48,7 @@ from xyc.compiler import CompilationError
     # TODO "properties",
     "exitWithError",
     "arrayComprehension",
+    "fieldsof",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

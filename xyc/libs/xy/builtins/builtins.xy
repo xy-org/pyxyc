@@ -73,6 +73,10 @@ def get(ptr: Ptr, idx: int) -> ref(ptr) Ptr~[<< ptr..to] {
     # Implemented by the compiler
 }
 
+def get(ptr: Ptr, idx: Size) -> ref(ptr) Ptr~[<< ptr..to] {
+    # Implemented by the compiler
+}
+
 ;; The address of any variable or even temporary value
 def addrof(arg: ?) -> Ptr~[<< %arg] {
     # Implemented by the compiler
@@ -191,6 +195,10 @@ def sub(a: Size, b: Size) -> Size {
 }
 
 def inc(a: inout int) -> void {
+    # Implemented by the compiler
+}
+
+def inc(a: inout uint) -> void {
     # Implemented by the compiler
 }
 
@@ -387,6 +395,10 @@ def valid(arr: pseudo ?[], idx: Size) -> bool {
 }
 
 def next(arr: pseudo ?[], idx: inout Size) -> void {
+    # Implemented by the compiler
+}
+
+def len(arr: pseudo ?[]) -> Size {
     # Implemented by the compiler
 }
 

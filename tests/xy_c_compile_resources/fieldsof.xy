@@ -1,0 +1,49 @@
+import xy.ctti
+
+struct MyStruct {
+    a: int;
+    b: float;
+    c: SubStruct;
+}
+
+struct SubStruct {
+    d: Ptr~MyStruct;
+}
+
+struct FieldDesc {
+    size: Size;
+}
+
+def print(d: FieldDesc) {
+    # ommited for brevity
+}
+
+def printFields(
+    s: pseudo ?,
+    fields: pseudo FieldDesc[] = [
+        for (f in s'fieldsof) FieldDesc{size=sizeof(f)}
+    ],
+    fieldsPtr : Ptr~FieldDesc = fields'addrof,
+    fieldsLen : Size = fields'len,
+) -> void {
+    for (i in :fieldsLen) {
+        print(fieldsPtr[i]);
+    }
+}
+
+def test1() {
+    s := MyStruct{};
+    descs := [for (f in s'fieldsof) FieldDesc{f'sizeof}];
+}
+
+def test2() {
+    s := MyStruct{};
+    for (desc in [for (f in s'fieldsof) FieldDesc{f'sizeof}]) {
+        # ...
+    }
+}
+
+def test3() {
+    s := MyStruct{};
+    printFields(s);
+}
