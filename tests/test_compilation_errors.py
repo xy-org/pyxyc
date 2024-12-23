@@ -178,12 +178,12 @@ src.xy:5:18: error: The types of c symbols cannot be inferred. Please be explici
 |             func(c.argc);
                    ^^^^^^
 """),
-("""
+    ("""
         struct Str {}
         def func() {
             s := Str~Missing{};
         }
-     """, """\
+""", """\
 src.xy:4:22: error: Cannot find tag
 |             s := Str~Missing{};
                        ^^^^^^^
@@ -204,7 +204,7 @@ note: Candidates are:
     fun(int, [long]) -> int
     fun(int, [short]) -> short
 """),
-("""
+    ("""
         struct Str {}
         def func() {
             s := Str~Missing{};
@@ -214,7 +214,7 @@ src.xy:4:22: error: Cannot find tag
 |             s := Str~Missing{};
                        ^^^^^^^
 """),
-("""
+    ("""
         struct Test~[TagCtor{label="test"}] {}
         def func() {
             tests := [for (f in $* ~Test()) f];
@@ -224,7 +224,7 @@ src.xy:4:20: error: Cannot infer type of empty array
 |             tests := [for (f in $* ~Test()) f];
                      ^
 """),
-("""
+    ("""
         def main1~EntryPoint() {}
         def main2~EntryPoint() {}
      """, """\
@@ -235,7 +235,7 @@ src.xy:2:13: note: Previous entrypoint
 |         def main1~EntryPoint() {}
               ^^^^^
 """),
-("""
+    ("""
         struct Structure {}
         struct Structure {}
      """, """\
