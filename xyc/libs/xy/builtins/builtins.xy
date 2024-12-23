@@ -1,4 +1,4 @@
-# a symbol 'c' representing the C external space is automatically created
+# Header files "stdint.h", "stddef.h", "stdbool.h" are auto imported in symbol c
 
 ;; A type that means no-type
 struct void {

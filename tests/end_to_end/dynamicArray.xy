@@ -73,7 +73,7 @@ def main~EntryPoint() -> int {
     points: Array~Point;
     for (i in :100) {
         ints'push(i);
-    #     points'push(Point{ints[ints'len -1 -i] + i, ints[i]});
+        # points'push(Point{ints[ints'len -1 -i] + i, ints[i]});
     }
 
     print(f"len={ints'len}\n");

@@ -2281,6 +2281,22 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=c.UnaryExpr(arg=arg_exprs[0].c_node, op="&", prefix=True),
             infered_type=ctx.ptr_obj
         )
+    elif is_builtin_func(func_obj, "max"):
+        name_to_lim = {
+            "byte": "INT8_MAX",
+            "ubyte": "UINT8_MAX",
+            "short": "INT16_MAX",
+            "ushort": "UINT16_MAX",
+            "int": "INT32_MAX",
+            "uint": "UINT32_MAX",
+            "long": "INT64_MAX",
+            "ulong": "UINT64_MAX",
+            "Size": "SIZE_MAX",
+        }
+        if lim := name_to_lim.get(func_obj.rtype_obj.xy_node.name, False):
+            return ExprObj(c_node=c.Id(lim), infered_type=func_obj.rtype_obj)
+        else:
+            raise CompilationError("Report this to xy devs at TBD", expr)
     elif is_builtin_func(func_obj, "inc") or is_builtin_func(func_obj, "dec"):
         assert len(arg_exprs) == 1
         func_to_op_map = {
