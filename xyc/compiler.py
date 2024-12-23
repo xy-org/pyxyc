@@ -395,26 +395,7 @@ class CompilerContext:
 
         raise CompilationError(f"Cannot find type '{name.name}'", name)
     
-    def eval_tag_ctors(self, tags: xy.TagList):
-        res = {}
-        for xy_tag in tags.args:
-            try:
-                tag_obj = self.eval(xy_tag)
-            except CompilationError:
-                continue
-
-            if isinstance(tag_obj, InstanceObj):
-                if tag_obj.type_obj is not self.tagctor_obj:
-                    continue
-                label = tag_obj.type_obj.tags["xyTag"].fields["label"].as_str()
-            else:
-                assert isinstance(tag_obj, TypeObj)
-                label = tag_obj.tags["xyTag"].fields["label"].as_str()
-
-            res[label] = tag_obj
-        return res
-    
-    def split_and_eval_tags(self, tags: xy.TagList):
+    def split_and_eval_tags(self, tags: xy.TagList, cast, ast):
         open_tags = []
         after_open = len(tags.args)
         for i in range(len(tags.args)):
@@ -430,10 +411,10 @@ class CompilerContext:
             for xy_tag in open_tags
         ]
         remaining_args = tags.args[after_open:]
-        return tag_specs, self.eval_tags(xy.TagList(remaining_args, tags.kwargs))
+        return tag_specs, self.eval_tags(xy.TagList(remaining_args, tags.kwargs), cast=cast, ast=ast)
 
     
-    def eval_tags(self, tags: xy.TagList, tag_specs: list[VarObj] = []):
+    def eval_tags(self, tags: xy.TagList, tag_specs: list[VarObj] = [], cast=None, ast=None):
         res = {}
         for i, xy_tag in enumerate(tags.args):
             tag_obj = self.eval(xy_tag)
@@ -441,6 +422,7 @@ class CompilerContext:
                 spec = tag_specs[i]
                 label = spec.xy_node.name
             elif isinstance(tag_obj, TypeObj):
+                fully_compile_type(tag_obj, cast, ast, self)
                 if "xyTag" not in tag_obj.tags:
                     raise CompilationError(
                         f"Missing default label for type '{tag_obj.xy_node.name}'",
@@ -680,53 +662,36 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
                 )
                 ctx.module_ns[node.name] = type_obj
 
-                # XXX hack for types that reference each other 
-                type_obj.tags = ctx.eval_tag_ctors(node.tags)
-
-    # 2nd pass - compile tags:
-    for ast in asts:
-        for node in ast:
-            if isinstance(node, xy.StructDef):
-                type_obj: TypeObj = ctx.module_ns[node.name]
-                tag_specs, tag_objs = ctx.split_and_eval_tags(node.tags)
-                type_obj.tags.update(tag_objs)
-                type_obj.tag_specs = tag_specs
-
-                type_obj.is_enum = type_obj.tags.get("xy_enum", None) is ctx.enum_obj
-                type_obj.is_flags = type_obj.tags.get("xy_flags", None) is ctx.flags_obj
-
-                if not (type_obj.is_enum or type_obj.is_flags):
-                    cstruct = c.Struct(name=mangle_struct(node, ctx))
-                    type_obj.c_node = cstruct
-                    cast.type_decls.append(c.Typedef("struct " + cstruct.name, cstruct.name))
-                    cast.structs.append(cstruct)
-                else:
-                    # use typedef and fill actual type latter
-                    cenum = c.Typedef(None, mangle_struct(node, ctx))
-                    type_obj.c_node = cenum
-                    cast.type_decls.append(cenum)
-
-
-    # 3rd pass - compile fields
+    # 2nd pass - compile fields
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.StructDef):
                 type_obj = ctx.module_ns[node.name]
                 fully_compile_type(type_obj, cast, ast, ctx)
-    # for ast in asts:
-    #     for node in ast:
-    #         if isinstance(node, xy.StructDef):
-    #             type_obj = ctx.module_ns[node.name]
-                
-    #             if not (type_obj.is_enum or type_obj.is_flags):
-    #                 compile_struct_fields(type_obj, ast, cast, ctx)
-    #             else:
-    #                 compile_enum_fields(type_obj, ast, cast, ctx)
 
 def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     if type_obj.fully_compiled:
         return
-       
+    
+    tag_specs, tag_objs = ctx.split_and_eval_tags(type_obj.xy_node.tags, cast, ast)
+    type_obj.tags.update(tag_objs)
+    type_obj.tag_specs = tag_specs
+
+    type_obj.is_enum = type_obj.tags.get("xy_enum", None) is ctx.enum_obj
+    type_obj.is_flags = type_obj.tags.get("xy_flags", None) is ctx.flags_obj
+
+    if not (type_obj.is_enum or type_obj.is_flags):
+        cstruct = c.Struct(name=mangle_struct(type_obj.xy_node, ctx))
+        type_obj.c_node = cstruct
+        cast.type_decls.append(c.Typedef("struct " + cstruct.name, cstruct.name))
+        cast.structs.append(cstruct)
+    else:
+        # use typedef and fill actual type latter
+        cenum = c.Typedef(None, mangle_struct(type_obj.xy_node, ctx))
+        type_obj.c_node = cenum
+        cast.type_decls.append(cenum)
+
+    # finaly compile fields
     if not (type_obj.is_enum or type_obj.is_flags):
         compile_struct_fields(type_obj, ast, cast, ctx)
     else:
