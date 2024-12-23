@@ -496,7 +496,7 @@ class CompilerContext:
         self.tmp_var_i += 1
 
         # TODO rewrite expression and call other func
-        c_tmp = c.VarDecl(name=tmp_var_name, type=None, is_const=True)
+        c_tmp = c.VarDecl(name=tmp_var_name, type=None, is_const=False)
         if isinstance(type_obj, ArrTypeObj):
             c_tmp.type = type_obj.base.c_name
             c_tmp.dims = type_obj.dims
@@ -1001,7 +1001,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
             obj = compile_error(node, cast, cfunc, ctx)
             cfunc.body.append(obj.c_node)
         elif isinstance(node, xy.VarDecl):
-            cvar = c.VarDecl(name=node.name, type=None, is_const=node.varying)
+            cvar = c.VarDecl(name=node.name, type=None, is_const=not node.varying)
             value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
             type_desc = find_type(node.type, ctx) if node.type is not None else None
             if type_desc is None:
@@ -1156,6 +1156,8 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         return compile_dowhile(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.WhileExpr):
         return compile_while(expr, cast, cfunc, ctx)
+    elif isinstance(expr, xy.ForExpr):
+        return compile_for(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.Break):
         return compile_break(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.AttachTags):
@@ -1534,7 +1536,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         if func_obj.etype_obj is not None:
             # error handling
             err_obj = ctx.create_tmp_var(func_obj.etype_obj, name_hint="err")
-            err_obj.c_node.is_const = False
+            err_obj.c_node.is_const = True
             err_obj.c_node.value = res
             cfunc.body.append(err_obj.c_node)
 
@@ -1776,6 +1778,36 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
         xy_node=xydowhile,
         c_node=res_c,
         infered_type=inferred_type,
+    )
+
+def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
+    cfor = c.For()
+    for iter_node in for_node.over:
+        if isinstance(iter_node, xy.BinExpr) and iter_node.op == "in":
+            iter_name = ctx.eval_to_id(iter_node.arg1)
+
+            collection_node = iter_node.arg2
+            if isinstance(collection_node, xy.SliceExpr):
+                if collection_node.start is None and collection_node.end is None and collection_node.step is None:
+                    iter_var_decl = c.VarDecl(iter_name, "size_t", is_const=False, value=c.Const(0))
+                    ctx.ns[iter_name] = VarObj(xy_node=iter_node, c_node=iter_var_decl, type_desc=ctx.size_obj)
+                    cfor.inits.append(iter_var_decl)
+                    cfor.updates.append(
+                        c.UnaryExpr(c.Id(iter_name), op="++", prefix=True)
+                    )
+            else:
+                raise CompilationError("NYI", iter_node)
+                collection_obj = compile_expr(iter_node.arg2, cast, cfunc, ctx)
+
+        else:
+            pass # TODO check expression
+
+    compile_body(for_node.block.body, cast, cfor, ctx)
+
+    return ExprObj(
+        xy_node=for_node,
+        c_node=cfor,
+        infered_type=ctx.void_obj,
     )
 
 def compile_break(xybreak, cast, cfunc, ctx):

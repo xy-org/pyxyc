@@ -90,6 +90,13 @@ class DoWhile:
     cond: any = None
 
 @dataclass
+class For:
+    inits: list[VarDecl] = field(default_factory=list)
+    cond: any = None
+    updates: list = field(default_factory=list)
+    body: list = field(default_factory=list)
+
+@dataclass
 class Break:
     pass
 

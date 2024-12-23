@@ -145,7 +145,7 @@ class IfExpr(Node):
 class ForExpr(Node):
     over: list[Node] = field(default_factory=list)
     name: Node | None = None
-    block: Block | Node | None = None
+    block: Block | None = None
     else_node: Node | list | None = None
 
 @dataclass

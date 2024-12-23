@@ -11,6 +11,6 @@ int32_t submodules_main(void) {
 }
 
 int main(int argc, char** argv) {
-    int res = submodules_main();
+    const int res = submodules_main();
     return res;
 }

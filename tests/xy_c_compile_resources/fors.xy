@@ -4,35 +4,35 @@ def busywait() {
     }
 }
 
-def sumUpTo(start: int, end: int) -> int {
-    return for (i in start:end) -> (res: int) res += i
-}
-
-def doubleLoop(limX: int, limY: int) -> int {
-    res : var = 1;
-    for (i in :limX) for (j in :limY) {
-        res *= i + j;
-    }
-    return res;
-}
-
-;; Fibonacci number iteerator
-;; --------------------------
-
-struct Fib {
-    a := 1;
-    b := 0;
-}
-
-def fibonacci~IterCtor() = Fib{}
-
-def valid(fib: Fib) = true
-
-def next(fib: Fib) = Fib{fib.a + fib.b, fib.a}
-
-def deref(fib: Fib) = fib.a
-
-;; Multiplies the first {lim} fibonacci numbers
-def mulFibs(lim: int) -> int {
-    return for (_ in :lim, fib in fibonacci()) -> (res := 1) res *= fib;
-}
+# def sumUpTo(start: int, end: int) -> int {
+#     return for (i in start:end) -> (res: int) res += i;
+# }
+# 
+# def doubleLoop(limX: int, limY: int) -> int {
+#     res : var = 1;
+#     for (i in :limX) for (j in :limY) {
+#         res *= i + j;
+#     }
+#     return res;
+# }
+# 
+# ;; Fibonacci number iteerator
+# ;; --------------------------
+# 
+# struct Fib {
+#     a := 1;
+#     b := 0;
+# }
+# 
+# def fibonacci~IterCtor() = Fib{}
+# 
+# def valid(fib: Fib) = true
+# 
+# def next(fib: Fib) = Fib{fib.a + fib.b, fib.a}
+# 
+# def deref(fib: Fib) = fib.a
+# 
+# ;; Multiplies the first {lim} fibonacci numbers
+# def mulFibs(lim: int) -> int {
+#     return for (_ in :lim, fib in fibonacci()) -> (res := 1) res *= fib;
+# }

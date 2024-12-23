@@ -854,7 +854,7 @@ def fuzzy_cmp(str1, str2):
 def should_have_semicolon_after_expr(node):
     if not isinstance(node, (IfExpr, ForExpr, WhileExpr)):
         return True
-    return node.block.is_embedded
+    return node.block.is_embedded and should_have_semicolon_after_expr(node.block.body)
 
 def parse_tags(itoken):
     res = TagList()

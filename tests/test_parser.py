@@ -1636,6 +1636,64 @@ def test_do_while(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def main(limX: int, limY: int, limZ: int) {
+            res: var = 1;
+            for (x in :limX) for (y in :limY) for (z in :limZ) {
+                res *= 2;
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), params=[
+                ast.VarDecl("limX", type=ast.Id("int"), is_param=True, is_in=True),
+                ast.VarDecl("limY", type=ast.Id("int"), is_param=True, is_in=True),
+                ast.VarDecl("limZ", type=ast.Id("int"), is_param=True, is_in=True),
+            ], body=[
+                ast.VarDecl("res", value=ast.Const(1), varying=True),
+                ast.ForExpr(
+                    over=[
+                        ast.BinExpr(
+                            arg1=ast.Id("x"),
+                            op="in",
+                            arg2=ast.SliceExpr(end=ast.Id("limX"))
+                        ),
+                    ],
+                    block=ast.Block(
+                        body=ast.ForExpr(
+                            over=[
+                                ast.BinExpr(
+                                    arg1=ast.Id("y"),
+                                    op="in",
+                                    arg2=ast.SliceExpr(end=ast.Id("limY"))
+                                ),
+                            ],
+                            block=ast.Block(
+                                body=ast.ForExpr(
+                                    over=[
+                                        ast.BinExpr(
+                                            arg1=ast.Id("z"),
+                                            op="in",
+                                            arg2=ast.SliceExpr(end=ast.Id("limZ"))
+                                        ),
+                                    ],
+                                    block=ast.Block(
+                                        body=[
+                                            ast.BinExpr(
+                                                ast.Id("res"),
+                                                ast.Const(2),
+                                                "*="
+                                            )
+                                        ]
+                                    )
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            ]),
+        ]
+    ],
 ])
 def test_for(code, exp_ast):
     act_ast = parse_code(code)

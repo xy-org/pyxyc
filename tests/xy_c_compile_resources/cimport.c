@@ -14,6 +14,6 @@ int32_t cimport_main(void) {
 }
 
 int main(int argc, char** argv) {
-    int res = cimport_main();
+    const int res = cimport_main();
     return res;
 }

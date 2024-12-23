@@ -69,15 +69,7 @@ def stringify_body(body, frags, ident=1):
             frags.append(";\n")
         elif isinstance(stmt, VarDecl):
             frags.append(" " * ident * 4)
-            if not stmt.is_const:
-                frags.append("const ")
-            frags.extend([stmt.type, " ", stmt.name])
-            if stmt.is_array:
-                for dim in stmt.dims:
-                    frags.extend(["[", str(dim), "]"])
-            if stmt.value is not None:
-                frags.append(" = ")
-                stringify_expr(stmt.value, frags)
+            stringify_var_decl(stmt, frags)
             frags.append(";\n")
         elif isinstance(stmt, If):
             frags.append(" " * ident * 4)
@@ -112,6 +104,26 @@ def stringify_body(body, frags, ident=1):
             frags.append(" " * ident * 4)
             frags.append("while (")
             stringify_expr(stmt.cond, frags)
+            frags.append(") {\n")
+            stringify_body(stmt.body, frags, ident=ident+1)
+            frags.extend((" " * ident * 4, "}\n"))
+        elif isinstance(stmt, For):
+            frags.append(" "  * ident * 4)
+            frags.append("for (")
+            for i, iter_decl in enumerate(stmt.inits):
+                stringify_var_decl(iter_decl, frags)
+                if i < len(stmt.inits) - 1:
+                    frags.append(", ")
+            frags.append(";")
+            if stmt.cond is not None:
+                stringify_expr(stmt.cond, frags)
+            frags.append(";")
+            if len(stmt.updates) > 0:
+                frags.append(" ")
+            for i, update_expr in enumerate(stmt.updates):
+                stringify_expr(update_expr, frags)
+                if i < len(stmt.updates) - 1:
+                    frags.append(",")
             frags.append(") {\n")
             stringify_body(stmt.body, frags, ident=ident+1)
             frags.extend((" " * ident * 4, "}\n"))
@@ -172,6 +184,17 @@ def stringify_expr(expr, frags):
         stringify_expr(expr.what, frags)
     else:
         raise CGenerationError(f"Unknown expression {type(expr).__name__}")
+    
+def stringify_var_decl(stmt, frags):
+    if stmt.is_const:
+        frags.append("const ")
+    frags.extend([stmt.type, " ", stmt.name])
+    if stmt.is_array:
+        for dim in stmt.dims:
+            frags.extend(["[", str(dim), "]"])
+    if stmt.value is not None:
+        frags.append(" = ")
+        stringify_expr(stmt.value, frags)
 
 class CGenerationError(Exception):
     def __init__(self, msg):

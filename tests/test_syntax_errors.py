@@ -70,3 +70,33 @@ def test_error_statement(code, err_msg):
     act_error = None
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def func() {
+            for (x in :) for (y in :) for (z in :) -> (res: int) res *= x + y - z
+        }""",
+        "Missing ';' at end of expression"
+    ),
+    (
+        """def func() {
+            for (x in :) func2(x)
+        }""",
+        "Missing ';' at end of expression"
+    ),
+    (
+        """def func() {
+            for (x in :) {
+                func2(x);
+            };
+        }""",
+        None
+    ),
+])
+def test_semicolon_and_fors(code, err_msg):
+    act_error = None
+    if err_msg is not None:
+        with pytest.raises(ParsingError, match=err_msg):
+            parse_code(code)
+    else:
+        parse_code(code)

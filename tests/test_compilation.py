@@ -19,7 +19,7 @@ from xyc.compiler import CompilationError
     "ifs",
     "whiles",
     "dowhiles",
-    #TODO "fors",
+    "fors",
     "pointers",
     "pseudoParams",
     "errors",
