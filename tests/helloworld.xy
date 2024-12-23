@@ -1,0 +1,6 @@
+import xylib.stdio
+
+def main~EntryPoint() -> int {
+    print("Hello World!\n");
+    return 0;
+}

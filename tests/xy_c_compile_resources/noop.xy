@@ -1,0 +1,10 @@
+def noop() -> void {
+}
+
+def retVal() -> int {
+    return 0;
+}
+
+def add(a: int, b: int) -> int {
+    return a + b + retVal();
+}

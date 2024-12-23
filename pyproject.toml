@@ -1,0 +1,7 @@
+[project]
+name = "xyc"
+version = "0.1"
+
+[project.scripts]
+xyc = "xyc.xyc:main"
+
