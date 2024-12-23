@@ -6,7 +6,7 @@ def test() -> int {
     cb3 : (:int, :double)->int;
     cb3 = def (:int, :double)->int;
     cb4 := cb3;
-    # return cb1(cb3(-5, 5.6)'cb2);
+    return cb1(cb3(-5, 5.6)'cb2);
 }
 
 def abs(a: int) -> int {

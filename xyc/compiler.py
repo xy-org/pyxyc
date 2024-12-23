@@ -57,6 +57,7 @@ class ArrTypeObj(TypeObj):
     
 @dataclass
 class FuncTypeObj(TypeObj):
+    func_obj: 'FuncObj' = None
     c_typename: str = ""
 
     @property
@@ -1514,6 +1515,7 @@ def compile_vardecl(node, cast, cfunc, ctx):
                 type_desc.msg,
                 node
             )
+
     if isinstance(type_desc, ArrTypeObj):
         if len(type_desc.dims) == 0:
             raise CompilationError(
@@ -1528,6 +1530,12 @@ def compile_vardecl(node, cast, cfunc, ctx):
         err_msg = ("Compiler bug! Report to devs at TBD" if type_desc is None
                    else "Not a type")
         raise CompilationError(err_msg, err_node)
+    
+    if isinstance(type_desc, FuncTypeObj):
+        # XXX Hack to corrent the name of the function that should be called
+        type_desc = copy(type_desc)
+        type_desc.func_obj = copy(type_desc.func_obj)
+        type_desc.func_obj.c_node = cvar
     
     needs_dtor = type_needs_dtor(type_desc)
 
@@ -2432,7 +2440,7 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
     return ExprObj(
         xy_node=expr,
         c_node=c.Id(func_obj.c_name),
-        infered_type=FuncTypeObj(c_typename=c_typename),
+        infered_type=FuncTypeObj(c_typename=c_typename, func_obj=func_obj),
     )
 
 def fselect_unnamed(expr, arg_types: ArgList, ctx, partial_matches=True):
@@ -2483,7 +2491,8 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         args=[arg.infered_type for arg in arg_exprs.args],
         kwargs={key: arg.infered_type for key, arg in arg_exprs.kwargs.items()}
     )
-    fspace = ctx.eval_to_fspace(expr.name)
+    # select the corrent function
+    fspace = ctx.eval(expr.name)
     if fspace is None:
         call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types, expr.inject_args)
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
@@ -2492,12 +2501,19 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             assert_has_type(arg)
         for arg in arg_exprs.kwargs.values():
             assert_has_type(arg)
+        
+    if isinstance(fspace, FuncSpace):
+        if ctx.compiling_header:
+            for fobj in fspace._funcs:
+                compile_func_prototype(fobj, cast, ctx)
 
-    if ctx.compiling_header:
-        for fobj in fspace._funcs:
-            compile_func_prototype(fobj, cast, ctx)
-
-    func_obj = fspace.find(expr, arg_infered_types, ctx, partial_matches=expr.inject_args)
+        func_obj = fspace.find(expr, arg_infered_types, ctx, partial_matches=expr.inject_args)
+    else:
+        if not isinstance(fspace, VarObj):
+            raise CompilationError("Not a function or callback")
+        if not isinstance(fspace.type_desc, FuncTypeObj):
+            raise CompilationError("Not a callback")
+        func_obj = fspace.type_desc.func_obj
 
     if expr_to_move_idx is not None and func_obj.move_args_to_temps:
         arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
@@ -3778,7 +3794,15 @@ def find_type(texpr, cast, ctx, required=True):
         ctx.pop_ns()
 
         c_typename = create_fptr_type(param_objs, rtype_obj, cast, ctx)
-        return FuncTypeObj(c_typename=c_typename)
+        return FuncTypeObj(c_typename=c_typename, func_obj=FuncObj(
+            param_objs=param_objs,
+            rtype_obj=rtype_obj,
+            etype_obj=etype_obj,
+            move_args_to_temps=True,
+            params_compiled = True,
+            prototype_compiled = True,
+            decl_visible = True,
+        ))
     else:
         res = ctx.eval(texpr, msg="Cannot find type")
         return res

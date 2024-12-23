@@ -20,6 +20,7 @@ int32_t callbacks_test(void) {
     xy_fp__int__double__int cb3;
     cb3 = callbacks_funnyFun;
     const xy_fp__int__double__int cb4 = cb3;
+    return cb1(cb2(cb3(-5, 5.6)));
 }
 
 int32_t callbacks_abs(int32_t a) {
