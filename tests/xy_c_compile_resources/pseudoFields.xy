@@ -11,17 +11,19 @@ struct CoordField{
 }
 
 def get(p: Point, f: CoordField) = p.coords[f.i]
-def set(p: Point, f: CoordField, val: float) = p.coords[f.i] = val
+def set(p: inout Point, f: CoordField, val: float) = p.coords[f.i] = val
 
 def test() {
     p1: Point;
     p1.x = 10.0f;
-    # p1.y = 20.0;
-    # p1.z = p1.x + p1.y;
-    # p1.x = p1.x;
-    # p1.x = p1.coords[0];
+    p1.y = 20.0f;
+    p1.z = p1.x + p1.y;
+    p1.x = p1.x;
+    p1.x = p1.coords[0];
 
-    # p2 := Point{coords=[10f, 20f, 30f]}
-    # p3 := p1{x=10f, y=20f, z=30f};
-    # p4 := p3{x=p1.x+p3.z, y=p2.z + p3.x, z=0f};
+    p2 := Point{coords=[10.0f, 20.0f, 30.0f]};
+    p3 := p1{x=10.0f, y=20.0f, z=30.0f};
+    p4 := p3{x=p1.x+p3.z, y=p2.z + p3.x, z=0.0f};
+    p5 := Point{x=0.0f, y=1.0f, z=2.0f};
+    # p6 := Point{0.0f, 1.0f, 2.0f};
 }

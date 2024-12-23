@@ -36,7 +36,7 @@ def stringify(ast: Ast):
     for struct in ast.structs:
         frags.extend(["struct ", struct.name, " {\n"])
         for field in struct.fields:
-            frags.extend([" " * ident * 4, field.qtype.type.name, " ", field.name, ";\n"])
+            stringify_field(field, frags, ident)
         frags.append("};\n")
     if len(ast.structs) > 0:
         frags.append("\n")
@@ -135,6 +135,12 @@ def stringify_body(body, frags, ident=1):
             frags.append(" " * (ident*4))
             stringify_expr(stmt, frags)
             frags.append(";\n")
+
+def stringify_field(field, frags, ident):
+    frags.extend((" " * ident * 4, field.qtype.type.name, " ", field.name))
+    if len(field.qtype.type.dims) > 0:
+        frags.extend(('[', ','.join(str(d) for d in field.qtype.type.dims), ']'))
+    frags.append(";\n")
 
 def stringify_expr(expr, frags):
     if isinstance(expr, Const):
