@@ -565,7 +565,7 @@ class CompilerContext:
         # TODO rewrite expression and call other func
         c_tmp = c.VarDecl(name=tmp_var_name, qtype=c.QualType(is_const=False))
         if isinstance(type_obj, ArrTypeObj):
-            c_tmp.qtype.type.name = type_obj.base.c_name
+            c_tmp.qtype.type.name = type_obj.base_type_obj.c_name
             c_tmp.qtype.type.dims = type_obj.dims
         else:
             c_tmp.qtype.type.name = type_obj.c_name
@@ -1105,7 +1105,7 @@ def import_builtins(ctx: CompilerContext, cast):
             fully_compiled=True,
         )
         type_obj.fields = {
-            "": VarObj(type_desc=type_obj)
+            "": VarObj(type_desc=type_obj, xy_node=xy.VarDecl())
         }
         ctx.module_ns[xtype] = type_obj
 
@@ -1586,7 +1586,7 @@ def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
         cast, cfunc, ctx, ref_obj.xy_node
     )
 
-def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ctx):
+def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ctx: CompilerContext):
     if isinstance(obj, VarObj):
         obj = ExprObj(
             xy_node=obj.xy_node,
@@ -1594,11 +1594,40 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
             infered_type=obj.type_desc,
         )
     if not field.is_pseudo:
-        c_res = c.Expr(
-            c_deref(obj.c_node, field=c.Id(field.c_node.name)),
-            val.c_node,
-            op="=",
-        )
+        val_type = val.infered_type
+        is_arr_assign = isinstance(val_type, ArrTypeObj)
+        if is_arr_assign:
+            tmp_obj = ctx.create_tmp_var(val_type)
+            tmp_obj.c_node.value = val.c_node
+            cfunc.body.append(tmp_obj.c_node)
+            c_res = c.FuncCall(
+                "memcpy",
+                args=[
+                    c.UnaryExpr(
+                        c_deref(obj.c_node, field=c.Id(field.c_node.name)),
+                        op="&",
+                        prefix=True,
+                    ),
+                    c.UnaryExpr(
+                        c.Id(tmp_obj.c_node.name),
+                        op="&",
+                        prefix=True,
+                    ),
+                    c.Expr(
+                        c.Const(val_type.dims[0]),
+                        c.FuncCall("sizeof", args=[c.Id(val_type.base_type_obj.c_name)]),
+                        op="*"
+                    )
+                ]
+            )
+        else:
+            # non array field
+            c_res = c.Expr(
+                c_deref(obj.c_node, field=c.Id(field.c_node.name)),
+                val.c_node,
+                op="=",
+            )
+
         return ExprObj(
             c_node=c_res,
         )
@@ -1623,82 +1652,123 @@ def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
 
     return do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx)
 
-def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx):
+def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: CompilerContext):
     fully_compile_type(type_obj, cast, None, ctx)
     expr_args = expr.args
     expr_kwargs = copy(expr.kwargs)
 
+    # map positional and named fields
+    name_to_pos = {}
+    num_real_fields = 0
+    for fname, fobj in type_obj.fields.items():
+        if not fobj.xy_node.is_pseudo:
+            name_to_pos[fname] = num_real_fields
+            num_real_fields += 1
+    pos_objs = [None] * num_real_fields
+    named_objs = {}
+    field_objs = list(type_obj.fields.values())
+
+    any_pseudos = False
     toggle_idx = None
-    for i, expr_arg in enumerate(expr_args):
-        if isinstance(expr_arg, xy.UnaryExpr) and expr_arg.op == ".":
+    for i, arg in enumerate(expr_args):
+        if isinstance(arg, xy.UnaryExpr) and arg.op == ".":
             # it's a toggle
             if toggle_idx is None:
                 toggle_idx = i
-            assert isinstance(expr_arg.arg, xy.Id)
-            expr_kwargs[expr_arg.arg.name] = xy.Const(
-                True, "true", "bool", src=expr_arg.src, coords=expr_arg.coords
+            assert isinstance(arg.arg, xy.Id)
+            name = arg.arg.name
+            if name not in type_obj.fields:
+                raise CompilationError(f"No field named '{name}", arg)
+            if name in named_objs:
+                raise CompilationError(f"Field {name} already set", arg)
+            named_objs[name] = compile_expr(xy.Const(
+                    True, "true", "bool", src=arg.src, coords=arg.coords
+                ),
+                cast, cfunc, ctx
             )
+            if type_obj.fields[name].xy_node.is_pseudo:
+                any_pseudos = True
+            if not any_pseudos:
+                pos_objs[name_to_pos[name]] = named_objs[name]
         elif toggle_idx is not None:
-            raise CompilationError("Cannot mix and match toggle and positional args", expr_arg)
-    if toggle_idx is not None:
-        expr_args = expr_args[:toggle_idx]
+            raise CompilationError("Cannot mix and match toggle and positional args", arg)
+        else:
+            val_obj = compile_expr(arg, cast, cfunc, ctx)
+            named_objs[field_objs[i].xy_node.name] = val_obj
+            if field_objs[i].xy_node.is_pseudo:
+                any_pseudos = True
+            if not any_pseudos:
+                pos_objs[i] = compile_expr(arg, cast, cfunc, ctx)
 
-
-    # map positional and named fields
-    name_to_pos = {
-        fname: i
-        for i, fname in enumerate(type_obj.fields.keys())
-    }
-    arg_nodes = [None] * len(name_to_pos)
-
-    for i, arg in enumerate(expr_args):
-        arg_nodes[i] = compile_expr(arg, cast, cfunc, ctx)
-    
     for name, arg in expr_kwargs.items():
-        if name not in name_to_pos:
+        if name not in type_obj.fields:
             raise CompilationError(f"No field named '{name}", arg)
-        if arg_nodes[name_to_pos[name]] is not None:
+        if name in named_objs:
             raise CompilationError(f"Field {name} already set", arg)
-        arg_nodes[name_to_pos[name]] = compile_expr(arg, cast, cfunc, ctx)
+        named_objs[name] = compile_expr(arg, cast, cfunc, ctx)
+        if type_obj.fields[name].xy_node.is_pseudo:
+            any_pseudos = True
+        if not any_pseudos:
+            i = name_to_pos[name]
+            pos_objs[i] = named_objs[name]
 
-    if tmp_obj is None:
-        # don't do this optimization if we are working with tmp vars
-        arg_cnodes_zeroes = [False] * len(name_to_pos)
-        for i, field in enumerate(type_obj.fields.values()):
-            if arg_nodes[i] is None:
-                arg_nodes[i] = field.default_value_obj
-                arg_cnodes_zeroes[i] = field.type_desc.is_init_value_zeros
+    # create tmp if needed
+    injected_tmp = False
+    if tmp_obj is None and any_pseudos:
+        tmp_obj = ctx.create_tmp_var(type_obj)
+        cfunc.body.append(tmp_obj.c_node)
+        injected_tmp = True
 
-        # eliminate any trailing zeros
-        last_non_zero_idx = 0
-        for i in range(len(arg_nodes) - 1, -1, -1):
-            if not arg_cnodes_zeroes[i]:
-                last_non_zero_idx = i+1
-                break
-        arg_nodes = arg_nodes[:last_non_zero_idx]
+    # eliminate any trailing zeros
+    last_non_zero_idx = 0
+    for i in range(len(pos_objs) - 1, -1, -1):
+        if pos_objs[i] is not None:
+            last_non_zero_idx = i+1
+            break
+    pos_objs = pos_objs[:last_non_zero_idx]
+
+    c_args = []
+    if tmp_obj is None or injected_tmp:
+        for i, obj in enumerate(pos_objs):
+            if obj is not None:
+                c_args.append(obj.c_node)
+            else:
+                c_args.append(field_objs[i].type_desc.init_value)
+
+    if injected_tmp:
+        pos_to_name = list(name_to_pos.keys())
+        for i in range(len(c_args)):
+            del named_objs[pos_to_name[i]]
+
+        if len(c_args) > 0:
+            tmp_obj.c_node.value = c.StructLiteral(
+                name=type_obj.c_name,
+                args=c_args,
+            )
+        else:
+            tmp_obj.c_node.value = type_obj.init_value       
 
     if tmp_obj is None:
         # creating a new struct
-        if len(arg_nodes) != 0:
+        if len(pos_objs) != 0:
             ctypename = type_obj.c_name
             res = c.StructLiteral(
                 name=ctypename,
-                args=[obj.c_node for obj in arg_nodes]
+                args=c_args,
             )
         else:
             res = type_obj.init_value
     else:
         # craeting a new struct from an existing one
-        tmp_var = c.Id(tmp_obj.c_node.name)
-        for i, arg_obj in enumerate(arg_nodes):
-            if arg_obj is not None:
-                field = list(type_obj.fields.values())[i]
-                obj = field_set(tmp_obj, field, arg_obj, cast, cfunc, ctx)
-                cfunc.body.append(obj.c_node)
-        res = tmp_var
+        for fname, fval_obj in named_objs.items():
+            field = type_obj.fields[fname]
+            obj = field_set(tmp_obj, field, fval_obj, cast, cfunc, ctx)
+            cfunc.body.append(obj.c_node)
+        res = c.Id(tmp_obj.c_node.name)
 
     
     return ExprObj(
+        xy_node=expr,
         c_node=res,
         infered_type=type_obj
     )
@@ -1968,6 +2038,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             arg_exprs[1].c_node,
         )
         return ExprObj(
+            xy_node=expr,
             c_node=res,
             infered_type=arg_exprs[0].infered_type.base_type_obj
         )
@@ -2042,6 +2113,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         )
         return ExprObj(
             c_node=res,
+            xy_node=expr,
             infered_type=func_obj.rtype_obj
         )
 
@@ -2126,6 +2198,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     else:
         return FCallObj(
             c_node=res,
+            xy_node=expr,
             infered_type=func_obj.rtype_obj,
             func_obj=func_obj
         )
@@ -2608,6 +2681,7 @@ def mangle_name(name: str, module_name: str):
 
 class CompilationError(Exception):
     def __init__(self, msg, node, notes=None):
+        self.notes = notes
         loc = node.coords[0]
         loc_len = node.coords[1] - node.coords[0]
 
@@ -2639,7 +2713,6 @@ class CompilationError(Exception):
 
         if notes is not None and len(notes) > 0:
             self.fmt_msg += "\n".join(n[0] for n in notes)
-            self.notes = notes
 
 
     def __str__(self):

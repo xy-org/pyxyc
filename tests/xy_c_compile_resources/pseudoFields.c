@@ -38,4 +38,27 @@ void pseudoFields_test(void) {
     pseudoFields_set(&tmp1, (pseudoFields_CoordField){1}, pseudoFields_get(p2, (pseudoFields_CoordField){2}) + pseudoFields_get(p3, (pseudoFields_CoordField){0}));
     pseudoFields_set(&tmp1, (pseudoFields_CoordField){2}, 0.0f);
     const pseudoFields_Point p4 = tmp1;
+    pseudoFields_Point tmp2 = p3;
+    pseudoFields_set(&tmp2, (pseudoFields_CoordField){2}, pseudoFields_get(p1, (pseudoFields_CoordField){0}));
+    pseudoFields_set(&tmp2, (pseudoFields_CoordField){1}, pseudoFields_get(p2, (pseudoFields_CoordField){1}));
+    pseudoFields_set(&tmp2, (pseudoFields_CoordField){0}, 0.0f);
+    const pseudoFields_Point p5 = tmp2;
+    pseudoFields_Point tmp3 = (pseudoFields_Point){0};
+    pseudoFields_set(&tmp3, (pseudoFields_CoordField){0}, 0.0f);
+    pseudoFields_set(&tmp3, (pseudoFields_CoordField){1}, 1.0f);
+    pseudoFields_set(&tmp3, (pseudoFields_CoordField){2}, 2.0f);
+    const pseudoFields_Point p6 = tmp3;
+    pseudoFields_Point tmp4 = (pseudoFields_Point){0};
+    pseudoFields_set(&tmp4, (pseudoFields_CoordField){0}, 0.0f);
+    pseudoFields_set(&tmp4, (pseudoFields_CoordField){1}, 1.0f);
+    pseudoFields_set(&tmp4, (pseudoFields_CoordField){2}, 2.0f);
+    const pseudoFields_Point p7 = tmp4;
+    pseudoFields_Point tmp5 = (pseudoFields_Point){{.0f, .0f, .0f}};
+    pseudoFields_set(&tmp5, (pseudoFields_CoordField){0}, 10.0f);
+    const pseudoFields_Point p8 = tmp5;
+    pseudoFields_Point tmp6 = (pseudoFields_Point){0};
+    pseudoFields_set(&tmp6, (pseudoFields_CoordField){0}, 10.0f);
+    float tmp7[3] = {.1f, .1f, .1f};
+    memcpy(&tmp6.m_coords, &tmp7, 3 * sizeof(float));
+    const pseudoFields_Point p9 = tmp6;
 }

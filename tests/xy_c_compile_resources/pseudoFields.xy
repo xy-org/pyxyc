@@ -1,9 +1,9 @@
 struct Point {
-    coords: float[3];
-
     x : pseudo = CoordField{0};
     y : pseudo = CoordField{1};
     z : pseudo = CoordField{2};
+
+    coords: float[3];
 }
 
 struct CoordField{
@@ -24,6 +24,9 @@ def test() {
     p2 := Point{coords=[10.0f, 20.0f, 30.0f]};
     p3 := p1{x=10.0f, y=20.0f, z=30.0f};
     p4 := p3{x=p1.x+p3.z, y=p2.z + p3.x, z=0.0f};
-    p5 := Point{x=0.0f, y=1.0f, z=2.0f};
-    # p6 := Point{0.0f, 1.0f, 2.0f};
+    p5 := p3{z=p1.x, y=p2.y, x=0.0f};
+    p6 := Point{x=0.0f, y=1.0f, z=2.0f};
+    p7 := Point{0.0f, 1.0f, 2.0f};
+    p8 := Point{coords=[.0f, .0f, .0f], x=10.0f};
+    p9 := Point{x=10.0f, coords=[.1f, .1f, .1f]};
 }
