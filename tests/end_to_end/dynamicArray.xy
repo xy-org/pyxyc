@@ -67,14 +67,18 @@ struct ArrayIter {
     idx: Size;
 }
 
-def iter(arr: Array) ArrayIter{}
+def iter(arr: Array) -> ref(arr) ArrayIter {
+    return ArrayIter{};
+}
 
-def valid(iter: ArrayIter, arr: Array) = iter.idx < arr'len
+def valid(arr: Array, iter: ArrayIter) = iter.idx < arr'len
 
-def next(iter: ArrayIter, arr: pseudo Array) = ArrayIter{iter.idx+1}
+def next(arr: pseudo Array, iter: inout ArrayIter) {
+   iter.idx++;
+}
 
-def deref(iter: ArrayIter, arr: Array, elemSize : Size = arr'typeof'tagsof.elemType'sizeof) -> ref(arr) Ptr~[<< arr'typeof'tagsof.elemType] {
-#    return arr.mem'at(i * elemSize)'as(outin);
+def get(arr: Array, iter: ArrayIter, elemSize : Size = ctti.sizeof(arr..elemType)) -> ref(arr) Ptr~[<< arr..elemType] {
+    return arr.mem'at(iter.idx * elemSize);
 }
 
 # ----------------- test code -----------------
@@ -96,14 +100,15 @@ def main~EntryPoint() -> int {
 
     res : int;
     for (i in :100) {
-        res *= (points[i].x - points[i].y) * ints[i] - i;
-        res *= (points[i].x - points[i].y);
+        res += (points[i].x - points[i].y) * ints[i] - i;
+        res += (points[i].x - points[i].y);
     }
 
-    #res := for (i in :, num in ints, point in points) -> (res := 0) {
-    #    res *= (point.x - point.y) * num - i;
-    #};
-    #print(f"{=res}\n");
+    for (i in :, num in ints, point in points) {
+        res += (point.x - point.y) * num - i;
+    };
+
+    print(f"{=res}\n");
 
     return 0;
 }
