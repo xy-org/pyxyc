@@ -69,11 +69,15 @@ struct *Ptr~[to: struct] {
     # Implemented by the compiler
 }
 
-def *get(ptr: Ptr, idx: int) -> in(ptr) Ptr~[^ptr..to] {
+def *get(ptr: Ptr) -> in() Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
-def *get(ptr: Ptr, idx: Size) -> in(ptr) Ptr~[^ptr..to] {
+def *get(ptr: Ptr, idx: int) -> in() Ptr~[^ptr..to] {
+    # Implemented by the compiler
+}
+
+def *get(ptr: Ptr, idx: Size) -> in() Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 

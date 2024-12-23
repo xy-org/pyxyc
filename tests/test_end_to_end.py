@@ -12,6 +12,7 @@ import xyc.xyc as xyc
     ("operatorSlices", "In compute\nIn len\nSlice 42 52\nSlice 52 62\n", False),
     ("dynamicArray", "len=100\nres=-9900\n", True),
     ("printCliArgs", "--arg1\n2\n3.14\n", False),
+    ("ptrBasics", "0 0\n1 1\n2 2\n4 4 2 2\n", True),
     ("printTypeInfo",
 r""";; MyStruct comment
 struct MyStruct {

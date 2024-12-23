@@ -1,0 +1,24 @@
+import libxy.stdio;
+import libxy.strings;
+
+struct Struct {
+    a: int;
+    b: int;
+}
+
+def main~EntryPoint() {
+    a : mut = 0;
+    ptr : mut = a'addrof;
+    print(f"{a} {[ptr]}\n");
+
+    [ptr] = 1;
+    print(f"{a} {[ptr]}\n");
+
+    [ptr]++;
+    print(f"{a} {[ptr]}\n");
+
+    b : mut = Struct{1, 2};
+    ptrB : mut = b'addrof;
+    [ptrB].a = [ptrB].b + [ptrB].a + 1;
+    print(f"{b.a} {[ptrB].a} {b.b} {[ptrB].b}\n");
+}

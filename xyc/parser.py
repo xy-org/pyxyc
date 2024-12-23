@@ -366,7 +366,7 @@ def parse_toplevel_type_expr(itoken):
 var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo", "ref"}
 
 operator_precedence = {
-    "^": 12, "unary[": 12,
+    "^": 12, "unary[": 12, "unary'": 12,
     "~": 11, "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11,
     "unary+": 10, "unary-": 10, "!": 10, "&": 10, '%': 10,
     "\\": 9,
@@ -464,6 +464,21 @@ def parse_expression(
         ret_args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
         itoken.expect("]", msg="Missing closing bracket")
         arg1 = Select(base=None, args=Args(ret_args, kwargs), src=itoken.src, coords=coords)
+    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "'":
+        itoken.consume()
+        f_coords = itoken.peak_coords()
+        fname = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        fcall = FuncCall(
+            fname, src=itoken.src, coords=f_coords,
+            inject_context=True
+        )
+        if itoken.check("("):
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+            fcall.args.extend(ret_args)
+            fcall.kwargs = kwargs
+            fcall.inject_args = inject_args
+            itoken.expect(")")
+        arg1 = fcall
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "{":
         # announomous struct literal
         itoken.consume()

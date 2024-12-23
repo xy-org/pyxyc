@@ -500,7 +500,7 @@ class TmpNames:
         # TODO implement
         pass
 
-@dataclass
+@dataclass(repr=False)
 class CompilerContext:
     builder: any
     module_name: str  # TODO maybe module_name should be a list of the module names
@@ -1775,7 +1775,10 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             )
         elif expr.op == "=":
             if isinstance(expr.arg1, xy.Select):
-                container_obj = compile_expr(expr.arg1.base, cast, cfunc, ctx, deref=False)
+                if expr.arg1.base is not None:
+                    container_obj = compile_expr(expr.arg1.base, cast, cfunc, ctx, deref=False)
+                else:
+                    container_obj = global_memory
                 assert len(expr.arg1.args.args) == 1
                 assert len(expr.arg1.args.kwargs) == 0
                 ref_obj = compile_expr(expr.arg1.args.args[0], cast, cfunc, ctx, deref=None)
@@ -3370,7 +3373,7 @@ def redact_code(obj: ExprObj, cast, cfunc, ctx):
             cfunc.body[idx] = c.Empty()
 
 def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
-    assert len(arg_exprs) == 2
+    assert len(arg_exprs) in range(1, 3)
 
     base_cnode = arg_exprs[0].c_node
     infered_type = None
@@ -3390,8 +3393,12 @@ def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
         base_cnode = arg_exprs[0].c_node
         infered_type=arg_exprs[0].infered_type.tags["to"]
 
-    index_cnode = arg_exprs[1].c_node
-    res = c.Index(base_cnode, index_cnode)
+    if len(arg_exprs) == 1:
+        res = c.UnaryExpr(arg=base_cnode, op="*", prefix=True)
+    else:
+        index_cnode = arg_exprs[1].c_node
+        res = c.Index(base_cnode, index_cnode)
+
     return ExprObj(
         xy_node=expr,
         c_node=res,
@@ -4218,8 +4225,13 @@ def rewrite_unaryop(expr, ctx):
     )
 
 def rewrite_select(select, ctx):
+    args = []
+    if select.base is not None:
+        args = [select.base]
+    args.extend(select.args.args)
+
     fcall = xy.FuncCall(
-        xy.Id("get"), args=[select.base, *select.args.args],
+        xy.Id("get"), args=args,
         kwargs=select.args.kwargs,
         src=select.src,
         coords=select.coords
@@ -4246,7 +4258,10 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
         import_obj.module_header = module_header
         if imprt.in_name is None:
             ctx.global_ns.merge(module_header.namespace, ctx, module_header.module_name)
-            ctx.str_prefix_reg.update(module_header.str_prefix_reg)
+            for str_prefix, ctor_obj in module_header.str_prefix_reg.items():
+                # str ctors are not sticky
+                if ctor_obj.module_header.module_name == module_header.module_name:
+                    ctx.str_prefix_reg[str_prefix] = ctor_obj
     
     if imprt.in_name:
         ctx.module_ns[imprt.in_name] = import_obj

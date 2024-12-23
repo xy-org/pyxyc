@@ -47,6 +47,7 @@ src.xy:6:21: error: Cannot find function 'get(Array, int)'
                       ^
 note: Candidates are:
     in module xy.builtins
+        *get(Ptr) -> Ptr
         *get(Ptr, int) -> Ptr
         *get(Ptr, Size) -> Ptr
         *get(?[], int) -> Ptr
@@ -289,6 +290,18 @@ src.xy:2:26: error: Underscores are not allowed in names. For more info go to TB
 src.xy:2:23: error: Underscores are not allowed in names. For more info go to TBD
 |         def func(_:int=0) {}
                         ^
+"""),
+    ("""
+import libxy.stdio;
+
+def main~EntryPoint() {
+    a := 0;
+    print(f"{a}\\n");
+}
+     """, """\
+src.xy:6:11: error: No string constructor registered for prefix "f"
+|     print(f"{a}\\n");
+            ^^^^^^^^
 """),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):

@@ -341,6 +341,77 @@ def test_parse_simple_func(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def test() -> void {
+            [a];
+            'func(a);
+            ''func;  # valid syntax, invalid code
+            'f1'f2(a);
+            ['func];
+            'func[i];
+            'f1 + 'f2;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("test"), params=[],
+                returns=[ast.VarDecl(type=ast.Id("void"))],
+                body=[
+                    ast.Select(
+                        base=None,
+                        args=ast.Args(
+                            args=[
+                                ast.Id("a"),
+                            ]
+                        )
+                    ),
+                    ast.FuncCall(
+                        name=ast.Id("func"), args=[ast.Id("a")], inject_context=True,
+                    ),
+                    ast.FuncCall(
+                        name=ast.FuncCall(name=ast.Id("func"), inject_context=True),
+                        inject_context=True,
+                    ),
+                    ast.FuncCall(
+                        name=ast.Id("f2"),
+                        args=[
+                            ast.FuncCall(name=ast.Id("f1"), inject_context=True),
+                            ast.Id("a")
+                        ],
+                    ),
+                    ast.Select(
+                        base=None,
+                        args=ast.Args(
+                            args=[
+                                ast.FuncCall(name=ast.Id("func"), inject_context=True),
+                            ]
+                        )
+                    ),
+                    ast.Select(
+                        base=ast.FuncCall(
+                            name=ast.Id("func"), args=[], inject_context=True,
+                        ),
+                        args=ast.Args(
+                            args=[ast.Id("i")],
+                        )
+                    ),
+                    ast.BinExpr(
+                        arg1=ast.FuncCall(
+                            name=ast.Id("f1"), args=[], inject_context=True,
+                        ),
+                        arg2=ast.FuncCall(
+                            name=ast.Id("f2"), args=[], inject_context=True,
+                        ),
+                        op="+",
+                    )
+                ]
+            ),
+        ]
+    ],
+])
+def test_parse_implied_context_expr(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
