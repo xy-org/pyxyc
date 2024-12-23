@@ -7,8 +7,15 @@ class Include:
     internal: bool = False
 
 @dataclass
+class Type:
+    """ Unqaulified types """
+    name: str = None
+    dims: list[int] = field(default_factory=list)
+
+@dataclass
 class QualType:
-    name: str
+    #type: 'Type' = field(default_factory=Type)
+    name : str
     is_const: bool = True
     is_volatile: bool = False
     is_restricted: bool = False
@@ -16,7 +23,7 @@ class QualType:
 @dataclass
 class VarDecl:
     name: str
-    type: QualType = None
+    qtype: QualType = None
     dims: list = field(default_factory=list)
     value: any = None
 

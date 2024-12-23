@@ -529,12 +529,12 @@ class CompilerContext:
         self.tmp_var_i += 1
 
         # TODO rewrite expression and call other func
-        c_tmp = c.VarDecl(name=tmp_var_name, type=c.QualType(None, is_const=False))
+        c_tmp = c.VarDecl(name=tmp_var_name, qtype=c.QualType(None, is_const=False))
         if isinstance(type_obj, ArrTypeObj):
-            c_tmp.type.name = type_obj.base.c_name
+            c_tmp.qtype.name = type_obj.base.c_name
             c_tmp.dims = type_obj.dims
         else:
-            c_tmp.type.name = type_obj.c_name
+            c_tmp.qtype.name = type_obj.c_name
 
         if type_obj.init_value is not None:
             c_tmp.value = type_obj.init_value
@@ -735,7 +735,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
 
         cfield = c.VarDecl(
             name=mangle_field(field),
-            type=c.QualType(field_type_obj.c_name)
+            qtype=c.QualType(field_type_obj.c_name)
         )
         fields[field.name] = VarObj(
             xy_node=field,
@@ -748,7 +748,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
     if len(fields) == 0:
         cstruct.fields.append(c.VarDecl(
             name="__empty_structs_are_not_allowed_in_c__",
-            type=c.QualType("char")
+            qtype=c.QualType("char")
         ))
 
     all_zeros = all(default_values_zeros)
@@ -1001,7 +1001,7 @@ def fill_param_default_values(node, cast, ctx):
         c_type = pobj.type_desc.c_name
         if pobj.passed_by_ref:
             c_type = c_type + "*"
-        pobj.c_node.type = c.QualType(c_type)
+        pobj.c_node.qtype = c.QualType(c_type)
 
         ctx.ns[pobj.xy_node.name] = pobj
     ctx.pop_ns()
@@ -1292,7 +1292,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
     ctx.exit_block()
 
 def compile_vardecl(node, cast, cfunc, ctx):
-    cvar = c.VarDecl(name=node.name, type=c.QualType(None, is_const=not node.varying))
+    cvar = c.VarDecl(name=node.name, qtype=c.QualType(None, is_const=not node.varying))
     value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
     type_desc = find_type(node.type, ctx) if node.type is not None else None
     if type_desc is None:
@@ -1308,10 +1308,10 @@ def compile_vardecl(node, cast, cfunc, ctx):
                 node
             )
     if isinstance(type_desc, ArrTypeObj):
-        cvar.type.name = type_desc.base_type_obj.c_name
+        cvar.qtype.name = type_desc.base_type_obj.c_name
         cvar.dims = type_desc.dims
     else:
-        cvar.type.name = type_desc.c_name
+        cvar.qtype.name = type_desc.c_name
     res_obj = VarObj(node, cvar, type_desc)
     ctx.ns[node.name] = res_obj
 
@@ -1963,7 +1963,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         if func_obj.etype_obj is not None:
             # error handling
             err_obj = ctx.create_tmp_var(func_obj.etype_obj, name_hint="err")
-            err_obj.c_node.type.is_const = True
+            err_obj.c_node.qtype.is_const = True
             err_obj.c_node.value = res
             cfunc.body.append(err_obj.c_node)
 
