@@ -1,12 +1,12 @@
 import libxy.stdio
 import libxy.string
-# import libxy.units
+import libxy.units
 
-# c := 299792458~mps;
-
-c := 299792458;
+c := 299792458~mps;
+pi := 3.1415;
 
 def main~EntryPoint() -> int {
     print(f"Speed of Light = {c} m/s\n");
+    print(f"Pi = {pi}\n");
     return 0;
 }

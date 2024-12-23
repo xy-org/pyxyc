@@ -243,6 +243,22 @@ class CompilerContext:
             return res
         raise CompilationError(f"Cannot find type '{name.name}'", name)
     
+    def eval_tag_ctors(self, tags: xy.TagList):
+        res = {}
+        for xy_tag in tags.args:
+            try:
+                tag_obj = self.eval(xy_tag)
+            except CompilationError:
+                continue
+
+            if isinstance(tag_obj, InstanceObj):
+                if tag_obj.type_obj is not self.tagctor_obj:
+                    continue
+                label = tag_obj.type_obj.tags["xy.tag"].fields["label"].as_str()
+
+            res[label] = tag_obj
+        return res
+    
     def eval_tags(self, tags: xy.TagList):
         res = {}
         for xy_tag in tags.args:
@@ -276,9 +292,12 @@ class CompilerContext:
         else:
             return self.global_ns.get(name, None)
 
-    def eval(self, node):
+    def eval(self, node, msg="Cannot find symbol"):
         if isinstance(node, xy.Id):
-            return self.lookup(node.name)
+            res = self.lookup(node.name)
+            if res is None:
+                raise CompilationError(msg, node)
+            return res
         elif isinstance(node, xy.Const):
             return ConstObj(value=node.value, xy_node=node)
         elif isinstance(node, xy.StrLiteral):
@@ -289,6 +308,8 @@ class CompilerContext:
             )
         elif isinstance(node, xy.StructLiteral):
             instance_type = self.eval(node.name)
+            if instance_type is None:
+                raise CompilationError("Cannot find name", node)
             obj = InstanceObj(type_obj=instance_type, xy_node=node)
             if len(node.args) > 0:
                 raise CompilationError("Positional arguments are NYI", node.args[0])
@@ -308,8 +329,11 @@ class CompilerContext:
                     raise CompilationError("Selection is NYI")
                 # XXX assume c library
                 return ExtSpace(node.arg2.name)
+        elif isinstance(node, xy.AttachTags):
+            obj = self.eval(node.arg)
+            obj.tags = self.eval_tags(node.tags)
+            return obj
         else:
-            import pdb; pdb.set_trace()
             raise CompilationError(
                 "Cannot evaluate at compile time. "
                 f"Unknown expression type '{type(node).__name__}'",
@@ -384,6 +408,25 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 cast.consts.append(cdef)
                 
 
+    compile_structs(ctx, asts, cast)
+
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.VarDecl):
+                _ = ctx.eval(node.value)
+                value_obj = compile_expr(node.value, cast, None, ctx)
+                ctx.module_ns[node.name].c_node.value = value_obj.c_node
+                ctx.module_ns[node.name].type_desc = value_obj.infered_type
+
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.FuncDef):
+                compile_func_prototype(node, cast, ctx)
+
+    return cast
+
+def compile_structs(ctx: CompilerContext, asts, cast):
+    # 1st pass - compile just the names
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.StructDef):
@@ -394,6 +437,17 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 )
                 ctx.module_ns[node.name] = type_obj
 
+                type_obj.tags = ctx.eval_tag_ctors(node.tags)
+
+                cast.struct_decls.append(cstruct)
+                cast.structs.append(cstruct)
+
+    # 2nd pass - compile fields   
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.StructDef):
+                type_obj = ctx.module_ns[node.name]
+                cstruct = type_obj.c_node
                 fields = {}
                 for field in node.fields:
                     field_type_obj = find_type(field.type, ctx)
@@ -415,23 +469,13 @@ def compile_header(ctx: CompilerContext, asts, cast):
                     ]
                 ) # TODO what about non zero fields
 
-                cast.struct_decls.append(cstruct)
-                cast.structs.append(cstruct)
-
+    # 3rd pass - compile tags:
     for ast in asts:
         for node in ast:
-            if isinstance(node, xy.VarDecl):
-                _ = ctx.eval(node.value)
-                value_obj = compile_expr(node.value, cast, None, ctx)
-                ctx.module_ns[node.name].c_node.value = value_obj.c_node
-                ctx.module_ns[node.name].type_desc = value_obj.infered_type
+            if isinstance(node, xy.StructDef):
+                type_obj = ctx.module_ns[node.name]
+                type_obj.tags.update(ctx.eval_tags(node.tags))
 
-    for ast in asts:
-        for node in ast:
-            if isinstance(node, xy.FuncDef):
-                compile_func_prototype(node, cast, ctx)
-
-    return cast
 
 def compile_func_prototype(node, cast, ctx):
     func_space = ctx.ensure_func_space(node.name)
@@ -594,15 +638,30 @@ def import_builtins(ctx: CompilerContext, cast):
     # XXX
     select_obj.rtype_obj = ctx.global_ns["int"]
 
+    # tag construction
+    tag_ctor = xy.StructDef(name="TagCtor", fields=[
+        xy.VarDecl("label", type=None)
+    ])
+    tag_obj = TypeObj(tag_ctor, c.Struct("TagCtor"), builtin=True)
+    tag_obj.tags["xy.tag"] = InstanceObj(
+        fields={
+            "label": StrObj(parts=[ConstObj(value="xy.tag")])
+        },
+        type_obj=tag_obj
+    )
+    ctx.global_ns["TagCtor"] = tag_obj
+    ctx.tagctor_obj = tag_obj
+
     # string construction
     str_ctor = xy.StructDef(name="StrCtor", fields=[
         xy.VarDecl("prefix", type=None)
     ])
-    str_obj = TypeObj(str_ctor, c.Struct("StringCtor"), builtin=True)
+    str_obj = TypeObj(str_ctor, c.Struct("StrCtor"), builtin=True)
     str_obj.tags["xy.tag"] = InstanceObj(
         fields={
             "label": StrObj(parts=[ConstObj(value="xy.string")])
-        }
+        },
+        type_obj=tag_obj
     )
     ctx.global_ns["StrCtor"] = str_obj
 
@@ -759,9 +818,6 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         return compile_expr(fcall, cast, cfunc, ctx)
     elif isinstance(expr, xy.Id):
         var_obj = ctx.eval(expr)
-        if var_obj is None:
-            var_name = f" '{expr.name}'" if isinstance(expr, xy.Id) else ""
-            raise CompilationError(f"Cannot find variable{var_name}", expr)
         if isinstance(var_obj, VarObj):
             c_node = c.Id(var_obj.c_node.name)
             if var_obj.passed_by_ref:
@@ -823,6 +879,10 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         return compile_while(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.Break):
         return compile_break(expr, cast, cfunc, ctx)
+    elif isinstance(expr, xy.AttachTags):
+        obj = compile_expr(expr.arg, cast, cfunc, ctx)
+        obj.tags = ctx.eval_tags(expr.tags)
+        return obj
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
 
@@ -1464,9 +1524,7 @@ def register_func(fdef, ctx):
 
 def find_type(texpr, ctx, required=True):
     if not isinstance(texpr, xy.ArrayType):
-        res = ctx.eval(texpr)
-        if res is None:
-            raise CompilationError("Cannot find type", texpr)
+        res = ctx.eval(texpr, msg="Cannot find type")
         return res
     else:
         if len(texpr.dims) == 0:

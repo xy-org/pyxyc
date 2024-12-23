@@ -484,15 +484,20 @@ def parse_expression(
                 arg1.tags.args[0] = AttachTags(
                     arg1.tags.args[0],
                     TagList([arg2]),
+                    src=itoken.src, coords=op_coords
                 )
             elif itoken.check("["):
                 args, kwargs = parse_args_kwargs(itoken)
                 itoken.expect("]")
-                attach_tags = AttachTags(arg1, TagList(args, kwargs))
+                attach_tags = AttachTags(
+                    arg1, TagList(args, kwargs), src=itoken.src, coords=op_coords
+                )
                 arg1 = attach_tags
             else:
                 arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-                attach_tags = AttachTags(arg1, TagList([arg2]))
+                attach_tags = AttachTags(
+                    arg1, TagList([arg2]), src=itoken.src, coords=op_coords
+                )
                 arg1 = attach_tags
         elif op == "{":
             arg1 = parse_struct_literal(itoken, arg1)

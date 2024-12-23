@@ -169,8 +169,8 @@ class Break(Node):
 class AttachTags(Node):
     arg: Node | None = None
 
-    def __init__(self, arg, tags):
-        super().__init__()
+    def __init__(self, arg, tags, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.arg = arg
         if tags is not None:
             self.tags = tags
