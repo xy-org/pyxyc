@@ -219,6 +219,7 @@ class SliceExpr(Node):
     start: Node | None = None
     end: Node | None = None
     step: Node | None = None
+    op: str = None  # calculate end as start \op end
 
 @dataclass
 class StructDef(Node):

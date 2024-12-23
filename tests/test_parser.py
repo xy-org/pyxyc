@@ -590,6 +590,40 @@ def test_parse_slices(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() -> void {
+            d := a +: b;
+            e := a *: c;
+            f := a -: b : -1;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("d", value=ast.SliceExpr(
+                    start=ast.Id("a"),
+                    end=ast.Id("b"),
+                    op="+",
+                )),
+                ast.VarDecl("e", value=ast.SliceExpr(
+                    start=ast.Id("a"),
+                    end=ast.Id("c"),
+                    op="*",
+                )),
+                ast.VarDecl("f", value=ast.SliceExpr(
+                    start=ast.Id("a"),
+                    end=ast.Id("b"),
+                    op="-",
+                    step=ast.Const(-1)
+                )),
+            ]),
+        ]
+    ],
+])
+def test_parse_operator_slices(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
 
 @pytest.mark.parametrize("code, exp_ast", [
     [

@@ -47,7 +47,6 @@ from xyc.parser import parse_code, ParsingError
     ),
 ])
 def test_misplaced_semicolon(code, err_msg):
-    act_error = None
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
 
@@ -67,7 +66,6 @@ def test_misplaced_semicolon(code, err_msg):
     ),
 ])
 def test_error_statement(code, err_msg):
-    act_error = None
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
 
@@ -94,9 +92,62 @@ def test_error_statement(code, err_msg):
     ),
 ])
 def test_semicolon_and_fors(code, err_msg):
-    act_error = None
     if err_msg is not None:
         with pytest.raises(ParsingError, match=err_msg):
             parse_code(code)
     else:
+        parse_code(code)
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def main() {
+            a := a +: b -: -c;
+        }""",
+        "Operator slices make sense only between the start and end expressions of a slice"
+    ),
+    (
+        """def main() {
+            f := a : b +: c;
+        }""",
+        "Operator slices make sense only between the start and end expressions of a slice"
+    ),
+    (
+        """def main() {
+            a := a +: ;
+        }""",
+        "Operator slices require both start and end expressions"
+    ),
+    (
+        """def main() {
+            a := *: b;
+        }""",
+        "Operator slices require a start"
+    ),
+    (
+        """def main() {
+            a := a func: b;
+        }""",
+        "Malformed expression."
+    ),
+])
+def test_invalid_slices(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def main() {
+            b := a + ;
+        }""",
+        "Unexpected end of expression"
+    ),
+    (
+        """def main() {
+            a := ;
+        }""",
+        "Unexpected end of expression"
+    ),
+])
+def test_invalid_expression(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)

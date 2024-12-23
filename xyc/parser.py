@@ -318,7 +318,7 @@ operator_precedence = {
     "^": 9, "\\": 9,
     "*": 8, "/": 8,
     "+": 7, "-": 7,
-    "<": 6, "<=": 6, ">=": 6, ">": 6, ":": 6,
+    "<": 6, "<=": 6, ">=": 6, ">": 6, ":": 6, "+:": 6, "*:": 6, "-:": 6,
     "==": 5, "!=": 5, "in": 5,
     "&": 4,
     "|": 3, "||": 3,
@@ -395,6 +395,8 @@ def parse_expression(
         elif token == ":":
             arg1 = Empty(src=itoken.src, coords=tk_coords)
             itoken.i -= 1
+        elif token[-1] == ":":
+            raise ParsingError("Operator slices require a start.", itoken)
         else:
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
     elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!"}:
@@ -451,8 +453,8 @@ def parse_expression(
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             fcall.args.append(arg2)
             arg1 = fcall
-        elif op == ":":
-            if itoken.peak() in var_qualifiers:
+        elif op[-1] == ":":
+            if op == ":" and itoken.peak() in var_qualifiers:
                 # it's a var decl
                 arg1 = parse_var_decl(itoken, arg1, precedence, op_prec)
             elif converted_to_slice:
@@ -462,17 +464,30 @@ def parse_expression(
                         itoken
                     )
                 if not is_end_of_expr(itoken):
+                    if op != ":":
+                        raise ParsingError(
+                            "Operator slices make sense only between the "
+                            "start and end expressions of a slice", itoken)
                     arg1.step = parse_expression(itoken, precedence+1, op_prec=op_prec)
             else:
                 converted_to_slice = True
-                arg2 = None
+                arg2 = Empty()
                 if not is_end_of_expr(itoken):
                     arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
                 sliceop = SliceExpr(src=itoken.src, coords=arg1.coords)
+                if op != ":":
+                    sliceop.op = op[:-1]
+
                 if not isinstance(arg1, Empty):
                     sliceop.start = arg1
+                elif sliceop.op is not None:
+                    raise ParsingError("Operator slices require both start and end expressions", itoken)
+
                 if not isinstance(arg2, Empty):
                     sliceop.end = arg2
+                elif sliceop.op is not None:
+                    raise ParsingError("Operator slices require both start and end expressions", itoken)
+
                 arg1 = sliceop
         elif op == "=" and isinstance(arg1, SliceExpr):
             decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=op_coords)
