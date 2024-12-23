@@ -54,7 +54,7 @@ def stringify_body(body, frags, ident=1):
             frags.append(";\n")
         elif isinstance(stmt, VarDecl):
             frags.append(" " * ident * 4)
-            if not stmt.varying:
+            if not stmt.is_const:
                 frags.append("const ")
             frags.extend([stmt.type, " ", stmt.name])
             if stmt.is_array:

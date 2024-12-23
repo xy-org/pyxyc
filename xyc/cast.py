@@ -11,7 +11,7 @@ class VarDecl:
     name: str
     type: str
     dims: list = field(default_factory=list)
-    varying: bool = True
+    is_const: bool = True
     value: any = None
 
     @property

@@ -306,7 +306,7 @@ class CompilerContext:
         self.tmp_var_i += 1
 
         # TODO rewrite expression and call other func
-        c_tmp = c.VarDecl(name=tmp_var_name, type=None, varying=True)
+        c_tmp = c.VarDecl(name=tmp_var_name, type=None, is_const=True)
         if isinstance(type_obj, ArrTypeObj):
             c_tmp.type = type_obj.base.c_name
             c_tmp.dims = type_obj.dims
@@ -626,7 +626,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
             obj = compile_error(node, cast, cfunc, ctx)
             cfunc.body.append(obj.c_node)
         elif isinstance(node, xy.VarDecl):
-            cvar = c.VarDecl(name=node.name, type=None, varying=node.varying)
+            cvar = c.VarDecl(name=node.name, type=None, is_const=node.varying)
             value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
             type_desc = find_type(node.type, ctx) if node.type is not None else None
             if type_desc is None:
@@ -879,7 +879,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         if func_obj.etype_obj is not None:
             # error handling
             err_obj = ctx.create_tmp_var(func_obj.etype_obj, name_hint="err")
-            err_obj.c_node.varying = False
+            err_obj.c_node.is_const = False
             err_obj.c_node.value = res
             cfunc.body.append(err_obj.c_node)
 
