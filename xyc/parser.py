@@ -364,7 +364,7 @@ def parse_expression(
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
         if token in {"true", "false"}:
-            arg1 = Const(bool(token), token, "bool")
+            arg1 = Const(token == "true", token, "bool")
         elif "." in token:
             type = "double"
             value_str = token
@@ -651,6 +651,7 @@ def parse_str_literal(prefix, prefix_start, itoken):
 
             if part_start < part_end:
                 part_start = itoken.peak_coords()[0]
+            part_end = itoken.peak_coords()[1] - 1
         else:
             itoken.check("\\")
             part_end = itoken.peak_coords()[1]
@@ -661,6 +662,9 @@ def parse_str_literal(prefix, prefix_start, itoken):
         res.parts.append(Const(lit))
     
     res.coords = (prefix_start, part_end+1)
+    res.full_str = itoken.src.code[prefix_start+len(prefix)+1:part_end]
+    if res.full_str == "complex ":
+        import pdb; pdb.set_trace()
     return res
 
 def parse_args_kwargs(itoken):

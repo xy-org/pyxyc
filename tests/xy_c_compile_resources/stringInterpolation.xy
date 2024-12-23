@@ -27,6 +27,10 @@ def append(builder: inout StrBuilder, f: float) {
     # left empty for brevity of test
 }
 
+def append(builder: inout StrBuilder, addr: Ptr, size: Size) {
+    # left empty for brevity of test
+}
+
 def to(builder: inout StrBuilder, :Str) -> Str {
     res := Str{builder.addr, builder.size};
     # builder.addr = Ptr'null;

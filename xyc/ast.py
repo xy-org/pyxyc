@@ -84,9 +84,10 @@ class StructLiteral(Node):
 class StrLiteral(Node):
     prefix: str = ""
     parts: list[Node] = field(default_factory=list)
+    full_str: str = ""
 
 def SimpleStr(value):
-    return StrLiteral(parts=[Const(value)])
+    return StrLiteral(parts=[Const(value)], full_str=value)
 
 def SimpleRType(name):
     return [VarDecl(type=Id(name))]

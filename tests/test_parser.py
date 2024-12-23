@@ -30,7 +30,10 @@ code_ast = [
                     ast.Id("CLib"),
                     kwargs={
                         "headers": ast.ArrayLit([
-                            ast.StrLiteral(prefix="c", parts=[ast.Const("unistd.h")])
+                            ast.StrLiteral(
+                                prefix="c", parts=[ast.Const("unistd.h")],
+                                full_str="unistd.h"
+                            )
                         ])
                     }
                 )]
@@ -180,7 +183,7 @@ def test_parse_comments(code, exp_ast):
                 returns=[ast.VarDecl(type=ast.Id("void"))],
                 body=[
                     ast.FuncCall(name=ast.Id("print"), args=[
-                        ast.StrLiteral(parts=[ast.Const("abc")])
+                        ast.StrLiteral(parts=[ast.Const("abc")], full_str="abc")
                     ])
                 ]
             ),
@@ -881,11 +884,12 @@ def test_ambiguous_tags(code, err_msg):
                     parts=[]
                 )),
                 ast.VarDecl("str", type=None, value=ast.StrLiteral(
-                    parts=[ast.Const("abc")]
+                    parts=[ast.Const("abc")], full_str="abc"
                 )),
                 ast.VarDecl("prefixed", type=None, value=ast.StrLiteral(
                     prefix="prefix",
-                    parts=[ast.Const("String with prefix")]
+                    parts=[ast.Const("String with prefix")],
+                    full_str="String with prefix"
                 )),
             ]),
         ]
@@ -905,7 +909,8 @@ def test_ambiguous_tags(code, err_msg):
                         ast.Const("before"),
                         ast.BinExpr(ast.Id("a"), ast.Id("b"), "+"),
                         ast.Const("after"),
-                    ]
+                    ],
+                    full_str="before{a + b}after"
                 )),
                 ast.VarDecl("g", type=None, value=ast.StrLiteral(
                     prefix="f",
@@ -917,7 +922,8 @@ def test_ambiguous_tags(code, err_msg):
                         ], {
                             "arg": ast.Const(3)
                         }),
-                    ]
+                    ],
+                    full_str="complex {a + b, 2, arg=3}",
                 )),
                 ast.VarDecl("h", type=None, value=ast.StrLiteral(
                     prefix="f",
@@ -931,7 +937,8 @@ def test_ambiguous_tags(code, err_msg):
                                 }
                             )
                         }),
-                    ]
+                    ],
+                    full_str="literal {arg=MyStruct{field=10}}"
                 )),
             ]),
         ]
@@ -949,7 +956,8 @@ def test_ambiguous_tags(code, err_msg):
                             "\\\" \\\\ \\a \\b \\f \\n \\r \\t \\v \\x \\0 "
                             "\\\\\\\\"
                         ),
-                    ]
+                    ],
+                    full_str='\\" \\\\ \\a \\b \\f \\n \\r \\t \\v \\x \\0 \\\\\\\\',
                 )),
             ]),
         ]

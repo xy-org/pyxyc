@@ -10,7 +10,7 @@ struct Str {
     len: Size;
 }
 
-def str~[StrCtor{prefix="", interpolation=False}] (
+def str~[StrCtor{prefix="", interpolation=false}] (
     addr: Ptr, size: Size
 ) -> Str {
     return Str{addr, size};

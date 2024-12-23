@@ -186,6 +186,8 @@ class CompilerContext:
     entrypoint_obj: any = None
     void_obj: any = None
     bool_obj: any = None
+    ptr_obj: any = None
+    size_obj: any = None
 
     stdlib_included = False
 
@@ -289,7 +291,10 @@ class CompilerContext:
             if len(node.args) > 0:
                 raise CompilationError("Positional arguments are NYI", node.args[0])
             for name, value in node.kwargs.items():
-                obj.fields[name] = self.eval(value)
+                ct_value = self.eval(value)
+                if ct_value is None:
+                    raise CompilationError("Cannot eval at compile-time", value)
+                obj.fields[name] = ct_value
             return obj
         elif isinstance(node, xy.ArrayLit):
             return ArrayObj(elems=[self.eval(elem) for elem in node.elems], xy_node=node)
@@ -308,7 +313,7 @@ class CompilerContext:
                 f"Unknown expression type '{type(node).__name__}'",
                 node)
         
-    def create_tmp_var(self, type_obj, name_hint=""):
+    def create_tmp_var(self, type_obj, name_hint="") -> VarObj:
         tmp_var_name = f"__tmp{'_' if name_hint else ''}{name_hint}"
         tmp_var_name = f"{tmp_var_name}{self.tmp_var_i}"
         self.tmp_var_i += 1
@@ -521,6 +526,8 @@ def import_builtins(ctx: CompilerContext, cast):
         )
     ctx.void_obj = ctx.global_ns["void"]
     ctx.bool_obj = ctx.global_ns["bool"]
+    ctx.ptr_obj = ctx.global_ns["Ptr"]
+    ctx.size_obj = ctx.global_ns["Size"]
 
     # fill in base math operations
     for p1, type1 in enumerate(num_types):
@@ -789,31 +796,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
             infered_type=type_obj
         )
     elif isinstance(expr, xy.StrLiteral):
-        if expr.prefix not in ctx.str_prefix_reg:
-            raise CompilationError(
-                f"No string constructor registered for prefix \"{expr.prefix}\"",
-                expr
-            )
-        func_desc = ctx.str_prefix_reg[expr.prefix]
-
-        str_const = expr.parts[0].value if len(expr.parts) else ""
-        str_len = 0
-        str_i = 0
-        while str_i < len(str_const):
-            str_len += 1
-            if str_const[str_i] == '\\':
-                str_i += 2
-            else:
-                str_i += 1
-
-        c_func = c.FuncCall(func_desc.c_name, args=[
-            c.Const('"' + str_const + '"'),
-            c.Const(str_len)
-        ])
-        return ExprObj(
-            c_node=c_func,
-            infered_type=func_desc.rtype_obj
-        )
+        return compile_strlit(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.ArrayLit):
         res = c.InitList()
         arr_type = "Cannot infer type of empty list"
@@ -852,6 +835,131 @@ def c_getref(c_node):
         return c_node.arg
     return c.UnaryExpr(c_node, op='&', prefix=True)
 
+def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
+    if expr.prefix not in ctx.str_prefix_reg:
+        raise CompilationError(
+            f"No string constructor registered for prefix \"{expr.prefix}\"",
+            expr
+        )
+    func_desc: FuncObj = ctx.str_prefix_reg[expr.prefix]
+
+    interpolation = ("interpolation" in func_desc.tags["xy.string"].fields and
+                     ct_isTrue(func_desc.tags["xy.string"].fields["interpolation"]))
+    if not interpolation:
+        is_error = len(expr.parts) > 1
+        if not is_error and len(expr.parts) == 1:
+            is_error = not isinstance(expr.parts[0], xy.Const)
+        if is_error:
+            raise CompilationError(
+                f"Interpolation is not enabled for prefix \"{expr.prefix}\"",
+                expr
+            )
+    
+    if not interpolation:
+        str_const = expr.parts[0].value if len(expr.parts) else ""
+        str_len = 0
+        str_i = 0
+        while str_i < len(str_const):
+            str_len += 1
+            if str_const[str_i] == '\\':
+                str_i += 2
+            else:
+                str_i += 1
+
+        c_func = c.FuncCall(func_desc.c_name, args=[
+            c.Const('"' + str_const + '"'),
+            c.Const(str_len)
+        ])
+        return ExprObj(
+            c_node=c_func,
+            infered_type=func_desc.rtype_obj
+        )
+    else:
+        builder_tmpvar = ctx.create_tmp_var(func_desc.rtype_obj, "str")
+        builder_tmpvar_id = ExprObj(
+            xy_node=expr,
+            c_node=c.Id(builder_tmpvar.c_node.name),
+            infered_type=func_desc.rtype_obj
+        )
+        builder_tmpvar.c_node.value = do_compile_fcall(
+            expr=expr,
+            func_obj=func_desc,
+            arg_exprs=[
+                ConstObj(c_node=c.Const(f'"{expr.full_str}"'), value=""),
+                ConstObj(c_node=c.Const(len(expr.full_str)), value=0)
+            ],
+            cast=cast,
+            cfunc=cfunc,
+            ctx=ctx
+        ).c_node
+        cfunc.body.append(builder_tmpvar.c_node)
+        for part in expr.parts:
+            if is_str_const(part):
+                append_fobj = ctx.eval_to_fspace(
+                    xy.Id("append", src=expr.src, coords=expr.coords),
+                    msg="Cannot interpolate string because there is no 'append' function"
+                ).find(
+                    xy.FuncCall(xy.Id("append"), args=[xy.Id(""), xy.Id(""), xy.Const(0)], src=expr.src, coords=expr.coords),
+                    [func_desc.rtype_obj, ctx.ptr_obj, ctx.size_obj],
+                    ctx
+                )
+                append_call = do_compile_fcall(
+                    expr,
+                    append_fobj,
+                    arg_exprs=[
+                        builder_tmpvar_id,
+                        ExprObj(c_node=c.Const('"' + part.value + '"')),
+                        ExprObj(c_node=c.Const(len(part.value)))
+                    ],
+                    cast=cast, cfunc=cfunc, ctx=ctx
+                )
+                cfunc.body.append(append_call.c_node)
+            else:
+                part_expr_obj = compile_expr(part, cast, cfunc, ctx)
+                append_fobj = ctx.eval_to_fspace(
+                    xy.Id("append", src=expr.src, coords=expr.coords),
+                    msg="Cannot interpolate string because there is no 'append' function"
+                ).find(
+                    xy.FuncCall(xy.Id("append"), args=[xy.Id(""), xy.Id("")], src=expr.src, coords=expr.coords),
+                    [func_desc.rtype_obj, part_expr_obj.infered_type],
+                    ctx
+                )
+                append_call = do_compile_fcall(
+                    expr,
+                    append_fobj,
+                    arg_exprs=[builder_tmpvar_id, part_expr_obj],
+                    cast=cast, cfunc=cfunc, ctx=ctx
+                )
+                cfunc.body.append(append_call.c_node)
+        
+        to_obj = func_desc.tags["xy.string"].fields["to"]
+        to = ctx.eval_to_fspace(
+            xy.Id("to", src=expr.src, coords=expr.coords),
+            msg="Cannot interpolate string because there is no 'to' function"
+        ).find(
+            xy.FuncCall(xy.Id("to"), args=[xy.Id(""), xy.Id("")], src=expr.src, coords=expr.coords),
+            [func_desc.rtype_obj, to_obj],
+            ctx
+        )
+        to_call_obj = do_compile_fcall(expr, to, [builder_tmpvar_id], cast, cfunc, ctx)
+        return ExprObj(
+            xy_node=expr,
+            c_node=to_call_obj.c_node,
+            infered_type=to.rtype_obj
+        )
+    
+def is_str_const(node: xy.Node) -> bool:
+    return isinstance(node, xy.Const) and isinstance(node.value, str)
+
+
+def ct_isTrue(obj: CompiledObj):
+    if isinstance(obj, ConstObj) and isinstance(obj.value, bool):
+        return obj.value
+    raise CompilationError(
+        "Should be true or false",
+        obj.xy_node
+    )
+
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     fspace = ctx.eval_to_fspace(expr.name)
 
@@ -865,9 +973,12 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     
     func_obj = fspace.find(expr, arg_infered_types, ctx)
 
+    return do_compile_fcall(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+
+def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, ctx):
     if func_obj.builtin and func_obj.xy_node.name == "select":
         # TODO what if args is more numerous
-        assert len(expr.args) == 2
+        assert len(arg_exprs) == 2
         res = c.Index(
             arg_exprs[0].c_node,
             arg_exprs[1].c_node,
@@ -876,7 +987,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             c_node=res,
             infered_type=func_obj.rtype_obj
         )
-    elif func_obj.builtin and len(expr.args) == 2 and func_obj.xy_node.name != "cmp":
+    elif func_obj.builtin and len(arg_exprs) == 2 and func_obj.xy_node.name != "cmp":
         func_to_op_map = {
             "add": '+',
             "sub": '-',
@@ -907,7 +1018,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             infered_type=func_obj.rtype_obj
         )
     elif func_obj.builtin:
-        assert len(expr.args) == 1
+        assert len(arg_exprs) == 1
         func_to_op_map = {
             "inc": '++',
             "dec": '--',

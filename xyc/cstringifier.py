@@ -150,7 +150,8 @@ def stringify_expr(expr, frags):
         for arg in expr.args:
             stringify_expr(arg, frags)
             frags.append(", ")
-        frags.pop()
+        if len(expr.args) > 0:
+            frags.pop()
         frags.append("}")
     elif isinstance(expr, InitList):
         frags.append("{")
