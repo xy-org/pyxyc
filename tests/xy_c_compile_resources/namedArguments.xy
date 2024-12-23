@@ -6,7 +6,7 @@ def func(a: int, b: int, c: int, d:int) -> int {
     return a*b*c*d;
 }
 
-def func(k := 1.0, m := 1.0) = k*m
+def func(k := 1.0, m := 1.0) = k*m;
 
 def testNamedArgs() {
     a := func(0);

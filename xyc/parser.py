@@ -223,11 +223,19 @@ def parse_def(itoken: TokenIter):
     node.out_guards = value.out_guards
     node.body = value.body
 
-    if itoken.has_more() and itoken.peak() == ";":
-        raise ParsingError(
-            "Function definitions don't require a terminating semicolon.",
-            itoken
-        )
+    if isinstance(node.body, list):
+        if itoken.has_more() and itoken.peak() == ";":
+            raise ParsingError(
+                "Function definitions don't require a terminating semicolon.",
+                itoken
+            )
+    else:
+        # macro
+        if not itoken.check(";"):
+            raise ParsingError(
+                "Macro functions require a terminating semicolon.",
+                itoken
+            )
 
     return node
 

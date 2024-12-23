@@ -3,7 +3,7 @@ import clib~[CLib{headers=["time.h"]}] in c;
 struct AllSlice {
 }
 
-def slice() = AllSlice{}
+def slice() = AllSlice{};
 
 struct IntSlice {
     start: int;
@@ -15,9 +15,9 @@ def max(:int) -> int {
     return c.INT32_MAX;
 }
 
-def slice(start: int, end := int'max, step := 1) = IntSlice{start, end, step}
-def slice(end : int, step := 1) = IntSlice{0, end, step}
-def slice(step : int) = IntSlice{0, max(int), step}
+def slice(start: int, end := int'max, step := 1) = IntSlice{start, end, step};
+def slice(end : int, step := 1) = IntSlice{0, end, step};
+def slice(step : int) = IntSlice{0, max(int), step};
 
 def testIntSlices() {
     a := :;
@@ -47,14 +47,14 @@ struct DateSlice {
 def max(:long) -> long {
     return c.INT64_MAX;
 }
-def max(:Date) = Date{max(long)}
+def max(:Date) = Date{max(long)};
 
-def slice(start: Date, end := Date'max, step := Date{1}) = DateSlice{start, end, step}
-def slice(end: Date, step := Date{1}) = DateSlice{Date{0}, end, step}
-def slice(step: Date) = DateSlice{Date{0}, Date'max, step}
+def slice(start: Date, end := Date'max, step := Date{1}) = DateSlice{start, end, step};
+def slice(end: Date, step := Date{1}) = DateSlice{Date{0}, end, step};
+def slice(step: Date) = DateSlice{Date{0}, Date'max, step};
 
-def today() = Date{c.time(c.NULL)}
-def tomorrow() = Date{today().unixtime + 24*60*60}
+def today() = Date{c.time(c.NULL)};
+def tomorrow() = Date{today().unixtime + 24*60*60};
 
 def testDataSlices() {
     today := today();

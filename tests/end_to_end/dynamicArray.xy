@@ -14,7 +14,7 @@ def dtor(arr: inout Array) {
     arr.mem'free();
 }
 
-def len(a: Array) = a.len
+def len(a: Array) = a.len;
 
 def max(a: Size, b: Size) -> Size {
     return if (a > b) a else b;
@@ -67,7 +67,7 @@ def iter(arr: Array) -> ref(arr) ArrayIter {
     return ArrayIter{};
 }
 
-def valid(arr: Array, iter: ArrayIter) = iter.idx < arr'len
+def valid(arr: Array, iter: ArrayIter) = iter.idx < arr'len;
 
 def next(arr: pseudo Array, iter: inout ArrayIter) {
    iter.idx++;

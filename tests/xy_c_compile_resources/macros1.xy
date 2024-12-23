@@ -6,7 +6,7 @@ struct Tag1 {}
 struct Tag2 {}
 struct Tag3 {}
 
-def call(a: Struct) impl(a, a..tag)
+def call(a: Struct) impl(a, a..tag);
 
 def impl(s: Struct, :Tag1) -> int {return 0;}
 def impl(s: Struct, :Tag2) -> float {return 3.14;}

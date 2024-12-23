@@ -16,7 +16,7 @@ struct Slice {
     end: int;
 }
 
-def slice(start: int, end: int) = Slice{start, end}
+def slice(start: int, end: int) = Slice{start, end};
 
 def main~EntryPoint() -> int {
     s0 := compute() +: len();

@@ -10,13 +10,13 @@ def fibonacci~IterCtor() -> ref() Fib {
     return Fib{};
 }
 
-def valid(fib: Fib) = true
+def valid(fib: Fib) = true;
 
 def next(fib: inout Fib) {
     fib = Fib{fib.a + fib.b, fib.a};
 }
 
-def get(fib: Fib) = fib.a
+def get(fib: Fib) = fib.a;
 
 ;; Multiplies the first {lim} fibonacci numbers
 def mulFibs(lim: int) -> int {

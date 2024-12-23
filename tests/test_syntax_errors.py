@@ -4,8 +4,8 @@ from xyc.parser import parse_code, ParsingError
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        "def double(x: int) x*2;",
-        "Function definitions don't require a terminating semicolon."
+        "def double(x: int) x*2",
+        "Macro functions require a terminating semicolon."
     ),
     (
         """def double(x: int) {
@@ -15,15 +15,15 @@ from xyc.parser import parse_code, ParsingError
     ),
     (
         """
-        def double(x: int) x*2
+        def double(x: int) x*2;
         ;
-        def zero(x: int) 0
+        def zero(x: int) 0;
         """,
         "Empty statements are not allowed. Please remove the semicolon."
     ),
     (
         """
-        def fucn() -> int {
+        def func() -> int {
             retrn 0;
         }
         """,

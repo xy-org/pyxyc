@@ -379,8 +379,8 @@ def test_parse_simple_func(code, exp_ast):
     ],
     [
         """
-        def double(x: int) x * 2
-        def sqr(x: int) = x * x
+        def double(x: int) x * 2;
+        def sqr(x: int) = x * x;
         """,
         [
             ast.FuncDef(ast.Id("double"),
@@ -399,8 +399,8 @@ def test_parse_simple_func(code, exp_ast):
     ],
     [
         """
-        def pseudoParam(x: pseudo int) 0
-        def unnamedParam(:int) 0
+        def pseudoParam(x: pseudo int) 0;
+        def unnamedParam(:int) 0;
         """,
         [
             ast.FuncDef(ast.Id("pseudoParam"),

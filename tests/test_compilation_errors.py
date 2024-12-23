@@ -52,7 +52,7 @@ note: Candidates are:
     get(?[], Size) -> Ptr
 """),
     ("""
-        def func1(x: int) = x*2
+        def func1(x: int) = x*2;
         def test() {
             a := &func1(10);
         }
@@ -158,7 +158,7 @@ src.xy:6:58: error: Cannot infer type because: Cannot get fields of an unknown t
 """),
     ("""
         import libc~[CLib{headers=["string.h", "stdio.h"]}] in c;
-        def func(a: int) a
+        def func(a: int) a;
         def test() {
             func(c.external());
         }
@@ -169,7 +169,7 @@ src.xy:5:18: error: Cannot determine type of expression
 """),
     ("""
         import libc~[CLib{headers=["string.h", "stdio.h"]}] in c;
-        def func(a: int) a
+        def func(a: int) a;
         def test() {
             func(c.argc);
         }
@@ -189,9 +189,9 @@ src.xy:4:22: error: Cannot find tag
                        ^^^^^^^
 """),
     ("""
-        def fun(a: int, b:long = 0) a
-        def fun(a: int, b:short = 0) b
-        def fun(a: double) a
+        def fun(a: int, b:long = 0) a;
+        def fun(a: int, b:short = 0) b;
+        def fun(a: double) a;
      
         def main() {
             fun(0);

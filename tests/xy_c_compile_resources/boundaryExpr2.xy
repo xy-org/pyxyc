@@ -1,4 +1,4 @@
-def sum(x: int, y: int = ^x) x + y
+def sum(x: int, y: int = ^x) x + y;
 
 def quadruple(num: inout int) -> int {
     num *= 4;
