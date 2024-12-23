@@ -1,10 +1,10 @@
 struct Person {
     firstName: String;
-    # lastName: String;
-    # age: int;
-    # height: double;
-    # married: bool;
-    #favoriteColorClothes: Color;
+    lastName: String;
+    age: int;
+    height: double;
+    married: bool;
+    favoriteColorClothes: Color;
 }
 
 struct String {
@@ -14,22 +14,22 @@ struct String {
 
 def string~[StrCtor{prefix=""}](addr: Ptr, size: Size) = String{addr, size}
 
-#struct Color {
-#    r: ubyte;
-#    g: ubyte;
-#    b: ubyte;
-#}
+struct Color {
+    r: ubyte;
+    g: ubyte;
+    b: ubyte;
+}
 
 def test() {
     p1 : Person;
-    # p2 := Person{};
-    # p3 := Person{"Johnny", "Cash"};
-    # p4 := Person{"Johnny", "Cash", 71, 1.88, true};
-    # p5 := Person{age=71, .married};
-    # p6 := Person{"Jonny", .married, lastName="Cash"};
-    # p7 := Person{firstName="Johnny", lastName="Cash", age=71};
-    # p8 := Person{age=71, favoriteColorClothes=Color{0, 0, 0}};
-    # 
+    p2 := Person{};
+    p3 := Person{"Johnny", "Cash"};
+    p4 := Person{"Johnny", "Cash", 71, 1.88, true};
+    p5 := Person{age=71, married=true};
+    p6 := Person{"Jonny", .married, lastName="Cash"};
+    p7 := Person{firstName="Johnny", lastName="Cash", age=71};
+    p8 := Person{age=71, favoriteColorClothes=Color{0, 0, 0}};
+
     # p9 := p3{age=71, .married};
     # p10 := p8{"Jonny", "Cash"};
 }

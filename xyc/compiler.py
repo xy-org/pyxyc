@@ -14,11 +14,13 @@ class CompiledObj:
 class TypeObj(CompiledObj):
     tag_specs: list['VarObj'] = field(default_factory=list)
     builtin : bool = False
-    fields: dict[str, 'VarObj'] = field(default_factory=list)
+    fields: dict[str, 'VarObj'] = field(default_factory=dict)
     init_value: any = None
+    is_init_value_zeros: bool = True
     base_type_obj: 'TypeObj' = None
     is_enum: bool = False
     is_flags: bool = False
+    fully_compiled: bool = False
 
     def get_base_type(self):
         return self if self.base_type_obj is None else self.base_type_obj
@@ -710,18 +712,34 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
         for node in ast:
             if isinstance(node, xy.StructDef):
                 type_obj = ctx.module_ns[node.name]
+                fully_compile_type(type_obj, cast, ast, ctx)
+    # for ast in asts:
+    #     for node in ast:
+    #         if isinstance(node, xy.StructDef):
+    #             type_obj = ctx.module_ns[node.name]
                 
-                if not (type_obj.is_enum or type_obj.is_flags):
-                    compile_struct_fields(type_obj, ast, cast, ctx)
-                else:
-                    compile_enum_fields(type_obj, ast, cast, ctx)
+    #             if not (type_obj.is_enum or type_obj.is_flags):
+    #                 compile_struct_fields(type_obj, ast, cast, ctx)
+    #             else:
+    #                 compile_enum_fields(type_obj, ast, cast, ctx)
 
+def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
+    if type_obj.fully_compiled:
+        return
+       
+    if not (type_obj.is_enum or type_obj.is_flags):
+        compile_struct_fields(type_obj, ast, cast, ctx)
+    else:
+        compile_enum_fields(type_obj, ast, cast, ctx)
+
+    type_obj.fully_compiled = True
 
 def compile_struct_fields(type_obj, ast, cast, ctx):
     node = type_obj.xy_node
     cstruct = type_obj.c_node
     fields = {}
     default_values = []
+    default_values_zeros = []
     for field in node.fields:
         field_type_obj = None
         if field.type is not None:
@@ -733,10 +751,14 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
                 field_type_obj = default_value_obj.infered_type
             elif field_type_obj is not default_value_obj.infered_type:
                 raise CompilationError("Specified and infered types differ", field)
-            default_values.append(default_value_obj.c_node)
+            dv_cnode = default_value_obj.c_node
+            default_values.append(dv_cnode)
+            default_values_zeros.append(isinstance(dv_cnode, c.Const) and dv_cnode.value == 0)
         else:
+            fully_compile_type(field_type_obj, cast, ast, ctx)
             assert field_type_obj.init_value is not None
             default_values.append(field_type_obj.init_value)
+            default_values_zeros.append(field_type_obj.is_init_value_zeros)
 
         cfield = c.VarDecl(
             name=mangle_field(field),
@@ -756,13 +778,13 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             type="char"
         ))
 
-    all_zeros = all((isinstance(dv, c.Const) and dv.value == 0)
-                    for dv in default_values)
+    all_zeros = all(default_values_zeros)
     c_init_args = [c.Const(0)] if all_zeros else default_values
     type_obj.init_value = c.StructLiteral(
         name=cstruct.name,
         args=c_init_args
     )
+    type_obj.is_init_value_zeros = all_zeros
 
 def compile_enum_fields(type_obj, ast, cast, ctx):
     node = type_obj.xy_node
@@ -780,6 +802,7 @@ def compile_enum_fields(type_obj, ast, cast, ctx):
     base_type_obj = None
     if field.type is not None:
         base_type_obj = find_type(field.type, ctx)
+        fully_compile_type(base_type_obj, cast, ast, ctx)
     else:
         raise CompilationError("An explicit type must be specified", field)
 
@@ -992,12 +1015,17 @@ def import_builtins(ctx: CompilerContext, cast):
     }
 
     for xtype, ctype in ctype_map.items():
-        ctx.module_ns[xtype] = TypeObj(
+        type_obj = TypeObj(
             xy_node=xy.StructDef(name=xtype),
             c_node=c.Struct(name=ctype),
             builtin=True,
-            init_value=c.Const(0)
+            init_value=c.Const(0),
+            fully_compiled=True,
         )
+        type_obj.fields = {
+            "": VarObj(type_desc=type_obj)
+        }
+        ctx.module_ns[xtype] = type_obj
 
     # fill in base math operations
     for p1, type1 in enumerate(num_types):
@@ -1081,7 +1109,7 @@ def import_builtins(ctx: CompilerContext, cast):
     tag_ctor = xy.StructDef(name="TagCtor", fields=[
         xy.VarDecl("label", type=None)
     ])
-    tag_obj = TypeObj(tag_ctor, c.Struct("TagCtor"), builtin=True)
+    tag_obj = TypeObj(tag_ctor, c.Struct("TagCtor"), builtin=True, fully_compiled=True)
     tag_obj.tags["xyTag"] = InstanceObj(
         fields={
             "label": StrObj(parts=[ConstObj(value="xyTag")])
@@ -1094,7 +1122,7 @@ def import_builtins(ctx: CompilerContext, cast):
     str_ctor = xy.StructDef(name="StrCtor", fields=[
         xy.VarDecl("prefix", type=None)
     ])
-    str_obj = TypeObj(str_ctor, c.Struct("StrCtor"), builtin=True)
+    str_obj = TypeObj(str_ctor, c.Struct("StrCtor"), builtin=True, fully_compiled=True)
     str_obj.tags["xyTag"] = InstanceObj(
         fields={
             "label": StrObj(parts=[ConstObj(value="xyStr")])
@@ -1105,7 +1133,7 @@ def import_builtins(ctx: CompilerContext, cast):
 
     # iter construction
     iter_ctor = xy.StructDef(name="IterCtor")
-    iter_ctor = TypeObj(str_ctor, c.Struct("IterCtor"), builtin=True)
+    iter_ctor = TypeObj(str_ctor, c.Struct("IterCtor"), builtin=True, fully_compiled=True)
     iter_ctor.tags["xyTag"] = InstanceObj(
         fields={
             "label": StrObj(parts=[ConstObj(value="xyIter")])
@@ -1116,7 +1144,7 @@ def import_builtins(ctx: CompilerContext, cast):
 
     # entry point
     entrypoint = xy.StructDef(name="EntryPoint")
-    ep_obj = TypeObj(entrypoint, builtin=True)
+    ep_obj = TypeObj(entrypoint, builtin=True, fully_compiled=True)
     ep_obj.tags["xyTag"] = InstanceObj(
         fields={
             "label": StrObj(parts=[ConstObj(value="xy.entrypoint")])
@@ -1168,7 +1196,7 @@ def import_builtins(ctx: CompilerContext, cast):
 
     # Enum
     enum = xy.StructDef(name="Enum")
-    enum_ojb = TypeObj(enum, builtin=True)
+    enum_ojb = TypeObj(enum, builtin=True, fully_compiled=True)
     enum_ojb.tags["xyTag"] = InstanceObj(
         fields={
             "label": StrObj(parts=[ConstObj(value="xy_enum")])
@@ -1178,7 +1206,7 @@ def import_builtins(ctx: CompilerContext, cast):
 
     # Flags
     flags = xy.StructDef(name="Flags")
-    flags_ojb = TypeObj(flags, builtin=True)
+    flags_ojb = TypeObj(flags, builtin=True, fully_compiled=True)
     flags_ojb.tags["xyTag"] = InstanceObj(
         fields={
             "label": StrObj(parts=[ConstObj(value="xy_flags")])
@@ -1380,12 +1408,61 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         return compile_fcall(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.StructLiteral):
         type_obj = find_type(expr.name, ctx)
+
+        expr_args = expr.args
+        expr_kwargs = copy(expr.kwargs)
+
+        toggle_idx = None
+        for i, expr_arg in enumerate(expr_args):
+            if isinstance(expr_arg, xy.UnaryExpr) and expr_arg.op == ".":
+                # it's a toggle
+                toggle_idx = i
+                assert isinstance(expr_arg.arg, xy.Id)
+                expr_kwargs[expr_arg.arg.name] = xy.Const(True, "true", "bool")
+            elif toggle_idx is not None:
+                raise CompilationError("Cannot mix and match toggle and positional args", expr_arg)
+        if toggle_idx is not None:
+            expr_args = expr_args[:toggle_idx]
+
+
+        # map positional and named fields
+        name_to_pos = {
+            fname: i
+            for i, fname in enumerate(type_obj.fields.keys())
+        }
+        arg_cnodes = [None] * len(name_to_pos)
+
+        for i, arg in enumerate(expr_args):
+            arg_cnodes[i] = compile_expr(arg, cast, cfunc, ctx).c_node
+        
+        for name, arg in expr_kwargs.items():
+            if name not in name_to_pos:
+                raise CompilationError(f"No field named '{name}", arg)
+            if arg_cnodes[name_to_pos[name]] is not None:
+                raise CompilationError(f"Field {name} already set", arg)
+            arg_cnodes[name_to_pos[name]] = compile_expr(arg, cast, cfunc, ctx).c_node
+
+        arg_cnodes_zeroes = [False] * len(name_to_pos)
+        for i, field in enumerate(type_obj.fields.values()):
+            if arg_cnodes[i] is None:
+                arg_cnodes[i] = field.type_desc.init_value
+                arg_cnodes_zeroes[i] = field.type_desc.is_init_value_zeros
+
+        # eliminate andy trailing zeros
+        last_non_zero_idx = 0
+        for i in range(len(arg_cnodes) - 1, -1, -1):
+            if not arg_cnodes_zeroes[i]:
+                last_non_zero_idx = i+1
+                break
+        arg_cnodes = arg_cnodes[:last_non_zero_idx]
+
+        # create c rep
         ctypename = type_obj.c_name
         res = c.StructLiteral(
             name=ctypename,
-            args=[compile_expr(arg, cast, cfunc, ctx).c_node for arg in expr.args]
+            args=arg_cnodes
         )
-        if len(res.args) == 0:
+        if len(arg_cnodes) == 0:
             res = type_obj.init_value # empty {} is valid only in C2X
         # TODO what about kwargs
         return ExprObj(
