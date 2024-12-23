@@ -408,8 +408,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                         cfunc.params.append(cparam)
 
                 etype_compiled = None
-                if len(node.returns) > 1 or node.etype is not None:
-                    # return through parameter
+                if return_by_param(node):
                     for iret, ret in enumerate(node.returns):
                         if ctx.eval(ret.type) is ctx.void_obj:
                             rtype_compiled = ctx.void_obj
@@ -1145,9 +1144,12 @@ def compile_break(xybreak, cast, cfunc, ctx):
         infered_type=ctx.void_obj,
     )
 
+def return_by_param(xy_func):
+    return xy_func.etype is not None or len(xy_func.returns) > 1
+
 def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
     xy_func = ctx.current_fobj.xy_node
-    if xy_func.etype is None and len(xy_func.returns) <= 1:
+    if not return_by_param(xy_func):
         ret = c.Return()
         if xyreturn.value:
             value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
@@ -1158,7 +1160,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
             infered_type=value_obj.infered_type
         )
     else:
-        # return through argument
+        # return by param(s)
         for iret, ret in enumerate(xy_func.returns):
             value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
             param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
