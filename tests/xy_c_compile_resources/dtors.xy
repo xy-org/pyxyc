@@ -32,21 +32,72 @@ def funcReturningAnObjectWithDtor(num: int) -> Array {
     return arr;  # Move out as this is a tmp variable
 }
 
-def addr(p: Array) {
+def addr(p: Array) -> Ptr {
     return p.mem; # Copy as this is not a tmp variable
 }
 
-def test() {
+def test1() {
     arr: var Array;
     arr'push(10);
 
     update(arr);
 
-    update(funcReturningAnObjectWithDtor(10));
-
     errorProne(arr);
-#    errorProne(funcReturningAnObjectWithDtor(10));
-#
-#    print(at(arr, 10));
-#    print(at(arr, 10));
+    errorProne(funcReturningAnObjectWithDtor(10));
+}
+
+def test2(rng: int) -> void || int {
+    arr1: var Array;
+    errorProne(arr1);
+
+    arr2: var Array;
+    errorProne(arr2);
+
+    arr3: var Array;
+}
+
+def test3(rng: int) -> Array || int {
+    arr1: var Array;
+    errorProne(arr1);
+
+    arr2: var Array;
+    errorProne(arr2);
+
+    arr3: var Array;
+
+    return if (rng == 0) arr1 elif (rng == 1) arr2 else arr3;
+}
+
+def test4(rng: int) -> Array || int {
+    arr1: var Array;
+    errorProne(arr1);
+
+    num : var = 10;
+    while (rng < num) {
+        arr2: var Array;
+        errorProne(arr2);
+
+        for (i in 0:num) {
+            arr3: var Array;
+            errorProne(arr3);
+
+            if (i == rng*2) {
+                arr4: var Array;
+                return arr1;
+            }
+            if (rng == 3) {
+                arr4: var Array;
+                break;
+            }
+        }
+
+        num--;
+    }
+
+    return Array{};
+}
+
+def test5(rng: int) -> Array {
+    arrs : Array[10];
+    return arrs[rng]; # temporary value so move out or copy
 }

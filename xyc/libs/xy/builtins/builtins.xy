@@ -161,6 +161,10 @@ def inc(a: inout int) -> void {
     # Implemented by the compiler
 }
 
+def dec(a: inout int) -> void {
+    # Implemented by the compiler
+}
+
 def inc(a: inout Size) -> void {
     # Implemented by the compiler
 }

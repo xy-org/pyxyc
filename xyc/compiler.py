@@ -164,7 +164,14 @@ class ArgList:
     def __len__(self):
         return len(self.args) + len(self.kwargs)
 
+class NamespaceType:
+    Loop = 1
+
 class IdTable(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.type = None
+
     def merge(self, other: 'IdTable'):
         for key, value in other.items():
             current = self.get(key, None)
@@ -394,8 +401,11 @@ class CompilerContext:
     def is_prim_int(self, type_obj):
         return type_obj in self.prim_int_objs
 
-    def push_ns(self):
-        self.namespaces.append(dict())
+    def push_ns(self, ns_type=None):
+        table = IdTable()
+        if ns_type is not None:
+            table.type = ns_type
+        self.namespaces.append(table)
 
     @property
     def ns(self):
@@ -615,7 +625,13 @@ class CompilerContext:
         if type_obj.init_value is not None:
             c_tmp.value = type_obj.init_value
 
-        return VarObj(None, c_tmp, type_obj)
+        dummy_xy_node = xy.VarDecl(
+            src=None,
+            coords=(-1, -1),
+        )
+        res = VarObj(dummy_xy_node, c_tmp, type_obj, needs_dtor=type_needs_dtor(type_obj))
+        self.ns[tmp_var_name] = res
+        return res
     
     def enter_block(self):
         # TODO implement
@@ -1255,22 +1271,62 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
             expr_obj = compile_expr(node, cast, cfunc, ctx)
             if expr_obj.c_node is not None:
                 cfunc.body.append(expr_obj.c_node)
+
+    # call dtors if any
+    if len(body) > 0 and not isinstance(body[-1], (xy.Return, xy.Break)):
+        call_dtors(ctx.ns, cast, cfunc, ctx)
+
+    # add no error return if needed
     if is_func_body and ctx.current_fobj.etype_obj is not None:
         if len(body) == 0 or not isinstance(body[-1], xy.Return):
             cfunc.body.append(c.Return(ctx.current_fobj.etype_obj.init_value))
 
-    # call dtors if any
-    for name, obj in ctx.ns.items():
-        if isinstance(obj, VarObj) and obj.needs_dtor:
-            dtor_arg_obj = ExprObj(
-                xy_node=obj.xy_node,
-                c_node=c.Id(obj.c_node.name),
-                infered_type=obj.infered_type,
-            )
-            dtor_obj = find_and_call("dtor", ArgList([dtor_arg_obj]), cast, cfunc, ctx, obj.xy_node)
-            cfunc.body.append(dtor_obj.c_node)
-
     ctx.exit_block()
+
+def call_dtors(ns, cast, cfunc, ctx):
+    for name, obj in reversed(ns.items()):
+        if isinstance(obj, VarObj) and obj.needs_dtor:
+            if not isinstance(obj.type_desc, ArrTypeObj):
+                dtor_arg_obj = ExprObj(
+                    xy_node=obj.xy_node,
+                    c_node=c.Id(obj.c_node.name),
+                    infered_type=obj.infered_type,
+                )
+                dtor_obj = find_and_call("dtor", ArgList([dtor_arg_obj]), cast, cfunc, ctx, obj.xy_node)
+                cfunc.body.append(dtor_obj.c_node)
+            else:
+                cfor = c.For(
+                    [c.VarDecl("_i", qtype=c.QualType(c.Type("size_t"), is_const=False), value=c.Const(0))],
+                    c.Expr(c.Id("_i"), c.Const(obj.type_desc.dims[0]), op="<"),
+                    [c.UnaryExpr(c.Id("_i"), op="++", prefix=True)]
+                )
+                dtor_arg_obj = ExprObj(
+                    xy_node=obj.xy_node,
+                    c_node=c.Index(c.Id(obj.c_node.name), index=c.Id("_i")),
+                    infered_type=obj.infered_type.base_type_obj,
+                )
+                dtor_obj = find_and_call("dtor", ArgList([dtor_arg_obj]), cast, cfunc, ctx, obj.xy_node)
+                cfor.body.append(dtor_obj.c_node)
+                cfunc.body.append(cfor)
+
+def call_all_dtors(cast, cfunc, ctx):
+    # first 2 are global and local namespaces
+    for ns in reversed(ctx.namespaces[2:]):
+        call_dtors(ns, cast, cfunc, ctx)
+
+def any_dtors(ctx):
+    # TODO optimize that function
+    for ns in ctx.namespaces[2:]:
+        for _, obj in ns.items():
+            if isinstance(obj, VarObj) and obj.needs_dtor:
+                return True
+    return False
+
+def type_needs_dtor(type_obj):
+    dtor_tag = type_obj.tags.get("xy_dtor", None)
+    if dtor_tag is None and isinstance(type_obj, ArrTypeObj):
+        dtor_tag = type_obj.base_type_obj.tags.get("xy_dtor", None)
+    return dtor_tag is not None and is_ct_true(dtor_tag)
 
 def compile_vardecl(node, cast, cfunc, ctx):
     cvar = c.VarDecl(name=node.name, qtype=c.QualType(is_const=not node.varying))
@@ -1296,8 +1352,7 @@ def compile_vardecl(node, cast, cfunc, ctx):
     else:
         raise CompilationError("Invalid Type", node.type)
     
-    maybe_del = type_desc.tags.get("xy_dtor", None)
-    needs_dtor = maybe_del is not None and is_ct_true(maybe_del)
+    needs_dtor = type_needs_dtor(type_desc)
 
     res_obj = VarObj(node, cvar, type_desc, needs_dtor=needs_dtor)
     ctx.ns[node.name] = res_obj
@@ -2016,7 +2071,14 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             if expr_to_move_idx is not None and not is_builitin_math:
                 tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, cfunc, ctx)
                 arg_exprs[expr_to_move_idx] = tmp_obj
-            expr_to_move_idx = i
+            
+            if type_needs_dtor(obj.infered_type):
+                # immediatelly move if a dtor is required
+                obj = maybe_move_to_temp(obj, cast, cfunc, ctx)
+                expr_to_move_idx = None
+            else:
+                # defer move to tmp for as long as possible
+                expr_to_move_idx = i
 
         arg_exprs.args.append(obj)
     if len(expr.kwargs) > 0 and expr_to_move_idx is not None:
@@ -2287,6 +2349,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 cond=check_error_fcall.c_node,
             )
             if func_obj.etype_obj is ctx.current_fobj.etype_obj:
+                call_all_dtors(cast, check_if, ctx)
                 check_if.body.append(c.Return(c.Id(err_obj.c_node.name)))
             else:
                 cast.includes.append(c.Include("stdlib.h"))
@@ -2390,6 +2453,7 @@ def is_ct_true(obj):
 
 def compile_if(ifexpr, cast, cfunc, ctx):
     c_if = c.If()
+    ctx.push_ns()
     cond_obj = compile_expr(ifexpr.cond, cast, cfunc, ctx)
     # TODO check type is bool
     c_if.cond = cond_obj.c_node
@@ -2465,6 +2529,8 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         # TODO compare types
         next_c_if.else_body = [res_assign]
 
+    ctx.pop_ns()
+
     return ExprObj(
         xy_node=ifexpr,
         c_node=c_res,
@@ -2473,6 +2539,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
 
 def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     cwhile = c.While()
+    ctx.push_ns(NamespaceType.Loop)
 
     cond_obj = compile_expr(xywhile.cond, cast, cfunc, ctx)
     cwhile.cond = cond_obj.c_node
@@ -2523,6 +2590,7 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
         cwhile.body.append(update_expr_obj.c_node)
 
     cfunc.body.append(cwhile)
+    ctx.pop_ns()
 
     return ExprObj(
         xy_node=xywhile,
@@ -2591,7 +2659,7 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
 
 def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
     cfor = c.For()
-    ctx.push_ns()
+    ctx.push_ns(NamespaceType.Loop)
 
     for_outer_block = None
     no_for_vars = False
@@ -2766,6 +2834,12 @@ def is_iter_ctor_call(expr_obj: ExprObj):
 def compile_break(xybreak, cast, cfunc, ctx):
     if xybreak.loop_name is not None:
         raise CompilationError("Breaking the outer loop is NYI", xybreak)
+
+    for ns in reversed(ctx.namespaces):
+        call_dtors(ns, cast, cfunc, ctx)
+        if ns.type is NamespaceType.Loop:
+            break
+
     return ExprObj(
         xy_node=xybreak,
         c_node=c.Break(),
@@ -2779,11 +2853,32 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
     xy_func = ctx.current_fobj.xy_node
     if not return_by_param(xy_func):
         ret = c.Return()
+        value_obj = None
+        needs_dtor = False
         if xyreturn.value:
             value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
             if isinstance(value_obj.compiled_obj, VarObj):
+                # Don't destory the value we return
+                needs_dtor = value_obj.compiled_obj.needs_dtor
                 value_obj.compiled_obj.needs_dtor = False
+            elif any_dtors(ctx):
+                tmp_obj = ctx.create_tmp_var(value_obj.infered_type, "res")
+                tmp_obj.c_node.value = value_obj.c_node
+                tmp_obj.needs_dtor = False
+                cfunc.body.append(tmp_obj.c_node)
+                value_obj = ExprObj(
+                    xy_node=value_obj.xy_node,
+                    c_node=c.Id(tmp_obj.c_node.name),
+                    infered_type=value_obj.infered_type,
+                )
+                # it's a temporary value on the stack. So we need to copy it
             ret.value = value_obj.c_node
+
+        call_all_dtors(cast, cfunc, ctx)
+        if value_obj is not None and isinstance(value_obj.compiled_obj, VarObj):
+            # restore value of needs_dtor for any other returns
+            value_obj.compiled_obj.needs_dtor = needs_dtor
+
         return ExprObj(
             xy_node=xyreturn,
             c_node=ret,
@@ -2804,6 +2899,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         ret = c.Return()
         if xy_func.etype is not None:
             ret.value = ctx.current_fobj.etype_obj.init_value
+        call_all_dtors(cast, cfunc, ctx)
         return ExprObj(
             xy_node=xyreturn,
             c_node=ret,
