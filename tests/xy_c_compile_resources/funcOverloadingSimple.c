@@ -11,7 +11,7 @@ double funcOverloadingSimple_func__with__double(double b) {
 }
 
 int32_t funcOverloadingSimple_main(void) {
-    int32_t a = funcOverloadingSimple_func__with__int(0);
-    double b = funcOverloadingSimple_func__with__double(0.0);
+    const int32_t a = funcOverloadingSimple_func__with__int(0);
+    const double b = funcOverloadingSimple_func__with__double(0.0);
     return 0;
 }

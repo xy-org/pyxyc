@@ -20,9 +20,9 @@ stringCtor_Str stringCtor_str(void* addr, size_t size) {
 }
 
 void stringCtor_createStrings(void) {
-    stringCtor_Str str = stringCtor_str("", 0);
-    stringCtor_Str str1 = stringCtor_str("abc", 3);
-    stringCtor_Str str2 = stringCtor_str("def", 3);
+    const stringCtor_Str str = stringCtor_str("", 0);
+    const stringCtor_Str str1 = stringCtor_str("abc", 3);
+    const stringCtor_Str str2 = stringCtor_str("def", 3);
 }
 
 size_t stringCtor_strLen(stringCtor_Str str) {

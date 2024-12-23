@@ -26,11 +26,11 @@ float typeInferenceAdvanced_transform(int64_t num) {
 }
 
 void typeInferenceAdvanced_func(void) {
-    int32_t a = typeInferenceAdvanced_rng();
-    int32_t b = typeInferenceAdvanced_rng() + 10;
-    float c = typeInferenceAdvanced_transform(typeInferenceAdvanced_myadd(a, b));
-    typeInferenceAdvanced_Pair d = typeInferenceAdvanced_ctorPair();
-    double e = 1 + 1.1718;
-    float ef = 2.1718f;
-    double pi = 1 + 1.0 + 1.14f;
+    const int32_t a = typeInferenceAdvanced_rng();
+    const int32_t b = typeInferenceAdvanced_rng() + 10;
+    const float c = typeInferenceAdvanced_transform(typeInferenceAdvanced_myadd(a, b));
+    const typeInferenceAdvanced_Pair d = typeInferenceAdvanced_ctorPair();
+    const double e = 1 + 1.1718;
+    const float ef = 2.1718f;
+    const double pi = 1 + 1.0 + 1.14f;
 }

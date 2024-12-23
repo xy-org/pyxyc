@@ -198,6 +198,11 @@ class CompilerContext:
         if not isinstance(var_obj, VarObj):
             raise CompilationError(f"Not a function.", name)
         return var_obj
+    
+    def eval_to_id(self, name: xy.Node):
+        if isinstance(name, xy.Id):
+            return name.name
+        raise CompilationError("Cannot determina identifier", name)
 
     def get_compiled_type(self, name: xy.Id):
         return self.id_table[name.name]
@@ -270,6 +275,24 @@ class CompilerContext:
                 "Cannot evaluate at compile time. "
                 f"Unknown expression type '{type(node).__name__}'",
                 node)
+        
+    def create_tmp_var(self, type_obj, name_hint=""):
+        tmp_var_name = f"__tmp{'_' if name_hint else ''}{name_hint}"
+        for i in range(10000):
+            candidate = f"{tmp_var_name}{i}"
+            if candidate not in self.id_table:
+                tmp_var_name = candidate
+                break
+
+        # TODO rewrite expression and call other func
+        c_tmp = c.VarDecl(name=tmp_var_name, type=None, varying=True)
+        if isinstance(type_obj, ArrTypeObj):
+            c_tmp.type = type_obj.base.c_name
+            c_tmp.dims = type_obj.dims
+        else:
+            c_tmp.type = type_obj.c_name
+
+        return VarObj(None, c_tmp, type_obj)
             
 
 def compile_module(builder, module_name, asts):
@@ -465,10 +488,11 @@ def compile_func(node, ctx, ast, cast):
     cfunc = fdesc.c_node
 
     param_objs = []
-    for param in node.params:
+    for param, cparam in zip(node.params, cfunc.params):
         param_type = find_type(param.type, ctx)
         ctx.id_table[param.name] = VarObj(
             xy_node=param,
+            c_node=cparam,
             type_desc=param_type
         )
 
@@ -483,7 +507,7 @@ def compile_body(body, cast, cfunc, ctx):
                 ret.value = compile_expr(node.value, cast, cfunc, ctx).c_node
             cfunc.body.append(ret)
         elif isinstance(node, xy.VarDecl):
-            cvar = c.VarDecl(name=node.name, type=None)
+            cvar = c.VarDecl(name=node.name, type=None, varying=node.varying)
             value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
             type_desc = find_type(node.type, ctx) if node.type is not None else None
             if type_desc is None:
@@ -525,7 +549,7 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
         if expr.op not in {'.', '='}:
             fcall = rewrite_op(expr, ctx)
             return compile_expr(fcall, cast, cfunc, ctx)
-        else:
+        elif expr.op == '.':
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
             assert isinstance(expr.arg2, xy.Id)
             field_name = expr.arg2.name
@@ -534,11 +558,20 @@ def compile_expr(expr, cast, cfunc, ctx) -> ExprObj:
                 c_node=res,
                 infered_type=arg1_obj.infered_type.fields[field_name].type_desc
             )
+        else:
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
+            arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
+            res = c.Expr(arg1_obj.c_node, arg2_obj.c_node, op=expr.op)
+            return ExprObj(
+                c_node=res,
+                infered_type=arg2_obj.infered_type
+            )
     elif isinstance(expr, xy.Id):
-        res = c.Id(expr.name)
+        var_obj = ctx.eval_to_var(expr)
+        res = c.Id(var_obj.c_node.name)
         return ExprObj(
             c_node=res,
-            infered_type=ctx.eval_to_var(expr).type_desc
+            infered_type=var_obj.type_desc
         )
     elif isinstance(expr, xy.FuncCall):
         fspace = ctx.eval_to_fspace(expr.name)
@@ -652,8 +685,23 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     cond_obj = compile_expr(ifexpr.cond, cast, cfunc, ctx)
     # TODO check type is bool
     c_if.cond = cond_obj.c_node
-    cfunc.body.append(c_if)
+    
 
+    if ifexpr.type is not None:
+        if ifexpr.name is None:
+            raise CompilationError(
+                "Ifs that produce result must also have a name", ifexpr)
+        if_name = ctx.eval_to_id(ifexpr.name)
+        infered_type = find_type(ifexpr.type, ctx)
+        var_obj = ctx.create_tmp_var(infered_type, name_hint=if_name)
+        cfunc.body.append(var_obj.c_node)
+        ctx.id_table[if_name] = var_obj
+        c_res = c.Id(var_obj.c_node.name)
+    else:
+        c_res = None
+        infered_type = find_type(xy.Id("void"), ctx)  # TODO remove this call to find type
+
+    cfunc.body.append(c_if)
     body_to_compile = ifexpr.block
     if not isinstance(body_to_compile, list):
         body_to_compile = [body_to_compile]
@@ -667,8 +715,8 @@ def compile_if(ifexpr, cast, cfunc, ctx):
 
     return ExprObj(
         xy_node=ifexpr,
-        c_node=None,
-        infered_type=find_type(xy.Id("void"), ctx)  # TODO remove this call to find type
+        c_node=c_res,
+        infered_type=infered_type
     )
 
 def get_c_type(type_expr, ctx):
