@@ -525,9 +525,18 @@ def compile_expr(expr, cast, cfunc, ctx):
         func_desc = ctx.str_prefix_reg[expr.prefix]
 
         str_const = expr.parts[0].value if len(expr.parts) else ""
+        str_len = 0
+        str_i = 0
+        while str_i < len(str_const):
+            str_len += 1
+            if str_const[str_i] == '\\':
+                str_i += 2
+            else:
+                str_i += 1
+
         c_func = c.FuncCall(func_desc.c_name, args=[
             c.Const('"' + str_const + '"'),
-            c.Const(len(str_const))
+            c.Const(str_len)
         ])
         return c_func
     elif isinstance(expr, xy.ArrayLit):

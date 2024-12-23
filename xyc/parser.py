@@ -14,12 +14,18 @@ class TokenIter:
         return self.i < len(self.tokens)
     
     def peak(self):
+        if not self.has_more():
+            raise ParsingError("Unexpected end of file", self)
         return self.tokens[self.i]
     
     def peakn(self, n: int):
+        if self.i + n >= len(self.tokens):
+            raise ParsingError("Unexpected end of file", self)
         return self.tokens[self.i:self.i+n]
     
     def peak_coords(self):
+        if not self.has_more():
+            raise ParsingError("Unexpected end of file", self)
         return (
             self.token_pos[self.i],
             self.token_pos[self.i] + len(self.peak())
@@ -444,6 +450,7 @@ def parse_str_literal(prefix, prefix_start, itoken):
             if part_start < part_end:
                 part_start = itoken.peak_coords()[0]
         else:
+            itoken.check("\\")
             part_end = itoken.peak_coords()[1]
             itoken.consume()
 

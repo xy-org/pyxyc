@@ -9,7 +9,7 @@ void* cimport_cstr(void* addr, size_t size) {
 }
 
 int32_t cimport_main(void) {
-    write(0, cimport_cstr("Hello World", 11), 11);
+    write(0, cimport_cstr("Hello World\n", 12), 12);
     return 0;
 }
 

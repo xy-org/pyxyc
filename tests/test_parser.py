@@ -1,6 +1,6 @@
 import pytest
 from xyc.parser import parse_code, ParsingError
-from xyc import ast
+import xyc.ast as ast
 
 
 code_ast = [
@@ -626,6 +626,24 @@ def test_ambiguous_tags(code, err_msg):
                                 }
                             )
                         }),
+                    ]
+                )),
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            s := "\\" \\\\ \\a \\b \\f \\n \\r \\t \\v \\x \\0 \\\\\\\\";
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.VarDecl("s", type=None, value=ast.StrLiteral(
+                    parts=[
+                        ast.Const(
+                            "\\\" \\\\ \\a \\b \\f \\n \\r \\t \\v \\x \\0 "
+                            "\\\\\\\\"
+                        ),
                     ]
                 )),
             ]),

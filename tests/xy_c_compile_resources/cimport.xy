@@ -8,6 +8,6 @@ def cstr~[StrCtor{prefix="c"}](addr: Ptr, size: Size) -> Ptr {
 
 
 def main~EntryPoint() -> int {
-    c.write(0, c"Hello World", 11);
+    c.write(0, c"Hello World\n", 12);
     return 0;
 }
