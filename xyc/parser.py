@@ -275,16 +275,19 @@ def parse_expression(
         itoken, precedence=MIN_PRECEDENCE, is_struct=False,
         op_prec=operator_precedence
 ):
+    if itoken.peak() == ";":
+        raise ParsingError("Unexpected end of expression.", itoken)
+
     if precedence >= MAX_PRECEDENCE and itoken.check("("):
         # bracketed expression
         arg1 = parse_expression(itoken)
-        itoken.expect(")")
+        itoken.expect(")", msg="Missing closing bracket")
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "[":
         # Array literal
         coords = itoken.peak_coords()
         itoken.consume()
         args = parse_expr_list(itoken)
-        itoken.expect("]")
+        itoken.expect("]", msg="Missing closing bracket")
         arg1 = ArrayLit(args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE:
         if itoken.peak() != '-' and itoken.peak() in operator_precedence.keys():
@@ -325,6 +328,9 @@ def parse_expression(
         else:
             arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=coords)
         return arg1
+    elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"++", "--"}:
+            raise ParsingError("Prefix increment and decrement are not supported. "
+                            "More infor at TBD", itoken)
     else:
         arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
 

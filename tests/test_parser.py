@@ -479,6 +479,37 @@ def test_expressions(code, exp_ast):
     assert act_ast == exp_ast
 
 
+@pytest.mark.parametrize("code, err_msg", [
+    ("""def func() -> void {
+        ++a;
+    }""",
+     "Prefix increment and decrement are not supported"),
+    ("""def func() -> void {
+        b := ++a;
+    }""",
+     "Prefix increment and decrement are not supported"),
+    ("""def func() -> void {
+        a+;
+    }""",
+     "Unexpected end of expression"),
+    ("""def func() -> void {
+        a----b;
+    }""",
+     "Unexpected token"),
+    ("""def func() -> void {
+        a-- b;
+    }""",
+     "Unexpected token"),
+    ("""def func() -> void {
+        (b + (a+1)
+    }""",
+     "Missing closing bracket"),
+])
+def test_invalid_expressions(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)
+
+
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """struct Str{}
