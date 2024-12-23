@@ -1,0 +1,10 @@
+import package1.module1;
+import package1.module2;
+import package2.module3;
+import package2.module4;
+import package3.module4;
+
+def test() {
+    work1();
+    work2();
+}

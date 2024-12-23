@@ -138,10 +138,13 @@ def test_common_errors(code, err_msg, tmp_path):
     "submodules",
     "paramDefaultValue",
     "boundaryExprMultiModule",
+    "visibility/package1",
+    "visibility/package2",
+    "visibility/package3",
 ])
 def test_module_compilation(resource_dir, module, tmp_path):
     base_dir = resource_dir / "multi_src"
-    output_fn = tmp_path / f"{module}.c"
+    output_fn = tmp_path / f"{module.replace('/', '.')}.c"
     builder = Builder(
         input=str(base_dir / module),
         output=str(output_fn),
