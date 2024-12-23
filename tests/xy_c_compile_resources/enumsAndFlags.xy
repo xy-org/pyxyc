@@ -1,0 +1,26 @@
+struct OpenFlags~Flags {
+    read : bit~[xy.bitmask=c.O_READ] = 0;
+    write : bit~[xy.bitmask=c.O_WRITE] = 0;
+    append : bit~[xy.bitmask=c.O_APPEND] = 0;
+} ;; the Flags tag will generatte the | and & methods
+
+struct Status~Enum {
+    pending;
+    processed;
+    canceled;
+} ;; the Enum tag will generate the & method
+
+def func(a: int) {
+    orderStatus := Status.pending;
+    printStatus(orderStatus);
+    printStatus(.processed);
+
+    type : Status = .canceled;
+    if (a > 0) {
+        type = .processed;
+    }
+
+    open("file.txt", OpenFlags.read);
+    open("file.txt", OpenFlags.read | OpenFlags.write);
+    open("file.txt", .read | .write);
+}

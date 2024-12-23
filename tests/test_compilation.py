@@ -25,6 +25,7 @@ from xyc.compiler import CompilationError
     "errors",
     "nameCollisions",
     "opOverloading",
+    #TODO "enumsAndFlags",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(
