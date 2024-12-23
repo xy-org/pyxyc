@@ -4,6 +4,10 @@
 
 typedef struct callbacks_Callback callbacks_Callback;
 typedef int32_t (*xy_fp__int__int)(int32_t) ;
+typedef int32_t (*xy_fp__int__double__int)(int32_t, double) ;
+
+int32_t callbacks_abs(int32_t a);
+int32_t callbacks_funnyFun(int32_t a, double b);
 
 struct callbacks_Callback {
     char __empty_structs_are_not_allowed_in_c__;
@@ -11,6 +15,9 @@ struct callbacks_Callback {
 
 int32_t callbacks_test(void) {
     const xy_fp__int__int cb1 = callbacks_abs;
+    xy_fp__int__double__int cb3;
+    cb3 = callbacks_funnyFun;
+    const xy_fp__int__double__int cb4 = cb3;
 }
 
 int32_t callbacks_abs(int32_t a) {

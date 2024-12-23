@@ -39,7 +39,7 @@ class Comment(Node):
         self.comment = comment
 
 @dataclass
-class FuncType:
+class FuncType(Node):
     params: list['VarDecl'] = field(default_factory=list)
     returns: list['VarDecl'] = field(default_factory=list)
     etype: Node | None = None

@@ -410,12 +410,13 @@ def parse_expression(
             arg1 = bracketed_exprs[0]
         else:
             # Func type
+            coords = itoken.peak_coords()
             itoken.consume()
             params = [
                 expr_to_param(expr, itoken)
                 for expr in bracketed_exprs
             ]
-            arg1 = FuncType(params=params)
+            arg1 = FuncType(params=params, src=itoken.src, coords=coords)
             ret_args = []
             if itoken.check("("):
                 ret_args = parse_expr_list(itoken)

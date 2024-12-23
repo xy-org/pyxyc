@@ -263,27 +263,33 @@ class FuncSpace:
         )
     
     def find(self, node, args_infered_types, ctx, partial_matches=False):
+        candidate_fobjs = self.findAll(node, args_infered_types, ctx, partial_matches)
+        if len(candidate_fobjs) > 1:
+            space = space.parent_space
+            while space is not None:
+                candidate_fobjs.extend(
+                    space.find_candidates(node, args_infered_types, ctx)
+                )
+                space = space.parent_space
+            self.report_multiple_matches(candidate_fobjs, node, args_infered_types, ctx)
+        elif len(candidate_fobjs) == 1:
+                return candidate_fobjs[0]
+        else:
+            candidate_fobjs = []
+            space = self
+            while space is not None:
+                candidate_fobjs.extend(space._funcs)
+                space = space.parent_space
+            self.report_no_matches(candidate_fobjs, node, args_infered_types, ctx)
+
+    def findAll(self, node, args_infered_types, ctx, partial_matches=False):
         space = self
         while space is not None:
             candidate_fobjs = space.find_candidates(node, args_infered_types, partial_matches, ctx)
-            if len(candidate_fobjs) == 1:
-                    return candidate_fobjs[0]
-            if len(candidate_fobjs) > 1:
-                space = space.parent_space
-                while space is not None:
-                    candidate_fobjs.extend(
-                        space.find_candidates(node, args_infered_types, ctx)
-                    )
-                    space = space.parent_space
-                self.report_multiple_matches(candidate_fobjs, node, args_infered_types, ctx)
+            if len(candidate_fobjs) > 0:
+                    return candidate_fobjs
             space = space.parent_space
-
-        candidate_fobjs = []
-        space = self
-        while space is not None:
-            candidate_fobjs.extend(space._funcs)
-            space = space.parent_space
-        self.report_no_matches(candidate_fobjs, node, args_infered_types, ctx)
+        return []
 
     def find_candidates(self, node, args_infered_types, partial_matches, ctx):
         if isinstance(node, (xy.FuncCall, xy.FuncSelect)):
@@ -419,6 +425,7 @@ class CompilerContext:
     global_ns: IdTable = field(default_factory=IdTable)
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
     added_alignof_macro: bool = False
+    defined_c_symbols: set[str] = field(default_factory=set)
 
     current_fobj: FuncObj | None = None
     tmp_var_i: int = 0
@@ -528,7 +535,7 @@ class CompilerContext:
                     raise CompilationError("Cannot mix positional and named tags.", xy_tag)
                 open_tags.append(xy_tag)
         tag_specs = [
-            VarObj(xy_node=xy_tag, type_desc=find_type(xy_tag.type, self))
+            VarObj(xy_node=xy_tag, type_desc=find_type(xy_tag.type, cast, self))
             for xy_tag in open_tags
         ]
         remaining_args = tags.args[after_open:]
@@ -933,7 +940,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
     for field in node.fields:
         field_type_obj = None
         if field.type is not None:
-            field_type_obj = find_type(field.type, ctx)
+            field_type_obj = find_type(field.type, cast, ctx)
 
         if field.is_pseudo:
             if field.value is None:
@@ -1007,7 +1014,7 @@ def compile_enumflags_fields(type_obj, ast, cast, ctx):
 
     base_type_obj = None
     if base_field.type is not None:
-        base_type_obj = find_type(base_field.type, ctx)
+        base_type_obj = find_type(base_field.type, cast, ctx)
         fully_compile_type(base_type_obj, cast, ast, ctx)
     else:
         raise CompilationError("An explicit type must be specified", field)
@@ -1037,7 +1044,7 @@ def compile_enumflags_fields(type_obj, ast, cast, ctx):
             continue
 
         if field.type is not None:
-            field_type = find_type(field.type, ctx)
+            field_type = find_type(field.type, cast, ctx)
             if field_type is not base_type_obj:
                 raise CompilationError("Type mismatch", field)
 
@@ -1143,41 +1150,12 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
 
     cfunc = c.Func(None)
     ctx.push_ns()
-    param_objs = []
+
     move_args_to_temps = len(node.in_guards) > 0 or len(node.out_guards) > 0
-    for param in node.params:
-        param_obj = VarObj(xy_node=param, passed_by_ref=should_pass_by_ref(param))
-
-        if param.value is not None:
-            move_args_to_temps = True
-
-        if param.type is not None:
-            param_obj.type_desc = find_type(param.type, ctx)
-        else:
-            param_obj.type_desc = do_infer_type(param.value, cast, ctx)
-
-        if param_obj.type_desc:
-            c_type = param_obj.type_desc.c_name
-            if param_obj.passed_by_ref:
-                c_type = c_type + "*"
-        else:
-            raise CompilationError("Compiler Error: Cannot infer type of param", param)
-        
-        if param_obj.type_desc is any_struct_type_obj:
-            raise CompilationError("function parameters cannot be of type struct.", param)
-
-        param_obj.is_pseudo = param.is_pseudo
-        if not param.is_pseudo:
-            cparam = c.VarDecl(param.name, c.QualType(c_type))
-            cfunc.params.append(cparam)
-            param_obj.c_node = cparam
-
-        param_objs.append(param_obj)
-        ctx.ns[param_obj.xy_node.name] = param_obj
-
+    param_objs, any_default_values = compile_params(node.params, cast, cfunc, ctx)
+    move_args_to_temps = move_args_to_temps or any_default_values
     if len(node.params) > 0 and not move_args_to_temps:
         move_args_to_temps = node.params[-1].is_pseudo
-
 
     func_space = ctx.ensure_func_space(node.name)
     expand_name = len(func_space) > 1
@@ -1186,27 +1164,8 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     fobj.params_compiled = True
     fobj.param_objs = param_objs
 
-    etype_compiled = None
-    if return_by_param(node):
-        for iret, ret in enumerate(node.returns):
-            if ctx.eval(ret.type) is ctx.void_obj:
-                rtype_compiled = ctx.void_obj
-                assert len(node.returns) == 1
-                continue
-            param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
-            retparam = c.VarDecl(param_name, c.QualType(get_c_type(ret.type, ctx) + "*"))
-            cfunc.params.append(retparam)
-            rtype_compiled = ctx.get_compiled_type(ret.type)
-            move_args_to_temps = move_args_to_temps or ret.is_ref
-        if node.etype is not None:
-            etype_compiled = ctx.get_compiled_type(node.etype)
-    elif len(node.returns) == 1:
-        rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
-        move_args_to_temps = move_args_to_temps or node.returns[0].is_ref
-    else:
-        rtype_compiled = ctx.void_obj
-
-    has_calltime_tags = remove_calltime_tags(rtype_compiled)
+    rtype_compiled, etype_compiled, any_refs, has_calltime_tags = compile_ret_err_types(node, cast, cfunc, ctx)
+    move_args_to_temps = move_args_to_temps or any_refs
     fobj.has_calltime_tags = has_calltime_tags
 
     if not isinstance(node.body, list) and len(node.returns) == 0:
@@ -1248,6 +1207,66 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     del ctx.func_compilation_stack[id(fobj)]
     fobj.prototype_compiled = True
     return fobj
+
+def compile_params(params, cast, cfunc, ctx):
+    param_objs = []
+    any_default_value_params = False
+    for param in params:
+        param_obj = VarObj(xy_node=param, passed_by_ref=should_pass_by_ref(param))
+
+        if param.value is not None:
+            any_default_value_params = True
+
+        if param.type is not None:
+            param_obj.type_desc = find_type(param.type, cast, ctx)
+        else:
+            param_obj.type_desc = do_infer_type(param.value, cast, ctx)
+
+        if param_obj.type_desc:
+            c_type = param_obj.type_desc.c_name
+            if param_obj.passed_by_ref:
+                c_type = c_type + "*"
+        else:
+            raise CompilationError("Compiler Error: Cannot infer type of param", param)
+        
+        if param_obj.type_desc is any_struct_type_obj:
+            raise CompilationError("function parameters cannot be of type struct.", param)
+
+        param_obj.is_pseudo = param.is_pseudo
+        if not param.is_pseudo:
+            cparam = c.VarDecl(param.name, c.QualType(c_type))
+            cfunc.params.append(cparam)
+            param_obj.c_node = cparam
+
+        param_objs.append(param_obj)
+        ctx.ns[param_obj.xy_node.name] = param_obj
+
+    return param_objs, any_default_value_params
+
+def compile_ret_err_types(node, cast, cfunc, ctx):
+    etype_compiled = None
+    any_refs = False
+    if return_by_param(node):
+        for iret, ret in enumerate(node.returns):
+            if ctx.eval(ret.type) is ctx.void_obj:
+                rtype_compiled = ctx.void_obj
+                assert len(node.returns) == 1
+                continue
+            param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
+            retparam = c.VarDecl(param_name, c.QualType(get_c_type(ret.type, cast, ctx) + "*"))
+            cfunc.params.append(retparam)
+            rtype_compiled = ctx.get_compiled_type(ret.type)
+            any_refs = any_refs or ret.is_ref
+        if node.etype is not None:
+            etype_compiled = ctx.get_compiled_type(node.etype)
+    elif len(node.returns) == 1:
+        rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
+        any_refs = any_refs or node.returns[0].is_ref
+    else:
+        rtype_compiled = ctx.void_obj
+
+    has_calltime_tags = remove_calltime_tags(rtype_compiled)
+    return rtype_compiled, etype_compiled, any_refs, has_calltime_tags
 
 def fill_param_default_values(fobj, cast, ctx):
     # This func is not needed any more. The only useful thing it does now
@@ -1488,7 +1507,7 @@ def compile_vardecl(node, cast, cfunc, ctx):
     value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
     if isinstance(value_obj, RefObj):
         value_obj = ref_get(value_obj, cast, None, ctx)
-    type_desc = find_type(node.type, ctx) if node.type is not None else None
+    type_desc = find_type(node.type, cast, ctx) if node.type is not None else None
     if type_desc is None:
         if value_obj is None:
             raise CompilationError(
@@ -2387,32 +2406,40 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
     arg_infered_types = ArgList(
         args=[ctx.eval_to_type(arg.type) for arg in expr.type.params],
     )
-    fspace = ctx.eval_to_fspace(expr.name)
-    if fspace is None:
-        call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types, expr.inject_args)
-        raise CompilationError(f"Cannot find function {call_sig}", expr.name)
-    if isinstance(fspace, ExtSpace):
-        raise CompilationError("No suitable callbacks found", expr)
 
-    if ctx.compiling_header:
-        for fobj in fspace._funcs:
-            compile_func_prototype(fobj, cast, ctx)
+    if expr.name is not None:
+        fspace = ctx.eval_to_fspace(expr.name)
+        if fspace is None:
+            call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types, expr.inject_args)
+            raise CompilationError(f"Cannot find function {call_sig}", expr.name)
+        if isinstance(fspace, ExtSpace):
+            raise CompilationError("No suitable callbacks found", expr)
 
-    func_obj: FuncObj = fspace.find(expr, arg_infered_types, ctx, partial_matches=False)
+        if ctx.compiling_header:
+            for fobj in fspace._funcs:
+                compile_func_prototype(fobj, cast, ctx)
+
+        func_obj: FuncObj = fspace.find(expr, arg_infered_types, ctx, partial_matches=False)
+    else:
+        func_obj: FuncObj = fselect_unnamed(expr, arg_infered_types, ctx, partial_matches=False)[0]
+
+    ensure_func_decl(func_obj, cast, cfunc, ctx)
 
     params = func_obj.param_objs
-    c_typename = mangle_fselect(expr, params, func_obj.rtype_obj, ctx)
-    c_typedef = c.Typedef(
-        f"{func_obj.rtype_obj.c_name} (*{c_typename})({','.join(p.type_desc.c_name for p in params)})",
-        ""
-    )
-    cast.type_decls.append(c_typedef)
+    c_typename = create_fptr_type(params, func_obj.rtype_obj, cast, ctx)
 
     return ExprObj(
         xy_node=expr,
         c_node=c.Id(func_obj.c_name),
         infered_type=FuncTypeObj(c_typename=c_typename),
     )
+
+def fselect_unnamed(expr, arg_types: ArgList, ctx, partial_matches=True):
+    res = []
+    for obj in itertools.chain(ctx.module_ns.values(), ctx.global_ns.values()):
+        if isinstance(obj, FuncSpace):
+            res.extend(obj.findAll(expr, arg_types, ctx, partial_matches))
+    return res
 
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     arg_exprs = ArgList()
@@ -2994,6 +3021,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     return res_obj
 
 def ensure_func_decl(func_obj: FuncObj, cast, cfunc, ctx):
+    if func_obj.module_header is not None:
+        return # function in a different module
     if func_obj.xy_node is None:
         return # external c functions have declarations someplace else
     if func_obj.decl_visible:
@@ -3097,7 +3126,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     elif len(ifexpr.block.returns) > 0:
         if len(ifexpr.block.returns) > 1:
             raise CompilationError("Multiple results are NYI", ifexpr)
-        infered_type = find_type(ifexpr.block.returns[0].type, ctx)
+        infered_type = find_type(ifexpr.block.returns[0].type, cast, ctx)
     else:
         infered_type = ctx.void_obj
 
@@ -3181,7 +3210,7 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     for loop_vardecl in xywhile.block.returns:
         if loop_vardecl.name:
             value_obj = compile_expr(loop_vardecl.value, cast, cfunc, ctx) if loop_vardecl.value is not None else None
-            type_desc = find_type(loop_vardecl.type, ctx) if loop_vardecl.type is not None else None
+            type_desc = find_type(loop_vardecl.type, cast, ctx) if loop_vardecl.type is not None else None
 
             inferred_type = type_desc if type_desc is not None else value_obj.infered_type
             name_hint = loop_vardecl.name
@@ -3238,7 +3267,7 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
     for loop_vardecl in xydowhile.block.returns:
         if loop_vardecl.name:
             value_obj = compile_expr(loop_vardecl.value, cast, cfunc, ctx) if loop_vardecl.value is not None else None
-            type_desc = find_type(loop_vardecl.type, ctx) if loop_vardecl.type is not None else None
+            type_desc = find_type(loop_vardecl.type, cast, ctx) if loop_vardecl.type is not None else None
 
             inferred_type = type_desc if type_desc is not None else value_obj.infered_type
             name_hint = loop_vardecl.name
@@ -3604,8 +3633,8 @@ def compile_unhandled_error(xyerror, value_obj, cast, cfunc, ctx):
         ctx.stdlib_included = True
     return c.FuncCall("abort")
 
-def get_c_type(type_expr, ctx):
-    id_desc = find_type(type_expr, ctx, required=True)
+def get_c_type(type_expr, cast, ctx):
+    id_desc = find_type(type_expr, cast, ctx, required=True)
     return id_desc.c_name
 
 def mangle_def(fdef: xy.FuncDef, param_objs: list[VarObj], ctx, expand=False):
@@ -3626,7 +3655,7 @@ def mangle_def(fdef: xy.FuncDef, param_objs: list[VarObj], ctx, expand=False):
         mangled = "".join(mangled)
     return mangled
 
-def mangle_fselect(fsel: xy.FuncSelect, param_objs: list[VarObj], rtype_obj: TypeObj, ctx):
+def mangle_fptr(param_objs: list[VarObj], rtype_obj: TypeObj, ctx):
     mangled = ["xy_fp"]
     for param_obj in param_objs:
         mangled.append("__")
@@ -3636,6 +3665,18 @@ def mangle_fselect(fsel: xy.FuncSelect, param_objs: list[VarObj], rtype_obj: Typ
 
     mangled = "".join(mangled)
     return mangled
+
+def create_fptr_type(param_objs: list[VarObj], rtype_obj: TypeObj, cast, ctx: CompilerContext):
+    # TODO remove that func. It doesn't handle etypes
+    c_typename = mangle_fptr(param_objs, rtype_obj, ctx)
+    if c_typename not in ctx.defined_c_symbols:
+        ctx.defined_c_symbols.add(c_typename)
+        c_typedef = c.Typedef(
+            f"{rtype_obj.c_name} (*{c_typename})({', '.join(p.type_desc.c_name for p in param_objs)})",
+            ""
+        )
+        cast.type_decls.append(c_typedef)
+    return c_typename
 
 def do_mangle_type_obj(mangled, type_desc):
     if isinstance(type_desc.xy_node, xy.ArrayType):
@@ -3715,23 +3756,31 @@ def register_func(fdef, ctx):
     fspace.append(res)
     return res
 
-def find_type(texpr, ctx, required=True):
+def find_type(texpr, cast, ctx, required=True):
     if isinstance(texpr, xy.Id) and texpr.name == "struct":
         # Special case for struct
         return any_struct_type_obj
     elif isinstance(texpr, xy.Id) and texpr.name == "?":
         # Special case for ?
         return any_type_obj
-    if not isinstance(texpr, xy.ArrayType):
-        res = ctx.eval(texpr, msg="Cannot find type")
-        return res
-    else:
-        base_type = find_type(texpr.base, ctx)
+    if isinstance(texpr, xy.ArrayType):
+        base_type = find_type(texpr.base, cast, ctx)
         dims = []
         for d in texpr.dims:
             dims.append(ct_eval(d, ctx))
-        
         return ArrTypeObj(xy_node=texpr, base_type_obj=base_type, dims=dims)
+    elif isinstance(texpr, xy.FuncType):
+        ctx.push_ns()
+        c_func = c.Func("dummy")
+        param_objs, _ = compile_params(texpr.params, cast, c_func, ctx)
+        rtype_obj, etype_obj, _, _ = compile_ret_err_types(texpr, cast, c_func, ctx)
+        ctx.pop_ns()
+
+        c_typename = create_fptr_type(param_objs, rtype_obj, cast, ctx)
+        return FuncTypeObj(c_typename=c_typename)
+    else:
+        res = ctx.eval(texpr, msg="Cannot find type")
+        return res
 
 def ct_eval(expr, ctx):
     if isinstance(expr, xy.Const):
