@@ -300,8 +300,6 @@ def parse_expression(
         itoken.expect("]", msg="Missing closing bracket")
         arg1 = ArrayLit(args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE:
-        if itoken.peak() != '-' and itoken.peak() in operator_precedence or itoken.peak() == ",":
-            return None  # Reach a delimiter
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
         if token in {"true", "false"}:
@@ -325,6 +323,8 @@ def parse_expression(
                 raise ParsingError(f"Invalid Prefix Name", itoken)
             itoken.expect('"')
             arg1 = parse_str_literal(token, tk_coords[0], itoken)
+        elif token == ":":
+            arg1 = SliceExpr(src=itoken.src, coords=tk_coords)
         else:
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
     elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!"}:
@@ -342,7 +342,7 @@ def parse_expression(
             raise ParsingError("Prefix increment and decrement are not supported. "
                             "More infor at TBD", itoken)
     else:
-        if itoken.peak() == ";":
+        if is_end_of_expr(itoken):
             raise ParsingError("Unexpected end of expression.", itoken)
         arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
 
@@ -377,9 +377,10 @@ def parse_expression(
             if itoken.check("var"):
                 # it's a var decl
                 decl = VarDecl(name=arg1.name, varying=True, src=itoken.src)
-                decl.type = expr_to_type(
-                    parse_expression(itoken, precedence+1, op_prec=op_prec)
-                )
+                if not is_end_of_expr(itoken):
+                    decl.type = expr_to_type(
+                        parse_expression(itoken, precedence+1, op_prec=op_prec)
+                    )
                 if itoken.check("="):
                     decl.value = parse_expression(itoken, precedence+1, op_prec=op_prec)
                 arg1 = decl
@@ -388,9 +389,12 @@ def parse_expression(
                     raise ParsingError(
                         "Slices can have only 3 components - start:end:step"
                     )
-                arg1.step = parse_expression(itoken, precedence+1, op_prec=op_prec)
+                if not is_end_of_expr(itoken):
+                    arg1.step = parse_expression(itoken, precedence+1, op_prec=op_prec)
             else:
-                arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+                arg2 = None
+                if not is_end_of_expr(itoken):
+                    arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
                 sliceop = SliceExpr(start=arg1, end=arg2, src=itoken.src)
                 arg1 = sliceop
         elif op == "=" and isinstance(arg1, SliceExpr):
@@ -450,6 +454,9 @@ def parse_expression(
         arg1 = decl
 
     return arg1
+
+def is_end_of_expr(itoken):
+    return itoken.peak() in {";", ")", "]", "}", "="}
 
 def parse_if(itoken):
     if_expr = IfExpr()
@@ -560,7 +567,7 @@ def parse_break(itoken):
     break_coords = itoken.peak_coords()
     itoken.consume() # "break" token
     res = Break(src=itoken.src, coords=break_coords)
-    if itoken.peak() not in {";", ")", "]", "}"}:
+    if not is_end_of_expr(itoken):
         res.loop_name = parse_expression(itoken)
     return res
 
