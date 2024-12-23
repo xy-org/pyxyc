@@ -235,6 +235,26 @@ def test_parse_simple_func(code, exp_ast):
             ),
         ]
     ],
+    [
+        """
+        def double(x: int) = x * 2;
+        def sqr(x: int) x * x;
+        """,
+        [
+            ast.FuncDef(ast.Id("double"),
+                params=[
+                    ast.Param("x", type=ast.Id("int")),
+                ],
+                body=ast.BinExpr(ast.Id("x"), ast.Const(2), op="*")
+            ),
+            ast.FuncDef(ast.Id("sqr"),
+                params=[
+                    ast.Param("x", type=ast.Id("int")),
+                ],
+                body=ast.BinExpr(ast.Id("x"), ast.Id("x"), op="*")
+            ),
+        ]
+    ],
 ])
 def test_parse_advanced_funcs(code, exp_ast):
     act_ast = parse_code(code)

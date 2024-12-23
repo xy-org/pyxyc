@@ -243,8 +243,14 @@ def parse_block(itoken):
         else:
             block.in_guards.append(guard_expr)
         itoken.expect(";")
-        num_empty = itoken.skip_empty_lines()  
-    block.body = parse_body(itoken)
+        num_empty = itoken.skip_empty_lines()
+
+    if itoken.check("=") or itoken.peak() != "{":
+        block.body = parse_expression(itoken)
+        itoken.expect(";")
+    else:
+        block.body = parse_body(itoken)
+
     return block
 
 def parse_params(itoken):
