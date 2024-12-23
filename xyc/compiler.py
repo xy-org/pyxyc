@@ -1679,14 +1679,21 @@ def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
 
 def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
     if not ref_obj.container.infered_type.is_flags:
-        return find_and_call(
-            "set",
-            ArgList([
-                ref_obj.container,
-                maybe_move_to_temp(ref_obj.ref, cast, cfunc, ctx),
-                maybe_move_to_temp(val_obj, cast, cfunc, ctx),
-            ]),
-            cast, cfunc, ctx, ref_obj.xy_node
+        arg_objs = ArgList([
+            ref_obj.container,
+            maybe_move_to_temp(ref_obj.ref, cast, cfunc, ctx),
+            val_obj,
+        ])
+        fobj = find_func_obj("set", arg_objs, cast, cfunc, ctx, ref_obj.xy_node)
+
+        if fobj.move_args_to_temps:
+            arg_objs.args[-1] = maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx)
+
+        return do_compile_fcall(
+            ref_obj.xy_node,
+            fobj,
+            arg_exprs=arg_objs,
+            cast=cast, cfunc=cfunc, ctx=ctx
         )
     else:
         return ExprObj(
@@ -2445,7 +2452,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         func_obj=func_obj
     )
 
-    if len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_ref:
+    if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_ref:
         res_obj = ref_setup(
             RefObj(
                 container=func_ctx.ns[func_obj.xy_node.returns[0].references.name],
