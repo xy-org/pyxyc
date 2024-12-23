@@ -59,10 +59,6 @@ def get(
     return arr.mem.addr + i * elemSize;
 }
 
-# def get(arr: Array, i:Size, elemSize := arr'tagsof.elemType'sizeof) -> Ptr~[arr'tagsof.elemType] {
-#     return arr.mem.addr + (i * elemSize);
-# }
-
 struct ArrayIter {
     idx: Size;
 }
