@@ -8,11 +8,16 @@ class CompiledObj:
     tags: dict[str, 'CompiledObj'] = field(kw_only=True, default_factory=dict)
 
 @dataclass
-class TypeDesc(CompiledObj):
-    xy_struct : any = None
-    c_struct : any = None
-    c_name : str | None = None
+class TypeObj(CompiledObj):
+    xy_node : any = None
+    c_node : any = None
     builtin : bool = False
+
+    @property
+    def c_name(self):
+        if self.c_node is not None:
+            return self.c_node.name
+        return None
 
 @dataclass
 class ArrTypeObj(CompiledObj):
@@ -24,18 +29,23 @@ class ArrTypeObj(CompiledObj):
         self.base.c_name + "*"
 
 @dataclass
-class FuncDesc(CompiledObj):
-    xy_func: any = None
-    c_func: any = None
-    c_name : str | None = None
-    rtype_desc: TypeDesc = None
-    is_builtin: bool = False
-
-@dataclass
-class VarDesc(CompiledObj):
+class FuncObj(CompiledObj):
     xy_node: any = None
     c_node: any = None
-    type_desc: TypeDesc | None = None
+    rtype_obj: TypeObj = None
+    builtin: bool = False
+
+    @property
+    def c_name(self):
+        if self.c_node is not None:
+            return self.c_node.name
+        return None
+
+@dataclass
+class VarObj(CompiledObj):
+    xy_node: any = None
+    c_node: any = None
+    type_desc: TypeObj | None = None
 
 class IdTable(dict):
     pass
@@ -47,7 +57,7 @@ class FuncSpace:
     def __len__(self):
         return len(self._funcs)
     
-    def append(self, fdesc: FuncDesc):
+    def append(self, fdesc: FuncObj):
         self._funcs.append(fdesc)
 
     def __getitem__(self, i):
@@ -57,13 +67,13 @@ class FuncSpace:
         if isinstance(node, xy.FuncCall):
             args_infered_types = [infer_type(arg, ctx) for arg in node.args]
             for desc in self._funcs:
-                if cmp_call_def(node, args_infered_types, desc.xy_func, ctx):
+                if cmp_call_def(node, args_infered_types, desc.xy_node, ctx):
                     return desc
             fsig = node.name + "(" + \
-                ", ".join(t.xy_struct.name for t in args_infered_types) + \
+                ", ".join(t.xy_node.name for t in args_infered_types) + \
                 ")"
             candidates = "\n    ".join((
-                func_sig(f.xy_func) for f in self._funcs
+                func_sig(f.xy_node) for f in self._funcs
             ))
             raise CompilationError(
                 f"Cannot find function '{fsig}'", node,
@@ -72,7 +82,7 @@ class FuncSpace:
         else:
             assert isinstance(node, xy.FuncDef)
             for desc in self._funcs:
-                if desc.xy_func == node:
+                if desc.xy_node == node:
                     return desc
             raise "Cannot find func"
 
@@ -85,7 +95,7 @@ def cmp_call_def(fcall, fcall_args_types, fdef, ctx):
         # XXX
         if isinstance(arg_type, ArrTypeObj):
             continue
-        if arg_type.xy_struct.name != param.type.name:
+        if arg_type.xy_node.name != param.type.name:
             return False
     return True
 
@@ -113,7 +123,7 @@ class CompilerContext:
         raise CompilationError(
             f"Symbol '{name.name}' already defined.", name,
             notes=[
-                (f"Previous definition of '{name.name}'", candidate.xy_struct)
+                (f"Previous definition of '{name.name}'", candidate.xy_node)
             ]
         )
     
@@ -152,10 +162,9 @@ def compile_header(ctx: CompilerContext, ast, cast):
                 )
                 cstruct.fields.append(cfield)
 
-            ctx.id_table[node.name] = TypeDesc(
-                xy_struct = node,
-                c_struct = cstruct,
-                c_name=cstruct.name
+            ctx.id_table[node.name] = TypeObj(
+                xy_node = node,
+                c_node = cstruct,
             )
             cast.struct_decls.append(cstruct)
             cast.structs.append(cstruct)
@@ -167,10 +176,9 @@ def compile_header(ctx: CompilerContext, ast, cast):
             if len(func_space) == 1:
                 # Already present. Expand name.
                 func_desc = func_space[0]
-                func_desc.c_name = mangle_def(
-                    func_desc.xy_func, ctx, expand=True
+                func_desc.c_node.name = mangle_def(
+                    func_desc.xy_node, ctx, expand=True
                 )
-                func_desc.c_func.name = func_desc.c_name
             
             cname = mangle_def(node, ctx, expand=expand_name)
             rtype_compiled = ctx.get_compiled_type(node.rtype)
@@ -181,7 +189,7 @@ def compile_header(ctx: CompilerContext, ast, cast):
                 cfunc.params.append(cparam)
             cast.func_decls.append(cfunc)
 
-            compiled = FuncDesc(node, cfunc, cname, rtype_desc=rtype_compiled)
+            compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled)
 
             # compile tags
             for tag in node.tags.args:
@@ -229,9 +237,10 @@ def import_builtins(ctx, cast):
     }
 
     for xtype, ctype in ctype_map.items():
-        ctx.id_table[xtype] = TypeDesc(
-            xy_struct=xy.StructDef(name=xtype),
-            c_name = ctype, builtin=True
+        ctx.id_table[xtype] = TypeObj(
+            xy_node=xy.StructDef(name=xtype),
+            c_node=c.Struct(name=ctype),
+            builtin=True
         )
 
     # fill in base math operations
@@ -250,26 +259,25 @@ def import_builtins(ctx, cast):
                 rtype=xy.Type(rtype_name)
             )
             desc = register_func(func, ctx)
-            desc.is_builtin = True
-            desc.rtype_desc = ctx.id_table[rtype_name]
+            desc.builtin = True
+            desc.rtype_obj = ctx.id_table[rtype_name]
     
     select = xy.FuncDef(name="select", params=[
         xy.Param("arr", xy.ArrType(base=None)),
         xy.Param("index", xy.Type("int")),
     ])
     select_obj = register_func(select, ctx)
-    select_obj.is_builtin = True
-    select_obj.c_name = "select"
+    select_obj.builtin = True
 
     # string construction
     str_ctor = xy.StructDef(name="StrCtor", fields=[
         xy.VarDecl("prefix", type=None)
     ])
-    str_obj = TypeDesc(str_ctor, None, c_name="StringCtor", builtin=True)
+    str_obj = TypeObj(str_ctor, c.Struct("StringCtor"), builtin=True)
     ctx.id_table["StrCtor"] = str_obj
 
     entrypoint = xy.StructDef(name="EntryPoint")
-    ep_obj = TypeDesc(entrypoint, builtin=True)
+    ep_obj = TypeObj(entrypoint, builtin=True)
     ctx.id_table["EntryPoint"] = ep_obj
 
 def compile_funcs(ctx, ast, cast):
@@ -284,7 +292,7 @@ def compile_funcs(ctx, ast, cast):
 def compile_func(node, ctx, ast, cast):
     fspace = ctx.get_func_space(node)
     fdesc = fspace.find(node, ctx)
-    cfunc = fdesc.c_func
+    cfunc = fdesc.c_node
     compile_body(node.body, cast, cfunc, ctx)
     cast.funcs.append(cfunc)
 
@@ -310,7 +318,7 @@ def compile_body(body, cast, cfunc, ctx):
                 cvar.dims = type_desc.dims
             else:
                 cvar.type = type_desc.c_name
-            ctx.id_table[node.name] = VarDesc(node, cvar, type_desc)
+            ctx.id_table[node.name] = VarObj(node, cvar, type_desc)
 
             if node.value is not None:
                 cvar.value = compile_expr(node.value, cast, cfunc, ctx)
@@ -337,7 +345,7 @@ def compile_expr(expr, cast, cfunc, ctx):
         fspace = ctx.get_func_space(expr)
         func_obj = fspace.find(expr, ctx)
 
-        if func_obj.is_builtin and func_obj.xy_func.name == "select":
+        if func_obj.builtin and func_obj.xy_node.name == "select":
             # TODO what if args is more numerous
             assert len(expr.args) == 2
             res = c.Index(
@@ -445,7 +453,7 @@ def infer_type(expr, ctx):
         return ctx.id_table[expr.name.name]
     elif isinstance(expr, xy.FuncCall):
         fdesc = find_func(expr, ctx)
-        return ctx.id_table[fdesc.xy_func.rtype.name]
+        return ctx.id_table[fdesc.xy_node.rtype.name]
     elif isinstance(expr, xy.BinExpr):
         fcall = rewrite_op(expr, ctx)
         return infer_type(fcall, ctx)
@@ -459,7 +467,7 @@ def infer_type(expr, ctx):
                 expr
             )
         func_desc = ctx.str_prefix_reg[expr.prefix]
-        return func_desc.rtype_desc
+        return func_desc.rtype_obj
     elif isinstance(expr, xy.ArrLit):
         if len(expr.elems) <= 0:
             raise CompilationError("Cannot infer type of an empty array")
@@ -472,7 +480,7 @@ def infer_type(expr, ctx):
 
 def register_func(fdef, ctx):
     fspace = ctx.ensure_func_space(fdef)
-    res = FuncDesc(fdef)
+    res = FuncObj(fdef)
     fspace.append(res)
     return res
 

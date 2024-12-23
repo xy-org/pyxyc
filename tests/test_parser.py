@@ -715,6 +715,24 @@ def test_parse_string_literals(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def mkArray() -> int[2] {
+            return [0, 1];
+        }
+        """,
+        [
+            ast.FuncDef(
+                name="mkArray",
+                rtype=ast.ArrType(ast.Id("int"), dims=[ast.Const(2)]),
+                body=[
+                    ast.Return(ast.ArrLit(elems=[
+                        ast.Const(0),
+                        ast.Const(1),
+                    ]))
+                ]
+            ),
+        ]
+    ],
 ])
 def test_arrays(code, exp_ast):
     act_ast = parse_code(code)

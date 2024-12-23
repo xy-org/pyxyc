@@ -227,19 +227,33 @@ def parse_type(itoken):
         return expr_to_type(type_expr)
     
 def parse_return_type(itoken):
-    # This function has a really bad smell
-    name, next = itoken.peakn(2)
-    if next in {"|", "{", "~", "\n"}:
-        itoken.consume()  # name
-        res = Type(name=name, src=itoken.src)
-        if next == "~":
-            res.tags = parse_tags(itoken)
-        return res
-    
-    if name == "(":
-        return parse_type(itoken)
+    # this new map is here purely to provide better error messages in cases like
+    # def func() -> MyType{} {...}
+    # or
+    # def func() -> Type1 | Type2 | Type3 {...}
+    toplevel_precedence_map = {**operator_precedence}
+    del toplevel_precedence_map["|"]
+    del toplevel_precedence_map["{"]
+    type_expr = parse_expression(itoken, op_prec=toplevel_precedence_map)
 
-    raise ParsingError("Return type expressions need to be enclosed in brackets", itoken)
+    if isinstance(type_expr, Id):
+        return Type(name=type_expr.name, src=type_expr.src, coords=type_expr.coords)
+    else:
+        return expr_to_type(type_expr)
+
+    # # This function has a really bad smell
+    # name, next = itoken.peakn(2)
+    # if next in {"|", "{", "~", "\n"}:
+    #     itoken.consume()  # name
+    #     res = Type(name=name, src=itoken.src)
+    #     if next == "~":
+    #         res.tags = parse_tags(itoken)
+    #     return res
+    
+    # if name == "(":
+    #     return parse_type(itoken)
+
+    # raise ParsingError("Return type expressions need to be enclosed in brackets", itoken)
 
 operator_precedence = {
     "~": 11,
@@ -256,7 +270,10 @@ operator_precedence = {
 MIN_PRECEDENCE=2
 MAX_PRECEDENCE=11
 
-def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
+def parse_expression(
+        itoken, precedence=MIN_PRECEDENCE, is_struct=False,
+        op_prec=operator_precedence
+):
     if precedence >= MAX_PRECEDENCE and itoken.check("("):
         # bracketed expression
         arg1 = parse_expression(itoken)
@@ -297,11 +314,11 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
         else:
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
     else:
-        arg1 = parse_expression(itoken, precedence+1)
+        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
 
     op = itoken.peak()
     op_coords = itoken.peak_coords()
-    while op in operator_precedence and operator_precedence[op] == precedence:
+    while op in op_prec and op_prec[op] == precedence:
         itoken.consume()  # operator
         if op == "(":
             if not isinstance(arg1, Id):
@@ -326,25 +343,27 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
             f_coords = itoken.peak_coords()
             fname = itoken.consume()
             fcall = FuncCall(fname, [arg1], src=itoken.src, coords=f_coords)
-            arg2 = parse_expression(itoken, precedence+1)
+            arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             fcall.args.append(arg2)
             arg1 = fcall
         elif op == ":":
             if itoken.check("var"):
                 # it's a var decl
                 decl = VarDecl(name=arg1.name, varying=True, src=itoken.src)
-                decl.type = expr_to_type(parse_expression(itoken, precedence+1))
+                decl.type = expr_to_type(
+                    parse_expression(itoken, precedence+1, op_prec=op_prec)
+                )
                 if itoken.check("="):
-                    decl.value = parse_expression(itoken, precedence+1)
+                    decl.value = parse_expression(itoken, precedence+1, op_prec=op_prec)
                 arg1 = decl
             elif isinstance(arg1, SliceExpr):
                 if arg1.step is not None:
                     raise ParsingError(
                         "Slices can have only 3 components - start:end:step"
                     )
-                arg1.step = parse_expression(itoken, precedence+1)
+                arg1.step = parse_expression(itoken, precedence+1, op_prec=op_prec)
             else:
-                arg2 = parse_expression(itoken, precedence+1)
+                arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
                 sliceop = SliceExpr(start=arg1, end=arg2, src=itoken.src)
                 arg1 = sliceop
         elif op == "=" and isinstance(arg1, SliceExpr):
@@ -362,7 +381,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
         elif op == "~":
             if isinstance(arg1, AttachTags):
                 # parse right to left
-                arg2 = parse_expression(itoken, precedence+1)
+                arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
                 arg1.tags.args[0] = AttachTags(
                     arg1.tags.args[0],
                     TagList([arg2]),
@@ -373,7 +392,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
                 attach_tags = AttachTags(arg1, TagList(args, kwargs))
                 arg1 = attach_tags
             else:
-                arg2 = parse_expression(itoken, precedence+1)
+                arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
                 attach_tags = AttachTags(arg1, TagList([arg2]))
                 arg1 = attach_tags
         elif op == "{":
@@ -385,7 +404,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
                     itoken
                 )
         else:
-            arg2 = parse_expression(itoken, precedence+1)
+            arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             binop = BinExpr(arg1, arg2, op, src=itoken.src, coords=op_coords)
             arg1 = binop
         op = itoken.peak()
