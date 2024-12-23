@@ -19,3 +19,7 @@ void typeInferenceBasic_func(void) {
     const bool f = false;
     const typeInferenceBasic_Pair p = (typeInferenceBasic_Pair){a, b};
 }
+
+void typeInferenceBasic_implicitVoid(void) {
+    typeInferenceBasic_func();
+}

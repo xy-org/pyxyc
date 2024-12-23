@@ -13,3 +13,7 @@ def func() -> void {
     f := false;
     p := Pair{a, b};
 }
+
+def implicitVoid() {
+    func();
+}
