@@ -1,0 +1,18 @@
+def sum(x: int, y: int = ^x) x + y
+
+def quadruple(num: inout int) -> int {
+    num *= 4;
+    return num;
+}
+
+def print(num: int) {
+    # omit for brevity
+}
+
+def main() {
+    a : var int = 1;
+    print(a'sum);
+    print(sum(a * 2));
+    print(sum(quadruple(a)));
+    print(sum(quadruple(a), 10));
+}

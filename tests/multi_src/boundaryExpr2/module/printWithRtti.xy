@@ -1,0 +1,11 @@
+struct Rtti {}
+
+def print(x: pseudo ?, rtti: Rtti = ^rtti(x)) {
+    # omited for brevity
+}
+
+struct Struct {}
+
+def rtti(:Struct) -> Rtti {
+    return Rtti{};
+}

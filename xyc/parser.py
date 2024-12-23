@@ -446,9 +446,11 @@ def parse_expression(
         arg1 = parse_var_decl(itoken, Empty(), MIN_PRECEDENCE, op_prec)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "$":
         arg1 = parse_func_select(itoken)
-    elif precedence >= MAX_PRECEDENCE and itoken.check("^"):
+    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "^":
+        coords = itoken.peak_coords()
+        itoken.consume()
         arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-        arg1 = CallerContextExpr(arg1)
+        arg1 = CallerContextExpr(arg1, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE:
         tk_coords = itoken.peak_coords()
         token = itoken.consume()

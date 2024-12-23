@@ -1,0 +1,10 @@
+def sumWithTag(x: int, y: int = x..tag) x + y
+
+def print(num: int) {
+    # omit for brevity
+}
+
+def main() {
+    a : int~[tag=10] = 1;
+    print(a'sumWithTag);
+}

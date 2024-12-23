@@ -3,13 +3,17 @@ import os
 from copy import copy
 import xyc.ast as xy
 import xyc.cast as c
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 @dataclass
 class CompiledObj:
     tags: dict[str, 'CompiledObj'] = field(kw_only=True, default_factory=dict)
     xy_node : any = None
     c_node : any = None
+
+@dataclass
+class LazyObj(CompiledObj):
+    pass
 
 @dataclass
 class TypeObj(CompiledObj):
@@ -419,6 +423,24 @@ class ModuleHeader:
     ctx: 'CompilerContext' = None
 
 @dataclass
+class TmpNames:
+    tmp_var_i: int = 0
+
+    def gen_tmp_name(self, name_hint="") -> str:
+        tmp_var_name = f"tmp{'_' if name_hint else ''}{name_hint}"
+        tmp_var_name = f"{tmp_var_name}{self.tmp_var_i}"
+        self.tmp_var_i += 1
+        return tmp_var_name
+    
+    def enter_block(self):
+        # TODO implement
+        self.tmp_var_i = 0
+
+    def exit_block(self):
+        # TODO implement
+        pass
+
+@dataclass
 class CompilerContext:
     builder: any
     module_name: str  # TODO maybe module_name should be a list of the module names
@@ -429,7 +451,7 @@ class CompilerContext:
     defined_c_symbols: set[str] = field(default_factory=set)
 
     current_fobj: FuncObj | None = None
-    tmp_var_i: int = 0
+    tmp_names: TmpNames = field(default_factory=TmpNames)
 
     entrypoint_obj: any = None
     entrypoint_priority: int = 0
@@ -446,6 +468,8 @@ class CompilerContext:
     eval_calltime_exprs = False
 
     fsig2obj: dict[str, CompiledObj] = field(default_factory=dict)
+
+    caller_contexts: list['CompilerContext'] = field(default_factory=list)
 
     def __post_init__(self):
         self.namespaces = [self.global_ns, self.module_ns]
@@ -718,18 +742,13 @@ class CompilerContext:
         return obj
     
     def gen_tmp_name(self, name_hint="") -> str:
-        tmp_var_name = f"tmp{'_' if name_hint else ''}{name_hint}"
-        tmp_var_name = f"{tmp_var_name}{self.tmp_var_i}"
-        self.tmp_var_i += 1
-        return tmp_var_name
+        return self.tmp_names.gen_tmp_name(name_hint=name_hint)
     
     def enter_block(self):
-        # TODO implement
-        self.tmp_var_i = 0
+        self.tmp_names.enter_block()
 
     def exit_block(self):
-        # TODO implement
-        pass
+        self.tmp_names.exit_block()
 
     def trueObj(self, xy_node):
         return ConstObj(
@@ -744,7 +763,18 @@ class CompilerContext:
             c_node=c.Const("false"),
             infered_type=self.bool_obj
         )
-            
+    
+    def has_caller_context(self):
+        return len(self.caller_contexts) > 0
+    
+    def get_caller_context(self):
+        return self.caller_contexts[-1]
+    
+    def push_caller_context(self, caller_ctx):
+        self.caller_contexts.append(caller_ctx)
+
+    def pop_caller_context(self):
+        return self.caller_contexts.pop()
 
 def compile_module(builder, module_name, asts):
     ctx = CompilerContext(builder, module_name)
@@ -1721,6 +1751,8 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
             )
         elif isinstance(var_obj, ExprObj):
             return maybe_deref(var_obj, deref, cast, cfunc, ctx)
+        elif isinstance(var_obj, LazyObj):
+            return compile_expr(var_obj.xy_node, cast, cfunc, ctx)
         else:
             raise CompilationError("Invalid expression", expr)
     elif isinstance(expr, xy.FuncCall):
@@ -1885,6 +1917,8 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
             coords=expr.coords
         )
         return compile_fcall(slice_ctor_fcall, cast, cfunc, ctx)
+    elif isinstance(expr, xy.CallerContextExpr):
+        return compile_caller_context_expr(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
     
@@ -2789,7 +2823,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             op=func_to_op_map[func_obj.xy_node.name.name]
         )
         return ExprObj(
-            xy_node=func_obj.xy_node,
+            xy_node=expr,
             c_node=res,
             infered_type=func_obj.rtype_obj
         )
@@ -2954,9 +2988,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
     ensure_func_decl(func_obj, cast, cfunc, ctx)
 
-    func_ctx = ctx
+    caller_ctx = ctx
     if func_obj.module_header is not None:
-        func_ctx = func_obj.module_header.ctx
+        callee_ctx = func_obj.module_header.ctx
+    else:
+        callee_ctx = copy(ctx)  # make a shollow copy
+        # deep copy only the fields that we need in the new context
+        callee_ctx.namespaces = copy(callee_ctx.namespaces)
+        callee_ctx.caller_contexts = copy(callee_ctx.caller_contexts) 
+    callee_ctx.push_caller_context(caller_ctx)
 
     # XXX
     if hasattr(func_obj.c_node, 'name'):
@@ -2964,7 +3004,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     else:
         res = c.FuncCall(name=func_obj.c_node)
 
-    func_ctx.push_ns()
+    callee_ctx.push_ns()
+    caller_ctx.push_ns()
 
     for arg in arg_exprs.args:
         assert arg.c_node is not None
@@ -2979,7 +3020,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if func_obj.xy_node is not None:
         # add arguments to a xy function
         for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
-            func_ctx.ns[pobj.xy_node.name] = arg
+            callee_ctx.ns[pobj.xy_node.name] = arg
+            caller_ctx.ns[pobj.xy_node.name] = LazyObj(xy_node=arg.xy_node)
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:
@@ -3008,7 +3050,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     if value_obj is None:
                         if pobj.xy_node.value is None:
                             raise CompilationError(f"Cannot find var '{pobj.xy_node.name}' to auto inject", expr)
-                        value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, func_ctx)
+                        value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, callee_ctx)
                     to_move = (
                         (i < len(leftover_params) - 1) or
                         isinstance(value_obj.c_node, c.InitList) or
@@ -3032,7 +3074,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             
             if not pobj.xy_node.is_pseudo:
                 res.args.append(value_obj.c_node)
-            func_ctx.ns[pobj.xy_node.name] = value_obj
+            callee_ctx.ns[pobj.xy_node.name] = value_obj
 
     # compile input guards if any
     in_guards = func_obj.xy_node.in_guards if func_obj.xy_node is not None else []
@@ -3040,7 +3082,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if (len(in_guards) + len(out_guards)) > 0:
         cast.includes.append(c.Include("stdlib.h"))
     for guard in in_guards:
-        guard_obj = compile_expr(guard, cast, cfunc, func_ctx)
+        guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
         if not is_ct_true(guard_obj):
             cfunc.body.append(c.If(
                 cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
@@ -3055,13 +3097,13 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         # TODO optimize this by evaluating only the values that need it
         rtype_obj = copy(rtype_obj)
 
-        eval_stored_value = func_ctx.eval_calltime_exprs
-        func_ctx.eval_calltime_exprs = True
-        rtype_obj.tags = func_ctx.eval_tags(
+        eval_stored_value = callee_ctx.eval_calltime_exprs
+        callee_ctx.eval_calltime_exprs = True
+        rtype_obj.tags = callee_ctx.eval_tags(
             func_obj.xy_node.returns[0].type.tags,
             tag_specs=rtype_obj.base_type_obj.tag_specs,
         )
-        func_ctx.eval_calltime_exprs = eval_stored_value
+        callee_ctx.eval_calltime_exprs = eval_stored_value
         cast_result = True
 
     if (
@@ -3077,7 +3119,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             res.args.append(c.UnaryExpr(op='&', prefix=True, arg=tmp_cid))
 
             ret_name = func_obj.xy_node.returns[0].name
-            func_ctx.ns[ret_name] = tmp_obj
+            callee_ctx.ns[ret_name] = tmp_obj
 
         if func_obj.etype_obj is not None:
             # error handling
@@ -3128,7 +3170,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
     # finally eval out_guards
     for guard in out_guards:
-        guard_obj = compile_expr(guard, cast, cfunc, func_ctx)
+        guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
         if not is_ct_true(guard_obj):
             cfunc.body.append(c.If(
                 cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
@@ -3145,9 +3187,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_ref:
         if func_obj.xy_node.returns[0].is_based:
             refto_name = func_obj.xy_node.returns[0].references.name
-            if refto_name not in func_ctx.ns:
+            if refto_name not in callee_ctx.ns:
                 raise CompilationError(f"No parameter {refto_name}", func_obj.xy_node.returns[0].references)
-            base = func_ctx.ns[refto_name]
+            base = callee_ctx.ns[refto_name]
         else:
             base = global_memory
 
@@ -3162,9 +3204,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     else:
         res_obj = raw_fcall_obj
 
-    func_ctx.pop_ns()
+    callee_ctx.pop_ns()
+    caller_ctx.pop_ns()
 
     return res_obj
+
+def compile_caller_context_expr(expr: xy.CallerContextExpr, cast, cfunc, ctx):
+    if not ctx.has_caller_context():
+        raise CompilationError("No caller context", expr)
+    return compile_expr(expr.arg, cast, cfunc, ctx.get_caller_context())
 
 def ensure_func_decl(func_obj: FuncObj, cast, cfunc, ctx):
     if func_obj.module_header is not None:

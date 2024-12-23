@@ -48,6 +48,8 @@ from xyc.compiler import CompilationError
     "dtors1",
     "dtors2",
     "paramsVsArgs",
+    "boundaryExpr1",
+    "boundaryExpr2",
     # TODO "properties",
     "exitWithError",
     "arrayComprehension",
@@ -131,6 +133,7 @@ def test_common_errors(code, err_msg, tmp_path):
     "funcAndStruct",
     "submodules",
     "paramDefaultValue",
+    # "boundaryExpr2",
 ])
 def test_module_compilation(resource_dir, module, tmp_path):
     base_dir = resource_dir / "multi_src"

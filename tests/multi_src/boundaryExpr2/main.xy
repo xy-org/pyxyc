@@ -1,0 +1,12 @@
+import boundaryExpr2.module;
+
+struct Struct {}
+
+def rtti(:Struct) -> Rtti {
+    return Rtti{};
+}
+
+def main() {
+    x : Struct;
+    print(x);
+}
