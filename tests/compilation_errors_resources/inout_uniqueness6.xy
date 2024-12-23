@@ -1,0 +1,23 @@
+def swap(a: inout int, b: inout int) {
+    tmp := a;
+    a = b;
+    b = a;
+}
+
+struct Array~[elemType : struct] {
+    # omitted for brevity
+}
+
+def get(arr: Array, idx: int) -> ref(arr) Ptr~[<< arr..elemType] {
+    # omitted for brevity
+}
+
+def test() {
+    a : Array~int;
+    b : Array~int;
+    swap(a[0], b[0]);
+
+    # should produce an error because the analyzer cannot look past indexing
+    # and assumbed the entire array is taken
+    swap(a[1], a[2]);
+}

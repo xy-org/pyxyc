@@ -1,0 +1,13 @@
+def swap(a: inout int, b: inout int) {
+    tmp := a;
+    a = b;
+    b = a;
+}
+
+def test() {
+    a : var = 0;
+    b : var = 1;
+    swap(a, b);
+    swap(b, a);
+    swap(a, a);  # Should produce an error
+}

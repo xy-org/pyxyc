@@ -110,7 +110,7 @@ class Builder:
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
         if cc_proc.returncode != 0:
-            print("Compilation failed with:")
+            print("C compilation failed with:")
             print(cc_proc.stdout)
             print("If you are calling any c functions directly please review "
                   "your code. If you think it is a problem with the Xy compiler"

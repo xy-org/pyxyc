@@ -244,6 +244,96 @@ def test_parse_comments(code, exp_ast):
             )
         ]
     ],
+    [
+        """
+        def add3(
+            a: int,
+            b: int,
+            c: int,
+        ) -> int {
+            return a + b + c;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("add3"),
+                params=[
+                    ast.param("a", type=ast.Id("int")),
+                    ast.param("b", type=ast.Id("int")),
+                    ast.param("c", type=ast.Id("int")),
+                ],
+                returns=[ast.VarDecl(type=ast.Id("int"))],
+                body=[
+                    ast.Return(
+                        ast.BinExpr(
+                            ast.BinExpr(ast.Id("a"), ast.Id("b"), op="+"),
+                            ast.Id("c"),
+                            op="+"
+                        )
+                    )
+                ]
+            )
+        ]
+    ],
+    [
+        """
+        def add3(
+            a: int,
+            # comment before last param
+            b: int,
+        ) -> void {}
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("add3"),
+                params=[
+                    ast.param("a", type=ast.Id("int")),
+                    ast.param("b", type=ast.Id("int")),
+                ],
+                returns=[ast.VarDecl(type=ast.Id("void"))],
+                body=[]
+            )
+        ]
+    ],
+    [
+        """
+        def add3(
+            a: int,
+            b: int,
+            # comment after last param
+        ) -> void {}
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("add3"),
+                params=[
+                    ast.param("a", type=ast.Id("int")),
+                    ast.param("b", type=ast.Id("int")),
+                ],
+                returns=[ast.VarDecl(type=ast.Id("void"))],
+                body=[]
+            )
+        ]
+    ],
+    [
+        """
+        def add3(
+            a: int,
+            b: int # comment at the same line as the last param
+        ) -> void {}
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("add3"),
+                params=[
+                    ast.param("a", type=ast.Id("int")),
+                    ast.param("b", type=ast.Id("int")),
+                ],
+                returns=[ast.VarDecl(type=ast.Id("void"))],
+                body=[]
+            )
+        ]
+    ],
 ])
 def test_parse_simple_func(code, exp_ast):
     act_ast = parse_code(code)
@@ -1153,6 +1243,35 @@ def test_parse_struct(code, exp_ast):
                     ast.StructLiteral(name=None, args=[ast.Const(1)]),
                     op=".=",
                 ),
+            ]),
+        ],
+    ],
+    [
+        """
+        def func() -> void {
+            argStr := Str{
+                addr=argv[i],
+                len=strlen(argv[i]),
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl(
+                    name="argStr",
+                    value=ast.StructLiteral(
+                        name=ast.Id("Str"),
+                        kwargs={
+                            "addr": ast.Select(ast.Id("argv"), ast.Args([ast.Id("i")])),
+                            "len": ast.FuncCall(
+                                ast.Id("strlen"),
+                                args=[
+                                    ast.Select(ast.Id("argv"), ast.Args([ast.Id("i")]))
+                                ],
+                            ),
+                        }
+                    ),
+                )
             ]),
         ],
     ],

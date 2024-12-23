@@ -108,6 +108,32 @@ src.xy:4:19: error: Expression doesn't evaluate to a ref
 #         }
 #      """, """
 # """),
+    ("""
+        import doesnt.exist
+
+        def test() {
+        }
+     """, """\
+src.xy:2:9: error: Cannot find module 'doesnt.exist'
+|         import doesnt.exist
+          ^^^^^^^^^^^^^^^^^^^
+"""),
+    ("""
+        def test(arg := func()) {
+        }
+     """, """\
+src.xy:2:25: error: Cannot infer type because: Cannot find function func()
+|         def test(arg := func()) {
+                          ^^^^
+"""),
+    ("""
+        def parse(args: pseudo struct) -> void {
+        }
+     """, """\
+src.xy:2:19: error: function parameters cannot be of type struct.
+|         def parse(args: pseudo struct) -> void {
+                    ^^^^
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

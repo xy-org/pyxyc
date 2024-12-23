@@ -1,0 +1,17 @@
+def swap(a: inout int) {
+    # should produce an error
+    doSwap(a, a);
+}
+
+def doSwap(a: inout int, b: inout int) {
+    tmp := a;
+    a = b;
+    b = a;
+}
+
+def test() {
+    a : var = 0;
+    b : var = 1;
+    swap(a);
+    swap(b);
+}

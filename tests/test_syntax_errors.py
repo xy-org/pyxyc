@@ -151,3 +151,17 @@ def test_invalid_slices(code, err_msg):
 def test_invalid_expression(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def func(
+            a: int
+            b: int,
+        ) {
+        }""",
+        "Missing comma at end of parameter"
+    ),
+])
+def test_param_lists(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)

@@ -1,0 +1,28 @@
+def swap(a: inout int, b: inout int) {
+    tmp := a;
+    a = b;
+    b = a;
+}
+
+struct Array~[elemType : struct] {
+    # omitted for brevity
+}
+
+def get(arr: Array, idx: int) -> ref(arr) Ptr~[<< arr..elemType] {
+    # omitted for brevity
+}
+
+def stuff(arr1: inout Array~int, arr2: inout Array~int) {
+    moreStuff(arr1, arr2[0]); # cannot catch the error here
+}
+
+def moreStuff(arr: inout Array~int, val: inout int) {
+    # omitted for brevity
+}
+
+def test() {
+    a : Array~int;
+    b : Array~int;
+    stuff(a, b);
+    stuff(a, a);  # we should catch it here
+}

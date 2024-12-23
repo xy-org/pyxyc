@@ -1,0 +1,26 @@
+def swap(a: inout int, b: inout int) {
+    tmp := a;
+    a = b;
+    b = a;
+}
+
+struct State {
+    subState: SubState;
+    x: float;
+    y: float;
+}
+
+struct SubState {
+    a: int;
+    b: int;
+    c: int;
+}
+
+def test() {
+    a : State;
+    b : State;
+    swap(a.subState.a, a.subState.b);
+
+    # should produce an error because {a.substate.a} collide
+    swap(a.substate.a, a.subState.a);
+}

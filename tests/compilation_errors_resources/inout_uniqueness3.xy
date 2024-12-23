@@ -1,0 +1,21 @@
+struct State {
+    a: int;
+    b: int;
+    c: int;
+    x: float;
+    y: float;
+}
+
+def fillAndReset(st: inout State, val: inout int) {
+    st.a = val;
+    st.b = val;
+    st.c = val;
+    val = 0;
+}
+
+def test() {
+    a : State;
+    b : State;
+    fillAndReset(a, b.c);
+    fillAndReset(a, a.d);  # should produce an error because a and a.c collide
+}

@@ -1,0 +1,25 @@
+def swap(a: inout int, b: inout int) {
+    tmp := a;
+    a = b;
+    b = a;
+}
+
+struct State {
+    subState: SubState;
+    x: float;
+    y: float;
+}
+
+struct SubState {
+    nums: int[10];
+}
+
+def test() {
+    a : State;
+    b : State;
+    swap(a.subState.nums[0], b.subState.nums[0]);
+
+    # should produce an error because the analyzer cannot look past indexing
+    # and assumbed the entire array is taken
+    swap(a.subState.nums[0], a.subState.nums[1]);
+}

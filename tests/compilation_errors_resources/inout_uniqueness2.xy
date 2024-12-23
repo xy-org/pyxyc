@@ -1,0 +1,22 @@
+def swap(a: inout int, b: inout int) {
+    tmp := a;
+    a = b;
+    b = a;
+}
+
+struct State {
+    a: int;
+    b: int;
+    c: int;
+    x: float;
+    y: float;
+}
+
+def test() {
+    a : State;
+    b : State;
+    swap(a.a, b.b);
+    swap(b.c, a.c);
+    swap(a.a, a.b);
+    swap(a.a, a.a);  # should procude an error
+}

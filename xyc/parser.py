@@ -26,7 +26,7 @@ class TokenIter:
     
     def peak_coords(self):
         if not self.has_more():
-            raise ParsingError("Unexpected end of file", self)
+            return (len(self.src.code), len(self.src.code))
         return (
             self.token_pos[self.i],
             self.token_pos[self.i] + len(self.peak())
@@ -168,8 +168,10 @@ def parse_import(itoken):
     in_name = None
     if itoken.check("in"):
         in_name = itoken.consume()
-    itoken.expect_eol()
 
+    coords = (coords[0], itoken.peak_coords()[1] - 1)
+
+    itoken.expect_eol()
     return Import(
         lib=lib, in_name=in_name, tags=tags, src=itoken.src, coords=coords
     )
@@ -271,12 +273,17 @@ def parse_block(itoken):
 def parse_params(itoken):
     res = []
     itoken.expect("(", msg="Missing param list")
+    itoken.skip_empty_lines()
     while itoken.peak() not in {")", "]", "}", ";"}:
-        itoken.skip_empty_lines()
         param = parse_expression(itoken)
-        
         if not isinstance(param, VarDecl):
             raise ParsingError("Invalid parameter. Proper syntax is 'name : Type = value'", itoken)
+        
+        if not itoken.check(","):
+            # no , - better be the last param
+            itoken.skip_empty_lines()
+            if itoken.peak() != ")":
+                raise ParsingError("Missing comma at end of parameter", itoken)
 
         if not (param.is_in or param.is_out or param.is_inout or param.is_outin):
             param.is_in = True
@@ -289,10 +296,6 @@ def parse_params(itoken):
         res.append(param)
 
         itoken.skip_empty_lines()
-        if itoken.peak() != ")":
-            itoken.expect(",")
-        else:
-            itoken.check(",")
 
     itoken.skip_empty_lines()
     itoken.expect(")")

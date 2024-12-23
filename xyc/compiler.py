@@ -146,6 +146,7 @@ class ExtSymbolObj(CompiledObj):
         return self.c_node.name
     
 any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
+any_struct_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 calltime_expr_obj = TypeObj(builtin=True)
 global_memory_type = TypeObj(xy_node=xy.Id("GLOBAL_MEM_REPORT_IF_YOU_SEE_ME"), builtin=True)
 global_memory = ExprObj(
@@ -214,21 +215,12 @@ class FuncSpace:
         self._funcs.append(fdesc)
 
     def __getitem__(self, i):
-        return self._funcs[i]
-    
-    def fmt_func(self, node):
-        if isinstance(node, xy.ArrayType):
-            return self.fmt_func(node.base) + '[' + ','.join(d.value_str for d in node.dims) + ']'
-        elif node is not None:
-            return node.name
-        else:
-            return "<ERROR>!"
-        
+        return self._funcs[i]        
 
     def report_multiple_matches(self, candidate_fobjs, node, args_infered_types, ctx):
         fsig = ctx.eval_to_id(node.name) + "(" + \
-            ", ".join(self.fmt_func(t.xy_node) for t in args_infered_types) + \
-            ", ".join(f"{pname}: {self.fmt_func(t.xy_node)}" for pname, t in args_infered_types.kwargs.items()) + \
+            ", ".join(fmt_type(t.xy_node) for t in args_infered_types) + \
+            ", ".join(f"{pname}: {fmt_type(t.xy_node)}" for pname, t in args_infered_types.kwargs.items()) + \
             ")"
         err_msg = f"Multiple function matches for '{fsig}'"
         candidates = "\n    ".join((
@@ -241,8 +233,8 @@ class FuncSpace:
     
     def report_no_matches(self, candidate_fobjs, node, args_infered_types, ctx):
         fsig = ctx.eval_to_id(node.name) + "(" + \
-            ", ".join(self.fmt_func(t.xy_node) for t in args_infered_types) + \
-            ", ".join(f"{pname}: {self.fmt_func(t.xy_node)}" for pname, t in args_infered_types.kwargs.items()) + \
+            ", ".join(fmt_type(t.xy_node) for t in args_infered_types) + \
+            ", ".join(f"{pname}: {fmt_type(t.xy_node)}" for pname, t in args_infered_types.kwargs.items()) + \
             ")"
         err_msg = f"Cannot find function '{fsig}'"
         candidates = "\n    ".join((
@@ -298,6 +290,13 @@ class ExtSpace(FuncSpace):
     def find(self, node, args_infered_types, ctx):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
+def fmt_type(node):
+    if isinstance(node, xy.ArrayType):
+        return fmt_type(node.base) + '[' + ','.join(d.value_str for d in node.dims) + ']'
+    elif node is not None:
+        return node.name
+    else:
+        return "<ERROR>!"
 
 def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
     if len(fcall_args_types) > len(fobj.param_objs):
@@ -350,6 +349,12 @@ def cmp_arg_param_types(arg_type, param_type):
         return False
     
     return True
+
+def fcall_sig(name, args_infered_types):
+    return name + "(" + \
+        ", ".join(fmt_type(t.xy_node) for t in args_infered_types) + \
+        ", ".join(f"{pname}: {fmt_type(t.xy_node)}" for pname, t in args_infered_types.kwargs.items()) + \
+        ")"
 
 def func_sig(fobj: FuncObj, include_ret=False):
     fdef = fobj.xy_node
@@ -452,10 +457,12 @@ class CompilerContext:
         )
     
     def eval_to_fspace(self, name: xy.Node, msg=None):
-        space = self.eval(name)
+        space = self.eval(name, msg)
         if space is None:
-            msg = msg or f"Cannot find any functions named '{name.name}'"
-            raise CompilationError(msg, name)
+            if msg is not None:
+                raise CompilationError(msg, name)
+            else:
+                return None
         if isinstance(space, ExtSymbolObj):
             return ExtSpace(space.symbol)
         if not isinstance(space, FuncSpace):
@@ -556,9 +563,7 @@ class CompilerContext:
     def eval(self, node, msg=None):
         if isinstance(node, xy.Id):
             res = self.lookup(node.name)
-            if res is None:
-                if msg is None:
-                    msg = f"Cannot find symbol '{node.name}'"
+            if res is None and msg is not None:
                 raise CompilationError(msg, node)
             return res
         elif isinstance(node, xy.CallTimeExpr):
@@ -1118,7 +1123,10 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
             if param_obj.passed_by_ref:
                 c_type = c_type + "*"
         else:
-            c_type = None
+            raise CompilationError("Compiler Error: Cannot infer type of param", param)
+        
+        if param_obj.type_desc is any_struct_type_obj:
+            raise CompilationError("function parameters cannot be of type struct.", param)
 
         param_obj.is_pseudo = param.is_pseudo
         if not param.is_pseudo:
@@ -2287,8 +2295,10 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         args=[arg.infered_type for arg in arg_exprs.args],
         kwargs={key: arg.infered_type for key, arg in arg_exprs.kwargs.items()}
     )
-
     fspace = ctx.eval_to_fspace(expr.name)
+    if fspace is None:
+        call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types)
+        raise CompilationError(f"Cannot find function {call_sig}", expr.name)
     if ctx.compiling_header:
         for fobj in fspace._funcs:
             compile_func_prototype(fobj, cast, ctx)
@@ -2366,7 +2376,7 @@ def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
 def find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     return ctx.eval_to_fspace(
         xy.Id(name, src=xy_node.src, coords=xy_node.coords),
-        msg=f"Cannot find any functions {name}",
+        msg=f"Cannot find function {name}",
     ).find(
         xy.FuncCall(xy.Id(name), src=xy_node.src, coords=xy_node.coords),
         ArgList([obj.infered_type for obj in arg_objs]),
@@ -3320,7 +3330,7 @@ def register_func(fdef, ctx):
 def find_type(texpr, ctx, required=True):
     if isinstance(texpr, xy.Id) and texpr.name == "struct":
         # Special case for struct
-        return TypeObj(builtin=True)
+        return any_struct_type_obj
     elif isinstance(texpr, xy.Id) and texpr.name == "?":
         # Special case for ?
         return any_type_obj
@@ -3436,7 +3446,10 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
             cast.includes.append(c.Include(header_obj.parts[0].value))
         import_obj.is_external = True
     else:
-        module_header = ctx.builder.import_module(imprt.lib)
+        try:
+            module_header = ctx.builder.import_module(imprt.lib)
+        except ValueError:
+            raise CompilationError(f"Cannot find module '{imprt.lib}'", imprt)
         import_obj.module_header = module_header
         if imprt.in_name is None:
             ctx.global_ns.merge(module_header.namespace)
@@ -3453,8 +3466,16 @@ def maybe_add_main(ctx, cast):
                 c.VarDecl("argc", c.QualType("int",)),
                 c.VarDecl("argv", c.QualType("char**"))
             ], body=[
-                c.VarDecl("res", c.QualType("int", is_const=True), value=c.FuncCall(ctx.entrypoint_obj.c_name)),
-                c.Return(c.Id("res")),
             ]
         )
+        fcall_obj = do_compile_fcall(
+            ctx.entrypoint_obj.xy_node, ctx.entrypoint_obj, ArgList(),
+            cast, main, ctx
+        )
+        main.body.extend([
+            # c.VarDecl("res", c.QualType("int", is_const=True), value=fcall_obj.c_node),
+            fcall_obj.c_node,
+            # c.Return(c.Id("res")),
+            c.Return(c.Const(0))
+        ])
         cast.funcs.append(main)
