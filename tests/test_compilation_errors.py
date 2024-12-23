@@ -267,6 +267,20 @@ src.xy:2:16: error: Names should start with a letter
 |         struct 2Struct {}
                  ^^^^^^^
 """),
+    ("""
+        def my_func() {}
+     """, """\
+src.xy:2:13: error: Underscores are not allowed in names. For more info go to RBD
+|         def my_func() {}
+              ^^^^^^^
+"""),
+    ("""
+        def func() {a_b := 10;}
+     """, """\
+src.xy:2:26: error: Underscores are not allowed in names. For more info go to RBD
+|         def func() {a_b := 10;}
+                           ^
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

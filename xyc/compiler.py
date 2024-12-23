@@ -860,6 +860,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                         "They must have a compile-time known value",
                         node
                     )
+                validate_name(node, ctx)
                 cdef = c.Define(
                     name=mangle_define(node.name, ctx.module_name),
                 )
@@ -887,6 +888,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 fobj = FuncObj(
                     xy_node=node,
                 )
+                validate_name(node, ctx)
                 func_space = ctx.ensure_func_space(node.name)
                 func_space.append(fobj)
                 fobjs.append(fobj)
@@ -910,6 +912,8 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
 def validate_name(node: xy.Node, ctx: CompilerContext):
     name = node.name
+    if isinstance(name, xy.Id):
+        name = name.name
     assert isinstance(name, str)
     if '_' in name:
         raise CompilationError("Underscores are not allowed in names. For more info go to RBD", node)
@@ -1519,6 +1523,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
             obj = compile_error(node, cast, cfunc, ctx)
             cfunc.body.append(obj.c_node)
         elif isinstance(node, xy.VarDecl):
+            validate_name(node, ctx)
             vardecl_obj = compile_vardecl(node, cast, cfunc, ctx)
             cfunc.body.append(vardecl_obj.c_node)
         else:
