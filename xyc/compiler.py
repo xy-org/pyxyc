@@ -908,6 +908,9 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
             name=type_obj.base_type_obj.c_node.name,
             dims=type_obj.dims,
         )
+    elif isinstance(type_obj, FuncTypeObj):
+        pass
+        # assert type_obj.c_node is not None
     elif not (type_obj.is_enum or type_obj.is_flags):
         cstruct = c.Struct(name=mangle_struct(type_obj.xy_node, ctx))
         type_obj.c_node = cstruct
@@ -931,6 +934,8 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
             name=None,
             args=[c.Const(0)]
         )
+    elif isinstance(type_obj, FuncTypeObj):
+        type_obj.init_value = c.Const(0)
     elif not (type_obj.is_enum or type_obj.is_flags):
         compile_struct_fields(type_obj, ast, cast, ctx)
     else:
@@ -2508,7 +2513,7 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
         return ExprObj(
             xy_node=expr,
             c_node=c.Id(func_obj.c_name),
-            infered_type=FuncTypeObj(c_typename=c_typename, func_obj=func_obj),
+            infered_type=FuncTypeObj(c_typename=c_typename, xy_node=expr, func_obj=func_obj),
         )
     else:
         # select multiple
@@ -2524,7 +2529,7 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
                 params = cand.param_objs
                 c_typename = create_fptr_type(params, cand.rtype_obj, cast, ctx)
 
-                res_objs.append(FuncTypeObj(c_typename=c_typename, func_obj=cand))
+                res_objs.append(FuncTypeObj(c_typename=c_typename, xy_node=expr, func_obj=cand))
 
         return ExprObj(
             xy_node=expr,
@@ -2861,8 +2866,16 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             name += "[" + ",".join(str(d) for d in arg_exprs[0].compiled_obj.dims) + "]"
         elif isinstance(arg_exprs[0].compiled_obj, (TypeObj, VarObj)):
             name = arg_exprs[0].compiled_obj.xy_node.name
+        elif isinstance(arg_exprs[0].compiled_obj, FuncTypeObj):
+            if arg_exprs[0].compiled_obj.func_obj is not None:
+                name = arg_exprs[0].compiled_obj.func_obj.xy_node.name
+            else:
+                name = "UNKNOWN"
+        elif isinstance(arg_exprs[0].compiled_obj, FuncObj):
+            name = arg_exprs[0].compiled_obj.xy_node.name.name
         else:
-            name = ""
+            import pdb; pdb.set_trace()
+            name = "<UNKNOWN>"
         return compile_expr(
             xy.StrLiteral(
                 parts=[xy.Const(name)], full_str=name,
@@ -3910,15 +3923,18 @@ def find_type(texpr, cast, ctx, required=True):
         ctx.pop_ns()
 
         c_typename = create_fptr_type(param_objs, rtype_obj, cast, ctx)
-        return FuncTypeObj(c_typename=c_typename, func_obj=FuncObj(
-            param_objs=param_objs,
-            rtype_obj=rtype_obj,
-            etype_obj=etype_obj,
-            move_args_to_temps=True,
-            params_compiled = True,
-            prototype_compiled = True,
-            decl_visible = True,
-        ))
+        return FuncTypeObj(
+            c_typename=c_typename, xy_node=texpr, 
+            func_obj=FuncObj(
+                param_objs=param_objs,
+                rtype_obj=rtype_obj,
+                etype_obj=etype_obj,
+                move_args_to_temps=True,
+                params_compiled = True,
+                prototype_compiled = True,
+                decl_visible = True,
+            )
+        )
     else:
         res = ctx.eval(texpr, msg="Cannot find type")
         return res
