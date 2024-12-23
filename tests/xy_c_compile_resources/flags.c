@@ -23,6 +23,9 @@ flags_String flags_string(void* addr, size_t size) {
 
 void flags_open(flags_String fn, flags_OpenFlags flags) {
     if (flags & flags_OpenFlags__readWrite) {
+    } else if (flags == (flags_OpenFlags__readOnly | flags_OpenFlags__append)) {
+    } else if (flags & flags_OpenFlags__readOnly) {
+    } else if (flags & flags_OpenFlags__writeOnly) {
     }
 }
 

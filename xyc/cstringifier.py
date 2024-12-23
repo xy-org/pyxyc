@@ -1,5 +1,23 @@
 from xyc.cast import *
 
+op_precedence = {
+    '.': 11, '->': 11,
+    '*': 10, '/': 10, '%': 10,
+    '+': 9, '-': 9,
+    '<<': 8, '>>': 8,
+    '<': 7, '<=': 7, '>': 7, '>=': 7,
+    '==': 6, '!=': 6,
+    '&': 5,
+    '^': 4,
+    '|': 3,
+    '&&': 2,
+    '||': 1,
+    # ?:
+    '=': 0, '+=': 0, '-=': 0, '*=': 0, '/=': 0, '%=': 0, '<<=': 0, '>>=': 0,
+    '&=': 0, '^=': 0, '|=': 0,
+    ',': -1
+}
+
 def stringify(ast: Ast):
     frags = []
     for inc in ast.includes:
@@ -142,18 +160,23 @@ def stringify_field(field, frags, ident):
         frags.extend(('[', ','.join(str(d) for d in field.qtype.type.dims), ']'))
     frags.append(";\n")
 
-def stringify_expr(expr, frags):
+def stringify_expr(expr, frags, parent_op_precedence=-10):
     if isinstance(expr, Const):
         frags.append(str(expr.value))
     elif isinstance(expr, Id):
         frags.append(expr.name)
     elif isinstance(expr, Expr):
-        stringify_expr(expr.arg1, frags)
+        op_prec = op_precedence[expr.op]
+        if parent_op_precedence > op_prec:
+            frags.append("(")
+        stringify_expr(expr.arg1, frags, op_prec)
         if expr.op not in {".", "->"}:
             frags.extend((" ", expr.op, " "))
         else:
             frags.append(expr.op)
-        stringify_expr(expr.arg2, frags)
+        stringify_expr(expr.arg2, frags, op_prec)
+        if parent_op_precedence > op_prec:
+            frags.append(")")
     elif isinstance(expr, UnaryExpr):
         if expr.prefix:
             frags.append(expr.op)
