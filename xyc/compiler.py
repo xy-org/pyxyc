@@ -562,16 +562,8 @@ def compile_structs(ctx: CompilerContext, asts, cast):
 
 def compile_func_prototype(node, cast, ctx):
     func_space = ctx.ensure_func_space(node.name)
-    expand_name = len(func_space) > 0
-    if len(func_space) == 1:
-        # Already present. Expand name.
-        func_desc = func_space[0]
-        func_desc.c_node.name = mangle_def(
-            func_desc.xy_node, ctx, expand=True
-        )
-    
-    cname = mangle_def(node, ctx, expand=expand_name)
-    cfunc = c.Func(name=cname)
+
+    cfunc = c.Func(None)
     param_objs = []
     move_args_to_temps = False
     for param in node.params:
@@ -598,6 +590,15 @@ def compile_func_prototype(node, cast, ctx):
             param_obj.c_node = cparam
 
         param_objs.append(param_obj)
+
+    expand_name = len(func_space) > 0
+    if len(func_space) == 1:
+        # Already present. Expand name.
+        func_desc = func_space[0]
+        func_desc.c_node.name = mangle_def(
+            func_desc.xy_node, func_desc.param_objs, ctx, expand=True
+        )
+    cfunc.name = mangle_def(node, param_objs, ctx, expand=expand_name)
 
     etype_compiled = None
     if return_by_param(node):
@@ -1045,7 +1046,7 @@ def c_getref(c_node):
 
 def try_infer_type(expr, ctx):
     try:
-        do_infer_type(expr, ctx)
+        return do_infer_type(expr, ctx)
     except CompilationError:
         return None
     
@@ -1665,13 +1666,13 @@ def get_c_type(type_expr, ctx):
     id_desc = find_type(type_expr, ctx, required=True)
     return id_desc.c_name
 
-def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
+def mangle_def(fdef: xy.FuncDef, param_objs: list[VarObj], ctx, expand=False):
     mangled = mangle_name(fdef.name.name, ctx.module_name)
     if expand:
         mangled = [mangled, "__with"]
-        for param in fdef.params:
+        for param_obj in param_objs:
             mangled.append("__")
-            mangled.append(param.type.name)
+            mangled.append(param_obj.type_desc.xy_node.name)
         mangled = "".join(mangled)
     return mangled
 

@@ -51,7 +51,7 @@ def createStrings() {
     str2 := f"str1={str1}";
     # str3 := f"{=str1}";
     # str4 := f"{pi}";
-    #TODO str5 := f"{pi, precision=2}";
+    # str5 := f"{pi, 2}";
     # str6 := f"{pi * 2}";
 
     # return str1'len + str2'len + str3'len + str4'len + str5'len + str6'len;
