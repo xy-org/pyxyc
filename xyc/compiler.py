@@ -673,7 +673,7 @@ class CompilerContext:
                 obj.tags = copy(obj.tags)
                 obj.tags.update(self.eval_tags(node.tags, obj.tag_specs))
             else:
-                raise CompilationError("Cannot assign tags", node)
+                raise CompilationError(f"Cannot assign tags to obj of type {obj.__class__.__name__}", node)
             return obj
         else:
             obj = compile_expr(node, None, None, self)
