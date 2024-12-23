@@ -1,0 +1,65 @@
+struct MyInt {
+    num: int;
+}
+
+def cmp(a: MyInt, b: MyInt) -> int {
+    return (a - b).num;
+}
+
+def add(a: MyInt, b: MyInt) -> MyInt {
+    return MyInt{a.num + b.num};
+}
+
+def sub(a: MyInt, b: MyInt) -> MyInt {
+    return MyInt{a.num - b.num};
+}
+
+def mul(a: MyInt, b: MyInt) -> MyInt {
+    return MyInt{a.num * b.num};
+}
+
+def div(a: MyInt, b: MyInt) -> MyInt {
+    return MyInt{a.num / b.num};
+}
+
+def cmpMyInts() -> int {
+    a := MyInt{0};
+    b := MyInt{1};
+
+    if (a > b) {
+        return 1;
+    }
+
+    if (a * MyInt{0} > MyInt{1}) {
+        return 2;
+    }
+
+    if (a / MyInt{1} <= b) {
+        return 3;
+    }
+
+    return 0;
+}
+
+
+struct Pair {
+    a: MyInt;
+    b: MyInt;
+}
+
+def cmp(p1: MyInt, n: int) -> int {
+    return p1.num - n;
+}
+
+def cmp(p1: Pair, p2: Pair) -> MyInt {
+    return p1.a - p2.a;
+}
+
+def cmpPairs() -> int {
+    p1 := Pair{0, 1};
+    p2 := Pair{2, 3};
+    if (p1 > p2) {
+        return 1;
+    }
+    return 0;
+}

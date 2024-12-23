@@ -184,6 +184,7 @@ class CompilerContext:
 
     entrypoint_obj: any = None
     void_obj: any = None
+    bool_obj: any = None
 
     stdlib_included = False
 
@@ -485,6 +486,7 @@ def import_builtins(ctx: CompilerContext, cast):
             init_value=c.Const(0)
         )
     ctx.void_obj = ctx.global_ns["void"]
+    ctx.bool_obj = ctx.global_ns["bool"]
 
     # fill in base math operations
     for p1, type1 in enumerate(num_types):
@@ -498,8 +500,7 @@ def import_builtins(ctx: CompilerContext, cast):
                 ("sub", larger_type), ("div", larger_type),
                 ("addEqual", type1), ("mulEqual", type1),
                 ("subEqual", type1), ("divEqual", type1),
-                ("lt", "bool"), ("ltEqual", "bool"), ("gt", "bool"),
-                ("gtEqual", "bool"), ("equal", "bool"), ("notEqual", "bool"),
+                ("cmp", larger_type),
             ]:
                 func = xy.FuncDef(
                     fname,
@@ -680,8 +681,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         )
     elif isinstance(expr, xy.BinExpr):
         if expr.op not in {'.', '='}:
-            fcall = rewrite_op(expr, ctx)
-            return compile_expr(fcall, cast, cfunc, ctx)
+            return compile_binop(expr, cast, cfunc, ctx)
         elif expr.op == '.':
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
             assert isinstance(expr.arg2, xy.Id)
@@ -826,21 +826,16 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             c_node=res,
             infered_type=func_obj.rtype_obj
         )
-    elif func_obj.builtin and len(expr.args) == 2:
+    elif func_obj.builtin and len(expr.args) == 2 and func_obj.xy_node.name != "cmp":
         func_to_op_map = {
             "add": '+',
             "sub": '-',
             "mul": '*',
-            "lt": '<',
-            "ltEqual": '<=',
-            "gt": '>',
-            "gtEqual": ">=",
+            "div": '/',
             "addEqual": "+=",
             "subEqual": "-=",
             "mulEqual": "*=",
             "divEqual": "/=",
-            "equal": "==",
-            "notEqual": "!=",
         }
         c_arg1 = arg_exprs[0].c_node
         if len(func_obj.xy_node.returns) == 1 and func_obj.xy_node.returns[0].type.name == "Ptr":
@@ -852,6 +847,13 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         )
         return ExprObj(
             c_node=res,
+            infered_type=func_obj.rtype_obj
+        )
+    elif func_obj.builtin and func_obj.xy_node.name == "cmp":
+        res = c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op="-")
+        return ExprObj(
+            c_node=res,
+            xy_node=expr,
             infered_type=func_obj.rtype_obj
         )
     elif func_obj.builtin:
@@ -1302,30 +1304,46 @@ def find_func(fcall, ctx):
     fspace = ctx.eval_to_fspace(fcall.name)
     return fspace.find(fcall, ctx)
 
+def compile_binop(binexpr, cast, cfunc, ctx):
+    if binexpr.op in {"==", "!=", ">", "<", "<=", ">="} and \
+        isinstance(binexpr.arg2, xy.Const) and binexpr.arg2.value == 0:
+        arg1_eobj = compile_expr(binexpr.arg1, cast, cfunc, ctx)
+        if isinstance(arg1_eobj.c_node, c.Expr) and arg1_eobj.c_node.op == "-":
+            c_res = c.Expr(
+                arg1=arg1_eobj.c_node.arg1,
+                arg2=arg1_eobj.c_node.arg2,
+                op=binexpr.op
+            )
+            return ExprObj(binexpr, c_res, infered_type=ctx.bool_obj)
+
+    fcall = rewrite_op(binexpr, ctx)
+    return compile_expr(fcall, cast, cfunc, ctx)
+
 def rewrite_op(binexpr, ctx):
     fname = {
         "+": "add",
-        "-": "sub",
-        "*": "mul",
-        "/": "div",
-        "<": "lt",
-        ">": "gt",
-        "<=": "ltEqual",
-        ">=": "gtEqual",
         "+=": "addEqual",
+        "-": "sub",
         "-=": "subEqual",
+        "*": "mul",
         "*=": "mulEqual",
+        "/": "div",
         "/=": "divEqual",
-        "==": "equal",
-        "!=": "notEqual",
     }.get(binexpr.op, None)
-    if fname is None:
+    if fname is not None:
+        return xy.FuncCall(
+            xy.Id(fname, src=binexpr.src, coords=binexpr.coords),
+            args=[binexpr.arg1, binexpr.arg2],
+            src=binexpr.src, coords=binexpr.coords)
+    elif binexpr.op in {"==", "!=", ">", "<", "<=", ">="}:
+        cmp_call = xy.FuncCall(
+            xy.Id("cmp", src=binexpr.src, coords=binexpr.coords),
+            args=[binexpr.arg1, binexpr.arg2],
+            src=binexpr.src, coords=binexpr.coords)
+        return xy.BinExpr(arg1=cmp_call, arg2=xy.Const(0), op=binexpr.op,
+                          src=binexpr.src, coords=binexpr.coords)
+    else:
         raise CompilationError(f"Unrecognized operator '{binexpr.op}'", binexpr)
-    fcall = xy.FuncCall(
-        xy.Id(fname, src=binexpr.src, coords=binexpr.coords),
-        args=[binexpr.arg1, binexpr.arg2],
-        src=binexpr.src, coords=binexpr.coords)
-    return fcall
 
 def rewrite_unaryop(expr, ctx):
     if expr.op == "++":

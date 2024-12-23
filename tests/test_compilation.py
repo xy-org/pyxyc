@@ -24,6 +24,7 @@ from xyc.compiler import CompilationError
     "pseudoParams",
     "errors",
     "nameCollisions",
+    "opOverloading",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(
