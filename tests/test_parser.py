@@ -470,6 +470,8 @@ def test_parse_simple_func(code, exp_ast):
         def func(x: pseudo ?) -> Ptr~[^(a'typeof)] {}
         def func(x: pseudo ?) -> Ptr~[^a'typeof] {}
         def func(x: pseudo ?) -> Ptr~[^typeof(a)] {}
+        def func(x: pseudo ?) -> Ptr~[^(%a)] {}
+        def func(x: pseudo ?) -> Ptr~[%^a] {}
         """,
         [
             ast.FuncDef(ast.Id("func"),
@@ -516,6 +518,33 @@ def test_parse_simple_func(code, exp_ast):
                                 ast.CallerContextExpr(ast.Id("typeof")),
                                 args=[ast.Id("a")]
                             ),
+                        ]
+                    ))),
+                ],
+                body=[]
+            ),
+            ast.FuncDef(ast.Id("func"),
+                params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
+                returns=[
+                    ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+                        args=[
+                            ast.CallerContextExpr(
+                                arg=ast.UnaryExpr(arg=ast.Id("a"), op="%"),
+                            )
+                        ]
+                    ))),
+                ],
+                body=[]
+            ),
+            ast.FuncDef(ast.Id("func"),
+                params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
+                returns=[
+                    ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+                        args=[
+                            ast.UnaryExpr(
+                                arg=ast.CallerContextExpr(arg=ast.Id("a")),
+                                 op="%",
+                            )
                         ]
                     ))),
                 ],

@@ -486,6 +486,8 @@ def parse_expression(
             itoken.i -= 1
         elif token[-1] == ":":
             raise ParsingError("Operator slices require a start.", itoken)
+        elif token in operator_precedence:
+            raise ParsingError("Expected operand found operator", itoken)
         else:
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
     elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!", "&", "%"}:
