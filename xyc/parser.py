@@ -255,7 +255,8 @@ def parse_toplevel_type(itoken):
     return expr_to_type(type_expr)
 
 operator_precedence = {
-    "~": 11,
+    "~": 12,
+    "unary+": 11, "unary-": 11, "!": 11,
     "++" : 10, "--": 10, ".": 10, "(": 10, "[": 10, "{": 10, "'": 10,
     "^": 9, "\\": 9,
     "*": 8, "/": 8,
@@ -267,7 +268,8 @@ operator_precedence = {
     "=": 2, ":": 2,
 }
 MIN_PRECEDENCE=2
-MAX_PRECEDENCE=11
+UNARY_PRECEDENCE=11
+MAX_PRECEDENCE=12
 
 def parse_expression(
         itoken, precedence=MIN_PRECEDENCE, is_struct=False,
@@ -312,6 +314,17 @@ def parse_expression(
             arg1 = parse_str_literal(token, tk_coords[0], itoken)
         else:
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
+    elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!"}:
+        coords = itoken.peak_coords()
+        op = itoken.consume()
+        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        if op != '!' and isinstance(arg1, Const) and arg1.type != "str":
+            if op == '-':
+                arg1.value = -arg1.value
+                arg1.value_str = f'-{arg1.value_str}'
+        else:
+            arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=coords)
+        return arg1
     else:
         arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
 

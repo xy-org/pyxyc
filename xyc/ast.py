@@ -120,6 +120,11 @@ class BinExpr(Node):
     op: str
 
 @dataclass
+class UnaryExpr(Node):
+    arg: Node
+    op: str
+
+@dataclass
 class AttachTags(Node):
     arg: Node | None = None
 

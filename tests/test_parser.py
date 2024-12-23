@@ -379,7 +379,69 @@ def test_parse_var_decl(code, exp_ast):
                     ast.Id("a"),
                     ast.FuncCall(ast.Id("func"), [ast.Id("b")]),
                     ast.FuncCall(ast.Id("add"), [ast.Id("d"), ast.Id("c")]),
-                ])
+                ]),
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            minusone := -1;
+            plusone := +1;
+            addneg := a + -5;
+            negadd := -b + a*-c;
+            notOp := !a & !true & !b | !(c & d);
+            doubleMinus := -b - -c;
+            a := b~Tag-c;
+        }""",
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.VarDecl("minusone", type=None, value=ast.Const(-1)),
+                ast.VarDecl("plusone", value=ast.Const(1)),
+                ast.VarDecl("addneg", value=ast.BinExpr(
+                    op="+",
+                    arg1=ast.Id("a"),
+                    arg2=ast.Const(-5)
+                )),
+                ast.VarDecl("negadd", value=ast.BinExpr(
+                    op="+",
+                    arg1=ast.UnaryExpr(op='-', arg=ast.Id("b")),
+                    arg2=ast.BinExpr(
+                        op='*',
+                        arg1=ast.Id("a"),
+                        arg2=ast.UnaryExpr(op="-", arg=ast.Id("c"))
+                    )
+                )),
+                ast.VarDecl("notOp", value=ast.BinExpr(
+                    op='|',
+                    arg1=ast.BinExpr(
+                        op='&',
+                        arg1=ast.BinExpr(
+                            op='&',
+                            arg1=ast.UnaryExpr(op='!', arg=ast.Id("a")),
+                            arg2=ast.UnaryExpr(
+                                op='!', arg=ast.Const(True, "true", "bool")
+                            ),
+                        ),
+                        arg2=ast.UnaryExpr(op='!', arg=ast.Id("b")),
+                    ),
+                    arg2=ast.UnaryExpr(op='!', arg=ast.BinExpr(
+                        op='&',
+                        arg1=ast.Id("c"),
+                        arg2=ast.Id("d"),
+                    )),
+                )),
+                ast.VarDecl("doubleMinus", value=ast.BinExpr(
+                    op='-',
+                    arg1=ast.UnaryExpr(op='-', arg=ast.Id("b")),
+                    arg2=ast.UnaryExpr(op='-', arg=ast.Id("c")),
+                )),
+                ast.VarDecl("a", value=ast.BinExpr(
+                    op='-',
+                    arg1=ast.AttachTags(arg=ast.Id("b"), tags=ast.TagList(
+                        args=[ast.Id("Tag")]
+                    )),
+                    arg2=ast.Id("c"),
+                )),
             ]),
         ]
     ],

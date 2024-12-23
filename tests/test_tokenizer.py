@@ -132,7 +132,12 @@ from xyc.tokenizer import split_tokens
         ['s', ':', '=', '"', '\\', '"', '\\', '\\', '\\', 'a', '\\', 'b',
          '\\', 'f', '\\', 'n', '\\', '0', '"', ';'],
         None
-    )
+    ),
+    (
+        'b := !a',
+        ['b', ':', '=', '!', 'a'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)

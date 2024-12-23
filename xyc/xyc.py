@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 from xyc.builder import Builder
+from xyc.parser import ParsingError
+from xyc.compiler import CompilationError
 
 def main(cli_args=None):
     parser = argparse.ArgumentParser(
@@ -19,7 +21,10 @@ def main(cli_args=None):
         input=args.path, output=args.output,
         compile_only=args.compile_only
     )
-    builder.build()
+    try:
+        builder.build()
+    except (ParsingError, CompilationError) as e:
+        print(e)
 
 if __name__ == '__main__':
     main()
