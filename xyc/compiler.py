@@ -64,7 +64,7 @@ class InstanceObj(CompiledObj):
 class FuncObj(CompiledObj):
     rtype_obj: TypeObj = None
     etype_obj: TypeObj = None
-    params: list['VarObj'] = field(default_factory=list)
+    param_objs: list['VarObj'] = field(default_factory=list)
     builtin: bool = False
     move_args_to_temps: bool = False
 
@@ -193,9 +193,9 @@ class ExtSpace(FuncSpace):
 
 def cmp_call_def(fcall_args_types, fobj: FuncObj, ctx):
     # TODO what about kwargs
-    if len(fcall_args_types) > len(fobj.params):
+    if len(fcall_args_types) > len(fobj.param_objs):
         return False
-    for type_obj, param_obj in zip(fcall_args_types, fobj.params):
+    for type_obj, param_obj in zip(fcall_args_types, fobj.param_objs):
         # XXX
         if isinstance(type_obj, ArrTypeObj):
             continue
@@ -632,7 +632,7 @@ def compile_func_prototype(node, cast, ctx):
     cast.func_decls.append(cfunc)
     compiled = FuncObj(
         node, cfunc, rtype_obj=rtype_compiled, etype_obj=etype_compiled,
-        params=param_objs, move_args_to_temps=move_args_to_temps
+        param_objs=param_objs, move_args_to_temps=move_args_to_temps
     )
 
     if node.etype is not None:
@@ -657,7 +657,7 @@ def fill_param_default_values(node, cast, ctx):
     fspace = ctx.eval_to_fspace(node.name)
     fobj : FuncObj = fspace.find(node, [], ctx)
     ctx.push_ns()
-    for pobj in fobj.params:
+    for pobj in fobj.param_objs:
         if pobj.type_desc is not None:
             ctx.ns[pobj.xy_node.name] = pobj
             continue
@@ -732,7 +732,7 @@ def import_builtins(ctx: CompilerContext, cast):
                 desc = register_func(func, ctx)
                 desc.builtin = True
                 desc.rtype_obj = ctx.module_ns[rtype_name]
-                desc.params = [
+                desc.param_objs = [
                     VarObj(type_desc=ctx.module_ns[type1]),
                     VarObj(type_desc=ctx.module_ns[type2])
                 ]
@@ -750,7 +750,7 @@ def import_builtins(ctx: CompilerContext, cast):
             desc = register_func(func, ctx)
             desc.builtin = True
             desc.rtype_obj = ctx.module_ns["Ptr"]
-            desc.params = [
+            desc.param_objs = [
                 VarObj(type_desc=ctx.module_ns["Ptr"]),
                 VarObj(type_desc=ctx.module_ns[type])
             ]
@@ -768,7 +768,7 @@ def import_builtins(ctx: CompilerContext, cast):
             desc = register_func(func, ctx)
             desc.builtin = True
             desc.rtype_obj = ctx.module_ns[rtype_name]
-            desc.params = [
+            desc.param_objs = [
                 VarObj(type_desc=ctx.module_ns[type1]),
             ]
     
@@ -780,7 +780,7 @@ def import_builtins(ctx: CompilerContext, cast):
     select_obj.builtin = True
     # XXX
     select_obj.rtype_obj = ctx.module_ns["int"]
-    select_obj.params = [
+    select_obj.param_objs = [
         VarObj(type_desc=ArrayObj()),
         VarObj(type_desc=ctx.module_ns["int"]),
     ]
@@ -847,7 +847,7 @@ def compile_func(node, ctx, ast, cast):
 
     param_objs = []
     ctx.push_ns()
-    for param_obj in fdesc.params:
+    for param_obj in fdesc.param_objs:
         ctx.ns[param_obj.xy_node.name] = param_obj
 
     ctx.current_fobj = fdesc
@@ -1313,7 +1313,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, 
     res = c.FuncCall(name=func_obj.c_name)
     if func_obj.xy_node is not None:
         ctx.push_ns()
-        for pobj, arg in zip(func_obj.params, arg_exprs):
+        for pobj, arg in zip(func_obj.param_objs, arg_exprs):
             ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_pseudo:
                 continue
@@ -1321,7 +1321,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, 
                 res.args.append(c_getref(arg.c_node))
             else:
                 res.args.append(arg.c_node)
-        for pobj in func_obj.params[len(arg_exprs):]:
+        for pobj in func_obj.param_objs[len(arg_exprs):]:
             default_obj = compile_expr(pobj.xy_node.value, cast, cfunc, ctx)
             res.args.append(default_obj.c_node)
         ctx.pop_ns()
