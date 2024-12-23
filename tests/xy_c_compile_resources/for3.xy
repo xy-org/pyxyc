@@ -14,10 +14,10 @@ def next(arr: pseudo Array, idx: inout Size) {
     idx++;
 }
 
-def get(arr: Array, idx: Size) -> float
+def get(arr: Array, idx: Size) -> ref(arr) Ptr~float
 >> valid(arr, idx)
 {
-    return arr.elems[idx];
+    return arr.elems[idx]'addrof;
 }
 
 def set(arr: inout Array, idx: Size, elem: int) 
@@ -43,10 +43,12 @@ def mix(arr1: Array, arr2: Array) -> float
 def double(arr1: inout Array) {
     for(elem in arr1) {
         if (elem > 0) {
-        #     elem += elem;
+            elem = 2.0f * elem;
+            elem += elem;
         }
     }
 }
+
 # 
 # struct Slice {
 #     n: Size;

@@ -1691,6 +1691,17 @@ def maybe_deref(obj: CompiledObj, deref: bool, cast, cfunc, ctx):
     return ref_get(obj, cast, cfunc, ctx)
 
 def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
+    obj = ref_get_once(ref_obj, cast, cfunc, ctx)
+    while isinstance(obj, RefObj):
+        obj = ref_get_once(obj, cast, cfunc, ctx)
+    return obj
+
+def ref_decay_to_ptr_or_val(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
+    while isinstance(ref_obj, RefObj) and not is_ptr_type(ref_obj.ref.infered_type, ctx):
+        ref_obj = ref_get_once(ref_obj, cast, cfunc, ctx)
+    return ref_obj
+
+def ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     obj = ref_obj.container
     struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
     if not (struct_obj.is_enum or struct_obj.is_flags):
@@ -2239,8 +2250,10 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     arg_exprs = ArgList()
     expr_to_move_idx = None
     for i in range(len(expr.args)):
-        obj = compile_expr(expr.args[i], cast, cfunc, ctx)
-        assert not isinstance(obj, RefObj)
+        obj = compile_expr(expr.args[i], cast, cfunc, ctx, deref=False)
+        if isinstance(obj, RefObj):
+            assert obj.c_node is None
+            obj = ref_decay_to_ptr_or_val(obj, cast, cfunc, ctx)
 
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
             is_builitin_math = (
@@ -2286,6 +2299,12 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
             arg_exprs[expr_to_move_idx], cast, cfunc, ctx
         )
+        expr_to_move_idx = None
+    if expr_to_move_idx is not None and isinstance(arg_exprs[expr_to_move_idx], RefObj):
+        arg_exprs[expr_to_move_idx] = ref_get(
+            arg_exprs[expr_to_move_idx], cast, cfunc, ctx
+        )
+        expr_to_move_idx = None
 
     return do_compile_fcall(expr, func_obj, arg_exprs, cast, cfunc, ctx)
 
@@ -2294,12 +2313,21 @@ def compile_expr_for_arg(arg: xy.Node, cast, cfunc, ctx: CompilerContext):
     return maybe_move_to_temp(expr_obj, cast, cfunc, ctx)
 
 def maybe_move_to_temp(expr_obj, cast, cfunc, ctx):
-    if isinstance(expr_obj, ExprObj) and cfunc is not None and not is_simple_cexpr(expr_obj.c_node):
+    if isinstance(expr_obj, (ExprObj, RefObj)) and cfunc is not None and not is_simple_cexpr(expr_obj.c_node):
         return move_to_temp(expr_obj, cast, cfunc, ctx)
     else:
         return expr_obj
     
 def move_to_temp(expr_obj, cast, cfunc, ctx):
+    if isinstance(expr_obj, RefObj):
+        if isinstance(expr_obj, RefObj):
+            get_obj = ref_get(expr_obj, cast, cfunc, ctx)
+            tmp_obj = ctx.create_tmp_var(expr_obj.ref.infered_type, "ref", expr_obj.xy_node)
+            tmp_obj.c_node.value = get_obj.c_node.arg
+            cfunc.body.append(tmp_obj.c_node)
+            get_obj.c_node = c.UnaryExpr(arg=c.Id(tmp_obj.c_node.name), op="*", prefix=True)
+            return get_obj
+            
     tmp_obj = ctx.create_tmp_var(expr_obj.infered_type, name_hint="arg")
     tmp_obj.c_node.value = expr_obj.c_node
     cfunc.body.append(tmp_obj.c_node)
