@@ -5,15 +5,15 @@ struct Point {
     w: float = 1.0f;
 }
 
-def index(p: Point, idx: byte) -> ref(p) byte {
+def select(p: Point, idx: int) -> ref(p) int {
     return idx;
 }
 
-def get(p: Point, idx: byte) -> float {
+def get(p: Point, idx: int) -> float {
     return [p.x, p.y, p.z, p.w][idx];
 }
 
-def set(p: inout Point, idx: byte, v: float)
+def set(p: inout Point, idx: int, v: float)
 >> idx <= 3
 {
     if (idx == 0) {
@@ -27,12 +27,16 @@ def set(p: inout Point, idx: byte, v: float)
     }
 }
 
-def testPoint(i: ubyte) {
+def testPoint(i: int) -> float {
     p1: var = Point{w=i'to(float)};
     p2: Point;
-    # p1.x = p1[i];
-    # p2.z = p1[4-i];
-    # return p1.x + p2.w + p2.z + p1.w;
+    p1.x = p1[i];
+    p2.z = p1[4-i];
+    sum := p1.x + p2[2] + p2.z + p1[3];
+    res : var = p1[0];
+    p2[0] = p1[0];
+    res += p2[0];
+    return res + sum;
 }
 
 # struct  PointCloud {

@@ -126,7 +126,7 @@ class ExprObj(CompiledObj):
     compiled_obj: CompiledObj | None = None
 
 @dataclass
-class RefObj(CompiledObj):
+class RefObj(ExprObj):
     container: CompiledObj = None
     ref: CompiledObj = None
 
@@ -198,8 +198,10 @@ class FuncSpace:
     def fmt_func(self, node):
         if isinstance(node, xy.ArrayType):
             return self.fmt_func(node.base) + '[' + ','.join(d.value_str for d in node.dims) + ']'
-        else:
+        elif node is not None:
             return node.name
+        else:
+            return "<ERROR>!"
         
 
     def report_multiple_matches(self, candidate_fobjs, node, args_infered_types, ctx):
@@ -284,13 +286,9 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
     satisfied_params = set()
     # go through positional
     for type_obj, param_obj in zip(fcall_args_types.args, fobj.param_objs):
-        # XXX
-        if isinstance(type_obj, ArrTypeObj):
-            continue
-        if param_obj.type_desc is any_type_obj:
-            continue
-        if type_obj.get_base_type() is not param_obj.type_desc.get_base_type():
+        if not cmp_arg_param_types(type_obj, param_obj.type_desc):
             return False
+
         if param_obj.xy_node is not None and param_obj.xy_node.name is not None:
             satisfied_params.add(param_obj.xy_node.name)
 
@@ -300,11 +298,9 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
         param_obj = pobjs_dict.get(pname, None)
         if param_obj is None:
             return False
-        # XXX
-        if isinstance(type_obj, ArrTypeObj):
-            continue
-        if type_obj is not param_obj.type_desc:
+        if not cmp_arg_param_types(type_obj, param_obj.type_desc):
             return False
+
         if pname in satisfied_params:
             return False
         satisfied_params.add(pname)
@@ -313,6 +309,25 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
         if p_obj.xy_node.name not in satisfied_params and p_obj.xy_node.value is None:
             return False
 
+    return True
+
+def cmp_arg_param_types(arg_type, param_type):
+    if param_type is any_type_obj:
+        return True
+
+    if isinstance(arg_type, ArrTypeObj):
+        if not isinstance(param_type, ArrTypeObj):
+            return False
+        return True
+        if len(arg_type.dims) != len(param_type.dims):
+            return False
+        for i in range(len(arg_type.dims)):
+            if arg_type.dims[i] != param_type.dims[i]:
+                return False
+
+    if arg_type.get_base_type() is not param_type.get_base_type():
+        return False
+    
     return True
 
 def func_sig(fobj: FuncObj):
@@ -333,7 +348,10 @@ def func_sig(fobj: FuncObj):
     res += ") -> "
     if len(fdef.returns) > 1:
         res += "("
-    res += fobj.rtype_obj.xy_node.name
+    if fobj.rtype_obj is None:
+        res += "<ERROR>!"
+    else:
+        res += fobj.rtype_obj.xy_node.name
     if len(fdef.returns) > 1:
         res += ")"
     return res
@@ -1520,6 +1538,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
         else:
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, lhs=True)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
+
             if isinstance(arg1_obj, RefObj):
                 return ref_set(arg1_obj, arg2_obj, cast, cfunc, ctx)
             else:
@@ -1664,8 +1683,8 @@ def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
             "set",
             ArgList([
                 ref_obj.container,
-                ref_obj.ref,
-                val_obj,
+                maybe_move_to_temp(ref_obj.ref, cast, cfunc, ctx),
+                maybe_move_to_temp(val_obj, cast, cfunc, ctx),
             ]),
             cast, cfunc, ctx, ref_obj.xy_node
         )
@@ -1679,6 +1698,13 @@ def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
                 op="|=",
             )
         )
+    
+def ref_setup(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
+    if ref_obj.infered_type is None or ref_obj.c_node is None:
+        deref_obj = ref_get(ref_obj, cast, cfunc, ctx)
+        ref_obj.infered_type = deref_obj.infered_type
+        ref_obj.c_node = deref_obj.c_node
+    return ref_obj
 
 def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ctx: CompilerContext):
     if isinstance(obj, VarObj):
@@ -2179,19 +2205,23 @@ def is_simple_cexpr(expr):
     
 
 def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
-    fobj = ctx.eval_to_fspace(
+    fobj = find_func_obj(name, arg_objs, cast, cfunc, ctx, xy_node)
+
+    return do_compile_fcall(
+        xy_node,
+        fobj,
+        arg_exprs=arg_objs,
+        cast=cast, cfunc=cfunc, ctx=ctx
+    )
+
+def find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
+    return ctx.eval_to_fspace(
         xy.Id(name, src=xy_node.src, coords=xy_node.coords),
         msg=f"Cannot find any functions {name}",
     ).find(
         xy.FuncCall(xy.Id(name), src=xy_node.src, coords=xy_node.coords),
         ArgList([obj.infered_type for obj in arg_objs]),
         ctx
-    )
-    return do_compile_fcall(
-        xy_node,
-        fobj,
-        arg_exprs=arg_objs,
-        cast=cast, cfunc=cfunc, ctx=ctx
     )
 
 def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
@@ -2408,14 +2438,28 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 body=[c.FuncCall("abort")]
             ))
 
-    func_ctx.pop_ns()
-
-    return FCallObj(
+    raw_fcall_obj = FCallObj(
         c_node=res,
         xy_node=expr,
         infered_type=func_obj.rtype_obj,
         func_obj=func_obj
     )
+
+    if len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_ref:
+        res_obj = ref_setup(
+            RefObj(
+                container=func_ctx.ns[func_obj.xy_node.returns[0].references.name],
+                ref=raw_fcall_obj,
+                xy_node=expr,
+            ),
+            cast, cfunc, ctx
+        )
+    else:
+        res_obj = raw_fcall_obj
+
+    func_ctx.pop_ns()
+
+    return res_obj
 
 def typeEqs(expr, arg_exprs, cast, cfunc, ctx):
     assert len(arg_exprs) == 2
