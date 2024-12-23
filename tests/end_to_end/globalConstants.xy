@@ -1,5 +1,5 @@
 import libxy.stdio
-import libxy.string
+import libxy.strings
 import libxy.units
 
 c := 299792458~mps;

@@ -1,4 +1,4 @@
-import libxy.string
+import libxy.strings
 import libxy.stdio
 
 def main~EntryPoint() -> int {

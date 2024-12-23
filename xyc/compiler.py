@@ -340,7 +340,7 @@ class CompilerContext:
                 node)
         
     def create_tmp_var(self, type_obj, name_hint="") -> VarObj:
-        tmp_var_name = f"__tmp{'_' if name_hint else ''}{name_hint}"
+        tmp_var_name = f"tmp{'_' if name_hint else ''}{name_hint}"
         tmp_var_name = f"{tmp_var_name}{self.tmp_var_i}"
         self.tmp_var_i += 1
 

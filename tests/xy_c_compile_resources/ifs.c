@@ -11,60 +11,60 @@ int32_t ifs_statementLike(int32_t x, int32_t y) {
 }
 
 int32_t ifs_expressionLike(int32_t x, int32_t y) {
-    int32_t __tmp0 = 0;
+    int32_t tmp0 = 0;
     if (x < y) {
-        __tmp0 = x * y * 3;
+        tmp0 = x * y * 3;
     } else {
-        __tmp0 = y * 2;
+        tmp0 = y * 2;
     }
-    return __tmp0;
+    return tmp0;
 }
 
 int32_t ifs_namedIf(int32_t x, int32_t y) {
-    int32_t __tmp_res0 = 0;
+    int32_t tmp_res0 = 0;
     if (x < y) {
-        __tmp_res0 = x * y * 3;
+        tmp_res0 = x * y * 3;
     } else {
-        __tmp_res0 = y * 2;
+        tmp_res0 = y * 2;
     }
-    const int32_t res = __tmp_res0;
+    const int32_t res = tmp_res0;
     return res;
 }
 
 int32_t ifs_elifs(int32_t x, int32_t y) {
-    int32_t __tmp_res0 = 0;
+    int32_t tmp_res0 = 0;
     if (x < y) {
-        __tmp_res0 = 0;
+        tmp_res0 = 0;
         ifs_namedIf(x, y);
     } else if (x < y) {
-        __tmp_res0 = 1;
+        tmp_res0 = 1;
     } else {
-        __tmp_res0 = 2;
+        tmp_res0 = 2;
     }
-    return __tmp_res0;
+    return tmp_res0;
 }
 
 int32_t ifs_elifs2(int32_t x, int32_t y) {
-    int32_t __tmp_res0 = 0;
+    int32_t tmp_res0 = 0;
     if (x < y) {
-        __tmp_res0 = 0;
+        tmp_res0 = 0;
     } else if (x < y) {
-        __tmp_res0 = 1;
+        tmp_res0 = 1;
     } else {
-        __tmp_res0 = 2;
+        tmp_res0 = 2;
     }
-    return __tmp_res0;
+    return tmp_res0;
 }
 
 int32_t ifs_chainedIfs(int32_t x, int32_t y) {
-    int32_t __tmp0 = 0;
+    int32_t tmp0 = 0;
     if (x > y) {
-        __tmp0 = 1;
+        tmp0 = 1;
     } else if (x < y) {
-        __tmp0 = -1;
+        tmp0 = -1;
     } else {
-        __tmp0 = 0;
+        tmp0 = 0;
     }
-    const int32_t a = __tmp0;
+    const int32_t a = tmp0;
     return a;
 }

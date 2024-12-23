@@ -39,11 +39,11 @@ stringInterpolation_StrBuilder stringInterpolation_fstr(void* addr, size_t size)
 
 void stringInterpolation_createStrings(void) {
     const float pi = 3.1415f;
-    stringInterpolation_StrBuilder __tmp_fstr0 = stringInterpolation_fstr("string", 6);
-    stringInterpolation_append__with__StrBuilder__Ptr__Size(&__tmp_fstr0, "string", 6);
-    const stringInterpolation_Str str1 = stringInterpolation_to(&__tmp_fstr0);
-    stringInterpolation_StrBuilder __tmp_fstr1 = stringInterpolation_fstr("str1={str1}", 11);
-    stringInterpolation_append__with__StrBuilder__Ptr__Size(&__tmp_fstr1, "str1=", 5);
-    stringInterpolation_append__with__StrBuilder__Str(&__tmp_fstr1, str1);
-    const stringInterpolation_Str str2 = stringInterpolation_to(&__tmp_fstr1);
+    stringInterpolation_StrBuilder tmp_fstr0 = stringInterpolation_fstr("string", 6);
+    stringInterpolation_append__with__StrBuilder__Ptr__Size(&tmp_fstr0, "string", 6);
+    const stringInterpolation_Str str1 = stringInterpolation_to(&tmp_fstr0);
+    stringInterpolation_StrBuilder tmp_fstr1 = stringInterpolation_fstr("str1={str1}", 11);
+    stringInterpolation_append__with__StrBuilder__Ptr__Size(&tmp_fstr1, "str1=", 5);
+    stringInterpolation_append__with__StrBuilder__Str(&tmp_fstr1, str1);
+    const stringInterpolation_Str str2 = stringInterpolation_to(&tmp_fstr1);
 }

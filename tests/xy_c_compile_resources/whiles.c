@@ -12,12 +12,12 @@ int32_t whiles_func1(int32_t x, int32_t y) {
 }
 
 int32_t whiles_func2(int32_t x, int32_t y) {
-    int32_t __tmp_i0 = 0;
+    int32_t tmp_i0 = 0;
     while (x < y) {
         x += 10;
-        __tmp_i0++;
+        tmp_i0++;
     }
-    return __tmp_i0;
+    return tmp_i0;
 }
 
 int32_t whiles_func3(int32_t x, int32_t y) {
@@ -41,9 +41,9 @@ int32_t whiles_update(void) {
 }
 
 int32_t whiles_func4(int32_t x, int32_t y) {
-    int32_t __tmp_res0 = 0;
+    int32_t tmp_res0 = 0;
     while (whiles_cond()) {
-        __tmp_res0 += whiles_update();
+        tmp_res0 += whiles_update();
     }
-    return __tmp_res0;
+    return tmp_res0;
 }
