@@ -1,4 +1,5 @@
 import re
+from difflib import SequenceMatcher as SM
 from xyc.tokenizer import split_tokens
 from xyc.ast import *
 
@@ -82,15 +83,26 @@ class TokenIter:
 
 
 class ParsingError(Exception):
-    def __init__(self, msg, itoken):
-        if itoken.has_more():
-            token_idx = itoken.i
-            loc = itoken.token_pos[itoken.i]
+    def __init__(self, msg, itoken, notes=None):
+        fn = itoken.src.filename
+        highlight, line_num, char_num = self.highlight_src_line(itoken, itoken.i)
+        self.fmt_msg = f"{fn}:{line_num}:{char_num}: error: {msg}\n"
+        self.fmt_msg += highlight
+
+        for note in (notes or []):
+            self.fmt_msg += "note: " + note[0] + "\n"
+            if note[1] is not None:
+                highlight, _, _ = self.highlight_src_line(itoken, note[1])
+                self.fmt_msg += highlight
+
+    def highlight_src_line(self, itoken: TokenIter, token_idx):
+        if token_idx < len(itoken.tokens):
+            loc = itoken.token_pos[token_idx]
             token_len = len(itoken.tokens[token_idx])
         else:
             loc = itoken.token_pos[-1] + len(itoken.tokens[-1]) - 1
-            token_idx = len(itoken.token_pos) - 1
             token_len = 1
+            token_idx = len(itoken.token_pos) - 1
 
         line_num = 1
         line_loc = 0
@@ -107,11 +119,9 @@ class ParsingError(Exception):
                 break
 
         src_line = itoken.src.code[line_loc:line_end].replace("\t", " ")
-        fn = itoken.src.filename
-        self.error_message = msg
-        self.fmt_msg = f"{fn}:{line_num}:{loc - line_loc + 1}: error: {msg}\n"
-        self.fmt_msg += f"| {src_line}\n"
-        self.fmt_msg += "  " + (" " * (loc-line_loc)) + ("^" * token_len) + "\n"
+        res = f"| {src_line}\n"
+        res += "  " + (" " * (loc-line_loc)) + ("^" * token_len) + "\n"
+        return res, line_num, loc - line_loc + 1
 
     def __str__(self):
         return self.fmt_msg
@@ -736,16 +746,25 @@ def parse_stmt_list(itoken: TokenIter):
                 itoken
             )
         else:
+            first_expr_token_idx = itoken.i
             node = parse_expression(itoken)
             if not itoken.check_semicolon() and should_have_semicolon_after_expr(node):
                 if itoken.peak() == "\n":
                     raise ParsingError("Missing ';' at end of expression", itoken)
-                else:
-                    raise ParsingError("Malformed expression. Maybe missing operator or semicolon.", itoken)
+                notes = []
+                if fuzzy_cmp(itoken.tokens[first_expr_token_idx], "struct") > .8:
+                    notes=[("Did you mean 'struct'?", first_expr_token_idx)]
+                raise ParsingError(
+                    "Malformed expression. Maybe missing operator or semicolon.",
+                    itoken, notes=notes
+                )
 
         body.append(node)
         itoken.skip_empty_lines()
     return body
+
+def fuzzy_cmp(str1, str2):
+    return SM(None, str1, str2).ratio()
 
 def should_have_semicolon_after_expr(node):
     if not isinstance(node, (IfExpr, ForExpr, WhileExpr)):
