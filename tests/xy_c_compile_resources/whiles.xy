@@ -8,7 +8,7 @@ def func1(x: int, y: int) -> int {
 }
 
 def func2(x: int, y: int) -> int {
-    return while i(x < y) -> int {
+    return while (x < y) -> (i: int) {
         x += 10;
         i++;
     };

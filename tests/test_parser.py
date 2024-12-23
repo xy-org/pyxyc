@@ -1127,9 +1127,9 @@ def test_if(code, exp_ast):
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.WhileExpr(
                     cond=ast.BinExpr(op="<", arg1=ast.Id("a"), arg2=ast.Id("b")),
-                    block=[
+                    block=ast.Block(body=[
                         ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
-                    ]
+                    ])
                 )
             ]),
         ]
@@ -1147,12 +1147,12 @@ def test_if(code, exp_ast):
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.WhileExpr(
                     cond=ast.BinExpr(op="<", arg1=ast.Id("a"), arg2=ast.Id("b")),
-                    block=[
+                    block=ast.Block(body=[
                         ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
-                    ],
-                    else_node=[
+                    ]),
+                    else_node=ast.Block(body=[
                          ast.BinExpr(op='+=', arg1=ast.Id("b"), arg2=ast.Id("a")),
-                    ]
+                    ])
                 )
             ]),
         ]
@@ -1170,12 +1170,11 @@ def test_if(code, exp_ast):
                 ast.Return(
                     ast.WhileExpr(
                         name=ast.Id("res"),
-                        type=ast.Id("int"),
                         cond=ast.BinExpr(op="<", arg1=ast.Id("a"), arg2=ast.Id("b")),
-                        block=[
+                        block=ast.Block(body=[
                             ast.BinExpr(op='+=', arg1=ast.Id("res"), arg2=ast.Id("a")),
                             ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
-                        ]
+                        ], returns=ast.SimpleRType("int")),
                     )
                 )
             ]),
@@ -1183,22 +1182,21 @@ def test_if(code, exp_ast):
     ],
     [
         """def main() -> void {
-            return while sum(i < arr'len) -> int sum+=arr[i];
+            return while (i < arr'len) -> (sum: int) {sum+=arr[i];};
         }
         """,
         [
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.Return(
                     ast.WhileExpr(
-                        name=ast.Id("sum"),
-                        type=ast.Id("int"),
                         cond=ast.BinExpr(
                             op="<", arg1=ast.Id("i"),
                             arg2=ast.FuncCall(ast.Id("len"), [ast.Id("arr")])),
-                        block=ast.BinExpr(
+                        block=ast.Block(body=[ast.BinExpr(
                             op='+=',
                             arg1=ast.Id("sum"),
                             arg2=ast.Select(ast.Id("arr"), ast.Args([ast.Id("i")]))),
+                        ], returns=[ast.VarDecl("sum", ast.Id("int"), varying=True)])
                     )
                 )
             ]),
@@ -1219,13 +1217,13 @@ def test_if(code, exp_ast):
                         op="<", arg1=ast.Id("a"),
                         arg2=ast.Id("b")
                     ),
-                    block=[
+                    block=ast.Block(body=[
                         ast.BinExpr(op='+=', arg1=ast.Id("a"), arg2=ast.Id("b")),
                         ast.IfExpr(
                             cond=ast.BinExpr(op=">", arg1=ast.Id("a"), arg2=ast.Const(10)),
                             block=ast.Break()
                         ),
-                    ]
+                    ])
                 )
             ]),
         ]
@@ -1246,20 +1244,20 @@ def test_if(code, exp_ast):
                 ast.WhileExpr(
                     name=ast.Id("outer"),
                     cond=ast.BinExpr(op="<", arg1=ast.Id("a"), arg2=ast.Id("b")),
-                    block=[
+                    block=ast.Block(body=[
                         ast.WhileExpr(
                             name=ast.Id("inner"),
                             cond=ast.BinExpr(op="<", arg1=ast.Id("b"), arg2=ast.Id("c")),
-                            block=[
+                            block=ast.Block(body=[
                                 ast.IfExpr(
                                     cond=ast.BinExpr(op="<", arg1=ast.Id("c"), arg2=ast.Id("d")),
                                     block=ast.Block(body=[
                                         ast.Break(ast.Id("outer"))
                                     ])
                                 )
-                            ]
+                            ])
                         )
-                    ]
+                    ])
                 )
             ]),
         ]
@@ -1273,22 +1271,21 @@ def test_while(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """def main() -> void {
-            return do -> int {
+            return do -> (res: int) {
                 a += 10;
                 res += a;
-            } while res(a > b);
+            } while name(a > b);
         }
         """,
         [
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.Return(ast.DoWhileExpr(
-                    name=ast.Id("res"),
-                    type=ast.Id("int"),
+                    name=ast.Id("name"),
                     cond=ast.BinExpr(op=">", arg1=ast.Id("a"), arg2=ast.Id("b")),
-                    block=[
+                    block=ast.Block(body=[
                         ast.BinExpr(op="+=", arg1=ast.Id("a"), arg2=ast.Const(10)),
                         ast.BinExpr(op="+=", arg1=ast.Id("res"), arg2=ast.Id("a")),
-                    ]
+                    ],returns=[ast.VarDecl("res", ast.Id("int"), varying=True)])
                 ))
             ]),
         ]
@@ -1312,8 +1309,7 @@ def test_do_while(code, exp_ast):
                     over=[
                         ast.BinExpr(op="in", arg1=ast.Id("elem"), arg2=ast.Id("arr"))
                     ],
-                    block=[
-                    ]
+                    block=ast.Block()
                 )
             ]),
         ]
@@ -1333,11 +1329,10 @@ def test_do_while(code, exp_ast):
                         ast.BinExpr(op="in", arg1=ast.Id("e1"), arg2=ast.Id("arr1")),
                         ast.BinExpr(op="in", arg1=ast.Id("e2"), arg2=ast.Id("arr2"))
                     ],
-                    block=[
-                    ],
-                    else_node=[
+                    block=ast.Block(),
+                    else_node=ast.Block(body=[
                         ast.BinExpr(op="=", arg1=ast.Id("x"), arg2=ast.Id("b"))
-                    ]
+                    ])
                 )
             ]),
         ]
@@ -1364,20 +1359,19 @@ def test_do_while(code, exp_ast):
                         ),
                         ast.FuncCall(ast.Id("isPrime"), args=[ast.Id("i")])
                     ],
-                    block=[]
+                    block=ast.Block()
                 )
             ]),
         ]
     ],
     [
         """def main() -> void {
-            for or(e in arr) -> bool e | or;
+            for (e in arr) -> (or: bool) {e | or;};
         }
         """,
         [
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.ForExpr(
-                    name=ast.Id("or"),
                     over=[
                         ast.BinExpr(
                             op="in",
@@ -1385,10 +1379,9 @@ def test_do_while(code, exp_ast):
                             arg2=ast.Id("arr")
                         ),
                     ],
-                    type=ast.Id("bool"),
-                    block=ast.BinExpr(
+                    block=ast.Block(body=[ast.BinExpr(
                         op="|", arg1=ast.Id("e"), arg2=ast.Id("or")
-                    ),
+                    )], returns=[ast.VarDecl("or", ast.Id("bool"), varying=True)]),
                 )
             ]),
         ]

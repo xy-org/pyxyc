@@ -145,17 +145,15 @@ class IfExpr(Node):
 @dataclass
 class ForExpr(Node):
     over: list[Node] = field(default_factory=list)
-    type: Node | Node = None
     name: Node | None = None
-    block: Node | list | None = None
+    block: Block | Node | None = None
     else_node: Node | list | None = None
 
 @dataclass
 class WhileExpr(Node):
     cond: Node | None = None
-    type: Node | Node = None
     name: Node | None = None
-    block: Node | list | None = None
+    block: Block | Node | None = None
     else_node: Node | list | None = None
 
 @dataclass

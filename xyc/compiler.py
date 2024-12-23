@@ -820,15 +820,20 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     inferred_type = None
     res_c = None
     update_expr_obj = None
-    if xywhile.type is not None:
-        inferred_type = find_type(xywhile.type, ctx)
-    elif not isinstance(xywhile.block, list):
+    if not isinstance(xywhile.block, xy.Block):
         update_expr_obj = compile_expr(xywhile.block, cast, cwhile, ctx)
         inferred_type = update_expr_obj.infered_type
+    elif len(xywhile.block.returns) > 0:
+        assert len(xywhile.block.returns) == 1
+        inferred_type = find_type(xywhile.block.returns[0].type, ctx)
 
     # create tmp var if needed
     if inferred_type is not None and inferred_type is not ctx.void_obj:
-        name_hint = ctx.eval_to_id(xywhile.name)
+        name_hint = None
+        if isinstance(xywhile.block, xy.Block):
+            name_hint = xywhile.block.returns[0].name
+        if name_hint is None:
+            name_hint = ctx.eval_to_id(xywhile.name)
         tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
         ctx.id_table[name_hint] = tmp_obj
         cfunc.body.append(tmp_obj.c_node)
@@ -839,7 +844,7 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
 
     # compile body
     if update_expr_obj is None:
-        compile_body(xywhile.block, cast, cwhile, ctx)
+        compile_body(xywhile.block.body, cast, cwhile, ctx)
     else:
         assert len(xywhile.name) > 0
         cwhile.body.append(update_expr_obj.c_node)

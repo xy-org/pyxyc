@@ -541,31 +541,20 @@ def parse_while(itoken):
     itoken.expect("(")
     while_expr.cond = parse_expression(itoken)
     itoken.expect(")", msg="Missing closing bracket")
-    if itoken.check("->"):
-        while_expr.type = parse_toplevel_type(itoken)
-    itoken.check("=")
-    if itoken.peak() == "{":
-        while_expr.block = parse_body(itoken)
-    else:
-        while_expr.block = parse_expression(itoken)
+
+    while_expr.block = parse_block_or_expr(itoken)
+
     if itoken.check("else"):
-        if itoken.peak() == "{":
-            while_expr.else_node = parse_body(itoken)
-        else:
-            while_expr.else_node = parse_expression(itoken)
+        while_expr.else_node = parse_block_or_expr(itoken)
+
     return while_expr
 
 def parse_do_while(itoken):
     while_coords = itoken.peak_coords()
     itoken.consume()  # "do" token
     dowhile_expr = DoWhileExpr(src=itoken.src, coords=while_coords)
-    if itoken.check("->"):
-        dowhile_expr.type = parse_toplevel_type(itoken)
-    itoken.check("=")
-    if itoken.peak() == "{":
-        dowhile_expr.block = parse_body(itoken)
-    else:
-        dowhile_expr.block = parse_expression(itoken)
+
+    dowhile_expr.block = parse_block_or_expr(itoken)
 
     itoken.expect("while")
     if itoken.peak() != "(":
@@ -578,10 +567,7 @@ def parse_do_while(itoken):
     itoken.expect(")", msg="Missing closing bracket")
 
     if itoken.check("else"):
-        if itoken.peak() == "{":
-            dowhile_expr.else_node = parse_body(itoken)
-        else:
-            dowhile_expr.else_node = parse_expression(itoken)
+        dowhile_expr.else_node = parse_block_or_expr(itoken)
     return dowhile_expr
 
 
@@ -597,18 +583,11 @@ def parse_for(itoken):
     itoken.expect("(")
     for_expr.over = parse_expr_list(itoken)
     itoken.expect(")", msg="Missing closing bracket")
-    if itoken.check("->"):
-        for_expr.type = parse_toplevel_type(itoken)
-    itoken.check("=")
-    if itoken.peak() == "{":
-        for_expr.block = parse_body(itoken)
-    else:
-        for_expr.block = parse_expression(itoken)
+
+    for_expr.block = parse_block_or_expr(itoken)
+
     if itoken.check("else"):
-        if itoken.peak() == "{":
-            for_expr.else_node = parse_body(itoken)
-        else:
-            for_expr.else_node = parse_expression(itoken)
+        for_expr.else_node = parse_block_or_expr(itoken)
     return for_expr
 
 
