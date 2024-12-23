@@ -523,7 +523,7 @@ class CompilerContext:
         ": ~[TagCtor{label=\"default-label\"}] " \
         "or add a positional tag to the struct"
         for i, xy_tag in enumerate(tags.args):
-            tag_obj = self.eval(xy_tag)
+            tag_obj = self.eval(xy_tag, msg="Cannot find tag")
             if i < len(tag_specs):
                 spec = tag_specs[i]
                 label = spec.xy_node.name

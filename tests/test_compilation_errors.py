@@ -178,6 +178,16 @@ src.xy:5:18: error: The types of c symbols cannot be inferred. Please be explici
 |             func(c.argc);
                    ^^^^^^
 """),
+("""
+        struct Str {}
+        def func() {
+            s := Str~Missing{};
+        }
+     """, """\
+src.xy:4:22: error: Cannot find tag
+|             s := Str~Missing{};
+                       ^^^^^^^
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
