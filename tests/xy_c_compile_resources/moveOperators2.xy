@@ -1,0 +1,15 @@
+struct IntList {
+    # ...
+}
+
+def get(arr: IntList, i: int) -> in(arr) Ptr~int {
+    return Ptr{};
+}
+
+def set(arr: mut IntList, i: int, val: int) -> void {
+    # ...
+}
+
+def test(a: mut IntList, b: mut IntList, i: int, j: int) {
+    a[i] =< b[j];
+}

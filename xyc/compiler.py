@@ -1788,7 +1788,10 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 assert len(expr.arg1.args.args) == 1
                 assert len(expr.arg1.args.kwargs) == 0
                 ref_obj = compile_expr(expr.arg1.args.args[0], cast, cfunc, ctx, deref=None)
-                value_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
+                value_obj = compile_expr(expr.arg2, cast, cfunc, ctx, deref=False)
+                if expr.op == "=<":
+                    value_obj = move_out(value_obj, cast, cfunc, ctx)
+                value_obj = maybe_deref(value_obj, True, cast, cfunc, ctx)
                 return ref_set(RefObj(xy_node=expr, container=container_obj, ref=ref_obj), value_obj, cast, cfunc, ctx)
 
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
@@ -2010,8 +2013,9 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         else:
             raise CompilationError("List comprehension is supported only on arrays", container_obj.xy_node)
     elif isinstance(expr, xy.Select):
-        rewritten = rewrite_select(expr, ctx)
-        return compile_expr(rewritten, cast, cfunc, ctx)
+        # rewritten = rewrite_select(expr, ctx)
+        ref_obj = compile_select(expr, cast, cfunc, ctx)
+        return maybe_deref(ref_obj, deref, cast, cfunc, ctx)
     elif isinstance(expr, xy.IfExpr):
         return compile_if(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.DoWhileExpr):
@@ -2059,10 +2063,19 @@ def move_out(obj: ExprObj, cast, cfunc, ctx):
     if is_tmp_expr(obj):
         return obj
 
-    tmp_obj = move_to_temp(obj, cast, cfunc, ctx)
+    tmp_obj = copy_to_temp(obj, cast, cfunc, ctx)
 
-    c_reset = c.Expr(obj.c_node, obj.infered_type.init_value, op="=")
-    cfunc.body.append(c_reset)
+    if isinstance(obj, RefObj):
+        def_value_obj = ExprObj(
+            xy_node=obj.xy_node,
+            c_node=obj.infered_type.init_value,
+            infered_type=obj.infered_type
+        )
+        obj = ref_set(obj, def_value_obj, cast, cfunc, ctx)
+        cfunc.body.append(obj.c_node)
+    else:
+        c_reset = c.Expr(obj.c_node, obj.infered_type.init_value, op="=")
+        cfunc.body.append(c_reset)
 
     return tmp_obj
 
@@ -2095,7 +2108,7 @@ def ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
         return do_ref_get_once(ref_obj, cast, cfunc, ctx)
     except CompilationError as e:
         raise CompilationError(
-            f"Cannot decay 'ref({ref_obj.container.infered_type.name}) "
+            f"Cannot decay 'in({ref_obj.container.infered_type.name}) "
             f"{ref_obj.ref.infered_type.name}' "\
             f"because: {e.error_message}", e.xy_node,
             notes=e.notes
@@ -2205,6 +2218,11 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
             c_node=c.Id(obj.c_node.name),
             infered_type=obj.type_desc,
         )
+
+    if isinstance(obj, RefObj):
+        # TODO implement chaining
+        obj = ref_get(obj, cast, cfunc, ctx)
+
     if not field.is_pseudo:
         val_type = val.infered_type
         is_arr_assign = isinstance(val_type, ArrTypeObj)
@@ -2839,13 +2857,27 @@ def maybe_move_to_temp(expr_obj, cast, cfunc, ctx):
     
 def move_to_temp(expr_obj, cast, cfunc, ctx):
     if isinstance(expr_obj, RefObj):
+        expr_obj = ref_decay_to_ptr_or_val(expr_obj, cast, cfunc, ctx)
         if isinstance(expr_obj, RefObj):
+            # decay to ptr
             get_obj = ref_get(expr_obj, cast, cfunc, ctx)
             tmp_obj = ctx.create_tmp_var(expr_obj.ref.infered_type, "ref", expr_obj.xy_node)
             tmp_obj.c_node.value = get_obj.c_node.arg
             cfunc.body.append(tmp_obj.c_node)
             get_obj.c_node = c.UnaryExpr(arg=c.Id(tmp_obj.c_node.name), op="*", prefix=True)
             return get_obj
+        
+    return copy_to_temp(expr_obj, cast, cfunc, ctx)
+        
+def copy_to_temp(expr_obj, cast, cfunc, ctx):
+    if isinstance(expr_obj, RefObj):
+        # TODO not tested
+        get_obj = ref_get(expr_obj, cast, cfunc, ctx)
+        tmp_obj = ctx.create_tmp_var(expr_obj.infered_type, "ref", expr_obj.xy_node)
+        tmp_obj.c_node.value = get_obj.c_node
+        cfunc.body.append(tmp_obj.c_node)
+        get_obj.c_node = c.Id(tmp_obj.c_node.name)
+        return get_obj
 
     tmp_obj = ctx.create_tmp_var(expr_obj.infered_type, name_hint="arg", xy_node=expr_obj.xy_node)
     tmp_obj.c_node.value = expr_obj.c_node
@@ -4252,19 +4284,32 @@ def rewrite_unaryop(expr, ctx):
         src=expr.src, coords=expr.coords
     )
 
-def rewrite_select(select, ctx):
-    args = []
-    if select.base is not None:
-        args = [select.base]
-    args.extend(select.args.args)
+# def rewrite_select(select, ctx):
+#     args = []
+#     if select.base is not None:
+#         args = [select.base]
+#     args.extend(select.args.args)
 
-    fcall = xy.FuncCall(
-        xy.Id("get"), args=args,
-        kwargs=select.args.kwargs,
-        src=select.src,
-        coords=select.coords
-    )
-    return fcall
+#     fcall = xy.FuncCall(
+#         xy.Id("get"), args=args,
+#         kwargs=select.args.kwargs,
+#         src=select.src,
+#         coords=select.coords
+#     )
+#     return fcall
+
+def compile_select(expr: xy.Select, cast, cfunc, ctx):
+    if expr.base is not None:
+        container_obj = compile_expr(expr.base, cast, cfunc, ctx, deref=False)
+    else:
+        container_obj = global_memory
+    assert len(expr.args.args) == 1  # TODO
+    assert len(expr.args.kwargs) == 0  # TODO
+    ref_obj = compile_expr(expr.args.args[0], cast, cfunc, ctx, deref=False)
+
+    ref_obj = RefObj(xy_node=expr, container=container_obj, ref=ref_obj)
+    ref_setup(ref_obj, cast, cfunc, ctx)
+    return ref_obj
 
 def compile_import(imprt, ctx: CompilerContext, ast, cast):
     compiled_tags = ctx.eval_tags(imprt.tags)

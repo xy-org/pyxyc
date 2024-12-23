@@ -1008,6 +1008,7 @@ def test_parse_operator_slices(code, exp_ast):
             b =< a;
             c :=< b;
             f(a =>, b);
+            a[i] =< b[j];
         }
         """,
         [
@@ -1024,6 +1025,17 @@ def test_parse_operator_slices(code, exp_ast):
                         ast.UnaryExpr(ast.Id("a"), op="=>"),
                         ast.Id("b"),
                     ]
+                ),
+                ast.BinExpr(
+                    arg1=ast.Select(
+                        base=ast.Id("a"),
+                        args=ast.Args(args=[ast.Id("i")])
+                    ),
+                    arg2=ast.Select(
+                        base=ast.Id("b"),
+                        args=ast.Args(args=[ast.Id("j")])
+                    ),
+                    op="=<"
                 )
             ]),
         ]

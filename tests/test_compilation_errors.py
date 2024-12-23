@@ -42,7 +42,7 @@ note: Candidates are:
             a := arr[0];
         }
      """, """\
-src.xy:6:21: error: Cannot find function 'get(Array, int)'
+src.xy:6:21: error: Cannot decay 'in(Array) int' because: Cannot find function 'get(Array, int)'
 |             a := arr[0];
                       ^
 note: Candidates are:
