@@ -526,6 +526,7 @@ class CompilerContext:
         return res
     
     def split_and_eval_tags(self, tags: xy.TagList, cast, ast):
+        kw_tags = copy(tags.kwargs)
         open_tags = []
         after_open = len(tags.args)
         for i in range(len(tags.args)):
@@ -536,12 +537,14 @@ class CompilerContext:
                 if after_open < len(tags.args):
                     raise CompilationError("Cannot mix positional and named tags.", xy_tag)
                 open_tags.append(xy_tag)
+                if xy_tag.value is not None:
+                    kw_tags[xy_tag.name] = xy_tag.value
         tag_specs = [
             VarObj(xy_node=xy_tag, type_desc=find_type(xy_tag.type, cast, self))
             for xy_tag in open_tags
         ]
         remaining_args = tags.args[after_open:]
-        return tag_specs, self.eval_tags(xy.TagList(remaining_args, tags.kwargs), cast=cast, ast=ast)
+        return tag_specs, self.eval_tags(xy.TagList(remaining_args, kw_tags), cast=cast, ast=ast)
 
     
     def eval_tags(self, tags: xy.TagList, tag_specs: list[VarObj] = [], cast=None, ast=None):

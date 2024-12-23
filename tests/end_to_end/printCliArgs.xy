@@ -2,12 +2,13 @@ import libc~[CLib{headers=["string.h", "stdio.h"]}] in c
 import xy.sys in sys
 import libxy.strings
 import libxy.stdio
+import libxy.memory
 
 def main~EntryPoint() {
     argc := sys.argc();
     argv := sys.argv();
     for (i in 1:argc) {
-        argStr := Str{
+        argStr := Str~MemExt {
             addr=argv[i],
             len=c.strlen(argv[i]),
         };
