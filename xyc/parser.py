@@ -789,6 +789,7 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True):
         if ignore_eols: itoken.skip_empty_lines()
         if itoken.peak() not in {")", "]", "}", ";"}:
             itoken.expect(",")
+        if ignore_eols: itoken.skip_empty_lines()
     return res
 
 def parse_body(itoken):

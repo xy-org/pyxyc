@@ -432,6 +432,39 @@ def test_parse_default_param_values(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def main() -> void {
+            func(
+                func1(
+                    func11(),
+                    func12()
+                ),
+                func2()
+            );
+            c'func(
+                a,
+                b,
+            );
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("main"),
+                returns=[ast.VarDecl(type=ast.Id("void"))],
+                body=[
+                    ast.FuncCall(ast.Id("func"), args=[
+                        ast.FuncCall(ast.Id("func1"), args=[
+                            ast.FuncCall(ast.Id("func11")),
+                            ast.FuncCall(ast.Id("func12")),
+                        ]),
+                        ast.FuncCall(ast.Id("func2")),
+                    ]),
+                    ast.FuncCall(ast.Id("func"), args=[
+                        ast.Id("c"), ast.Id("a"), ast.Id("b"),
+                    ])
+            ]),
+        ]
+    ],
 ])
 def test_parse_func_call(code, exp_ast):
     act_ast = parse_code(code)

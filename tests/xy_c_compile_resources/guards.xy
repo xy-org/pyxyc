@@ -37,6 +37,9 @@ def test(a: int, b: int) -> int {
     res += guards2(a, b);
     res += guards3(res, b);
     res += guards4(a, res);
-    res += guards4(guards2(guards4(a, b), b), guards3(res, res));
+    res += guards4(
+        guards2(guards4(a, b), b),
+        guards3(res, res)
+    );
     return res;
 }
