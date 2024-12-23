@@ -677,6 +677,18 @@ def parse_body(itoken):
                 expr = expr[0]
             node = Return(expr)
             itoken.expect(";")
+        elif itoken.peak() == "import":
+            raise ParsingError("Imports are not allowed in functions", itoken)
+        elif itoken.peak() == "#":
+            itoken.consume()
+            node = parse_sl_comment(itoken)
+        elif itoken.peak() == ";;":
+            itoken.consume()
+            node = parse_ml_comment(itoken)
+        elif itoken.peak() == "def":
+            raise ParsingError("Functions in functions are not allowed", itoken)
+        elif itoken.peak() == "struct":
+            raise ParsingError("Structs in functions are not allowed", itoken)
         else:
             node = parse_expression(itoken)
             if not itoken.check(";") and should_have_semicolon_after_expr(node):

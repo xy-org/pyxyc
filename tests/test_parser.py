@@ -105,6 +105,38 @@ def test_parse_import_error(code, err_msg):
             ),
         ]
     ],
+    [
+        """
+;; function
+def main() {}
+        """,
+        [
+            ast.Comment(
+                comment=";; function", is_doc=True
+            ),
+            ast.FuncDef(
+                name=ast.Id("main")
+            )
+        ]
+    ],
+    [
+        """
+def main() -> int {
+    # i := 0
+    return i;
+}
+        """,
+        [
+            ast.FuncDef(
+                name=ast.Id("main"),
+                body=[
+                    ast.Comment(" i := 0"),
+                    ast.Return(ast.Id("i")),
+                ],
+                returns=ast.SimpleRType("int"),
+            )
+        ]
+    ],
 ])
 def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)
