@@ -1,4 +1,5 @@
 import os
+from copy import copy
 import xyc.ast as xy
 import xyc.cast as c
 from dataclasses import dataclass, field
@@ -11,15 +12,22 @@ class CompiledObj:
 
 @dataclass
 class TypeObj(CompiledObj):
+    tag_specs: list['VarObj'] = field(default_factory=list)
     builtin : bool = False
     fields: dict[str, 'VarObj'] = field(default_factory=list)
     init_value: any = None
+    base_type_obj: 'TypeObj' = None
+
+    def get_base_type(self):
+        return self if self.base_type_obj is None else self.base_type_obj
 
     @property
     def c_name(self):
         if self.c_node is not None:
             return self.c_node.name
         return None
+    
+tag_list_type_obj = TypeObj(builtin=True)
     
 @dataclass
 class TypeInferenceError:
@@ -171,7 +179,7 @@ class FuncSpace:
             candidate_fobjs = space.find_candidates(node, args_infered_types, ctx)
             if len(candidate_fobjs) == 1:
                     return candidate_fobjs[0]
-            while len(candidate_fobjs) > 1:
+            if len(candidate_fobjs) > 1:
                 space = space.parent_space
                 while space is not None:
                     candidate_fobjs.extend(
@@ -214,14 +222,17 @@ class ExtSpace(FuncSpace):
 def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
     if len(fcall_args_types) > len(fobj.param_objs):
         return False
+    if fobj.builtin and fobj.xy_node.name in {"typeof", "tagsof", "sizeof"}:
+        return fobj
     satisfied_params = set()
-
     # go through positional
     for type_obj, param_obj in zip(fcall_args_types.args, fobj.param_objs):
         # XXX
         if isinstance(type_obj, ArrTypeObj):
             continue
-        if type_obj is not param_obj.type_desc:
+        if type_obj.get_base_type() is not param_obj.type_desc.get_base_type():
+            #if fobj.xy_node.name.name == "len":
+            #    import pdb; pdb.set_trace()
             return False
         if param_obj.xy_node is not None and param_obj.xy_node.name is not None:
             satisfied_params.add(param_obj.xy_node.name)
@@ -363,11 +374,33 @@ class CompilerContext:
             res[label] = tag_obj
         return res
     
-    def eval_tags(self, tags: xy.TagList):
+    def split_and_eval_tags(self, tags: xy.TagList):
+        open_tags = []
+        after_open = len(tags.args)
+        for i in range(len(tags.args)):
+            xy_tag = tags.args[i]
+            if not isinstance(xy_tag, xy.VarDecl):
+                after_open = i
+            else:
+                if after_open < len(tags.args):
+                    raise CompilationError("Cannot mix positional and named tags.", xy_tag)
+                open_tags.append(xy_tag)
+        tag_specs = [
+            VarObj(xy_node=xy_tag, type_desc=find_type(xy_tag.type, self))
+            for xy_tag in open_tags
+        ]
+        remaining_args = tags.args[after_open:]
+        return tag_specs, self.eval_tags(xy.TagList(remaining_args, tags.kwargs))
+
+    
+    def eval_tags(self, tags: xy.TagList, tag_specs: list[VarObj] = []):
         res = {}
-        for xy_tag in tags.args:
+        for i, xy_tag in enumerate(tags.args):
             tag_obj = self.eval(xy_tag)
-            if isinstance(tag_obj, TypeObj):
+            if i < len(tag_specs):
+                spec = tag_specs[i]
+                label = spec.xy_node.name
+            elif isinstance(tag_obj, TypeObj):
                 if "xyTag" not in tag_obj.tags:
                     raise CompilationError(
                         f"Missing default label for type '{tag_obj.xy_node.name}'",
@@ -385,6 +418,11 @@ class CompilerContext:
             else:
                 raise CompilationError("Cannot determine label for tag", xy_tag)
             
+            if label in res:
+                raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
+            res[label] = tag_obj
+        for label, xy_tag in tags.kwargs.items():
+            tag_obj = self.eval(xy_tag)
             if label in res:
                 raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
             res[label] = tag_obj
@@ -435,7 +473,15 @@ class CompilerContext:
                 return ExtSpace(node.arg2.name)
         elif isinstance(node, xy.AttachTags):
             obj = self.eval(node.arg)
-            obj.tags = self.eval_tags(node.tags)
+            if isinstance(obj, ConstObj):
+                obj.tags = self.eval_tags(node.tags)
+            elif isinstance(obj, TypeObj):
+                base_type = obj
+                obj = copy(obj)
+                obj.base_type_obj = base_type
+                obj.tags = self.eval_tags(node.tags, obj.tag_specs)
+            else:
+                raise CompilationError("Cannot assign tags", node)
             return obj
         else:
             raise CompilationError(
@@ -597,8 +643,10 @@ def compile_structs(ctx: CompilerContext, asts, cast):
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.StructDef):
-                type_obj = ctx.module_ns[node.name]
-                type_obj.tags.update(ctx.eval_tags(node.tags))
+                type_obj: TypeObj = ctx.module_ns[node.name]
+                tag_specs, tag_objs = ctx.split_and_eval_tags(node.tags)
+                type_obj.tags.update(tag_objs)
+                type_obj.tag_specs = tag_specs
 
 
 def compile_func_prototype(node, cast, ctx):
@@ -875,6 +923,30 @@ def import_builtins(ctx: CompilerContext, cast):
     )
     ctx.module_ns["CLib"] = clib_ojb
 
+    # typeof
+    typeof = xy.FuncDef("typeof", params=[xy.VarDecl("val")])
+    typeof_obj = register_func(typeof, ctx)
+    typeof_obj.builtin = True
+    typeof_obj.param_objs = [
+        VarObj()
+    ]
+
+    # tagsof
+    tagsof = xy.FuncDef("tagsof", params=[xy.VarDecl("val")])
+    tagsof_obj = register_func(tagsof, ctx)
+    tagsof_obj.builtin = True
+    tagsof_obj.param_objs = [
+        VarObj()
+    ]
+
+    # sizeof
+    sizeof = xy.FuncDef("sizeof", params=[xy.VarDecl("val")])
+    sizeof_obj = register_func(sizeof, ctx)
+    sizeof_obj.builtin = True
+    sizeof_obj.param_objs = [
+        VarObj()
+    ]
+
 def compile_funcs(ctx, ast, cast):
     for node in ast:
         if isinstance(node, xy.FuncDef):
@@ -946,6 +1018,8 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 cvar.value = value_obj.c_node
             if node.value is None and isinstance(type_desc, ArrTypeObj):
                 cvar.value = c.InitList()
+            if cvar.value is None:
+                cvar.value = type_desc.init_value
 
             cfunc.body.append(cvar)
         else:
@@ -980,6 +1054,14 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
                 return ExprObj(
                     c_node=res,
                     infered_type=c_symbol_type
+                )
+            elif arg1_obj.infered_type is tag_list_type_obj:
+                if field_name not in arg1_obj.tags:
+                    raise CompilationError(f"No tag '{field_name}'", expr)
+                type_obj = arg1_obj.tags[field_name]
+                return ExprObj(
+                    c_node=c.Id(type_obj.c_node.name),
+                    infered_type=type_obj,
                 )
             else:
                 struct_obj = arg1_obj.infered_type
@@ -1241,7 +1323,12 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     for i in range(len(expr.args)):
         obj = compile_expr(expr.args[i], cast, cfunc, ctx)
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
-            if expr_to_move_idx is not None:
+            is_builitin_math = (
+                expr_to_move_idx is not None and
+                arg_exprs[expr_to_move_idx].infered_type.builtin and obj.infered_type.builtin
+                and isinstance(expr.name, xy.Id) and expr.name.name in {"add", "sub", "mul", "div"}
+            )
+            if expr_to_move_idx is not None and not is_builitin_math:
                 tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, cfunc, ctx)
                 arg_exprs[expr_to_move_idx] = tmp_obj
             expr_to_move_idx = i
@@ -1363,6 +1450,22 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=res,
             xy_node=expr,
             infered_type=func_obj.rtype_obj
+        )
+    elif func_obj.builtin and func_obj.xy_node.name == "typeof":
+        return ExprObj(
+            c_node=c.Id(arg_exprs[0].infered_type.c_node.name),
+            infered_type=arg_exprs[0].infered_type,
+            tags=arg_exprs[0].infered_type.tags
+        )
+    elif func_obj.builtin and func_obj.xy_node.name == "tagsof":
+        return ExprObj(
+            infered_type=tag_list_type_obj,
+            tags=arg_exprs[0].tags
+        )
+    elif func_obj.builtin and func_obj.xy_node.name == "sizeof":
+        return ExprObj(
+            c_node=c.FuncCall("sizeof", [arg_exprs[0].c_node]),
+            infered_type=arg_exprs[0].tags
         )
     elif func_obj.builtin:
         assert len(arg_exprs) == 1
@@ -1808,6 +1911,9 @@ def register_func(fdef, ctx):
     return res
 
 def find_type(texpr, ctx, required=True):
+    if isinstance(texpr, xy.Id) and texpr.name == "struct":
+        # Special case for struct
+        return TypeObj(builtin=True)
     if not isinstance(texpr, xy.ArrayType):
         res = ctx.eval(texpr, msg="Cannot find type")
         return res

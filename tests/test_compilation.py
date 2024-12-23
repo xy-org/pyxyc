@@ -29,7 +29,8 @@ from xyc.compiler import CompilationError
     "globalConstants",
     "funcs",
     "stringInterpolation",
-    "namedArguments"
+    "namedArguments",
+    "positionalTags",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

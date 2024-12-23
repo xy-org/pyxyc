@@ -1,0 +1,19 @@
+struct Array~[elemType: struct] {
+    len: Size;
+}
+
+def len(arr: Array) = arr.len
+
+struct Point {
+    x: float;
+    y: float;
+}
+
+def sizeof(:int) = 4
+def sizeof(:Point) = 8
+
+def test() -> int {
+    ints : Array~int;
+    points : Array~Point;
+    return ints'len + points'len + ints'typeof'tagsof.elemType'sizeof + points'typeof'tagsof.elemType'sizeof;
+}

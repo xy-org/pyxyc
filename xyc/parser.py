@@ -587,10 +587,7 @@ def parse_expression(
         and arg1.step is None and arg1.end is not None
         and is_toplevel):
         # it's actually a var decl
-        if arg1.start is None and arg1.end.name == "a":
-            import pdb; pdb.set_trace()
-
-        decl = VarDecl(varying=not is_struct)
+        decl = VarDecl(varying=not is_struct, src=arg1.src, coords=arg1.coords)
         if arg1.start is not None:
             decl.name = arg1.start.name
         decl.type = expr_to_type(arg1.end)
