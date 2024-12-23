@@ -686,7 +686,8 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     # TODO check type is bool
     c_if.cond = cond_obj.c_node
     
-
+    # the first if in an if chain is handled seperately becase it should 
+    # provide the return type for the entire chain
     if ifexpr.type is not None:
         if ifexpr.name is None:
             raise CompilationError(
@@ -708,6 +709,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         c_res = None
         infered_type = find_type(xy.Id("void"), ctx)  # TODO remove this call to find type
 
+    # compile if body
     cfunc.body.append(c_if)
     if isinstance(ifexpr.block, list):
         compile_body(ifexpr.block, cast, c_if, ctx)
@@ -715,41 +717,37 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
         c_if.body.append(res_assign)
 
-    else_block = ifexpr.else_block
+    # subsequent ifs
+    next_if = ifexpr.else_block
     next_c_if = c_if
-    while else_block is not None:
-        if isinstance(else_block, list):
-            # normal else
-            # XXX fix that
-            hack_if = c.If()
-            compile_body(else_block, cast, hack_if, ctx)
-            next_c_if.else_body = hack_if.body
-            else_block = None
-        elif isinstance(else_block, xy.Node) and not isinstance(else_block, xy.IfExpr):
-            # else is direct result
-            else_exp_obj = compile_expr(else_block, cast, cfunc, ctx)
-            res_assign = c.Expr(c_res, else_exp_obj.c_node, op='=')
+    while isinstance(next_if, xy.IfExpr):
+        gen_if = c.If()
+        gen_if.cond = compile_expr(next_if.cond, cast, cfunc, ctx).c_node
+        if isinstance(next_if.block, list):
+            compile_body(next_if.block, cast, gen_if, ctx)
+        elif next_if.block is not None:
+            if_exp_obj = compile_expr(next_if.block, cast, cfunc, ctx)
+            res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
             # TODO compare types
-            next_c_if.else_body = [res_assign]
-            else_block = None
-        elif else_block is not None:
-            # chained ifs
-            assert isinstance(else_block, xy.IfExpr)
-            gen_if = c.If()
-            gen_if.cond = compile_expr(else_block.cond, cast, cfunc, ctx).c_node
-            if isinstance(else_block.block, list):
-                # next_block.block is IfExpr
-                compile_body(else_block.block, cast, gen_if, ctx)
-            elif else_block.block is not None:
-                # next_block is IfExpr and has direct result
-                if_exp_obj = compile_expr(else_block.block, cast, cfunc, ctx)
-                res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
-                # TODO compare types
-                gen_if.body = [res_assign]
+            gen_if.body = [res_assign]
 
-            next_c_if.else_body = gen_if
-            next_c_if = gen_if
-            else_block = else_block.else_block
+        next_c_if.else_body = gen_if
+        next_c_if = gen_if
+        next_if = next_if.else_block
+
+    # finaly the else if any
+    if isinstance(next_if, list):
+        # normal else
+        # XXX fix that
+        hack_if = c.If()
+        compile_body(next_if, cast, hack_if, ctx)
+        next_c_if.else_body = hack_if.body
+    elif isinstance(next_if, xy.Node) and not isinstance(next_if, xy.IfExpr):
+        # else is direct result
+        else_exp_obj = compile_expr(next_if, cast, cfunc, ctx)
+        res_assign = c.Expr(c_res, else_exp_obj.c_node, op='=')
+        # TODO compare types
+        next_c_if.else_body = [res_assign]
 
     return ExprObj(
         xy_node=ifexpr,
