@@ -815,7 +815,63 @@ def test_parse_operator_slices(code, exp_ast):
                 )),
             ])
         ]
-    ]
+    ],
+    [
+        """def func() -> void {
+            a := 0;
+            b := &a;
+            c := &func(a, b);
+            d := func1(&func2(&a + 5, &b));
+            e := &a[10][20];
+        }""",
+        [
+            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("a", value=ast.Const(0), varying=False),
+                ast.VarDecl("b", value=ast.UnaryExpr(
+                    arg=ast.Id("a"),
+                    op="&",
+                )),
+                ast.VarDecl("c", value=ast.UnaryExpr(
+                    arg=ast.FuncCall(
+                        ast.Id("func"),
+                        args=[ast.Id("a"), ast.Id("b")]
+                    ),
+                    op="&",
+                )),
+                ast.VarDecl("d", value=ast.FuncCall(
+                    ast.Id("func1"),
+                    args=[
+                        ast.UnaryExpr(
+                            arg=ast.FuncCall(
+                                ast.Id("func2"),
+                                args=[
+                                    ast.BinExpr(
+                                        ast.UnaryExpr(ast.Id("a"), op="&"),
+                                        ast.Const(5),
+                                        op='+'
+                                    ),
+                                    ast.UnaryExpr(ast.Id("b"), op="&")
+                                ]
+                            ),
+                            op='&'
+                        )
+                    ]
+                )),
+                ast.VarDecl("e", value=ast.UnaryExpr(
+                    arg=ast.Select(
+                        base=ast.Select(
+                            base=ast.Id("a"),
+                            args=ast.Args(
+                                args=[ast.Const(10)]
+                            )
+                        ),
+                        args=ast.Args([ast.Const(20)])
+                    ),
+                    op="&",
+                )),
+            ])
+        ]
+    ],
 ])
 def test_expressions(code, exp_ast):
     act_ast = parse_code(code)

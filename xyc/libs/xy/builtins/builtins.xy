@@ -210,6 +210,10 @@ def mul(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
+def mul(a: Size, b: int) -> Size {
+    # Implemented by the compiler
+}
+
 ;; Multiplication with accumulate
 def mulEqual(a: double, b: double) -> int {
     # Implemented by the compiler
@@ -233,6 +237,10 @@ def to(a: int, :uint) -> uint {
 }
 
 def to(a: int, b: float) -> float {
+    # Implemented by the compiler
+}
+
+def to(a: Size, b: float) -> float {
     # Implemented by the compiler
 }
 

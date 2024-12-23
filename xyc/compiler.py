@@ -1502,6 +1502,23 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
                     c_node=res,
                     infered_type=arg2_obj.infered_type
                 )
+    elif isinstance(expr, xy.UnaryExpr) and expr.op == '&':
+        arg_obj = compile_expr(expr.arg, cast, cfunc, ctx, lhs=True)
+        if isinstance(arg_obj, RefObj):
+            return ExprObj(
+                expr,
+                c_node=arg_obj.ref.c_node,
+                infered_type=arg_obj.ref.infered_type,
+                tags=arg_obj.ref.tags
+            )
+        elif isinstance(arg_obj.compiled_obj, VarObj):
+            return ExprObj(
+                expr,
+                c_node=c.UnaryExpr(arg=arg_obj.c_node, op="&", prefix=True),
+                infered_type=ptr_type_to(arg_obj.infered_type, ctx),
+            )
+        else:
+            raise CompilationError("Expression doesn't evaluate to a ref", expr.arg)
     elif isinstance(expr, xy.UnaryExpr):
         fcall = rewrite_unaryop(expr, ctx)
         return compile_expr(fcall, cast, cfunc, ctx)
@@ -1794,7 +1811,13 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
     )
 
 def is_ptr_type(type_obj, ctx):
-    return type_obj is ctx.ptr_obj or type_obj.base_type_obj is ctx.ptr_obj 
+    return type_obj is ctx.ptr_obj or type_obj.base_type_obj is ctx.ptr_obj
+
+def ptr_type_to(type_obj, ctx):
+    ptr_type = copy(ctx.ptr_obj)
+    ptr_type.base_type_obj = ctx.ptr_obj
+    ptr_type.tags["to"] = type_obj
+    return ptr_type
 
 def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
     type_obj = ctx.eval(expr.name, msg="Cannot find type")
@@ -2484,9 +2507,12 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     )
 
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_ref:
+        refto_name = func_obj.xy_node.returns[0].references.name
+        if refto_name not in func_ctx.ns:
+            raise CompilationError(f"No parameter {refto_name}", func_obj.xy_node.returns[0].references)
         res_obj = ref_setup(
             RefObj(
-                container=func_ctx.ns[func_obj.xy_node.returns[0].references.name],
+                container=func_ctx.ns[refto_name],
                 ref=raw_fcall_obj,
                 xy_node=expr,
             ),

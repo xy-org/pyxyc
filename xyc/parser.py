@@ -314,8 +314,8 @@ var_qualifiers = {"var", "in", "out", "inout", "outin", "pseudo", "ref"}
 
 operator_precedence = {
     "~": 12,
-    "unary+": 11, "unary-": 11, "!": 11,
-    "++" : 10, "--": 10, ".": 10, "(": 10, "[": 10, "{": 10, "'": 10,
+    "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11,
+    "unary+": 10, "unary-": 10, "!": 10, "&": 10,
     "^": 9, "\\": 9,
     "*": 8, "/": 8,
     "+": 7, "-": 7,
@@ -326,7 +326,7 @@ operator_precedence = {
     "=": 2, '+=': 2, '-=': 2, "|=": 2, '*=': 2, '/=': 2, ".=": 2,
 }
 MIN_PRECEDENCE=2
-UNARY_PRECEDENCE=11
+UNARY_PRECEDENCE=10
 MAX_PRECEDENCE=12
 
 @dataclass
@@ -400,7 +400,7 @@ def parse_expression(
             raise ParsingError("Operator slices require a start.", itoken)
         else:
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
-    elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!"}:
+    elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!", "&"}:
         coords = itoken.peak_coords()
         op = itoken.consume()
         arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)

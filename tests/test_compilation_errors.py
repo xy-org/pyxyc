@@ -49,6 +49,34 @@ note: Candidates are:
     get(?[], uint) -> Ptr
     get(?[], Size) -> Ptr
 """),
+    ("""
+        def func1(x: int) = x*2
+        def test() {
+            a := &func1(10);
+        }
+     """, """\
+src.xy:4:19: error: Expression doesn't evaluate to a ref
+|             a := &func1(10);
+                    ^^^^^
+"""),
+#     ("""
+#         def func(ptr: Ptr~int, arg: pseudo ?) -> Ptr~[arg'typeof] {
+#             return ptr;
+#         }
+#      """, """
+# """),
+#     ("""
+#         def func(arg: pseudo ?, ptr: Ptr~[arg'typeof]) -> Ptr~[arg'typeof] {
+#             return ptr;
+#         }
+#      """, """
+# """),
+#     ("""
+#         def func() -> Ptr {
+#             return &10;
+#         }
+#      """, """
+# """),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

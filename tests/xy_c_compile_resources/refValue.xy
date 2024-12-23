@@ -1,0 +1,19 @@
+struct Data {
+}
+
+def get(d: Data, i: int) -> float {
+    return (i*2)'to(float);
+}
+
+def func1(d: Data, i: int) -> ref(d) int {
+    return i; 
+}
+
+def test() {
+    a := 10;
+    b := &a;
+    c := a'addrof;
+    d := Data{};
+    e := func1(d, 10);
+    f := &func1(d, 10);
+}
