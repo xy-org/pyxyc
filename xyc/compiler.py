@@ -175,7 +175,7 @@ class ModuleHeader:
 class CompilerContext:
     builder: any
     module_name: str  # TODO maybe module_name should be a list of the module names
-    id_table: IdTable = field(default_factory=IdTable)
+    module_ns: IdTable = field(default_factory=IdTable)
     global_ns: IdTable = field(default_factory=IdTable)
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
 
@@ -188,11 +188,11 @@ class CompilerContext:
     stdlib_included = False
 
     def ensure_func_space(self, name: xy.Id):
-        if name.name not in self.id_table:
+        if name.name not in self.module_ns:
             fspace = FuncSpace()
-            self.id_table[name.name] = fspace
+            self.module_ns[name.name] = fspace
             return fspace
-        candidate = self.id_table[name.name]
+        candidate = self.module_ns[name.name]
         if isinstance(candidate, FuncSpace):
             return candidate
         # something else already defined with the same name
@@ -229,7 +229,7 @@ class CompilerContext:
 
     def get_compiled_type(self, name: xy.Id | str):
         symbol_name = name.name if isinstance(name, xy.Id) else name
-        res = self.id_table.get(symbol_name, None)
+        res = self.module_ns.get(symbol_name, None)
         if res is None:
             res = self.global_ns.get(symbol_name, None)
 
@@ -265,8 +265,8 @@ class CompilerContext:
         return res
 
     def lookup(self, name: str):
-        if name in self.id_table:
-            return self.id_table[name]
+        if name in self.module_ns:
+            return self.module_ns[name]
         else:
             return self.global_ns.get(name, None)
 
@@ -345,7 +345,7 @@ def compile_module(builder, module_name, asts):
     maybe_add_main(ctx, res)
 
     return ModuleHeader(
-        namespace=ctx.id_table, str_prefix_reg=ctx.str_prefix_reg
+        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg
     ), res
 
 def compile_header(ctx: CompilerContext, asts, cast):
@@ -364,7 +364,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                     xy_node = node,
                     c_node = cstruct,
                 )
-                ctx.id_table[node.name] = type_obj
+                ctx.module_ns[node.name] = type_obj
 
                 fields = {}
                 for field in node.fields:
@@ -600,7 +600,7 @@ def compile_func(node, ctx, ast, cast):
     param_objs = []
     for param, cparam in zip(node.params, cfunc.params):
         param_type = find_type(param.type, ctx)
-        ctx.id_table[param.name] = VarObj(
+        ctx.module_ns[param.name] = VarObj(
             xy_node=param,
             c_node=cparam,
             type_desc=param_type
@@ -651,7 +651,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 cvar.dims = type_desc.dims
             else:
                 cvar.type = type_desc.c_name
-            ctx.id_table[node.name] = VarObj(node, cvar, type_desc)
+            ctx.module_ns[node.name] = VarObj(node, cvar, type_desc)
 
             if node.value is not None:
                 cvar.value = value_obj.c_node
@@ -966,7 +966,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
             name_hint = ctx.eval_to_id(name_hint) if name_hint is not None else ""
         var_obj = ctx.create_tmp_var(infered_type, name_hint=name_hint)
         cfunc.body.append(var_obj.c_node)
-        ctx.id_table[name_hint] = var_obj
+        ctx.module_ns[name_hint] = var_obj
         c_res = c.Id(var_obj.c_node.name)
 
     # compile if body
@@ -1038,7 +1038,7 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
             inferred_type = type_desc if type_desc is not None else value_obj.infered_type
             name_hint = loop_vardecl.name
             tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
-            ctx.id_table[name_hint] = tmp_obj
+            ctx.module_ns[name_hint] = tmp_obj
             if value_obj is not None:
                 tmp_obj.c_node.value = value_obj.c_node
             cfunc.body.append(tmp_obj.c_node)
@@ -1056,7 +1056,7 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
         if name_hint is None:
             name_hint = ctx.eval_to_id(xywhile.name)
         tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
-        ctx.id_table[name_hint] = tmp_obj
+        ctx.module_ns[name_hint] = tmp_obj
         cfunc.body.append(tmp_obj.c_node)
         res_c = c.Id(tmp_obj.c_node.name)
     else:
@@ -1094,7 +1094,7 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
             inferred_type = type_desc if type_desc is not None else value_obj.infered_type
             name_hint = loop_vardecl.name
             tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
-            ctx.id_table[name_hint] = tmp_obj
+            ctx.module_ns[name_hint] = tmp_obj
             if value_obj is not None:
                 tmp_obj.c_node.value = value_obj.c_node
             cfunc.body.append(tmp_obj.c_node)
@@ -1112,7 +1112,7 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
         if name_hint is None:
             name_hint = ctx.eval_to_id(xydowhile.name)
         tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
-        ctx.id_table[name_hint] = tmp_obj
+        ctx.module_ns[name_hint] = tmp_obj
         cfunc.body.append(tmp_obj.c_node)
         res_c = c.Id(tmp_obj.c_node.name)
     else:
@@ -1371,7 +1371,7 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
     
     if imprt.in_name:
         # XXX what about multiple in names
-        ctx.id_table[imprt.in_name] = import_obj
+        ctx.module_ns[imprt.in_name] = import_obj
 
 def maybe_add_main(ctx, cast):
     if ctx.entrypoint_obj is not None:
