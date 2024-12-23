@@ -284,7 +284,7 @@ class ExtSpace(FuncSpace):
 def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
     if len(fcall_args_types) > len(fobj.param_objs):
         return False
-    if fobj.builtin and fobj.xy_node.name in {"typeof", "tagsof", "sizeof", "addrof", "typeEqs"}:
+    if fobj.builtin and fobj.xy_node.name.name in {"typeof", "tagsof", "sizeof", "addrof", "typeEqs"}:
         return fobj
     satisfied_params = set()
     # go through positional
@@ -990,7 +990,7 @@ def autogenerate_ops(type_obj: TypeObj, ast, cast, ctx):
     # autogen | and &
     gen_or_obj = FuncObj(
         xy_node=xy.FuncDef(
-            name="bor",
+            name=xy.Id("bor"),
             src=xy_node.src, coords=xy_node.coords,
         ),
         rtype_obj=type_obj,
@@ -1002,7 +1002,7 @@ def autogenerate_ops(type_obj: TypeObj, ast, cast, ctx):
 
     gen_or_obj = FuncObj(
         xy_node=xy.FuncDef(
-            name="band",
+            name=xy.Id("band"),
             src=xy_node.src, coords=xy_node.coords,
         ),
         rtype_obj=type_obj,
@@ -1161,7 +1161,7 @@ def compile_builtins(builder, module_name, asts):
             for func_obj in obj._funcs:
                 func_obj.builtin = True
                 # XXX Please remove that
-                func_obj.xy_node.name = func_obj.xy_node.name.name
+                # func_obj.xy_node.name = func_obj.xy_node.name.name
 
         if isinstance(obj, TypeObj):
             ctype_map = {
@@ -1206,6 +1206,7 @@ def import_ctti(ctx: CompilerContext, cast):
     # typeEqs - compile time type comparison
     typeEqs = xy.FuncDef("typeEqs", params=[xy.VarDecl("t1"), xy.VarDecl("t2")])
     typeEqs_obj = register_func(typeEqs, ctx)
+    typeEqs.name = xy.Id("typeEqs")
     typeEqs_obj.builtin = True
     typeEqs_obj.param_objs = [
         VarObj(),
@@ -2075,7 +2076,7 @@ def find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     )
 
 def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
-    if func_obj.builtin and func_obj.xy_node.name == "select":
+    if is_builtin_func(func_obj, "select"):
         # TODO what if args is more numerous
         assert len(arg_exprs) == 2
         base_cnode = arg_exprs[0].c_node
@@ -2097,15 +2098,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=res,
             infered_type=arg_exprs[0].infered_type.base_type_obj
         )
-    elif func_obj.builtin and func_obj.xy_node.name == "typeEqs":
+    elif is_builtin_func(func_obj, "typeEqs"):
         return typeEqs(expr, arg_exprs, cast, cfunc, ctx)
-    elif func_obj.builtin and func_obj.xy_node.name == "to":
+    elif is_builtin_func(func_obj, "to"):
         return ExprObj(
             xy_node=expr,
             c_node=c.Cast(what=arg_exprs[0].c_node, to=arg_exprs[1].c_node.name),
             infered_type=arg_exprs[1].infered_type
         )
-    elif func_obj.builtin and len(arg_exprs) == 2 and func_obj.xy_node.name != "cmp":
+    elif func_obj.builtin and len(arg_exprs) == 2 and func_obj.xy_node.name.name != "cmp":
         func_to_op_map = {
             "add": '+',
             "sub": '-',
@@ -2129,21 +2130,21 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_arg1 = c.Cast(c_arg1, to="int8_t*")
         res = c.Expr(
             c_arg1, arg_exprs[1].c_node,
-            op=func_to_op_map[func_obj.xy_node.name]
+            op=func_to_op_map[func_obj.xy_node.name.name]
         )
         return ExprObj(
             xy_node=func_obj.xy_node,
             c_node=res,
             infered_type=func_obj.rtype_obj
         )
-    elif func_obj.builtin and func_obj.xy_node.name == "cmp":
+    elif is_builtin_func(func_obj, "cmp"):
         res = c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op="-")
         return ExprObj(
             c_node=res,
             xy_node=expr,
             infered_type=func_obj.rtype_obj
         )
-    elif func_obj.builtin and func_obj.xy_node.name == "typeof":
+    elif is_builtin_func(func_obj, "typeof"):
         return ExprObj(
             xy_node=expr,
             c_node=c.Id(arg_exprs[0].infered_type.c_node.name),
@@ -2151,17 +2152,17 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             tags=arg_exprs[0].infered_type.tags,
             compiled_obj=arg_exprs[0].infered_type,
         )
-    elif func_obj.builtin and func_obj.xy_node.name == "tagsof":
+    elif is_builtin_func(func_obj, "tagsof"):
         return ExprObj(
             infered_type=tag_list_type_obj,
             tags=arg_exprs[0].tags
         )
-    elif func_obj.builtin and func_obj.xy_node.name == "sizeof":
+    elif is_builtin_func(func_obj, "sizeof"):
         return ExprObj(
             c_node=c.FuncCall("sizeof", [arg_exprs[0].c_node]),
             infered_type=ctx.size_obj
         )
-    elif func_obj.builtin and func_obj.xy_node.name == "addrof":
+    elif is_builtin_func(func_obj, "addrof"):
         return ExprObj(
             c_node=c.UnaryExpr(arg=arg_exprs[0].c_node, op="&", prefix=True),
             infered_type=ctx.ptr_obj
@@ -2310,6 +2311,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     func_ctx.pop_ns()
 
     return res_obj
+
+def is_builtin_func(func_obj, name):
+    return func_obj.builtin and func_obj.xy_node.name.name == name
 
 def typeEqs(expr, arg_exprs, cast, cfunc, ctx):
     assert len(arg_exprs) == 2
