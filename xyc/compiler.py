@@ -6,11 +6,11 @@ from dataclasses import dataclass, field
 @dataclass
 class CompiledObj:
     tags: dict[str, 'CompiledObj'] = field(kw_only=True, default_factory=dict)
+    xy_node : any = None
+    c_node : any = None
 
 @dataclass
 class TypeObj(CompiledObj):
-    xy_node : any = None
-    c_node : any = None
     builtin : bool = False
 
     @property
@@ -18,6 +18,23 @@ class TypeObj(CompiledObj):
         if self.c_node is not None:
             return self.c_node.name
         return None
+
+@dataclass
+class ConstObj(CompiledObj):
+    value: int | float | str | None = None
+
+@dataclass
+class StrObj(CompiledObj):
+    prefix: str = ""
+    parts: list[CompiledObj] = field(default_factory=list)
+
+    def as_str(self):
+        if len(self.prefix) > 0:
+            raise CompilationError("Expected unprefixed string", self.xy_node)
+        if len(self.parts) > 0:
+            assert len(self.parts) == 1
+            return self.parts[0].value
+        return ""
 
 @dataclass
 class ArrTypeObj(CompiledObj):
@@ -29,9 +46,16 @@ class ArrTypeObj(CompiledObj):
         self.base.c_name + "*"
 
 @dataclass
+class ArrayObj(CompiledObj):
+    elems: list[CompiledObj] = field(default_factory=list)
+
+@dataclass
+class InstanceObj(CompiledObj):
+    type_obj: CompiledObj | None = None
+    fields: dict[str, CompiledObj] = field(default_factory=dict)
+
+@dataclass
 class FuncObj(CompiledObj):
-    xy_node: any = None
-    c_node: any = None
     rtype_obj: TypeObj = None
     builtin: bool = False
 
@@ -43,9 +67,11 @@ class FuncObj(CompiledObj):
 
 @dataclass
 class VarObj(CompiledObj):
-    xy_node: any = None
-    c_node: any = None
     type_desc: TypeObj | None = None
+
+@dataclass
+class ImportObj(CompiledObj):
+    name: str | None = None
 
 class IdTable(dict):
     pass
@@ -85,6 +111,13 @@ class FuncSpace:
                 if desc.xy_node == node:
                     return desc
             raise "Cannot find func"
+        
+class ExtSpace(FuncSpace):
+    def __init__(self, ext_name: str):
+        self.ext_name = ext_name
+
+    def find(self, node, ctx):
+        return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
 
 def cmp_call_def(fcall, fcall_args_types, fdef, ctx):
@@ -127,17 +160,81 @@ class CompilerContext:
             ]
         )
     
-    def get_func_space(self, name: xy.Id):
-        if name.name not in self.id_table:
+    def eval_to_fspace(self, name: xy.Node):
+        space = self.eval(name)
+        if space is None:
             raise CompilationError(f"Cannot find any functions named '{name.name}'", name)
-        space = self.id_table[name.name]
-        if not isinstance(space, FuncSpace):
+        if not (isinstance(space, FuncSpace) or isinstance(space, ExtSpace)):
             # TODO add notes here
-            raise CompilationError(f"{name.name} is not a function.", name)
+            raise CompilationError(f"Not a function.", name)
         return space
 
     def get_compiled_type(self, name: xy.Id):
         return self.id_table[name.name]
+    
+    def eval_tags(self, tags: xy.TagList):
+        res = {}
+        for xy_tag in tags.args:
+            tag_obj = self.eval(xy_tag)
+            if isinstance(tag_obj, TypeObj):
+                if "xy.tag" not in tag_obj.tags:
+                    raise CompilationError(
+                        f"Missing default label for type '{tag_obj.xy_node.name}'",
+                        xy_tag, notes=[("Please associate default label by adding the TagCtor tag: ~[TagCtor{label=\"default-label\"}]", None)])
+                label = tag_obj.tags["xy.tag"].fields["label"].as_str()
+            elif isinstance(tag_obj, InstanceObj):
+                assert tag_obj.type_obj is not None
+                if "xy.tag" not in tag_obj.type_obj.tags:
+                    raise CompilationError(
+                        f"Missing default label for type '{tag_obj.type_obj.xy_node.name}'",
+                        xy_tag, notes=[("Please associate default label by adding the TagCtor tag: ~[TagCtor{label=\"default-label\"}]", None)])
+                label = tag_obj.type_obj.tags["xy.tag"].fields["label"].as_str()
+            elif tag_obj.primitive:
+                raise CompilationError("Primitive types have to have an explicit label", xy_tag)
+            else:
+                raise CompilationError("Cannot determine label for tag", xy_tag)
+            
+            if label in res:
+                raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
+            res[label] = tag_obj
+        return res
+    
+    def eval(self, node):
+        if isinstance(node, xy.Id):
+            # maybe instead of None we can return a special object
+            return self.id_table.get(node.name, None)
+        elif isinstance(node, xy.Const):
+            return ConstObj(value=node.value, xy_node=node)
+        elif isinstance(node, xy.StrLiteral):
+            return StrObj(
+                prefix=node.prefix,
+                parts=[self.eval(p) for p in node.parts],
+                xy_node=node
+            )
+        elif isinstance(node, xy.StructLiteral):
+            instance_type = self.eval(node.name)
+            obj = InstanceObj(type_obj=instance_type, xy_node=node)
+            if len(node.args) > 0:
+                raise CompilationError("Positional arguments are NYI", node.args[0])
+            for name, value in node.kwargs.items():
+                obj.fields[name] = self.eval(value)
+            return obj
+        elif isinstance(node, xy.ArrayLit):
+            return ArrayObj(elems=[self.eval(elem) for elem in node.elems], xy_node=node)
+        elif isinstance(node, xy.BinExpr):
+            if node.op == ".":
+                base = self.eval(node.arg1)
+                assert isinstance(node.arg2, xy.Id)
+                if not isinstance(base, ImportObj):
+                    raise CompilationError("Selection is NYI")
+                # XXX assume c library
+                return ExtSpace(node.arg2.name)
+        else:
+            raise CompilationError(
+                "Cannot evaluate at compile time. "
+                f"Unknown expression type '{type(node).__name__}'",
+                node)
+            
 
 def compile_module(module_name, ast):
     ctx = CompilerContext(module_name)
@@ -151,6 +248,10 @@ def compile_module(module_name, ast):
 
 def compile_header(ctx: CompilerContext, ast, cast):
     import_builtins(ctx, cast)
+
+    for node in ast:
+        if isinstance(node, xy.Import):
+            compile_import(node, ctx, ast, cast)
 
     for node in ast:
         if isinstance(node, xy.StructDef):
@@ -192,23 +293,15 @@ def compile_header(ctx: CompilerContext, ast, cast):
             compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled)
 
             # compile tags
-            for tag in node.tags.args:
-                if isinstance(tag, xy.StructLiteral):
-                    type_obj = ctx.get_compiled_type(tag.name)
-                    # XXX Fix that
-                    if type_obj.c_name == "StringCtor":
-                        str_lit = tag.kwargs["prefix"]
-                        prefix = str_lit.parts[0] if len(str_lit.parts) else ""
-                        ctx.str_prefix_reg[prefix] = compiled
-                elif isinstance(tag, xy.Id):
-                    # XXX
-                    compiled.tags["xi.entrypoint"] = ctx.id_table[tag.name]
-                    # XXX
-                    if tag.name == "EntryPoint":
-                        ctx.entrypoint_obj = compiled
-
-                else:
-                    raise CompilationError("NYI", tag)
+            compiled.tags = ctx.eval_tags(node.tags)
+            if "xy.string" in compiled.tags:
+                # TODO assert it is a StrCtor indeed
+                str_lit = compiled.tags["xy.string"].fields["prefix"]
+                prefix = str_lit.parts[0].value if len(str_lit.parts) else ""
+                ctx.str_prefix_reg[prefix] = compiled
+            if "xy.entrypoint" in compiled.tags:
+                # TODO assert it is the correct type
+                ctx.entrypoint_obj = compiled
 
             func_space.append(compiled)
 
@@ -274,11 +367,32 @@ def import_builtins(ctx, cast):
         xy.VarDecl("prefix", type=None)
     ])
     str_obj = TypeObj(str_ctor, c.Struct("StringCtor"), builtin=True)
+    str_obj.tags["xy.tag"] = InstanceObj(
+        fields={
+            "label": StrObj(parts=[ConstObj(value="xy.string")])
+        }
+    )
     ctx.id_table["StrCtor"] = str_obj
 
+    # entry point
     entrypoint = xy.StructDef(name="EntryPoint")
     ep_obj = TypeObj(entrypoint, builtin=True)
+    ep_obj.tags["xy.tag"] = InstanceObj(
+        fields={
+            "label": StrObj(parts=[ConstObj(value="xy.entrypoint")])
+        }
+    )
     ctx.id_table["EntryPoint"] = ep_obj
+
+    # clib
+    clib = xy.StructDef(name="CLib")
+    clib_ojb = TypeObj(clib, builtin=True)
+    clib_ojb.tags["xy.tag"] = InstanceObj(
+        fields={
+            "label": StrObj(parts=[ConstObj(value="xyc.lib")])
+        }
+    )
+    ctx.id_table["CLib"] = clib_ojb
 
 def compile_funcs(ctx, ast, cast):
     for node in ast:
@@ -286,11 +400,11 @@ def compile_funcs(ctx, ast, cast):
             compile_func(node, ctx, ast, cast)
         elif isinstance(node, xy.Comment):
             pass
-        elif not isinstance(node, xy.StructDef):
+        elif not (isinstance(node, xy.StructDef) or isinstance(node, xy.Import)):
             raise CompilationError("NYI", node)
 
 def compile_func(node, ctx, ast, cast):
-    fspace = ctx.get_func_space(node.name)
+    fspace = ctx.eval_to_fspace(node.name)
     fdesc = fspace.find(node, ctx)
     cfunc = fdesc.c_node
     compile_body(node.body, cast, cfunc, ctx)
@@ -326,8 +440,14 @@ def compile_body(body, cast, cfunc, ctx):
                 cvar.value = c.InitList()
 
             cfunc.body.append(cvar)
+        elif isinstance(node, xy.FuncCall):
+            compiled = compile_expr(node, cast, cfunc, ctx)
+            cfunc.body.append(compiled)
         else:
-            raise CompilationError(f"Unknown xy ast node {type(node).__name__}", node)
+            raise CompilationError(
+                f"Unsupported statement {type(node).__name__} in function body",
+                node
+            )
 
 
 def compile_expr(expr, cast, cfunc, ctx):
@@ -342,7 +462,7 @@ def compile_expr(expr, cast, cfunc, ctx):
         res = c.Id(expr.name)
         return res
     elif isinstance(expr, xy.FuncCall):
-        fspace = ctx.get_func_space(expr.name)
+        fspace = ctx.eval_to_fspace(expr.name)
         func_obj = fspace.find(expr, ctx)
 
         if func_obj.builtin and func_obj.xy_node.name == "select":
@@ -472,7 +592,7 @@ def infer_type(expr, ctx):
         if len(expr.elems) <= 0:
             raise CompilationError("Cannot infer type of an empty array")
         base_type = infer_type(expr.elems[0], ctx)
-        res = ArrTypeObj(base_type, dims=[len(expr.elems)])
+        res = ArrTypeObj(base=base_type, dims=[len(expr.elems)])
         return res
     else:
         raise CompilationError("Cannot infer type", expr)
@@ -496,7 +616,7 @@ def find_type(texpr, ctx):
         for d in texpr.dims:
             dims.append(ct_eval(d, ctx))
         
-        return ArrTypeObj(base_type, dims=dims)
+        return ArrTypeObj(base=base_type, dims=dims)
     else:
         raise CompilationError("Cannot determine type", texpr)
 
@@ -506,7 +626,7 @@ def ct_eval(expr, ctx):
     raise CompilationError("Cannot Compile-Time Evaluate", expr)
 
 def find_func(fcall, ctx):
-    fspace = ctx.get_func_space(fcall.name)
+    fspace = ctx.eval_to_fspace(fcall.name)
     return fspace.find(fcall, ctx)
 
 def rewrite_op(binexpr, ctx):
@@ -527,6 +647,26 @@ def rewrite_select(select, ctx):
         coords=select.coords
     )
     return fcall
+
+def compile_import(imprt, ctx, ast, cast):
+    compiled_tags = ctx.eval_tags(imprt.tags)
+    import_obj = None
+    if "xyc.lib" in compiled_tags:
+        obj = compiled_tags["xyc.lib"]
+        # TODO assert obj.xy_node.name.name == "CLib"
+        headers = obj.fields["headers"]
+        for header_obj in headers.elems:
+            # TODO what if header_obj is an expression
+            if len(header_obj.prefix) > 0:
+                raise CompilationError("Only unprefixed strings are recognized", header.xy_node)
+            cast.includes.append(c.Include(header_obj.parts[0].value))
+        import_obj = ImportObj(name=imprt.lib)
+    else:
+        raise CompilationError("Modules are NYI", imprt)
+    
+    if imprt.in_name:
+        # XXX what about multiple in names
+        ctx.id_table[imprt.in_name] = import_obj
 
 def maybe_add_main(ctx, ast, cast):
     if ctx.entrypoint_obj is not None:

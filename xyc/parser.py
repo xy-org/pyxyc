@@ -395,7 +395,10 @@ def parse_expression(
                 )
         else:
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-            binop = BinExpr(arg1, arg2, op, src=itoken.src, coords=op_coords)
+            binop = BinExpr(
+                arg1, arg2, op, src=itoken.src,
+                coords=[arg1.coords[0], arg2.coords[1]]
+            )
             arg1 = binop
         op = itoken.peak()
 

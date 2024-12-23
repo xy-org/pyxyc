@@ -1,0 +1,19 @@
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <errno.h>
+
+void* cimport_cstr(void* addr, size_t size) {
+    return addr;
+}
+
+int32_t cimport_main(void) {
+    write(0, cimport_cstr("Hello World", 11), 11);
+    return 0;
+}
+
+int main(int argc, char** argv) {
+    int res = cimport_main();
+    return res;
+}

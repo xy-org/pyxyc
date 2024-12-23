@@ -1,8 +1,13 @@
-import posix~[CLib{headers=[c"unistd.h"]}] in c
-import libc~[CLib{headers=[c"errno.h"]}] in c
+import posix~[CLib{headers=["unistd.h"]}] in c
+import libc~[CLib{headers=["errno.h"]}] in c
+
+
+def cstr~[StrCtor{prefix="c"}](addr: Ptr, size: Size) -> Ptr {
+    return addr;
+}
 
 
 def main~EntryPoint() -> int {
-    c.write(0, c"Hello World\n", 12);
+    c.write(0, c"Hello World", 11);
     return 0;
 }

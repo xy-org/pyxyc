@@ -63,7 +63,9 @@ def stringify_body(body, frags, ident=1):
                 stringify_expr(stmt.value, frags)
             frags.append(";\n")
         else:
-            raise CGenerationError(f"Unknown statement {type(stmt).__name__}")
+            frags.append(" " * (ident*4))
+            stringify_expr(stmt, frags)
+            frags.append(";\n")
 
 def stringify_expr(expr, frags):
     if isinstance(expr, Const):
