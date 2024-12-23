@@ -30,3 +30,8 @@ void refs_set(refs_Point* p, int8_t idx, float v) {
         p->m_w = v;
     }
 }
+
+void refs_testPoint(uint8_t i) {
+    refs_Point p1 = (refs_Point){0, 0, 0, (float)i};
+    refs_Point p2 = (refs_Point){0, 0, 0, 1.0f};
+}

@@ -28,11 +28,11 @@ def set(p: inout Point, idx: byte, v: float)
 }
 
 def testPoint(i: ubyte) {
-    #p1: var = Point{w=i'to(float)};
+    p1: var = Point{w=i'to(float)};
     p2: Point;
-    #p1.x = p1[i];
-    #p2.z = p1[4-i];
-    #return p1.x + p2.w + p2.z + p1.w;
+    # p1.x = p1[i];
+    # p2.z = p1[4-i];
+    # return p1.x + p2.w + p2.z + p1.w;
 }
 
 # struct  PointCloud {

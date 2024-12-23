@@ -1246,6 +1246,22 @@ def import_builtins(ctx: CompilerContext, cast):
             VarObj(type_desc=ctx.module_ns[int_type]),
         ]
 
+    # conversion funcs
+
+    for base_type in num_types:
+        for to_type in num_types:
+            to = xy.FuncDef(name="to", params=[
+                xy.VarDecl("value", xy.Id(base_type)),
+                xy.VarDecl(type=xy.Id(to_type), is_pseudo=True),
+            ])
+            to_obj = register_func(to, ctx)
+            to_obj.builtin = True
+            to_obj.rtype_obj = None
+            to_obj.param_objs = [
+                VarObj(type_desc=ctx.module_ns[base_type]),
+                VarObj(type_desc=ctx.module_ns[to_type]),
+            ]
+
     # tag construction
     tag_ctor = xy.StructDef(name="TagCtor", fields=[
         xy.VarDecl("label", type=None)
@@ -2203,6 +2219,12 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         )
     elif func_obj.builtin and func_obj.xy_node.name == "typeEqs":
         return typeEqs(expr, arg_exprs, cast, cfunc, ctx)
+    elif func_obj.builtin and func_obj.xy_node.name == "to":
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.Cast(what=arg_exprs[0].c_node, to=arg_exprs[1].c_node.name),
+            infered_type=arg_exprs[1].infered_type
+        )
     elif func_obj.builtin and len(arg_exprs) == 2 and func_obj.xy_node.name != "cmp":
         func_to_op_map = {
             "add": '+',
