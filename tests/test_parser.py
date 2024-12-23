@@ -63,27 +63,23 @@ def test_parse_import_error(code, err_msg):
         """# multi word comment
         """,
         [
-            ast.Comment(comment=" multi word comment")
         ]
     ],
     [
         """#""",
         [
-            ast.Comment(comment="")
         ]
     ],
     [
         """#
         """,
         [
-            ast.Comment(comment="")
         ]
     ],
     [
         """#  comment with leading and trailing spaces  
         """,
         [
-            ast.Comment(comment="  comment with leading and trailing spaces  ")
         ]
     ],
     [
@@ -92,9 +88,7 @@ def test_parse_import_error(code, err_msg):
 # comment 3
         """,
         [
-            ast.Comment(comment="comment 1"),
             ast.Comment(comment=";; comment 2", is_doc=True),
-            ast.Comment(comment=" comment 3"),
         ]
     ],
     [
@@ -125,7 +119,6 @@ def main() {}
     [
         """
 def main() -> int {
-    # i := 0
     return i;
 }
         """,
@@ -133,7 +126,6 @@ def main() -> int {
             ast.FuncDef(
                 name=ast.Id("main"),
                 body=[
-                    ast.Comment(" i := 0"),
                     ast.Return(ast.Id("i")),
                 ],
                 returns=ast.SimpleRType("int"),
@@ -155,7 +147,6 @@ def main(i: int) -> int {
                 params=[ast.param("i", type=ast.Id("int"))],
                 body=[
                     ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
-                    ast.Comment(" square i"),
                     ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
                     ast.Comment(";; square i", is_doc=True),
                     ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
@@ -197,7 +188,6 @@ def test_parse_comments(code, exp_ast):
         }
         """,
         [
-            ast.Comment(" multi word comment"),
             ast.Import(lib="xylib"),
             ast.FuncDef(
                 ast.Id("main"),
@@ -214,7 +204,6 @@ def test_parse_comments(code, exp_ast):
         }
         """,
         [
-            ast.Comment(" multi word comment"),
             ast.Import(lib="xylib"),
             ast.FuncDef(
                 ast.Id("main"),
@@ -358,6 +347,27 @@ def test_parse_simple_func(code, exp_ast):
                             ast.Id("x")
                         ]
                     )),
+                ]
+            ),
+        ]
+    ],
+    [
+        """
+        def func(x: int)
+        # comment
+        # >> comment
+        # << comment
+        {
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("func"),
+                params=[
+                    ast.param("x", type=ast.Id("int")),
+                ],
+                returns=[
+                ],
+                body=[
                 ]
             ),
         ]

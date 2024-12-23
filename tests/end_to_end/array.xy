@@ -1,4 +1,5 @@
 import libxy.units
+import libxy.memory
 
 struct Array~[elemType: struct] {
     mem: Memory;
@@ -9,35 +10,46 @@ def len(a: Array) = a.len
 
 def push(
     arr: inout Array,
-    elem: pseudo a'tagsof.elemType,
+    elem: pseudo ?,
     elemMem := elem'addrof,
-    elemSize := elem'sizeof,
-) {
-    arr'ensureCapacity(arr.len + 1);
-    arr.mem[arr.len * elemSize :+ elemSize] = elemMem;
-    arr.len++;
+    elemSize := elem'sizeof
+)
+# >> if (elem'typeof == arr'tagsof.elemType) {
+#     break(ct"Cannot add element of type {elem'typeof'fullname} to array of "
+#           "{elem'tagsof.elemType'fullname}(s)")
+# }
+{
+    # arr'ensureCapacity(arr.len + 1);
+    # arr.mem[arr.len * elemSize :+ elemSize] = elemMem;
+    # arr.len++;
 }
+# 
+# def ensureCapacity(arr: inout Array, requiredCap: Size, elemSize := arr'tagsof["elemType"]'sizeof) {
+#     if (arr.mem.len < (requiredCap * elemSize)) {
+#         arr.mem.relocate(max(requiredCap * elemSize, 2 * arr.mem.len));
+#     }
+# }
+# 
 
-def ensureCapacity(arr: inout Array, requiredCap: Size, elemSize := arr'tagsof["elemType"]'sizeof) {
-    if (arr.mem.len < (requiredCap * elemSize)) {
-        arr.mem.relocate(max(requiredCap * elemSize, 2 * arr.mem.len));
-    }
-}
+# def select(arr: Array, i: Size, elemSize := arr'tagsof.elemType'sizeof) -> outin arr'tagsof.elemType {
+#     return arr.mem'at(i * elemSize)'as(outin);
+# }
 
 struct Point {
     x: int;
     y: int;
 }
 
-def main~EntryPoint() {
+def main~EntryPoint() -> int {
+    return 0;
     ints: Array~int;
     points: Array~Point;
-    for (i in :100) {
-        ints.push(i);
-        points.push(Point{ints[ints'len -1 -i] + i, ints[i]});
-    }
+    # for (i in :100) {
+    #     ints.push(i);
+    #     points.push(Point{ints[ints'len -1 -i] + i, ints[i]});
+    # }
 
-    return for (i in :, num in ints, point in points) -> (res := 0) {
-        res *= (point.x - point.y) * num - i;
-    }
+    # return for (i in :, num in ints, point in points) -> (res := 0) {
+    #     res *= (point.x - point.y) * num - i;
+    # }
 }

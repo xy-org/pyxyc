@@ -28,6 +28,7 @@ class TypeObj(CompiledObj):
         return None
     
 tag_list_type_obj = TypeObj(builtin=True)
+any_type_obj = TypeObj(builtin=True)
     
 @dataclass
 class TypeInferenceError:
@@ -222,7 +223,7 @@ class ExtSpace(FuncSpace):
 def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
     if len(fcall_args_types) > len(fobj.param_objs):
         return False
-    if fobj.builtin and fobj.xy_node.name in {"typeof", "tagsof", "sizeof"}:
+    if fobj.builtin and fobj.xy_node.name in {"typeof", "tagsof", "sizeof", "addrof"}:
         return fobj
     satisfied_params = set()
     # go through positional
@@ -947,6 +948,14 @@ def import_builtins(ctx: CompilerContext, cast):
         VarObj()
     ]
 
+    # addrof
+    addrof = xy.FuncDef("addrof", params=[xy.VarDecl("val")])
+    addrof_obj = register_func(addrof, ctx)
+    addrof_obj.builtin = True
+    addrof_obj.param_objs = [
+        VarObj()
+    ]
+
 def compile_funcs(ctx, ast, cast):
     for node in ast:
         if isinstance(node, xy.FuncDef):
@@ -1087,7 +1096,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
     elif isinstance(expr, xy.Id):
         var_obj = ctx.eval(expr)
         if isinstance(var_obj, VarObj):
-            c_node = c.Id(var_obj.c_node.name)
+            c_node = c.Id(var_obj.c_node.name) if var_obj.c_node is not None else None
             if var_obj.passed_by_ref:
                 c_node = c.UnaryExpr(c_node, op="*", prefix=True)
             return ExprObj(
@@ -1465,7 +1474,12 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     elif func_obj.builtin and func_obj.xy_node.name == "sizeof":
         return ExprObj(
             c_node=c.FuncCall("sizeof", [arg_exprs[0].c_node]),
-            infered_type=arg_exprs[0].tags
+            infered_type=ctx.size_obj
+        )
+    elif func_obj.builtin and func_obj.xy_node.name == "addrof":
+        return ExprObj(
+            c_node=c.UnaryExpr(arg=arg_exprs[0].c_node, op="&", prefix=True),
+            infered_type=ctx.ptr_obj
         )
     elif func_obj.builtin:
         assert len(arg_exprs) == 1
@@ -1914,6 +1928,9 @@ def find_type(texpr, ctx, required=True):
     if isinstance(texpr, xy.Id) and texpr.name == "struct":
         # Special case for struct
         return TypeObj(builtin=True)
+    elif isinstance(texpr, xy.Id) and texpr.name == "?":
+        # Special case for ?
+        return any_type_obj
     if not isinstance(texpr, xy.ArrayType):
         res = ctx.eval(texpr, msg="Cannot find type")
         return res

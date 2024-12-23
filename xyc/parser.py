@@ -77,7 +77,15 @@ class TokenIter:
 
     def skip_empty_lines(self):
         i = 0
-        while self.has_more() and self.check("\n"):
+        while self.has_more():
+            if self.check("#"):
+                while self.has_more() and self.peak() != "\n":
+                    self.consume()
+                self.check("\n")
+            elif self.check("\n"):
+                pass
+            else:
+                break
             i += 1
         return i
 
