@@ -7,3 +7,16 @@ def double(a: A) = A{a.num * 2}
 def doubleInout(a: inout A) {
     a.num *= 2;
 }
+
+def callDoubles(a: inout A) -> A {
+    a = double(a);
+    doubleInout(a);
+    return a;
+}
+
+def test() -> int {
+    a : var = A{5};
+    double(a);
+    doubleInout(a);
+    return callDoubles(a).num;
+}

@@ -847,6 +847,11 @@ def c_deref(c_node, field=None):
         return c.Expr(c_node.arg, field, op='->') 
     return c.Expr(c_node, field, op='.')
 
+def c_getref(c_node):
+    if isinstance(c_node, c.UnaryExpr) and c_node.op == "*" and c_node.prefix:
+        return c_node.arg
+    return c.UnaryExpr(c_node, op='&', prefix=True)
+
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     fspace = ctx.eval_to_fspace(expr.name)
 
@@ -919,7 +924,11 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     res = c.FuncCall(name=func_obj.c_name)
     if func_obj.xy_node is not None:
         for xy_param, arg in zip(func_obj.xy_node.params, arg_exprs):
-            if not xy_param.is_pseudo:
+            if xy_param.is_pseudo:
+                continue
+            if should_pass_by_ref(xy_param):
+                res.args.append(c_getref(arg.c_node))
+            else:
                 res.args.append(arg.c_node)
     else:
         # external c function
