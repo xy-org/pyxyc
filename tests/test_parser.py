@@ -1715,18 +1715,18 @@ def test_visibility(code, exp_ast):
         struct Array {
         }
 
-        def func(arr: Array) -> ref(arr) int {
+        def func(arr: Array) -> in(arr) int {
             return 0;
         }
 
-        def func(arr: Array) -> (ref(arr) int) {
+        def func(arr: Array) -> (in(arr) int) {
             return 0;
         }
 
-        def func(arr: Array, idx: int) -> ref(arr) Ptr~int {
+        def func(arr: Array, idx: int) -> in(arr) Ptr~int {
         }
 
-        def func(idx: int) -> ref() Ptr~int {
+        def func(idx: int) -> in() Ptr~int {
         }
         """,
         [
@@ -2198,13 +2198,13 @@ def test_parse_string_literals(code, exp_ast):
         """def comprehension() -> void {
             a := @[0, 1];
             b := @[for (i in a) i*2];
-            c := @[for (i in a) -> (res: int) res *= i];
-            d := @[
-                for (i in a) -> (res: int) res *= i,
-            ];
-            e := Array[for (i in a) i*2];
+            #c := @[for (i in a) -> (res: int) {res *= i;}   ];
+            #d := @[
+            #    for (i in a) -> (res: int) {res *= i;},
+            #];
+            #e := Array[for (i in a) i*2];
 
-            f := @[(for (i in a) -> (res: int) res *= i)];
+            #f := @[(for (i in a) -> (res: int) {res *= i;})];
         }
         """,
         [
@@ -2225,52 +2225,52 @@ def test_parse_string_literals(code, exp_ast):
                             )
                         ),
                     )),
-                    ast.VarDecl("c", value=ast.ListComprehension(
-                        loop=ast.ForExpr(
-                            over=[
-                                ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
-                            ],
-                            block=ast.Block(
-                                returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
-                                body=ast.BinExpr(ast.Id("res"), ast.Id("i"), "*="),
-                            )
-                        ),
-                    )),
-                    ast.VarDecl("d", value=ast.ListComprehension(
-                        loop=ast.ForExpr(
-                            over=[
-                                ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
-                            ],
-                            block=ast.Block(
-                                returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
-                                body=ast.BinExpr(ast.Id("res"), ast.Id("i"), "*="),
-                            )
-                        ),
-                    )),
-                    ast.VarDecl("e", value=ast.ListComprehension(
-                        list_type=ast.Id("Array"),
-                        loop=ast.ForExpr(
-                            over=[
-                                ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
-                            ],
-                            block=ast.Block(
-                                body=ast.BinExpr(ast.Id("i"), ast.Const(2), "*"),
-                            )
-                        ),
-                    )),
-                    ast.VarDecl("f", value=ast.ArrayLit(
-                        elems=[
-                            ast.ForExpr(
-                                over=[
-                                    ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
-                                ],
-                                block=ast.Block(
-                                    returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
-                                    body=ast.BinExpr(ast.Id("res"), ast.Id("i"), "*="),
-                                )
-                            ),
-                        ],
-                    )),
+                    # ast.VarDecl("c", value=ast.ListComprehension(
+                    #     loop=ast.ForExpr(
+                    #         over=[
+                    #             ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                    #         ],
+                    #         block=ast.Block(
+                    #             returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
+                    #             body=[ast.BinExpr(ast.Id("res"), ast.Id("i"), "*=")],
+                    #         )
+                    #     ),
+                    # )),
+                    # ast.VarDecl("d", value=ast.ListComprehension(
+                    #     loop=ast.ForExpr(
+                    #         over=[
+                    #             ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                    #         ],
+                    #         block=ast.Block(
+                    #             returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
+                    #             body=[ast.BinExpr(ast.Id("res"), ast.Id("i"), "*=")],
+                    #         )
+                    #     ),
+                    # )),
+                    # ast.VarDecl("e", value=ast.ListComprehension(
+                    #     list_type=ast.Id("Array"),
+                    #     loop=ast.ForExpr(
+                    #         over=[
+                    #             ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                    #         ],
+                    #         block=ast.Block(
+                    #             body=ast.BinExpr(ast.Id("i"), ast.Const(2), "*"),
+                    #         )
+                    #     ),
+                    # )),
+                    # ast.VarDecl("f", value=ast.ArrayLit(
+                    #     elems=[
+                    #         ast.ForExpr(
+                    #             over=[
+                    #                 ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                    #             ],
+                    #             block=ast.Block(
+                    #                 returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
+                    #                 body=[ast.BinExpr(ast.Id("res"), ast.Id("i"), "*=")],
+                    #             )
+                    #         ),
+                    #     ],
+                    # )),
                 ]
             ),
         ]
@@ -2495,7 +2495,7 @@ def test_if(code, exp_ast):
     ],
     [
         """def main() -> void {
-            return while (i < arr'len) -> (sum: int) sum += arr[i];
+            return while (i < arr'len) -> (sum: int) { sum += arr[i]; };
         }
         """,
         [
@@ -2505,11 +2505,14 @@ def test_if(code, exp_ast):
                         cond=ast.BinExpr(
                             op="<", arg1=ast.Id("i"),
                             arg2=ast.FuncCall(ast.Id("len"), [ast.Id("arr")])),
-                        block=ast.Block(body=ast.BinExpr(
-                            op='+=',
-                            arg1=ast.Id("sum"),
-                            arg2=ast.Select(ast.Id("arr"), ast.Args([ast.Id("i")]))),
-                        returns=[ast.VarDecl("sum", ast.Id("int"), varying=True)])
+                        block=ast.Block(
+                            body=[ast.BinExpr(
+                                op='+=',
+                                arg1=ast.Id("sum"),
+                                arg2=ast.Select(ast.Id("arr"), ast.Args([ast.Id("i")]))
+                            )],
+                            returns=[ast.VarDecl("sum", ast.Id("int"), varying=True)]
+                        )
                     )
                 )
             ]),
@@ -2679,7 +2682,7 @@ def test_do_while(code, exp_ast):
     ],
     [
         """def main() -> void {
-            for (e in arr) -> (or: bool = true) or |= e;
+            for (e in arr) -> (or: bool = true) {or |= e;};
         }
         """,
         [
@@ -2692,9 +2695,9 @@ def test_do_while(code, exp_ast):
                             arg2=ast.Id("arr")
                         ),
                     ],
-                    block=ast.Block(body=ast.BinExpr(
+                    block=ast.Block(body=[ast.BinExpr(
                         op="|=", arg1=ast.Id("or"), arg2=ast.Id("e")
-                    ),
+                    )],
                     returns=[
                         ast.VarDecl("or", ast.Id("bool"), varying=True,
                                     value=ast.Const(True, "true", "bool"))

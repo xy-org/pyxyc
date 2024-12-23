@@ -271,9 +271,11 @@ def parse_func_select(itoken: TokenIter):
 
 def parse_block(itoken):
     block = Block(src=itoken.src)
+    explicit_block = False
 
     args = []
     if itoken.check("->"):
+        explicit_block = True
         if itoken.check("("):
             args = parse_expr_list(itoken)
             itoken.expect(")")
@@ -307,7 +309,12 @@ def parse_block(itoken):
         num_empty = itoken.skip_empty_lines()
 
     block.coords = itoken.peak_coords()
-    if itoken.peak() != "{":
+
+    if explicit_block:
+        itoken.expect("{", "Blocks must have their body in curly brackets '{body}'")
+        itoken.consume(-1)
+        block.body = parse_body(itoken)
+    elif itoken.peak() != "{":
         block.body = parse_expression(itoken)
     else:
         block.body = parse_body(itoken)
@@ -357,6 +364,7 @@ def parse_toplevel_type_expr(itoken):
 
     return parse_expression(itoken, op_prec=toplevel_precedence_map)
 
+# ref is a reserved keyword
 var_qualifiers = {"var", "in", "out", "inout", "outin", "pseudo", "ref"}
 
 operator_precedence = {
@@ -462,7 +470,7 @@ def parse_expression(
         # announomous struct literal
         itoken.consume()
         arg1 = parse_struct_literal(itoken, None)
-    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "ref":
+    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "in":
         arg1 = parse_var_decl(itoken, Empty(), MIN_PRECEDENCE, op_prec)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "$":
         arg1 = parse_func_select(itoken)
@@ -698,8 +706,6 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
 
     if itoken.check("var"):
         decl.varying = True
-    elif itoken.check("in"):
-        decl.is_in = True
     elif itoken.check("out"):
         decl.is_out = True
     elif itoken.check("inout"):
@@ -708,7 +714,7 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
         decl.is_outin = True
     elif itoken.check("pseudo"):
         decl.is_pseudo = True
-    elif itoken.check("ref"):
+    elif itoken.check("in"):
         itoken.expect("(")
         itoken.skip_empty_lines()
         if itoken.peak() != ")":

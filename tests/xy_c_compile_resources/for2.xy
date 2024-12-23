@@ -6,7 +6,7 @@ struct Fib {
     b := 1;
 }
 
-def fibonacci~IterCtor() -> ref() Fib {
+def fibonacci~IterCtor() -> in() Fib {
     return Fib{};
 }
 
@@ -20,5 +20,5 @@ def get(fib: Fib) = fib.a;
 
 ;; Multiplies the first {lim} fibonacci numbers
 def mulFibs(lim: int) -> int {
-    return for (_ in :lim, fib in fibonacci()) -> (res := 1) res *= fib;
+    return for (_ in :lim, fib in fibonacci()) -> (res := 1) { res *= fib; };
 }

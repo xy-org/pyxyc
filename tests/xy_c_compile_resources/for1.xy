@@ -9,7 +9,7 @@ def busywait2() {
 }
 
 def sumUpTo(start: int, end: int) -> int {
-    return for (i in start:end) -> (res: int) res += i;
+    return for (i in start:end) -> (res: int) { res += i; };
 }
 
 def multUpTo(start: int, end: int, step: int) -> int {
@@ -19,11 +19,13 @@ def multUpTo(start: int, end: int, step: int) -> int {
 }
 
 def doubleLoop(limX: int, limY: int) -> int {
-    return for (i in :limX) -> (res := 1) for (j in :limY) {
-        res *= i + j;
+    return for (i in :limX) -> (res := 1) {
+        for (j in :limY) {
+            res *= i + j;
+        }
     };
 }
 
 def zipLoop(limX: int, limY: int) -> int {
-    return for (i in :limX, j in :limY) -> (res := 1) res *= i + j;
+    return for (i in :limX, j in :limY) -> (res := 1) { res *= i + j; };
 }

@@ -69,11 +69,11 @@ struct *Ptr~[to: struct] {
     # Implemented by the compiler
 }
 
-def *get(ptr: Ptr, idx: int) -> ref(ptr) Ptr~[^ptr..to] {
+def *get(ptr: Ptr, idx: int) -> in(ptr) Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
-def *get(ptr: Ptr, idx: Size) -> ref(ptr) Ptr~[^ptr..to] {
+def *get(ptr: Ptr, idx: Size) -> in(ptr) Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
@@ -377,15 +377,15 @@ struct Flags {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-def *get(arr: pseudo ?[], index: int) -> ref(arr) Ptr {
+def *get(arr: pseudo ?[], index: int) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-def *get(arr: pseudo ?[], index: uint) -> ref(arr) Ptr {
+def *get(arr: pseudo ?[], index: uint) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-def *get(arr: pseudo ?[], index: Size) -> ref(arr) Ptr {
+def *get(arr: pseudo ?[], index: Size) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
@@ -409,7 +409,7 @@ struct EntryPoint {
 
 # Arrays
 
-def *iter(arr: pseudo ?[]) -> ref(arr) Size {
+def *iter(arr: pseudo ?[]) -> in(arr) Size {
     # Implemented by the compiler
 }
 

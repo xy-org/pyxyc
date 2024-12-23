@@ -33,5 +33,5 @@ def update() -> int {
 }
 
 def func4(x: int, y: int) -> int {
-    return while(cond()) -> (res: int) res += update();
+    return while(cond()) -> (res: int) { res += update(); };
 }

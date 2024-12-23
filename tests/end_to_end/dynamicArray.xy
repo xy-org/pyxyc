@@ -48,14 +48,14 @@ def push(
 def get(
     arr: Array, i: Size,
     elemSize : Size = ctti.sizeof(arr..elemType)
-) -> ref(arr) Ptr~[^arr..elemType] {
+) -> in(arr) Ptr~[^arr..elemType] {
     return arr.mem.addr + i * elemSize;
 }
 
 def get(
     arr: Array, i: int,
     elemSize : Size = ctti.sizeof(arr..elemType)
-) -> ref(arr) Ptr~[^arr..elemType] {
+) -> in(arr) Ptr~[^arr..elemType] {
     return arr.mem.addr + i * elemSize;
 }
 
@@ -63,7 +63,7 @@ struct ArrayIter {
     idx: Size;
 }
 
-def iter(arr: Array) -> ref(arr) ArrayIter {
+def iter(arr: Array) -> in(arr) ArrayIter {
     return ArrayIter{};
 }
 
@@ -73,7 +73,7 @@ def next(arr: pseudo Array, iter: inout ArrayIter) {
    iter.idx++;
 }
 
-def get(arr: Array, iter: ArrayIter, elemSize : Size = ctti.sizeof(arr..elemType)) -> ref(arr) Ptr~[^arr..elemType] {
+def get(arr: Array, iter: ArrayIter, elemSize : Size = ctti.sizeof(arr..elemType)) -> in(arr) Ptr~[^arr..elemType] {
     return arr.mem'at(iter.idx * elemSize);
 }
 

@@ -85,9 +85,9 @@ def test_semicolons(code, err_msg):
 @pytest.mark.parametrize("code, err_msg", [
     (
         """def func() {
-            for (x in :) for (y in :) for (z in :) -> (res: int) res *= x + y - z
+            for (x in :) for (y in :) for (z in :) -> (res: int) { res *= x + y - z }
         }""",
-        "Missing ';' at end of expression"
+        "Malformed expression. Maybe missing operator or semicolon"
     ),
     (
         """def func() {
@@ -249,7 +249,7 @@ def test_callbacks_and_fselect(code, err_msg):
         "Syntax ambiguity"
     ),
     (
-        """def get(ptr: Ptr, idx: int) -> ref(ptr) Ptr~[<< ptr..to] {
+        """def get(ptr: Ptr, idx: int) -> in(ptr) Ptr~[<< ptr..to] {
         }""",
         "Guards are allowed only on new lines"
     ),
@@ -262,6 +262,10 @@ def test_callbacks_and_fselect(code, err_msg):
         "def func(x: pseudo ?) -> Ptr~[^%a] {}",
         "Expected operand found operator"
     ),
+    (
+        "def *get(ptr: Ptr, idx: int) -> ref(ptr) Ptr~[^ptr..to] {}",
+        "Blocks must have their body in curly brackets"
+    )
 ])
 def test_func_def_errors(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
