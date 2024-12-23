@@ -1,4 +1,4 @@
-import clib~[CLib{headers=["time.h"]}] in c;
+import clib~[CLib{headers=@["time.h"]}] in c;
 
 struct AllSlice {
 }

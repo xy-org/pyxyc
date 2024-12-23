@@ -12,7 +12,7 @@ def select(p: Point, idx: int) -> ref(p) int {
 }
 
 def get(p: Point, idx: int) -> float {
-    return [p.x, p.y, p.z, p.w][idx];
+    return @[p.x, p.y, p.z, p.w][idx];
 }
 
 def set(p: inout Point, idx: int, v: float)

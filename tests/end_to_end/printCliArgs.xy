@@ -1,4 +1,4 @@
-import libc~[CLib{headers=["string.h", "stdio.h"]}] in c;
+import libc~[CLib{headers=@["string.h", "stdio.h"]}] in c;
 import xy.sys in sys;
 import libxy.strings;
 import libxy.stdio;

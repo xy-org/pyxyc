@@ -1,7 +1,7 @@
 # errno is often declared as a macro but not always. If it is than we should 
 # mangle the name of errno field in order to prevent collisions.
 
-import posix~[CLib{headers=["errno.h"]}];
+import posix~[CLib{headers=@["errno.h"]}];
 
 struct ErrnoError {
     errno: int;

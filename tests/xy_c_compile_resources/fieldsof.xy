@@ -20,7 +20,7 @@ def print(d: FieldDesc) {
 
 def printFields(
     s: pseudo ?,
-    fields: pseudo FieldDesc[] = [
+    fields: pseudo FieldDesc[] = @[
         for (f in s'fieldsof) FieldDesc{size=sizeof(f)}
     ],
     fieldsPtr : Ptr~FieldDesc = fields'addrof,
@@ -33,12 +33,12 @@ def printFields(
 
 def test1() {
     s := MyStruct{};
-    descs := [for (f in s'fieldsof) FieldDesc{f'sizeof}];
+    descs := @[for (f in s'fieldsof) FieldDesc{f'sizeof}];
 }
 
 def test2() {
     s := MyStruct{};
-    for (desc in [for (f in s'fieldsof) FieldDesc{f'sizeof}]) {
+    for (desc in @[for (f in s'fieldsof) FieldDesc{f'sizeof}]) {
         # ...
     }
 }

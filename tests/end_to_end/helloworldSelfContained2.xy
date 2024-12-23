@@ -1,4 +1,4 @@
-import posix~[CLib{headers=["unistd.h", "errno.h"]}] in c;
+import posix~[CLib{headers=@["unistd.h", "errno.h"]}] in c;
 
 ;; Struct representing a file handle.
 struct File {

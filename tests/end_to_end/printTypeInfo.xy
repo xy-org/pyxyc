@@ -32,7 +32,7 @@ def printTypeInfo(
     s: pseudo ?,
     typeName := nameof(%s),
     typeComment := commentof(%s),
-    fields: pseudo FieldDesc[] = [
+    fields: pseudo FieldDesc[] = @[
         for (f in s'fieldsof) FieldDesc{
             name=f'nameof,
             typename=nameof(%f),

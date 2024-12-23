@@ -19,5 +19,5 @@ struct FuncDesc {
 }
 
 def test() {
-    tests := [for (f in $*~Test()) FuncDesc{f, f'nameof}];
+    tests := @[for (f in $*~Test()) FuncDesc{f, f'nameof}];
 }

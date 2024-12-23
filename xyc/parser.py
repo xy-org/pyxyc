@@ -438,7 +438,20 @@ def parse_expression(
                     arg1.returns.append(
                         VarDecl(type=expr, src=expr.src, coords=expr.coords)
                     )
+    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "@":
+        coords = itoken.peak_coords()
+        assert itoken.check('@') # @
+        itoken.expect('[', "Array literals are constructed using the @[elems,...] syntax")
+        itoken.skip_empty_lines()
+        maybe_list_comp = itoken.peak() == "for"
+        ret_args = parse_expr_list(itoken)
+        itoken.expect("]", msg="Missing closing bracket")
+        if maybe_list_comp and len(ret_args) == 1 and isinstance(ret_args[0], ForExpr):
+            arg1 = ListComprehension(loop=ret_args[0], src=itoken.src, coords=coords)
+        else:
+            arg1 = ArrayLit(ret_args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "[":
+        raise ParsingError("[] array literals are not supported.", itoken)
         # Array literal or comprehension
         coords = itoken.peak_coords()
         itoken.consume() # [
