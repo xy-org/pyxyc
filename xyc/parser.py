@@ -225,24 +225,26 @@ def parse_def(itoken: TokenIter):
 def parse_block(itoken):
     block = Block(src=itoken.src)
 
+    args = []
     if itoken.check("->"):
         if itoken.check("("):
             args = parse_expr_list(itoken)
             itoken.expect(")")
-            # transform expressions
-            for expr in args:
-                if isinstance(expr, VarDecl):
-                    expr.varying = True
-                    block.returns.append(expr)
-                else:
-                    block.returns.append(
-                        VarDecl(type=expr)
-                    )
         else:
-            block.returns = [VarDecl(name=None, type=parse_toplevel_type(itoken))]
+            args = [parse_toplevel_type_expr(itoken)]
 
         if itoken.check("||"):
-            block.etype = parse_toplevel_type(itoken)
+            block.etype = parse_toplevel_type_expr(itoken)
+
+    for expr in args:
+        expr = expr_to_type(expr)
+        if isinstance(expr, VarDecl):
+            expr.varying = True
+            block.returns.append(expr)
+        else:
+            block.returns.append(
+                VarDecl(type=expr)
+            )
 
     num_empty = itoken.skip_empty_lines()
     while itoken.peak() in {">>", "<<"}:
@@ -294,58 +296,8 @@ def parse_params(itoken):
     itoken.skip_empty_lines()
     itoken.expect(")")
     return res
-
-    # res = []
-    # itoken.expect("(", msg="Missing param list")
-    # while itoken.peak() != ")":
-    #     itoken.skip_empty_lines()
-    #     param = VarDecl(src=itoken.src, is_param=True)
-    #     if itoken.peak() != ":":
-    #         param.name = itoken.consume()
-    #     itoken.expect(":")
-
-    #     access_set = False
-    #     while True:
-    #         if (access_set and itoken.peak() in {"in", "out", "inout"}) or itoken.peak() == "outin":
-    #             raise ParsingError("Only one of 'in', 'out', 'inout' is allowed", itoken)
-    #         if itoken.check("in"):
-    #             param.is_in = access_set = True
-    #         elif itoken.check("out"):
-    #             param.is_out = access_set = True
-    #         elif itoken.check("inout"):
-    #             param.is_inout = access_set = True
-    #         elif itoken.check("pseudo"):
-    #             if param.is_pseudo:
-    #                 raise ParsingError("Multiple pseudo qualifiers", itoken)
-    #             param.is_pseudo = True
-    #         else:
-    #             break
-    #     if not access_set:
-    #         param.is_in = True
-    #     if param.name is None:
-    #         param.is_pseudo = True
-
-    #     if itoken.peak() not in {"=", ","}:
-    #         param.type = parse_type(itoken)
-
-    #     if itoken.check("="):
-    #         param.value = parse_expression(itoken)
-
-    #     res.append(param)
-
-    #     itoken.skip_empty_lines()
-    #     if itoken.peak() != ")":
-    #         itoken.expect(",")
-
-    # itoken.skip_empty_lines()
-    # itoken.expect(")")
-    # return res
-
-def parse_type(itoken):
-    type_expr = parse_expression(itoken)
-    return expr_to_type(type_expr)
     
-def parse_toplevel_type(itoken):
+def parse_toplevel_type_expr(itoken):
     # this new map is here purely to provide better error messages in cases like
     # def func() -> MyType{} {...}
     # or
@@ -353,9 +305,11 @@ def parse_toplevel_type(itoken):
     toplevel_precedence_map = {**operator_precedence}
     del toplevel_precedence_map["||"]
     del toplevel_precedence_map["{"]
+    del toplevel_precedence_map["="]
 
-    type_expr = parse_expression(itoken, op_prec=toplevel_precedence_map)
-    return expr_to_type(type_expr)
+    return parse_expression(itoken, op_prec=toplevel_precedence_map)
+
+var_qualifiers = {"var", "in", "out", "inout", "outin", "pseudo", "ref"}
 
 operator_precedence = {
     "~": 12,
@@ -410,6 +364,8 @@ def parse_expression(
         # announomous struct literal
         itoken.consume()
         arg1 = parse_struct_literal(itoken, None)
+    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "ref":
+        arg1 = parse_var_decl(itoken, Empty(), MIN_PRECEDENCE, op_prec)
     elif precedence >= MAX_PRECEDENCE:
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
@@ -496,36 +452,9 @@ def parse_expression(
             fcall.args.append(arg2)
             arg1 = fcall
         elif op == ":":
-            var_qualifiers = {"var", "in", "out", "inout", "outin", "pseudo"}
             if itoken.peak() in var_qualifiers:
                 # it's a var decl
-                decl = VarDecl(src=itoken.src, coords=arg1.coords)
-                if not isinstance(arg1, Empty):
-                    decl.name = arg1.name
-
-                if itoken.check("var"):
-                    decl.varying = True
-                elif itoken.check("in"):
-                    decl.is_in = True
-                elif itoken.check("out"):
-                    decl.is_out = True
-                elif itoken.check("inout"):
-                    decl.is_inout = True
-                elif itoken.check("outin"):
-                    decl.is_outin = True
-                elif itoken.check("pseudo"):
-                    decl.is_pseudo = True
-
-                if itoken.peak() in var_qualifiers:
-                    raise ParsingError("Only one variable qualifier is allowed.", itoken)
-                
-                if not is_end_of_expr(itoken):
-                    decl.type = expr_to_type(
-                        parse_expression(itoken, precedence+1, op_prec=op_prec)
-                    )
-                if itoken.check("="):
-                    decl.value = parse_expression(itoken, precedence+1, op_prec=op_prec)
-                arg1 = decl
+                arg1 = parse_var_decl(itoken, arg1, precedence, op_prec)
             elif converted_to_slice:
                 if arg1.step is not None:
                     raise ParsingError(
@@ -617,6 +546,40 @@ def parse_expression(
         arg1 = decl
 
     return arg1
+
+def parse_var_decl(itoken, name_token, precedence, op_prec):
+    decl = VarDecl(src=itoken.src, coords=name_token.coords)
+    if not isinstance(name_token, Empty):
+        decl.name = name_token.name
+
+    if itoken.check("var"):
+        decl.varying = True
+    elif itoken.check("in"):
+        decl.is_in = True
+    elif itoken.check("out"):
+        decl.is_out = True
+    elif itoken.check("inout"):
+        decl.is_inout = True
+    elif itoken.check("outin"):
+        decl.is_outin = True
+    elif itoken.check("pseudo"):
+        decl.is_pseudo = True
+    elif itoken.check("ref"):
+        itoken.expect("(")
+        decl.references = parse_expression(itoken, is_toplevel=False)
+        itoken.expect(")")
+
+    if itoken.peak() in var_qualifiers:
+        raise ParsingError("Only one variable qualifier is allowed.", itoken)
+    
+    if not is_end_of_expr(itoken):
+        decl.type = expr_to_type(
+            parse_expression(itoken, precedence+1, op_prec=op_prec)
+        )
+    if "=" in op_prec and itoken.check("="):
+        decl.value = parse_expression(itoken, precedence+1, op_prec=op_prec)
+
+    return decl
 
 def is_end_of_expr(itoken):
     return itoken.peak() in {";", ")", "]", "}", "=", ","}

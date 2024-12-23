@@ -2,62 +2,69 @@ struct Point {
     x: float;
     y: float;
     z: float;
-    w: float = 1.0;
+    w: float = 1.0f;
 }
 
-def index(p: Point, idx: byte) -> ref(p) byte = idx
+def index(p: Point, idx: byte) -> ref(p) byte {
+    return idx;
+}
 
 def get(p: Point, idx: byte) {
     return [p.x, p.y, p.z, p.w][idx];
 }
 
-def set(p: inout Point, idx: ubyte, v: float)
->> idx <= 3
-{
-    if (idx == 0) {
-        p.x = v;
-    } elif (idx == 1) {
-        p.y = v;
-    } elif (idx == 2) {
-        p.z = v;
-    } elif (idx == 3) {
-        p.z = v;
-    }
-}
+# def get(p: Point, idx: byte) {
+#     return [p.x, p.y, p.z, p.w][idx];
+# }
+# 
+# def set(p: inout Point, idx: ubyte, v: float)
+# >> idx <= 3
+# {
+#     if (idx == 0) {
+#         p.x = v;
+#     } elif (idx == 1) {
+#         p.y = v;
+#     } elif (idx == 2) {
+#         p.z = v;
+#     } else {
+#         p.w = v;
+#     }
+# }
+# 
+# def testPoint(i: ubyte) {
+#     p1: var = Point{w=i'to(float)};
+#     p2: Point;
+#     p1.x = p1[i];
+#     p2.z = p1[4-i];
+#     return p1.x + p2.w + p2.z + p1.w;
+# }
 
-def testPoint(i: ubyte) {
-    p1: var = Point{w=i'to(float)};
-    p2: Point;
-    p1.x = p1[i];
-    p2.z = p1[4-i];
-    return p1.x + p2.w + p2.z + p1.w;
-}
-
-struct  PointCloud {
-    mem: Ptr;
-    len: Size;
-}
-
-def select(pc: PointCloud, i: Size) -> ref(pc) Size = Size
-
-def get(pc: inout PointCloud, i: Size) -> ref(pc) Ptr~Point = pc.mem.addr + i * sizeof(Point)
-
-def set(pc: inout PointCloud, i: Size, p: Point) {
-    # not implemented for brievity
-}
-
-def testTriangle(m0: inout Mesh, m1: Mesh) {
-    m0[0].y = 10;
-
-    print(m1[1].y);
-    print(m1[1]);
-
-    m2 : var = Mesh{};
-    m2[2] = m0[2];
-    m2[2].x = m0[2].y;
-    m2[4] .= {x=5, y=10};
-
-    m3 := Mesh{};
-    print(m3[3].z);
-    print(m3[3]);
-}
+# struct  PointCloud {
+#     mem: Ptr;
+#     len: Size;
+# }
+# 
+# def select(pc: PointCloud, i: Size) -> ref(pc) Size = i
+# 
+# def get(pc: inout PointCloud, i: Size) -> ref(pc) Ptr~Point = pc.mem.addr + i * sizeof(Point)
+# 
+# def set(pc: inout PointCloud, i: Size, p: Point) {
+#     # not implemented for brievity
+# }
+# 
+# def testPointCloud(m0: inout PointCloud, m1: PointCloud) {
+#     m0[0].y = 10;
+# 
+#     print(m1[1].y);
+#     print(m1[1]);
+# 
+#     m2 : var = Mesh{};
+#     m2[2] = m0[2];
+#     m2[2].x = m0[2].y;
+#     m2[4] .= {x=5, y=10};
+# 
+#     m3 := PointCloud{};
+#     print(m3[3].z);
+#     print(m3[3]);
+#     print(m3[3][3]);
+# }

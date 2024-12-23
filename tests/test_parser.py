@@ -1002,6 +1002,74 @@ def test_func_def_with_tags(code, exp_ast):
     assert act_ast == exp_ast
 
 
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        struct Array {
+        }
+
+        def func(arr: Array) -> ref(arr) int {
+            return 0;
+        }
+
+        def func(arr: Array) -> (ref(arr) int) {
+            return 0;
+        }
+
+        def func(arr: Array, idx: int) -> ref(arr) Ptr~int {
+        }
+        """,
+        [
+            ast.StructDef("Array"),
+            ast.FuncDef(
+                ast.Id("func"),
+                returns=[
+                    ast.VarDecl(type=ast.Id("int"), references=ast.Id("arr"), varying=True),
+                ],
+                params=[
+                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, is_in=True, varying=False)
+                ],
+                body=[
+                    ast.Return(ast.Const(0)),
+                ],
+            ),
+            ast.FuncDef(
+                ast.Id("func"),
+                returns=[
+                    ast.VarDecl(type=ast.Id("int"), references=ast.Id("arr"), varying=True),
+                ],
+                params=[
+                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, is_in=True, varying=False)
+                ],
+                body=[
+                    ast.Return(ast.Const(0)),
+                ],
+            ),
+            ast.FuncDef(
+                ast.Id("func"),
+                params=[
+                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, is_in=True, varying=False),
+                    ast.VarDecl("idx", type=ast.Id("int"), is_param=True, is_in=True, varying=False),
+                ],
+                returns=[
+                    ast.VarDecl(
+                        type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+                            args=[ast.Id("int")],
+                        )),
+                        references=ast.Id("arr"),
+                        varying=True
+                    ),
+                ],
+                body=[],
+            ),
+        ]
+    ],
+])
+def test_refs_returning(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
 code_ast = [
     ("def func~Tag1~Tag2~Tag3() -> void {}",
      "These long chains of tags get very ambiguous. "

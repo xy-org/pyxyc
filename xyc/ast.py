@@ -201,6 +201,11 @@ class VarDecl(Node):
     is_inout: bool = False
     is_outin: bool = False
     is_pseudo: bool = False
+    references: Node | None = None
+
+    @property
+    def is_ref(self):
+        return self.references is not None
 
 def param(*args, **kwargs):
     res = VarDecl(*args, **kwargs)
