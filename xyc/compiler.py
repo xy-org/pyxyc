@@ -112,6 +112,7 @@ class VarObj(CompiledObj):
     passed_by_ref: bool = False # True if the variable is a hidden pointer
     is_pseudo: bool = False
     default_value_obj: CompiledObj = None
+    needs_dtor: bool = False
 
     @property
     def infered_type(self):
@@ -1257,6 +1258,18 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
     if is_func_body and ctx.current_fobj.etype_obj is not None:
         if len(body) == 0 or not isinstance(body[-1], xy.Return):
             cfunc.body.append(c.Return(ctx.current_fobj.etype_obj.init_value))
+
+    # call dtors if any
+    for name, obj in ctx.ns.items():
+        if isinstance(obj, VarObj) and obj.needs_dtor:
+            dtor_arg_obj = ExprObj(
+                xy_node=obj.xy_node,
+                c_node=c.Id(obj.c_node.name),
+                infered_type=obj.infered_type,
+            )
+            dtor_obj = find_and_call("dtor", ArgList([dtor_arg_obj]), cast, cfunc, ctx, obj.xy_node)
+            cfunc.body.append(dtor_obj.c_node)
+
     ctx.exit_block()
 
 def compile_vardecl(node, cast, cfunc, ctx):
@@ -1278,9 +1291,15 @@ def compile_vardecl(node, cast, cfunc, ctx):
     if isinstance(type_desc, ArrTypeObj):
         cvar.qtype.type.name = type_desc.base_type_obj.c_name
         cvar.qtype.type.dims = type_desc.dims
-    else:
+    elif isinstance(type_desc, TypeObj):
         cvar.qtype.type.name = type_desc.c_name
-    res_obj = VarObj(node, cvar, type_desc)
+    else:
+        raise CompilationError("Invalid Type", node.type)
+    
+    maybe_del = type_desc.tags.get("xy_dtor", None)
+    needs_dtor = maybe_del is not None and is_ct_true(maybe_del)
+
+    res_obj = VarObj(node, cvar, type_desc, needs_dtor=needs_dtor)
     ctx.ns[node.name] = res_obj
 
     if node.value is not None:
@@ -1322,11 +1341,17 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
             elif arg1_obj.infered_type is tag_list_type_obj:
                 if field_name not in arg1_obj.tags:
                     raise CompilationError(f"No tag '{field_name}'", expr)
-                type_obj = arg1_obj.tags[field_name]
-                return ExprObj(
-                    c_node=c.Id(type_obj.c_node.name),
-                    infered_type=type_obj,
-                )
+                tag_obj = arg1_obj.tags[field_name]
+                if isinstance(tag_obj, TypeObj):
+                    return ExprObj(
+                        c_node=c.Id(tag_obj.c_node.name),
+                        infered_type=tag_obj,
+                    )
+                else:
+                    return ExprObj(
+                        c_node=tag_obj.c_node,
+                        infered_type=tag_obj.infered_type,
+                    )
             else:
                 struct_obj = arg1_obj.infered_type
                 if field_name not in struct_obj.fields:
@@ -2240,22 +2265,26 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             err_obj.c_node.value = res
             cfunc.body.append(err_obj.c_node)
 
-            check_error_fobj = ctx.eval_to_fspace(
-                xy.Id("to", src=expr.src, coords=expr.coords),
-                msg=f"Cannot handle error because there is no 'to' "
-                f"function to convert {func_obj.etype_obj.xy_node.name} to bool"
-            ).find(
-                xy.FuncCall(xy.Id("to"), args=[xy.Id(""), xy.Id("")]),
-                ArgList([func_obj.etype_obj, ctx.get_compiled_type(xy.Id("bool"))]),
-                ctx
+            # TODO firgure out a way to remove this two expr_objs
+            bool_expr_obj = ExprObj(
+                xy_node=expr,
+                c_node=c.Id(ctx.bool_obj.c_node.name),
+                infered_type=ctx.bool_obj,
+                compiled_obj=ctx.bool_obj,
             )
-            if check_error_fobj is None:
-                raise CompilationError("Cannot find how to check for error", expr)
+            err_expr_obj = ExprObj(
+                xy_node=expr,
+                c_node=c.Id(err_obj.c_node.name),
+                infered_type=func_obj.etype_obj
+            )
+            check_error_fcall = find_and_call(
+                "to",
+                ArgList([err_expr_obj, bool_expr_obj]),
+                cast, cfunc, ctx, expr
+            )
+
             check_if = c.If(
-                cond=c.FuncCall(
-                    name=check_error_fobj.c_name,
-                    args=[c.Id(err_obj.c_node.name)]
-                )
+                cond=check_error_fcall.c_node,
             )
             if func_obj.etype_obj is ctx.current_fobj.etype_obj:
                 check_if.body.append(c.Return(c.Id(err_obj.c_node.name)))
@@ -2752,6 +2781,8 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         ret = c.Return()
         if xyreturn.value:
             value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
+            if isinstance(value_obj.compiled_obj, VarObj):
+                value_obj.compiled_obj.needs_dtor = False
             ret.value = value_obj.c_node
         return ExprObj(
             xy_node=xyreturn,
@@ -2762,6 +2793,8 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         # return by param(s)
         for iret, ret in enumerate(xy_func.returns):
             value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
+            if isinstance(value_obj.compiled_obj, VarObj):
+                value_obj.compiled_obj.needs_dtor = False
             param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
             cfunc.body.append(c.Expr(
                 arg1=c.UnaryExpr(op="*", arg=c.Id(param_name), prefix=True),

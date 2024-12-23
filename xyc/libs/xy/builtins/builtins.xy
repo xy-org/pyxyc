@@ -220,6 +220,10 @@ def to(a: int, b: double) -> double {
     # Implemented by the compiler
 }
 
+def to(a: int, :bool) -> bool {
+    # Implemented by the compiler
+}
+
 # Logical operations
 
 ;; Compares {a} to {b}.

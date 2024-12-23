@@ -37,6 +37,7 @@ from xyc.compiler import CompilationError
     "pseudoFields",
     "guards",
     "refs",
+    "dtors",
     # TODO "properties",
 ])
 def test_c_compilation(resource_dir, filename):
