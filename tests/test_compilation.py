@@ -64,6 +64,7 @@ def test_module_compilation(resource_dir, module, tmp_path):
     builder = Builder(
         input=str(base_dir / module),
         output=str(output_fn),
+        compile_only=True
     )
     builder.search_paths.append(str(base_dir))
 

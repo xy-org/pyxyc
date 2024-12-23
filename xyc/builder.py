@@ -1,5 +1,6 @@
 import os
 from os import path
+import subprocess
 from xyc.ast import Source
 from xyc.parser import parse_code
 from xyc.compiler import compile_module
@@ -13,15 +14,17 @@ class CompiledModule:
     source: c.Ast = None
 
 class Builder:
-    def __init__(self, input: str, output: str | None = None):
+    def __init__(self, input: str, output: str | None = None,
+                 compile_only=False, work_dir=".xy_build"):
         self.input = input
         self.output = output
+        self.project_name = path.splitext(path.basename(path.abspath(input)))[0]
         if not output:
-            self.output = path.splitext(
-                path.basename(path.abspath(self.path))
-            )[0]
+            self.output = self.project_name
         self.module_cache = {}
         self.search_paths = []
+        self.compile_only = compile_only
+        self.work_dir = work_dir
 
     def build(self):
         module_name = path.basename(self.input)
@@ -29,7 +32,7 @@ class Builder:
             module_name = path.splitext(module_name)[0]
 
         self.do_compile_module(module_name, self.input)
-        self.write_output(list(self.module_cache.values()))
+        self.do_build()
 
     def import_module(self, module_name: str):
         if module_name in self.module_cache:
@@ -56,14 +59,35 @@ class Builder:
             if os.path.exists(module_path):
                 return module_path
         raise ValueError(f"Cannot find module {'.'.join(module_name)}")
+    
+    def do_build(self):
+        if self.compile_only:
+            self.write_output(list(self.module_cache.values()), self.output)
+        else:
+            os.makedirs(self.work_dir, exist_ok=True)
+            tmp_file = path.join(self.work_dir, f"{self.project_name}.c")
+            self.write_output(list(self.module_cache.values()), tmp_file)
+            self.run_cc([tmp_file], self.output)
 
-    def write_output(self, modules: list[CompiledModule]):
+    def run_cc(self, files, output):
+        cc_proc = subprocess.run(
+            ["clang", "-std=c99", "-Wall", *files, "-o", output],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
+        if cc_proc.returncode != 0:
+            print("Compilation failed with:")
+            print(cc_proc.stdout)
+            print("If you are calling any c method directly please review "
+                  "your code. If you think it is a problem with the Xy compiler"
+                  "please report it at TBD.")
+
+    def write_output(self, modules: list[CompiledModule], output):
         # merge all into one big .c file
         big_ast = c.Ast()
         for module in modules:
             big_ast.merge(module.source)
         c_src = cstringifier.stringify(big_ast)
-        with open(self.output, "wt") as f:
+        with open(output, "wt") as f:
             f.write(c_src)
 
 def parse_module(input, module_name):
