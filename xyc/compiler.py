@@ -99,6 +99,8 @@ class FuncObj(CompiledObj):
     builtin: bool = False
     move_args_to_temps: bool = False
     module_header: 'ModuleHeader' = None  # None means current module
+    params_compiled: bool = False
+    prototype_compiled: bool = False
 
     @property
     def c_name(self):
@@ -397,6 +399,8 @@ class CompilerContext:
     flags_obj: any = None
 
     stdlib_included = False
+    compiling_header = False
+    func_compilation_stack : dict = field(default_factory=dict)
 
     fsig2obj: dict[str, CompiledObj] = field(default_factory=dict)
 
@@ -711,7 +715,9 @@ def compile_module(builder, module_name, asts):
         ctx.enum_obj = ctx.global_ns["Enum"]
         ctx.flags_obj = ctx.global_ns["Flags"]
 
+    ctx.compiling_header = True
     compile_header(ctx, asts, res)
+    ctx.compiling_header = False
     
     for ast in asts:
         compile_funcs(ctx, ast, res)
@@ -769,8 +775,15 @@ def compile_header(ctx: CompilerContext, asts, cast):
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.FuncDef):
-                fobj = compile_func_prototype(node, cast, ctx)
+                fobj = FuncObj(
+                    xy_node=node,
+                )
+                func_space = ctx.ensure_func_space(node.name)
+                func_space.append(fobj)
                 fobjs.append(fobj)
+
+    for fobj in fobjs:
+        compile_func_prototype(fobj, cast, ctx)
 
     for fobj in fobjs:
         fill_param_default_values(fobj, cast, ctx)
@@ -1057,10 +1070,21 @@ def autogenerate_ops(type_obj: TypeObj, ast, cast, ctx):
     )
     ctx.ensure_func_space(xy.Id("and")).append(gen_or_obj)
 
-def compile_func_prototype(node: xy.FuncDef, cast, ctx):
-    func_space = ctx.ensure_func_space(node.name)
+def compile_func_prototype(fobj: FuncObj, cast, ctx):
+    if fobj.params_compiled or fobj.prototype_compiled:
+        return fobj
+    if id(fobj) in ctx.func_compilation_stack:
+        notes = [
+            ("Depends on", prev_fobj.xy_node)
+            for prev_fobj in ctx.func_compilation_stack.values()
+        ]
+        raise CompilationError("Recursive dependancy", fobj.xy_node, notes=notes)
+    ctx.func_compilation_stack[id(fobj)] = fobj
+
+    node: xy.FuncDef = fobj.xy_node
 
     cfunc = c.Func(None)
+    ctx.push_ns()
     param_objs = []
     move_args_to_temps = len(node.in_guards) > 0 or len(node.out_guards) > 0
     for param in node.params:
@@ -1072,7 +1096,7 @@ def compile_func_prototype(node: xy.FuncDef, cast, ctx):
         if param.type is not None:
             param_obj.type_desc = find_type(param.type, ctx)
         else:
-            param_obj.type_desc = try_infer_type(param.value, ctx)
+            param_obj.type_desc = do_infer_type(param.value, cast, ctx)
 
         if param_obj.type_desc:
             c_type = param_obj.type_desc.c_name
@@ -1088,20 +1112,18 @@ def compile_func_prototype(node: xy.FuncDef, cast, ctx):
             param_obj.c_node = cparam
 
         param_objs.append(param_obj)
+        ctx.ns[param_obj.xy_node.name] = param_obj
+
     if len(node.params) > 0 and not move_args_to_temps:
         move_args_to_temps = node.params[-1].is_pseudo
 
-    expand_name = len(func_space) > 0
-    if expand_name:
-        check_params_have_types(param_objs, ctx)
-    if len(func_space) == 1:
-        # Already present. Expand name.
-        func_desc = func_space[0]
-        check_params_have_types(func_desc.param_objs, ctx)
-        func_desc.c_node.name = mangle_def(
-            func_desc.xy_node, func_desc.param_objs, ctx, expand=True
-        )
+
+    func_space = ctx.ensure_func_space(node.name)
+    expand_name = len(func_space) > 1
     cfunc.name = mangle_def(node, param_objs, ctx, expand=expand_name)
+
+    fobj.params_compiled = True
+    fobj.param_objs = param_objs
 
     etype_compiled = None
     if return_by_param(node):
@@ -1125,11 +1147,9 @@ def compile_func_prototype(node: xy.FuncDef, cast, ctx):
 
     if not isinstance(node.body, list) and len(node.returns) == 0:
         # shorthand notation
-        ctx.push_ns()
-        for pobj in param_objs:
-            ctx.ns[pobj.xy_node.name] = pobj
-        rtype_compiled = do_infer_type(node.body, ctx)
-        ctx.pop_ns()
+        rtype_compiled = do_infer_type(node.body, cast, ctx)
+
+    ctx.pop_ns()
 
     if isinstance(rtype_compiled, TypeInferenceError):
         raise CompilationError(
@@ -1141,36 +1161,35 @@ def compile_func_prototype(node: xy.FuncDef, cast, ctx):
                     else rtype_compiled.c_name)
 
     cast.func_decls.append(cfunc)
-    compiled = FuncObj(
-        node, cfunc, rtype_obj=rtype_compiled, etype_obj=etype_compiled,
-        param_objs=param_objs, move_args_to_temps=move_args_to_temps
-    )
+
+    fobj.c_node = cfunc
+    fobj.rtype_obj = rtype_compiled
+    fobj.etype_obj = etype_compiled
+    fobj.move_args_to_temps = move_args_to_temps
 
     if node.etype is not None:
-        compiled.etype_obj = ctx.get_compiled_type(node.etype)
+        fobj.etype_obj = ctx.get_compiled_type(node.etype)
 
     # compile tags
-    compiled.tags = ctx.eval_tags(node.tags)
-    if "xyStr" in compiled.tags:
+    fobj.tags = ctx.eval_tags(node.tags)
+    if "xyStr" in fobj.tags:
         # TODO assert it is a StrCtor indeed
-        str_lit = compiled.tags["xyStr"].kwargs["prefix"]
+        str_lit = fobj.tags["xyStr"].kwargs["prefix"]
         prefix = str_lit.parts[0].value if len(str_lit.parts) else ""
-        ctx.str_prefix_reg[prefix] = compiled
-    if "xy.entrypoint" in compiled.tags:
+        ctx.str_prefix_reg[prefix] = fobj
+    if "xy.entrypoint" in fobj.tags:
         # TODO assert it is the correct type
-        ctx.entrypoint_obj = compiled
+        ctx.entrypoint_obj = fobj
 
-    func_space.append(compiled)
-
-    return compiled
-
-def check_params_have_types(param_objs, ctx):
-    for pobj in param_objs:
-        if pobj.type_desc is None:
-            do_infer_type(pobj.xy_node.value, ctx)
-            raise CompilationError("Unreachable. Report Bug.", pobj.xy_node)
+    del ctx.func_compilation_stack[id(fobj)]
+    fobj.prototype_compiled = True
+    return fobj
 
 def fill_param_default_values(fobj, cast, ctx):
+    # This func is not needed any more. The only useful thing it does now
+    # is to check for the length of arrays which can easily be accomblished in
+    # compile_func_prototype.
+    # TODO Remove this func.
     ctx.push_ns()
     for pobj in fobj.param_objs:
         if pobj.type_desc is not None:
@@ -1178,7 +1197,7 @@ def fill_param_default_values(fobj, cast, ctx):
             continue
         if pobj.xy_node.value is None:
             raise CompilationError("Cannot infer type", pobj.xy_node)
-        type_obj = do_infer_type(pobj.xy_node.value, ctx)
+        type_obj = do_infer_type(pobj.xy_node.value, cast, ctx)
         pobj.type_desc = type_obj
 
         c_type = pobj.type_desc.c_name
@@ -1996,17 +2015,11 @@ def c_getref(c_node):
         return c_node.arg
     return c.UnaryExpr(c_node, op='&', prefix=True)
 
-def try_infer_type(expr, ctx):
-    try:
-        return do_infer_type(expr, ctx)
-    except CompilationError:
-        return None
-    
-def do_infer_type(expr, ctx):
+def do_infer_type(expr, cast, ctx):
     if isinstance(expr, xy.StructLiteral):
         return ctx.get_compiled_type(expr.name)
     try:
-        return compile_expr(expr, None, None, ctx).infered_type
+        return compile_expr(expr, cast, None, ctx).infered_type
     except CompilationError as e:
         raise CompilationError(
             f"Cannot infer type because: {e.error_message}", e.xy_node,
@@ -2186,6 +2199,10 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     )
 
     fspace = ctx.eval_to_fspace(expr.name)
+    if ctx.compiling_header:
+        for fobj in fspace._funcs:
+            compile_func_prototype(fobj, cast, ctx)
+
     func_obj = fspace.find(expr, arg_infered_types, ctx)
 
     if expr_to_move_idx is not None and func_obj.move_args_to_temps:

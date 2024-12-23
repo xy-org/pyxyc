@@ -39,7 +39,7 @@ from xyc.compiler import CompilationError
     "refs",
     "refValue",
     "dtors",
-    #"paramsVsArgs",
+    "paramsVsArgs",
     # TODO "properties",
 ])
 def test_c_compilation(resource_dir, filename):
