@@ -214,6 +214,27 @@ src.xy:4:22: error: Cannot find tag
 |             s := Str~Missing{};
                        ^^^^^^^
 """),
+("""
+        struct Test~[TagCtor{label="test"}] {}
+        def func() {
+            tests := [for (f in $* ~Test()) f];
+        }
+     """, """\
+src.xy:4:20: error: Cannot infer type of empty array
+|             tests := [for (f in $* ~Test()) f];
+                     ^
+"""),
+("""
+        def main1~EntryPoint() {}
+        def main2~EntryPoint() {}
+     """, """\
+src.xy:3:13: error: Multiple entry points found.
+|         def main2~EntryPoint() {}
+              ^^^^^
+src.xy:2:13: note: Previous entrypoint
+|         def main1~EntryPoint() {}
+              ^^^^^
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

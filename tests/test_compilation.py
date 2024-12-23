@@ -15,6 +15,7 @@ from xyc.compiler import CompilationError
     "funcRecursive",
     "stringCtor",
     "entrypoint",
+    "entrypoint_priority",
     "arrays",
     "cimport",
     "ifs",

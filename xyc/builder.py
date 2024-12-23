@@ -3,7 +3,7 @@ from os import path
 import subprocess
 from xyc.ast import Source
 from xyc.parser import parse_code
-from xyc.compiler import compile_module, compile_ctti, compile_builtins
+from xyc.compiler import compile_module, compile_ctti, compile_builtins, maybe_add_main
 import xyc.cstringifier as cstringifier
 from dataclasses import dataclass
 import xyc.cast as c
@@ -29,6 +29,9 @@ class Builder:
         self.search_paths = package_paths + [builtin_lib_path]
         self.compile_only = compile_only
         self.work_dir = work_dir
+
+        self.entrypoint_module_names = []
+        self.entrypoint_priority = 0
 
     def build(self):
         module_name = path.basename(self.input)
@@ -87,6 +90,12 @@ class Builder:
             self, module_name, list(module_ast.values())[0]
         )
         self.module_cache[module_name] = CompiledModule(header, c_srcs)
+        if header.ctx.entrypoint_obj is not None:
+            if header.ctx.entrypoint_priority > self.entrypoint_priority:
+                self.entrypoint_module_names = [module_name]
+                self.entrypoint_priority = header.ctx.entrypoint_priority
+            elif header.ctx.entrypoint_priority == self.entrypoint_priority:
+                self.entrypoint_module_names.append(module_name)
         return header, c_srcs
     
     def locate_module(self, module_name: str):
@@ -98,6 +107,12 @@ class Builder:
         return None
     
     def do_build(self):
+        if len(self.entrypoint_module_names) == 1:
+            module = self.module_cache[self.entrypoint_module_names[0]]
+            maybe_add_main(module.header.ctx, module.source)
+        elif len(self.entrypoint_module_names) > 0:
+            raise ValueError("Multiple entry points found")
+
         if self.compile_only:
             self.write_output(list(self.module_cache.values()), self.output)
         else:
@@ -159,7 +174,15 @@ def compile_project(project):
     for module_name, asts in project.items():
         header, c_srcs = compile_module(builder, module_name, asts)
         builder.module_cache[module_name] = CompiledModule(header, c_srcs)
+        if header.ctx.entrypoint_obj is not None:
+            builder.entrypoint_module_names.append(module_name)
 
+    if len(builder.entrypoint_module_names) == 1:
+        module = builder.module_cache[builder.entrypoint_module_names[0]]
+        maybe_add_main(module.header.ctx, module.source)
+    elif len(builder.entrypoint_module_names) > 0:
+        raise ValueError("Multiple entry points found")
+    
     big_ast = c.Ast()
     for module in builder.module_cache.values():
         big_ast.merge(module.source)

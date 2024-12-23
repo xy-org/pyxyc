@@ -432,6 +432,7 @@ class CompilerContext:
     tmp_var_i: int = 0
 
     entrypoint_obj: any = None
+    entrypoint_priority: int = 0
     void_obj: any = None
     bool_obj: any = None
     ptr_obj: any = None
@@ -778,7 +779,7 @@ def compile_module(builder, module_name, asts):
     for ast in asts:
         compile_funcs(ctx, ast, res)
     
-    maybe_add_main(ctx, res)
+    # maybe_add_main(ctx, res)
 
     mh = ModuleHeader(
         module_name=module_name,
@@ -1203,7 +1204,17 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
         ctx.str_prefix_reg[prefix] = fobj
     if "xy.entrypoint" in fobj.tags:
         # TODO assert it is the correct type
+        tag_obj = fobj.tags["xy.entrypoint"]
+        priority = 0
+        if isinstance(tag_obj, InstanceObj):
+            priority = tag_obj.kwargs["priority"].value
+
+        if ctx.entrypoint_obj is not None and priority == ctx.entrypoint_priority:
+            raise CompilationError("Multiple entry points found.", fobj.xy_node, notes=[
+                ("Previous entrypoint", ctx.entrypoint_obj.xy_node),
+            ])
         ctx.entrypoint_obj = fobj
+        ctx.entrypoint_priority = priority
 
     del ctx.func_compilation_stack[id(fobj)]
     fobj.prototype_compiled = True
@@ -1803,13 +1814,20 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
                 elem_type_obj = elem_obj.infered_type
             ctx.pop_ns()
 
-            return ExprObj(
-                xy_node=expr,
-                c_node=c_node,
-                infered_type=ArrTypeObj(
+            if arr_len > 0:
+                infered_type = ArrTypeObj(
                     xy_node=expr, c_node=c_node, dims=[arr_len],
                     base_type_obj=elem_type_obj
                 )
+            else:
+                infered_type = TypeInferenceError(
+                    "Cannot infer type of empty array"
+                )
+
+            return ExprObj(
+                xy_node=expr,
+                c_node=c_node,
+                infered_type=infered_type
             )
         else:
             raise CompilationError("List comprehension is supported only on arrays", container_obj.xy_node)
