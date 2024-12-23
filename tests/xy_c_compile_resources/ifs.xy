@@ -18,3 +18,8 @@ def namedIf(x: int, y: int) -> int {
     };
     return res;
 }
+
+def chainedIfs(x: int, y: int) -> int {
+    a := if (x > y) 1 elif (x < y) -1 else 0;
+    return a;
+}
