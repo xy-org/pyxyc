@@ -527,6 +527,101 @@ def test_parse_advanced_funcs(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+# @pytest.mark.parametrize("code, exp_ast", [
+    # [
+    #     """
+    #     def func(x: pseudo ?, y : Metadata = ^(x'metadata)) {}
+    #     def func(x: pseudo ?, y : Metadata = ^metadata(x)) {}
+    #     def func(x: pseudo ?, y : Metadata = metadata^(x)) {}
+    #     """,
+    #     [
+    #         ast.FuncDef(ast.Id("func"),
+    #             params=[
+    #                 ast.param("x", type=ast.Id("?"), is_pseudo=True)
+    #             ],
+    #             returns=[
+    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+    #                     args=[
+    #                         ast.CallTimeExpr(
+    #                             ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
+    #                         )
+    #                     ]
+    #                 ))),
+    #             ],
+    #             body=[]
+    #         ),
+    #     ]
+    # ],
+    # [
+    #     """
+    #     def func(x: Array, y:Tag = ^x..elem) {}
+    #     def log(msg: Str, msgToLog:Str = if (loggingEnalbed) msg else Str{}) {}
+    #     """,
+    #     [
+    #     ]
+    # ],
+    # [
+    #     """
+    #     def func(x: pseudo ?) -> Ptr~[^x'typeof)] {}
+    #     def func(x: pseudo ?) -> Ptr~[typeof(^x)] {}
+    #     def func(x: pseudo ?, val: int = ^(x+1)) -> Ptr {}
+    #     """,
+    #     [
+    #         ast.FuncDef(ast.Id("func"),
+    #             params=[ast.param("x", type=ast.Id("int"))],
+    #             returns=[
+    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+    #                     args=[ast.Id("int")]
+    #                 ))),
+    #             ],
+    #             body=[]
+    #         ),
+    #         ast.FuncDef(ast.Id("func"),
+    #             params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
+    #             returns=[
+    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+    #                     args=[
+    #                         ast.CallTimeExpr(
+    #                             ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
+    #                         )
+    #                     ]
+    #                 ))),
+    #             ],
+    #             body=[]
+    #         ),
+    #         ast.FuncDef(ast.Id("func"),
+    #             params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
+    #             returns=[
+    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+    #                     args=[
+    #                         ast.CallTimeExpr(
+    #                             ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
+    #                         )
+    #                     ]
+    #                 ))),
+    #             ],
+    #             body=[]
+    #         ),
+    #         ast.FuncDef(ast.Id("func"),
+    #             params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
+    #             returns=[
+    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+    #                     args=[
+    #                         ast.CallTimeExpr(
+    #                             ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
+    #                         )
+    #                     ]
+    #                 ))),
+    #             ],
+    #             body=[]
+    #         ),
+    #     ]
+    # ],
+# ])
+# def test_parse_boundary_expressions(code, exp_ast):
+#     act_ast = parse_code(code)
+#     assert act_ast == exp_ast
+
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
@@ -1123,6 +1218,35 @@ def test_parse_operator_slices(code, exp_ast):
                     block=ast.Block(body=ast.UnaryExpr(ast.Id("a"), op="-")),
                     else_node=ast.Block(body=ast.Id("a")),
                 ))
+            ]),
+        ]
+    ],
+    [
+        """def func() -> void {
+            a := func()~Tag;
+            b := func()~Tag1~Tag2;
+        }""",
+        [
+            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("a", varying=False, value=ast.AttachTags(
+                    arg=ast.FuncCall(ast.Id("func")),
+                    tags=ast.TagList(
+                        args=[ast.Id("Tag")]
+                    )
+                )),
+                ast.VarDecl("b", varying=False, value=ast.AttachTags(
+                    arg=ast.FuncCall(ast.Id("func")),
+                    tags=ast.TagList(
+                        args=[
+                            ast.AttachTags(
+                                arg=ast.Id("Tag1"),
+                                tags=ast.TagList(
+                                    args=[ast.Id("Tag2")]
+                                )
+                            )
+                        ]
+                    )
+                )),
             ]),
         ]
     ],
