@@ -165,3 +165,27 @@ def test_invalid_expression(code, err_msg):
 def test_param_lists(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def func() {
+            a := ....;
+        }""",
+        "Invalid floating point literal"
+    ),
+    (
+        """def func() {
+            a := 0.5.0;
+        }""",
+        "Malformed expression."
+    ),
+    (
+        """def func() {
+            a := .5.;
+        }""",
+        "Unexpected end of expression"
+    ),
+])
+def test_invalid_floats(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)

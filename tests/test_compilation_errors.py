@@ -144,6 +144,40 @@ src.xy:2:27: error: Cannot infer type because: Cannot find symbol
 |         def parse(args := sys.argc()) -> void {
                             ^^^
 """),
+    ("""
+        import xy.ctti
+        struct Desc {
+            size: Size;
+        }
+        def parse(args: pseudo ?, desc := [for(f in args'fieldsof) Desc{f'sizeof}]) -> void {
+        }
+     """, """\
+src.xy:6:58: error: Cannot infer type because: Cannot get fields of an unknown type
+|         def parse(args: pseudo ?, desc := [for(f in args'fieldsof) Desc{f'sizeof}]) -> void {
+                                                           ^^^^^^^^
+"""),
+    ("""
+        import libc~[CLib{headers=["string.h", "stdio.h"]}] in c
+        def func(a: int) a
+        def test() {
+            func(c.external());
+        }
+     """, """\
+src.xy:5:18: error: Cannot determine type of expression
+|             func(c.external());
+                   ^^^^^^^^^^
+"""),
+    ("""
+        import libc~[CLib{headers=["string.h", "stdio.h"]}] in c
+        def func(a: int) a
+        def test() {
+            func(c.argc);
+        }
+     """, """\
+src.xy:5:18: error: The types of c symbols cannot be inferred. Please be explicit and specify the type.
+|             func(c.argc);
+                   ^^^^^^
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
@@ -161,5 +195,5 @@ def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     err_msg = str(err.value)
     err_msg = err_msg.replace(input_fn[:-len("src.xy")], "")
     # err_msg = err_msg[err_msg.find("src.xy"):]
-    assert exp_err_msg == err_msg, f"Error\n{err_msg}\n"\
+    assert err_msg == exp_err_msg, f"Error\n{err_msg}\n"\
            f"Doesnt match pattern:\n {exp_err_msg}"

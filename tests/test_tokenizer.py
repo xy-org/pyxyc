@@ -212,7 +212,7 @@ from xyc.tokenizer import split_tokens
     ),
     (
         'b: a...to',  # invalid expression but let's document how it is parsed
-        ['b', ':', 'a', '..', '.', 'to'],
+        ['b', ':', 'a', '...', 'to'],
         None
     ),
     (
@@ -223,6 +223,56 @@ from xyc.tokenizer import split_tokens
     (
         'b: %func(a, c)',
         ['b', ':', '%', 'func', '(', 'a', ',', 'c', ')'],
+        None
+    ),
+    (
+        'a .= {b=val};',
+        ['a', '.=', '{', 'b', '=', 'val', '}', ';'],
+        None
+    ),
+    (
+        "a := .5.;", # invalid expression but let's document how it is parsed
+        ['a', ':', '=', '.5', '.', ';'],
+        None
+    ),
+    (
+        "a := .5 . ;", # invalid expression but let's document how it is parsed
+        ['a', ':', '=', '.5', '.', ';'],
+        None
+    ),
+    (
+        "a := 5..tag;",
+        ['a', ':', '=', '5.', '.', 'tag', ';'],
+        None
+    ),
+    (
+        "a := ..tag;", # invalid expression but let's document how it is parsed
+        ['a', ':', '=', '..', 'tag', ';'],
+        None
+    ),
+    (
+        "a := ..5;", # invalid expression but let's document how it is parsed
+        ['a', ':', '=', '..', '5', ';'],
+        None
+    ),
+    (
+        "a := 0.5.0;", # invalid expression but let's document how it is parsed
+        ['a', ':', '=', '0.5', '.0', ';'],
+        None
+    ),
+    (
+        "a := ...;", # invalid expression but let's document how it is parsed
+        ['a', ':', '=', '...', ';'],
+        None
+    ),
+    (
+        "a := ....;", # invalid expression but let's document how it is parsed
+        ['a', ':', '=', '...', '.', ';'],
+        None
+    ),
+    (
+        "a := f(...);",
+        ['a', ':', '=', 'f', '(', '...', ')', ';'],
         None
     ),
 ])

@@ -48,6 +48,8 @@ class Builder:
             return self.module_cache[module_name].header
 
         module_path = self.locate_module(module_name)
+        if module_path is None:
+            return None
         header, _ = self.do_compile_module(module_name, module_path)
 
         return header
@@ -93,7 +95,7 @@ class Builder:
             module_path = os.path.join(path, *(module_name.split('.')))
             if os.path.exists(module_path):
                 return module_path
-        raise ValueError(f"Cannot find module {module_name}")
+        return None
     
     def do_build(self):
         if self.compile_only:

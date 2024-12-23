@@ -1451,6 +1451,8 @@ def any_dtors(ctx):
     return False
 
 def type_needs_dtor(type_obj):
+    if type_obj is None:
+        return False
     dtor_tag = type_obj.tags.get("xy_dtor", None)
     if dtor_tag is None and isinstance(type_obj, ArrTypeObj):
         dtor_tag = type_obj.base_type_obj.tags.get("xy_dtor", None)
@@ -1528,6 +1530,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
                 res = c.Id(field_name)
                 return ExprObj(
                     c_node=res,
+                    xy_node=expr,
                     infered_type=c_symbol_type
                 )
             else:
@@ -2391,6 +2394,12 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     if fspace is None:
         call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types)
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
+    if not isinstance(fspace, ExtSpace):
+        for arg in arg_exprs.args:
+            assert_has_type(arg)
+        for arg in arg_exprs.kwargs.values():
+            assert_has_type(arg)
+
     if ctx.compiling_header:
         for fobj in fspace._funcs:
             compile_func_prototype(fobj, cast, ctx)
@@ -2621,6 +2630,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     elif is_builtin_func(func_obj, "addrof"):
         return compile_builtin_addrof(expr, arg_exprs[0], cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "fieldsof"):
+        if arg_exprs[0].infered_type is any_type_obj:
+            raise CompilationError("Cannot get fields of an unknown type", expr)
         return ExprObj(
             xy_node=expr,
             c_node=c.Id("REPORT_IF_YOU_SEE_ME"),
@@ -3682,9 +3693,8 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
             cast.includes.append(c.Include(header_obj.parts[0].value))
         import_obj.is_external = True
     else:
-        try:
-            module_header = ctx.builder.import_module(imprt.lib)
-        except ValueError:
+        module_header = ctx.builder.import_module(imprt.lib)
+        if module_header is None:
             raise CompilationError(f"Cannot find module '{imprt.lib}'", imprt)
         import_obj.module_header = module_header
         if imprt.in_name is None:
@@ -3693,6 +3703,12 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
     
     if imprt.in_name:
         ctx.module_ns[imprt.in_name] = import_obj
+
+def assert_has_type(obj: ExprObj):
+    if obj.infered_type is None:
+        raise CompilationError("Cannot determine type of expression", obj.xy_node)
+    if isinstance(obj.infered_type, TypeInferenceError):
+        raise CompilationError(obj.infered_type.msg, obj.xy_node)
 
 global_argc_name = "__xy_sys_argc"
 global_argv_name = "__xy_sys_argv"

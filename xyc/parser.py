@@ -352,6 +352,8 @@ def parse_expression(
         return parse_break(itoken)
     elif itoken.peak() == "for":
         return parse_for(itoken)
+    elif itoken.peak() == ";":
+        raise ParsingError("Unexpected end of expression.", itoken)
 
     if precedence >= MAX_PRECEDENCE and itoken.check("("):
         # bracketed expression
@@ -386,7 +388,11 @@ def parse_expression(
             if token[-1] == 'f':
                 token = token[:-1]
                 type = "float"
-            arg1 = Const(float(token), value_str, type)
+            try:
+                val = float(token)
+            except:
+                raise ParsingError("Invalid floating point literal", itoken)
+            arg1 = Const(val, value_str, type)
         elif token[0] >= '0' and token[0] <= '9':
             if token.startswith("0x"):
                 arg1 = Const(int(token[2:], base=16), token, "int",
