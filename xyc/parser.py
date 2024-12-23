@@ -348,9 +348,10 @@ def parse_toplevel_type_expr(itoken):
 var_qualifiers = {"var", "in", "out", "inout", "outin", "pseudo", "ref"}
 
 operator_precedence = {
+    "^": 12,
     "~": 11, "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11,
     "unary+": 10, "unary-": 10, "!": 10, "&": 10, '%': 10,
-    "^": 9, "\\": 9,
+    "\\": 9,
     "*": 8, "/": 8,
     "+": 7, "-": 7,
     "<": 6, "<=": 6, ">=": 6, ">": 6, ":": 6, "+:": 6, "*:": 6, "-:": 6,
@@ -445,6 +446,9 @@ def parse_expression(
         arg1 = parse_var_decl(itoken, Empty(), MIN_PRECEDENCE, op_prec)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "$":
         arg1 = parse_func_select(itoken)
+    elif precedence >= MAX_PRECEDENCE and itoken.check("^"):
+        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        arg1 = CallerContextExpr(arg1)
     elif precedence >= MAX_PRECEDENCE:
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
@@ -649,7 +653,11 @@ def parse_expression(
         # it's actually a var decl
         decl = VarDecl(varying=not is_struct, src=arg1.src, coords=arg1.coords)
         if arg1.start is not None:
-            decl.name = arg1.start.name
+            if isinstance(arg1.start, CallerContextExpr):
+                decl.name = arg1.start.arg.name
+                decl.is_callerContext = True
+            else:
+                decl.name = arg1.start.name
         decl.type = expr_to_type(arg1.end)
         arg1 = decl
 

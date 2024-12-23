@@ -527,100 +527,86 @@ def test_parse_advanced_funcs(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
-# @pytest.mark.parametrize("code, exp_ast", [
-    # [
-    #     """
-    #     def func(x: pseudo ?, y : Metadata = ^(x'metadata)) {}
-    #     def func(x: pseudo ?, y : Metadata = ^metadata(x)) {}
-    #     def func(x: pseudo ?, y : Metadata = metadata^(x)) {}
-    #     """,
-    #     [
-    #         ast.FuncDef(ast.Id("func"),
-    #             params=[
-    #                 ast.param("x", type=ast.Id("?"), is_pseudo=True)
-    #             ],
-    #             returns=[
-    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
-    #                     args=[
-    #                         ast.CallTimeExpr(
-    #                             ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
-    #                         )
-    #                     ]
-    #                 ))),
-    #             ],
-    #             body=[]
-    #         ),
-    #     ]
-    # ],
-    # [
-    #     """
-    #     def func(x: Array, y:Tag = ^x..elem) {}
-    #     def log(msg: Str, msgToLog:Str = if (loggingEnalbed) msg else Str{}) {}
-    #     """,
-    #     [
-    #     ]
-    # ],
-    # [
-    #     """
-    #     def func(x: pseudo ?) -> Ptr~[^x'typeof)] {}
-    #     def func(x: pseudo ?) -> Ptr~[typeof(^x)] {}
-    #     def func(x: pseudo ?, val: int = ^(x+1)) -> Ptr {}
-    #     """,
-    #     [
-    #         ast.FuncDef(ast.Id("func"),
-    #             params=[ast.param("x", type=ast.Id("int"))],
-    #             returns=[
-    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
-    #                     args=[ast.Id("int")]
-    #                 ))),
-    #             ],
-    #             body=[]
-    #         ),
-    #         ast.FuncDef(ast.Id("func"),
-    #             params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
-    #             returns=[
-    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
-    #                     args=[
-    #                         ast.CallTimeExpr(
-    #                             ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
-    #                         )
-    #                     ]
-    #                 ))),
-    #             ],
-    #             body=[]
-    #         ),
-    #         ast.FuncDef(ast.Id("func"),
-    #             params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
-    #             returns=[
-    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
-    #                     args=[
-    #                         ast.CallTimeExpr(
-    #                             ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
-    #                         )
-    #                     ]
-    #                 ))),
-    #             ],
-    #             body=[]
-    #         ),
-    #         ast.FuncDef(ast.Id("func"),
-    #             params=[ast.param("x", type=ast.Id("?"), is_pseudo=True)],
-    #             returns=[
-    #                 ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
-    #                     args=[
-    #                         ast.CallTimeExpr(
-    #                             ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
-    #                         )
-    #                     ]
-    #                 ))),
-    #             ],
-    #             body=[]
-    #         ),
-    #     ]
-    # ],
-# ])
-# def test_parse_boundary_expressions(code, exp_ast):
-#     act_ast = parse_code(code)
-#     assert act_ast == exp_ast
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        def func(x: pseudo ?, y : Metadata = ^metadata(x)) {}
+        """,
+        [
+            ast.FuncDef(ast.Id("func"),
+                params=[
+                    ast.param("x", type=ast.Id("?"), is_pseudo=True),
+                    ast.param("y", type=ast.Id("Metadata"), value=ast.FuncCall(
+                        ast.CallerContextExpr(ast.Id("metadata")),
+                        args=[ast.Id("x")],
+                    ))
+                ],
+                returns=[], body=[]
+            ),
+        ]
+    ],
+    [
+        """
+        def func(x: Array, y:Tag = ^x..elem) {}
+        """,
+        [
+            ast.FuncDef(ast.Id("func"),
+                params=[
+                    ast.param("x", type=ast.Id("Array")),
+                    ast.param("y", type=ast.Id("Tag"), value=ast.BinExpr(
+                        arg1=ast.CallerContextExpr(ast.Id("x")),
+                        arg2=ast.Id("elem"),
+                        op=".."
+                    ))
+                ],
+                returns=[], body=[]
+            ),
+        ]
+    ],
+    [
+        """
+        def log(^msg: Str, _ := if (loggingEnalbed) doLog(msg)) {}
+        """,
+        [
+            ast.FuncDef(ast.Id("log"),
+                params=[
+                    ast.param("msg", type=ast.Id("Str"), is_callerContext=True),
+                    ast.param("_", value=ast.IfExpr(
+                        cond=ast.Id("loggingEnalbed"),
+                        block=ast.Block(body=ast.FuncCall(
+                            ast.Id("doLog"),
+                            args=[ast.Id("msg")]
+                        ))
+                    ))
+                ],
+                returns=[], body=[]
+            ),
+        ]
+    ],
+    [
+        """
+        def func(x: pseudo ?, val: int = ^(x+1)) {}
+        """,
+        [
+            ast.FuncDef(ast.Id("func"),
+                params=[
+                    ast.param("x", type=ast.Id("?"), is_pseudo=True),
+                    ast.param("val", type=ast.Id("int"), value=ast.CallerContextExpr(
+                        arg=ast.BinExpr(
+                            ast.Id("x"),
+                            ast.Const(1),
+                            op="+"
+                        )
+                    ))
+                ],
+                returns=[], body=[]
+            ),
+        ]
+    ],
+])
+def test_parse_boundary_expressions(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
 
 
 @pytest.mark.parametrize("code, exp_ast", [

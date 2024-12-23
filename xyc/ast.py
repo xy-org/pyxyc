@@ -210,8 +210,13 @@ class AttachTags(Node):
         if tags is not None:
             self.tags = tags
 
+# TODO remove that one
 @dataclass
 class CallTimeExpr(Node):
+    arg: Node | None = None
+
+@dataclass
+class CallerContextExpr(Node):
     arg: Node | None = None
 
 @dataclass
@@ -234,6 +239,7 @@ class VarDecl(Node):
     is_inout: bool = False
     is_outin: bool = False
     is_pseudo: bool = False
+    is_callerContext: bool = False
     references: Node | None = None
 
     @property

@@ -275,6 +275,11 @@ from xyc.tokenizer import split_tokens
         ['a', ':', '=', 'f', '(', '...', ')', ';'],
         None
     ),
+    (
+        "def func(y:Tag = ^x..elem)",
+        ['def', 'func', '(', 'y', ':', 'Tag', '=', '^', 'x', '..', 'elem', ')'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)
