@@ -994,12 +994,12 @@ def autogenerate_ops(type_obj: TypeObj, ast, cast, ctx):
     )
     ctx.ensure_func_space(xy.Id("and")).append(gen_or_obj)
 
-def compile_func_prototype(node, cast, ctx):
+def compile_func_prototype(node: xy.FuncDef, cast, ctx):
     func_space = ctx.ensure_func_space(node.name)
 
     cfunc = c.Func(None)
     param_objs = []
-    move_args_to_temps = False
+    move_args_to_temps = len(node.in_guards) > 0 or len(node.out_guards) > 0
     for param in node.params:
         param_obj = VarObj(xy_node=param, passed_by_ref=should_pass_by_ref(param))
 
@@ -2270,8 +2270,16 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if func_obj.module_header is not None:
         func_ctx = func_obj.module_header.ctx
     res = c.FuncCall(name=func_obj.c_name)
+
+    func_ctx.push_ns()
+
+    # add arguments
+    if func_obj.xy_node is None:
+        # add arguments to external c function
+        for arg in arg_exprs:
+            res.args.append(arg.c_node)
     if func_obj.xy_node is not None:
-        func_ctx.push_ns()
+        # add arguments to a xy function
         for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
             func_ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_pseudo:
@@ -2288,33 +2296,33 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             else:
                 res.args.append(arg_exprs.kwargs[pobj.xy_node.name].c_node)
 
-        # compile input guards
-        if (len(func_obj.xy_node.in_guards) + len(func_obj.xy_node.out_guards)) > 0:
-            cast.includes.append(c.Include("stdlib.h"))
-        for guard in func_obj.xy_node.in_guards:
-            guard_obj = compile_expr(guard, cast, cfunc, func_ctx)
-            if not is_ct_true(guard_obj):
-                cfunc.body.append(c.If(
-                    cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
-                    body=[c.FuncCall("abort")]
-                ))
-
-        func_ctx.pop_ns()
-    else:
-        # external c function
-        for arg in arg_exprs:
-            res.args.append(arg.c_node)
+    # compile input guards if any
+    in_guards = func_obj.xy_node.in_guards if func_obj.xy_node is not None else []
+    out_guards = func_obj.xy_node.out_guards if func_obj.xy_node is not None else []
+    if (len(in_guards) + len(out_guards)) > 0:
+        cast.includes.append(c.Include("stdlib.h"))
+    for guard in in_guards:
+        guard_obj = compile_expr(guard, cast, cfunc, func_ctx)
+        if not is_ct_true(guard_obj):
+            cfunc.body.append(c.If(
+                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
+                body=[c.FuncCall("abort")]
+            ))
 
     if (
         func_obj.xy_node is not None and
         (func_obj.etype_obj is not None or len(func_obj.xy_node.returns) > 1)
     ):
+        # call a function that may error
         tmp_cid = None
         if func_obj.rtype_obj is not ctx.void_obj:
             tmp_obj = ctx.create_tmp_var(func_obj.rtype_obj, name_hint="res")
             cfunc.body.append(tmp_obj.c_node)
             tmp_cid = c.Id(tmp_obj.c_node.name)
             res.args.append(c.UnaryExpr(op='&', prefix=True, arg=tmp_cid))
+
+            ret_name = func_obj.xy_node.returns[0].name
+            func_ctx.ns[ret_name] = tmp_obj
 
         if func_obj.etype_obj is not None:
             # error handling
@@ -2350,19 +2358,28 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         else:
             cfunc.body.append(res)
 
-        return FCallObj(
-            c_node=tmp_cid,
-            xy_node=expr,
-            infered_type=func_obj.rtype_obj,
-            func_obj=func_obj
-        )
-    else:
-        return FCallObj(
-            c_node=res,
-            xy_node=expr,
-            infered_type=func_obj.rtype_obj,
-            func_obj=func_obj
-        )
+        res = tmp_cid
+
+    # else if a call to a function that has no error handling
+    # no need to do anything the res already has the needed c fcall
+
+    # finally eval out_guards
+    for guard in out_guards:
+        guard_obj = compile_expr(guard, cast, cfunc, func_ctx)
+        if not is_ct_true(guard_obj):
+            cfunc.body.append(c.If(
+                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
+                body=[c.FuncCall("abort")]
+            ))
+
+    func_ctx.pop_ns()
+
+    return FCallObj(
+        c_node=res,
+        xy_node=expr,
+        infered_type=func_obj.rtype_obj,
+        func_obj=func_obj
+    )
 
 def typeEqs(expr, arg_exprs, cast, cfunc, ctx):
     assert len(arg_exprs) == 2
