@@ -21,6 +21,7 @@ from xyc.compiler import CompilationError
     "dowhiles",
     #TODO "fors",
     "pointers",
+    #TODO "pseudoParams"
     #TODO "errors",
 ])
 def test_c_compilation(resource_dir, filename):

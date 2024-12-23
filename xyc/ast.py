@@ -37,16 +37,9 @@ class Comment(Node):
     is_doc : bool = False
 
 @dataclass
-class Param(Node):
-    name: Node
-    type: Node | None = None
-    value: Node | None = None
-    outin: bool = False
-
-@dataclass
 class FuncDef(Node):
     name: Node
-    params: list[Param] = field(default_factory=list)
+    params: list['VarDecl'] = field(default_factory=list)
     returns: list['VarDecl'] = field(default_factory=list)
     etype: Node | None = None
     in_guards: list[Node] = field(default_factory=list)

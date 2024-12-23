@@ -149,7 +149,7 @@ def main(i: int) -> int {
         [
             ast.FuncDef(
                 name=ast.Id("main"),
-                params=[ast.Param("i", type=ast.Id("int"))],
+                params=[ast.VarDecl("i", type=ast.Id("int"))],
                 body=[
                     ast.BinExpr(arg1=ast.Id("i"), arg2=ast.Id("i"), op="*="),
                     ast.Comment(" square i"),
@@ -236,8 +236,8 @@ def test_parse_comments(code, exp_ast):
                 ast.Id("main"),
                 tags=ast.TagList(args=[ast.Id("EntryPoint")]),
                 params=[
-                    ast.Param("a", type=ast.Id("int")),
-                    ast.Param("b", type=ast.Id("long"))
+                    ast.VarDecl("a", type=ast.Id("int")),
+                    ast.VarDecl("b", type=ast.Id("long"))
                 ],
                 returns=[ast.VarDecl(type=ast.Id("int"))],
                 etype=ast.Id("Error"),
@@ -301,13 +301,13 @@ def test_parse_simple_func(code, exp_ast):
         [
             ast.FuncDef(ast.Id("double"),
                 params=[
-                    ast.Param("x", type=ast.Id("int")),
+                    ast.VarDecl("x", type=ast.Id("int")),
                 ],
                 body=ast.BinExpr(ast.Id("x"), ast.Const(2), op="*")
             ),
             ast.FuncDef(ast.Id("sqr"),
                 params=[
-                    ast.Param("x", type=ast.Id("int")),
+                    ast.VarDecl("x", type=ast.Id("int")),
                 ],
                 body=ast.BinExpr(ast.Id("x"), ast.Id("x"), op="*")
             ),
@@ -983,7 +983,7 @@ def test_parse_string_literals(code, exp_ast):
         """,
         [
             ast.FuncDef(ast.Id("sum"), returns=ast.SimpleRType("int"), params=[
-                ast.Param(
+                ast.VarDecl(
                     "nums", type=ast.ArrayType(
                         base=ast.Id("int"),
                         dims=[ast.Const(2)],

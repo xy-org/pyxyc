@@ -265,7 +265,7 @@ def parse_params(itoken):
     while itoken.peak() != ")":
         itoken.skip_empty_lines()
         pname = itoken.consume()
-        param = Param(pname, src=itoken.src)
+        param = VarDecl(pname, src=itoken.src)
         itoken.expect(":")
         param.type = parse_type(itoken)
         res.append(param)

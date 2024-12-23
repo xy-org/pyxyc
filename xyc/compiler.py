@@ -440,8 +440,8 @@ def import_builtins(ctx, cast):
                 func = xy.FuncDef(
                     fname,
                     params=[
-                        xy.Param("x", xy.Id(type1)),
-                        xy.Param("y", xy.Id(type2))
+                        xy.VarDecl("x", xy.Id(type1)),
+                        xy.VarDecl("y", xy.Id(type2))
                     ],
                     returns=xy.SimpleRType(rtype_name)
                 )
@@ -454,8 +454,8 @@ def import_builtins(ctx, cast):
             func = xy.FuncDef(
                 fname,
                 params=[
-                    xy.Param("x", xy.Id("Ptr")),
-                    xy.Param("y", xy.Id(type))
+                    xy.VarDecl("x", xy.Id("Ptr")),
+                    xy.VarDecl("y", xy.Id(type))
                 ],
                 returns=xy.SimpleRType("Ptr")
             )
@@ -469,7 +469,7 @@ def import_builtins(ctx, cast):
             func = xy.FuncDef(
                 fname,
                 params=[
-                    xy.Param("x", xy.Id(type1)),
+                    xy.VarDecl("x", xy.Id(type1)),
                 ],
                 returns=xy.SimpleRType(type1)
             )
@@ -478,8 +478,8 @@ def import_builtins(ctx, cast):
             desc.rtype_obj = ctx.id_table[rtype_name]
     
     select = xy.FuncDef(name="select", params=[
-        xy.Param("arr", xy.ArrayType(base=None)),
-        xy.Param("index", xy.Id("int")),
+        xy.VarDecl("arr", xy.ArrayType(base=None)),
+        xy.VarDecl("index", xy.Id("int")),
     ])
     select_obj = register_func(select, ctx)
     select_obj.builtin = True
