@@ -1160,8 +1160,6 @@ def compile_builtins(builder, module_name, asts):
         if isinstance(obj, FuncSpace):
             for func_obj in obj._funcs:
                 func_obj.builtin = True
-                # XXX Please remove that
-                # func_obj.xy_node.name = func_obj.xy_node.name.name
 
         if isinstance(obj, TypeObj):
             ctype_map = {
