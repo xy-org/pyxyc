@@ -234,10 +234,7 @@ class FuncSpace:
         )
     
     def report_no_matches(self, candidate_fobjs, node, args_infered_types, ctx):
-        fsig = ctx.eval_to_id(node.name) + "(" + \
-            ", ".join(fmt_type(t.xy_node) for t in args_infered_types) + \
-            ", ".join(f"{pname}: {fmt_type(t.xy_node)}" for pname, t in args_infered_types.kwargs.items()) + \
-            ")"
+        fsig = fcall_sig(node.name.name, args_infered_types, node.inject_args)
         err_msg = f"Cannot find function '{fsig}'"
         candidates = "\n    ".join((
             func_sig(f, include_ret=True) for f in candidate_fobjs
@@ -247,10 +244,10 @@ class FuncSpace:
             notes=[(f"Candidates are:\n    {candidates}", None)]
         )
     
-    def find(self, node, args_infered_types, ctx):
+    def find(self, node, args_infered_types, ctx, partial_matches=False):
         space = self
         while space is not None:
-            candidate_fobjs = space.find_candidates(node, args_infered_types, ctx)
+            candidate_fobjs = space.find_candidates(node, args_infered_types, partial_matches, ctx)
             if len(candidate_fobjs) == 1:
                     return candidate_fobjs[0]
             if len(candidate_fobjs) > 1:
@@ -270,11 +267,11 @@ class FuncSpace:
             space = space.parent_space
         self.report_no_matches(candidate_fobjs, node, args_infered_types, ctx)
 
-    def find_candidates(self, node, args_infered_types, ctx):
+    def find_candidates(self, node, args_infered_types, partial_matches, ctx):
         if isinstance(node, xy.FuncCall):
             candidate_fobjs = []
             for desc in self._funcs:
-                if cmp_call_def(args_infered_types, desc, ctx):
+                if cmp_call_def(args_infered_types, desc, partial_matches, ctx):
                     candidate_fobjs.append(desc)
             
             return candidate_fobjs
@@ -289,7 +286,7 @@ class ExtSpace(FuncSpace):
     def __init__(self, ext_name: str):
         self.ext_name = ext_name
 
-    def find(self, node, args_infered_types, ctx):
+    def find(self, node, args_infered_types, ctx, partial_matches=False):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
 def fmt_type(node):
@@ -300,7 +297,7 @@ def fmt_type(node):
     else:
         return "<ERROR>!"
 
-def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
+def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx):
     if len(fcall_args_types) > len(fobj.param_objs):
         return False
     if fobj.builtin and fobj.xy_node.name.name in {"sizeof", "addrof", "typeEqs"}:
@@ -327,9 +324,10 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
             return False
         satisfied_params.add(pname)
 
-    for p_obj in fobj.param_objs[len(fcall_args_types.args):]:
-        if p_obj.xy_node.name not in satisfied_params and p_obj.xy_node.value is None:
-            return False
+    if not partial_matches:
+        for p_obj in fobj.param_objs[len(fcall_args_types.args):]:
+            if p_obj.xy_node.name not in satisfied_params and p_obj.xy_node.value is None:
+                return False
 
     return True
 
@@ -352,10 +350,11 @@ def cmp_arg_param_types(arg_type, param_type):
     
     return True
 
-def fcall_sig(name, args_infered_types):
+def fcall_sig(name, args_infered_types, inject_args=False):
     return name + "(" + \
         ", ".join(fmt_type(t.xy_node) for t in args_infered_types) + \
         ", ".join(f"{pname}: {fmt_type(t.xy_node)}" for pname, t in args_infered_types.kwargs.items()) + \
+        (", ..." if inject_args else "" )+ \
         ")"
 
 def func_sig(fobj: FuncObj, include_ret=False):
@@ -2392,7 +2391,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     )
     fspace = ctx.eval_to_fspace(expr.name)
     if fspace is None:
-        call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types)
+        call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_infered_types, expr.inject_args)
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
     if not isinstance(fspace, ExtSpace):
         for arg in arg_exprs.args:
@@ -2404,7 +2403,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         for fobj in fspace._funcs:
             compile_func_prototype(fobj, cast, ctx)
 
-    func_obj = fspace.find(expr, arg_infered_types, ctx)
+    func_obj = fspace.find(expr, arg_infered_types, ctx, partial_matches=expr.inject_args)
 
     if expr_to_move_idx is not None and func_obj.move_args_to_temps:
         arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
@@ -2743,7 +2742,24 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         for i, pobj in enumerate(leftover_params):
             if pobj.xy_node.name not in arg_exprs.kwargs:
                 try:
-                    value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, func_ctx)
+                    value_obj = None
+                    if getattr(expr, 'inject_args', False):
+                        # TODO maybe call compile_id
+                        var_decl = ctx.lookup(pobj.xy_node.name)
+                        if var_decl is not None and not isinstance(var_decl, VarObj):
+                            raise CompilationError("'{pobj.xy_node.name}' is not a var", pobj.xy_node)
+                        elif var_decl is not None:
+                            if var_decl.xy_node.is_pseudo:
+                                raise CompilationError(f"'{pobj.xy_node.name}' is a pseudo param", var_decl.xy_node)
+                            value_obj = ExprObj(
+                                c_node=c.Id(var_decl.c_node.name),
+                                xy_node=pobj.xy_node,
+                                infered_type=var_decl.type_desc,
+                            )
+                    if value_obj is None:
+                        if pobj.xy_node.value is None:
+                            raise CompilationError(f"Cannot find var '{pobj.xy_node.name}' to auto inject", expr)
+                        value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, func_ctx)
                     to_move = (
                         (i < len(leftover_params) - 1) or
                         isinstance(value_obj.c_node, c.InitList) or

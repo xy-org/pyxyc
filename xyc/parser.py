@@ -354,6 +354,8 @@ def parse_expression(
         return parse_for(itoken)
     elif itoken.peak() == ";":
         raise ParsingError("Unexpected end of expression.", itoken)
+    elif itoken.peak() == "...":
+        raise ParsingError("... is not allowed in expressions", itoken)
 
     if precedence >= MAX_PRECEDENCE and itoken.check("("):
         # bracketed expression
@@ -441,10 +443,11 @@ def parse_expression(
     while op in op_prec and op_prec[op] == precedence:
         itoken.consume()  # operator
         if op == "(":
-            args, kwargs = parse_args_kwargs(itoken)
+            args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
             itoken.expect(")")
             fcall = FuncCall(arg1, args, src=itoken.src, coords=arg1.coords)
             fcall.kwargs = kwargs
+            fcall.inject_args = inject_args
             arg1 = fcall
         elif op == "'":
             f_coords = itoken.peak_coords()
@@ -453,9 +456,10 @@ def parse_expression(
                 Id(fname, src=itoken.src, coords=f_coords),
                 [arg1], src=itoken.src, coords=f_coords)
             if itoken.check("("):
-                args, kwargs = parse_args_kwargs(itoken)
+                args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
                 fcall.args.extend(args)
                 fcall.kwargs = kwargs
+                fcall.inject_args = inject_args
                 itoken.expect(")")
             arg1 = fcall
         elif op == "\\":
@@ -777,9 +781,11 @@ def parse_str_literal(prefix, prefix_start, itoken):
     res.full_str = itoken.src.code[prefix_start+len(prefix)+1:part_end]
     return res
 
-def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False):
+def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False, accept_inject=False):
     positional, named = [], {}
-    args = parse_expr_list(itoken, ignore_eols=True, is_toplevel=is_toplevel, is_taglist=is_taglist)
+    args = parse_expr_list(itoken, ignore_eols=True, is_toplevel=is_toplevel, is_taglist=is_taglist, accept_inject=accept_inject)
+    if accept_inject:
+        args, inject_args = args
     for expr in args:
         is_named = (
             isinstance(expr, BinExpr) and expr.op == "=" and
@@ -789,25 +795,41 @@ def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False):
             named[expr.arg1.name] = expr.arg2
         else:
             positional.append(expr)
-    return positional, named
+    if accept_inject:
+        return positional, named, inject_args
+    else:
+        return positional, named
     
 
-def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False):
+def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False, accept_inject=False):
     res = []
+    inject = False
     if ignore_eols: itoken.skip_empty_lines()
     while itoken.peak() not in {")", "]", "}", ";"}:
+        if inject:
+            raise ParsingError("Cannot have any arguments after ...", itoken)
         calltime_coords = itoken.peak_coords()
-        is_calltime_expr = is_taglist and itoken.check("<<")
-        expr = parse_expression(itoken, is_toplevel=is_toplevel)
-        if is_calltime_expr:
-            expr = CallTimeExpr(expr, src=itoken.src, coords=calltime_coords)
+        if itoken.peak() != "...":
+            is_calltime_expr = is_taglist and itoken.check("<<")
+            expr = parse_expression(itoken, is_toplevel=is_toplevel)
+            if is_calltime_expr:
+                expr = CallTimeExpr(expr, src=itoken.src, coords=calltime_coords)
 
-        res.append(expr)
+            res.append(expr)
+        else:
+            if accept_inject:
+                itoken.consume()
+                inject = True
+            else:
+                raise ParsingError("... Can appear only at the end of an argument list", itoken)
         if ignore_eols: itoken.skip_empty_lines()
         if itoken.peak() not in {")", "]", "}", ";"}:
             itoken.expect(",")
         if ignore_eols: itoken.skip_empty_lines()
-    return res
+    if accept_inject:
+        return res, inject
+    else:
+        return res
 
 def parse_body(itoken):
     itoken.expect("{")

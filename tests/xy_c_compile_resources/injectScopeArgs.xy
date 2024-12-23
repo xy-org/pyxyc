@@ -1,0 +1,30 @@
+struct MyStruct {
+    a: int;
+    b: int;
+    c: float;
+}
+
+def func(a: int, b: float, c: MyStruct) -> void {
+
+}
+
+def test1() {
+    a := 0;
+    b := .0f;
+    c := MyStruct{};
+    func(...);
+}
+
+def test2(a: int, b: float, c: MyStruct) {
+    func(...);
+}
+
+def test3(b: float, c: MyStruct, a: int) {
+    func(...);
+}
+
+def test5(d:double, c: MyStruct) {
+    a := c.a;
+    b := c.b;
+    func(...);
+}

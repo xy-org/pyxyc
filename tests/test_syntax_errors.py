@@ -171,7 +171,7 @@ def test_param_lists(code, err_msg):
         """def func() {
             a := ....;
         }""",
-        "Invalid floating point literal"
+        "... is not allowed in expressions"
     ),
     (
         """def func() {
@@ -187,5 +187,29 @@ def test_param_lists(code, err_msg):
     ),
 ])
 def test_invalid_floats(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def main() {
+            func(..., a=5);
+        }""",
+        "Cannot have any arguments after ..."
+    ),
+    (
+        """def main() {
+            func(a=5, ..., b=4);
+        }""",
+        "Cannot have any arguments after ..."
+    ),
+    (
+        """def main() {
+            func(5+...);
+        }""",
+        "... is not allowed in expressions"
+    ),
+])
+def test_auto_inject_syntax(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)

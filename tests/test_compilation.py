@@ -49,6 +49,7 @@ from xyc.compiler import CompilationError
     "exitWithError",
     "arrayComprehension",
     "fieldsof",
+    "injectScopeArgs",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

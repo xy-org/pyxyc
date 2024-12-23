@@ -65,6 +65,7 @@ class FuncCall(Node):
     name: Node
     args: list[Node] = field(default_factory=list)
     kwargs: dict[str, Node] = field(default_factory=dict)
+    inject_args: bool = False
 
 @dataclass
 class Args(Node):
