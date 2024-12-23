@@ -14,22 +14,22 @@ struct opOverloading_Pair {
 };
 
 int32_t opOverloading_cmp__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
-    return opOverloading_sub__with__MyInt__MyInt(a, b).m_num;
+    return opOverloading_sub(a, b).m_num;
 }
 
-opOverloading_MyInt opOverloading_add__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
+opOverloading_MyInt opOverloading_add(opOverloading_MyInt a, opOverloading_MyInt b) {
     return (opOverloading_MyInt){a.m_num + b.m_num};
 }
 
-opOverloading_MyInt opOverloading_sub__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
+opOverloading_MyInt opOverloading_sub(opOverloading_MyInt a, opOverloading_MyInt b) {
     return (opOverloading_MyInt){a.m_num - b.m_num};
 }
 
-opOverloading_MyInt opOverloading_mul__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
+opOverloading_MyInt opOverloading_mul(opOverloading_MyInt a, opOverloading_MyInt b) {
     return (opOverloading_MyInt){a.m_num * b.m_num};
 }
 
-opOverloading_MyInt opOverloading_div__with__MyInt__MyInt(opOverloading_MyInt a, opOverloading_MyInt b) {
+opOverloading_MyInt opOverloading_div(opOverloading_MyInt a, opOverloading_MyInt b) {
     return (opOverloading_MyInt){a.m_num / b.m_num};
 }
 
@@ -39,10 +39,10 @@ int32_t opOverloading_cmpMyInts(void) {
     if (opOverloading_cmp__with__MyInt__MyInt(a, b) > 0) {
         return 1;
     }
-    if (opOverloading_cmp__with__MyInt__MyInt(opOverloading_mul__with__MyInt__MyInt(a, (opOverloading_MyInt){0}), (opOverloading_MyInt){1}) > 0) {
+    if (opOverloading_cmp__with__MyInt__MyInt(opOverloading_mul(a, (opOverloading_MyInt){0}), (opOverloading_MyInt){1}) > 0) {
         return 2;
     }
-    if (opOverloading_cmp__with__MyInt__MyInt(opOverloading_div__with__MyInt__MyInt(a, (opOverloading_MyInt){1}), b) <= 0) {
+    if (opOverloading_cmp__with__MyInt__MyInt(opOverloading_div(a, (opOverloading_MyInt){1}), b) <= 0) {
         return 3;
     }
     return 0;
@@ -53,7 +53,7 @@ int32_t opOverloading_cmp__with__MyInt__int(opOverloading_MyInt p1, int32_t n) {
 }
 
 opOverloading_MyInt opOverloading_cmp__with__Pair__Pair(opOverloading_Pair p1, opOverloading_Pair p2) {
-    return opOverloading_sub__with__MyInt__MyInt(p1.m_a, p2.m_a);
+    return opOverloading_sub(p1.m_a, p2.m_a);
 }
 
 int32_t opOverloading_cmpPairs(void) {

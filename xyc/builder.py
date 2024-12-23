@@ -3,7 +3,7 @@ from os import path
 import subprocess
 from xyc.ast import Source
 from xyc.parser import parse_code
-from xyc.compiler import compile_module
+from xyc.compiler import compile_module, compile_builtins
 import xyc.cstringifier as cstringifier
 from dataclasses import dataclass
 import xyc.cast as c
@@ -32,6 +32,7 @@ class Builder:
         if "." in module_name:
             module_name = path.splitext(module_name)[0]
 
+        self.compile_builtins()
         self.do_compile_module(module_name, self.input)
         self.do_build()
 
@@ -44,6 +45,11 @@ class Builder:
 
         return header
     
+    def compile_builtins(self):
+        builtins_module_name = "xy.builtins"
+        header, c_srcs = compile_builtins(self, builtins_module_name)
+        self.module_cache[builtins_module_name] = CompiledModule(header, c_srcs)
+
     def do_compile_module(self, module_name: str, module_path: str):
         module_ast = parse_module(module_path, module_name)
         assert len(module_ast) == 1
@@ -118,6 +124,15 @@ def compile_project(project):
     # TODO remove that function
     print("Compiling...")
     res = {}
+    builder = Builder("")
+    builder.compile_builtins()
     for module_name, asts in project.items():
-        res[module_name + ".c"] = compile_module(None, module_name, asts)[1]
+        header, c_srcs = compile_module(builder, module_name, asts)
+        builder.module_cache[module_name] = CompiledModule(header, c_srcs)
+
+    big_ast = c.Ast()
+    for module in builder.module_cache.values():
+        big_ast.merge(module.source)
+
+    res[module_name + ".c"] = big_ast
     return res

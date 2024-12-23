@@ -107,6 +107,7 @@ class IdTable(dict):
 class FuncSpace:
     def __init__(self):
         self._funcs = []
+        self.parent_space = None
 
     def __len__(self):
         return len(self._funcs)
@@ -117,36 +118,68 @@ class FuncSpace:
     def __getitem__(self, i):
         return self._funcs[i]
     
+    def report_multiple_matches(self, candidate_fobjs, node, args_infered_types, ctx):
+        fsig = ctx.eval_to_id(node.name) + "(" + \
+            ", ".join(t.xy_node.name for t in args_infered_types) + \
+            ")"
+        err_msg = f"Multiple function matches for '{fsig}'"
+        candidates = "\n    ".join((
+            func_sig(f.xy_node) for f in candidate_fobjs
+        ))
+        raise CompilationError(
+            err_msg, node,
+            notes=[(f"Candidates are:\n    {candidates}", None)]
+        )
+    
+    def report_no_matches(self, candidate_fobjs, node, args_infered_types, ctx):
+        fsig = ctx.eval_to_id(node.name) + "(" + \
+            ", ".join(t.xy_node.name for t in args_infered_types) + \
+            ")"
+        err_msg = f"Cannot find function '{fsig}'"
+        candidates = "\n    ".join((
+            func_sig(f.xy_node) for f in candidate_fobjs
+        ))
+        raise CompilationError(
+            err_msg, node,
+            notes=[(f"Candidates are:\n    {candidates}", None)]
+        )
+    
     def find(self, node, args_infered_types, ctx):
+        space = self
+        while space is not None:
+            candidate_fobjs = space.find_candidates(node, args_infered_types, ctx)
+            if len(candidate_fobjs) == 1:
+                    return candidate_fobjs[0]
+            while len(candidate_fobjs) > 1:
+                space = space.parent_space
+                while space is not None:
+                    candidate_fobjs.extend(
+                        space.find_candidates(node, args_infered_types, ctx)
+                    )
+                    space = space.parent_space
+                self.report_multiple_matches(candidate_fobjs, node, args_infered_types, ctx)
+            space = space.parent_space
+
+        candidate_fobjs = []
+        space = self
+        while space is not None:
+            candidate_fobjs.extend(space._funcs)
+            space = space.parent_space
+        self.report_no_matches(candidate_fobjs, node, args_infered_types, ctx)
+
+    def find_candidates(self, node, args_infered_types, ctx):
         if isinstance(node, xy.FuncCall):
             candidate_fobjs = []
             for desc in self._funcs:
                 if cmp_call_def(args_infered_types, desc, ctx):
                     candidate_fobjs.append(desc)
             
-            if len(candidate_fobjs) == 1:
-                return candidate_fobjs[0]
-
-            fsig = ctx.eval_to_id(node.name) + "(" + \
-                ", ".join(t.xy_node.name for t in args_infered_types) + \
-                ")"
-            if len(candidate_fobjs) == 0:
-                candidate_fobjs = self._funcs
-                err_msg = f"Cannot find function '{fsig}'"
-            else:
-                err_msg = f"Multiple function matches for '{fsig}'"
-            candidates = "\n    ".join((
-                func_sig(f.xy_node) for f in candidate_fobjs
-            ))
-            raise CompilationError(
-                err_msg, node,
-                notes=[(f"Candidates are:\n    {candidates}", None)]
-            )
+            return candidate_fobjs
         else:
             assert isinstance(node, xy.FuncDef)
             for desc in self._funcs:
                 if desc.xy_node == node:
-                    return desc
+                    return [desc]
             raise "Cannot find func"
         
 class ExtSpace(FuncSpace):
@@ -157,20 +190,17 @@ class ExtSpace(FuncSpace):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
 
-def cmp_call_def(fcall_args_types, fobj, ctx):
+def cmp_call_def(fcall_args_types, fobj: FuncObj, ctx):
+    # TODO what about kwargs
     if len(fcall_args_types) > len(fobj.params):
         return False
-    fdef = fobj.xy_node
-    # TODO what about kwargs
-    for arg_type, param in zip(fcall_args_types, fdef.params):
+    for type_obj, param_obj in zip(fcall_args_types, fobj.params):
         # XXX
-        if isinstance(arg_type, ArrTypeObj):
+        if isinstance(type_obj, ArrTypeObj):
             continue
-        if param.type is None:
-            continue # XXX
-        if arg_type.xy_node.name != param.type.name:
+        if type_obj is not param_obj.type_desc:
             return False
-    for p in fdef.params[len(fcall_args_types):]:
+    for p in fobj.xy_node.params[len(fcall_args_types):]:
         if p.value is None:
             return False
     return True
@@ -227,6 +257,9 @@ class CompilerContext:
         if name.name not in self.module_ns:
             fspace = FuncSpace()
             self.module_ns[name.name] = fspace
+            parent_space = self.global_ns.get(name.name, None)
+            if isinstance(parent_space, FuncSpace):
+                fspace.parent_space = parent_space
             return fspace
         candidate = self.module_ns[name.name]
         if isinstance(candidate, FuncSpace):
@@ -399,6 +432,13 @@ def compile_module(builder, module_name, asts):
     ctx = CompilerContext(builder, module_name)
     res = c.Ast()
 
+    compile_import(xy.Import(lib="xy.builtins"), ctx, asts, res)
+    ctx.void_obj = ctx.global_ns["void"]
+    ctx.bool_obj = ctx.global_ns["bool"]
+    ctx.ptr_obj = ctx.global_ns["Ptr"]
+    ctx.size_obj = ctx.global_ns["Size"]
+    ctx.tagctor_obj = ctx.global_ns["TagCtor"]
+
     compile_header(ctx, asts, res)
     
     for ast in asts:
@@ -410,9 +450,17 @@ def compile_module(builder, module_name, asts):
         namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg
     ), res
 
-def compile_header(ctx: CompilerContext, asts, cast):
-    import_builtins(ctx, cast)
+def compile_builtins(builder, module_name):
+    ctx = CompilerContext(builder, module_name)
+    res = c.Ast()
 
+    import_builtins(ctx, res)
+
+    return ModuleHeader(
+        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg
+    ), res
+
+def compile_header(ctx: CompilerContext, asts, cast):
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.Import):
@@ -647,16 +695,12 @@ def import_builtins(ctx: CompilerContext, cast):
     }
 
     for xtype, ctype in ctype_map.items():
-        ctx.global_ns[xtype] = TypeObj(
+        ctx.module_ns[xtype] = TypeObj(
             xy_node=xy.StructDef(name=xtype),
             c_node=c.Struct(name=ctype),
             builtin=True,
             init_value=c.Const(0)
         )
-    ctx.void_obj = ctx.global_ns["void"]
-    ctx.bool_obj = ctx.global_ns["bool"]
-    ctx.ptr_obj = ctx.global_ns["Ptr"]
-    ctx.size_obj = ctx.global_ns["Size"]
 
     # fill in base math operations
     for p1, type1 in enumerate(num_types):
@@ -682,10 +726,10 @@ def import_builtins(ctx: CompilerContext, cast):
                 )
                 desc = register_func(func, ctx)
                 desc.builtin = True
-                desc.rtype_obj = ctx.global_ns[rtype_name]
+                desc.rtype_obj = ctx.module_ns[rtype_name]
                 desc.params = [
-                    VarObj(type_desc=ctx.global_ns[type1]),
-                    VarObj(type_desc=ctx.global_ns[type2])
+                    VarObj(type_desc=ctx.module_ns[type1]),
+                    VarObj(type_desc=ctx.module_ns[type2])
                 ]
 
     for type in int_types:
@@ -700,10 +744,10 @@ def import_builtins(ctx: CompilerContext, cast):
             )
             desc = register_func(func, ctx)
             desc.builtin = True
-            desc.rtype_obj = ctx.global_ns["Ptr"]
+            desc.rtype_obj = ctx.module_ns["Ptr"]
             desc.params = [
-                VarObj(type_desc=ctx.global_ns["Ptr"]),
-                VarObj(type_desc=ctx.global_ns[type])
+                VarObj(type_desc=ctx.module_ns["Ptr"]),
+                VarObj(type_desc=ctx.module_ns[type])
             ]
     
     # fill in ++(inc) and --(dec)
@@ -718,9 +762,9 @@ def import_builtins(ctx: CompilerContext, cast):
             )
             desc = register_func(func, ctx)
             desc.builtin = True
-            desc.rtype_obj = ctx.global_ns[rtype_name]
+            desc.rtype_obj = ctx.module_ns[rtype_name]
             desc.params = [
-                VarObj(type_desc=ctx.global_ns[type1]),
+                VarObj(type_desc=ctx.module_ns[type1]),
             ]
     
     select = xy.FuncDef(name="select", params=[
@@ -730,10 +774,10 @@ def import_builtins(ctx: CompilerContext, cast):
     select_obj = register_func(select, ctx)
     select_obj.builtin = True
     # XXX
-    select_obj.rtype_obj = ctx.global_ns["int"]
+    select_obj.rtype_obj = ctx.module_ns["int"]
     select_obj.params = [
         VarObj(type_desc=ArrayObj()),
-        VarObj(type_desc=ctx.global_ns["int"]),
+        VarObj(type_desc=ctx.module_ns["int"]),
     ]
 
     # tag construction
@@ -747,8 +791,7 @@ def import_builtins(ctx: CompilerContext, cast):
         },
         type_obj=tag_obj
     )
-    ctx.global_ns["TagCtor"] = tag_obj
-    ctx.tagctor_obj = tag_obj
+    ctx.module_ns["TagCtor"] = tag_obj
 
     # string construction
     str_ctor = xy.StructDef(name="StrCtor", fields=[
@@ -761,7 +804,7 @@ def import_builtins(ctx: CompilerContext, cast):
         },
         type_obj=tag_obj
     )
-    ctx.global_ns["StrCtor"] = str_obj
+    ctx.module_ns["StrCtor"] = str_obj
 
     # entry point
     entrypoint = xy.StructDef(name="EntryPoint")
@@ -771,7 +814,7 @@ def import_builtins(ctx: CompilerContext, cast):
             "label": StrObj(parts=[ConstObj(value="xy.entrypoint")])
         }
     )
-    ctx.global_ns["EntryPoint"] = ep_obj
+    ctx.module_ns["EntryPoint"] = ep_obj
 
     # clib
     clib = xy.StructDef(name="CLib")
@@ -781,7 +824,7 @@ def import_builtins(ctx: CompilerContext, cast):
             "label": StrObj(parts=[ConstObj(value="xyc.lib")])
         }
     )
-    ctx.global_ns["CLib"] = clib_ojb
+    ctx.module_ns["CLib"] = clib_ojb
 
 def compile_funcs(ctx, ast, cast):
     for node in ast:
