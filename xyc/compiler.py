@@ -75,6 +75,7 @@ class FuncObj(CompiledObj):
 @dataclass
 class VarObj(CompiledObj):
     type_desc: TypeObj | None = None
+    passed_by_ref: bool = False # True if the variable is a hidden pointer
 
 @dataclass
 class ImportObj(CompiledObj):
@@ -421,64 +422,70 @@ def compile_header(ctx: CompilerContext, asts, cast):
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.FuncDef):
-                func_space = ctx.ensure_func_space(node.name)
-                expand_name = len(func_space) > 0
-                if len(func_space) == 1:
-                    # Already present. Expand name.
-                    func_desc = func_space[0]
-                    func_desc.c_node.name = mangle_def(
-                        func_desc.xy_node, ctx, expand=True
-                    )
-                
-                cname = mangle_def(node, ctx, expand=expand_name)
-                cfunc = c.Func(name=cname)
-                for param in node.params:
-                    if not param.is_pseudo:
-                        cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
-                        cfunc.params.append(cparam)
-
-                etype_compiled = None
-                if return_by_param(node):
-                    for iret, ret in enumerate(node.returns):
-                        if ctx.eval(ret.type) is ctx.void_obj:
-                            rtype_compiled = ctx.void_obj
-                            assert len(node.returns) == 1
-                            continue
-                        param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
-                        retparam = c.VarDecl(param_name, get_c_type(ret.type, ctx) + "*")
-                        cfunc.params.append(retparam)
-                        rtype_compiled = ctx.get_compiled_type(ret.type)
-                    if node.etype is not None:
-                        etype_compiled = ctx.get_compiled_type(node.etype)
-                elif len(node.returns) == 1:
-                    rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
-                else:
-                    rtype_compiled = ctx.void_obj
-
-                cfunc.rtype = (etype_compiled.c_name
-                               if etype_compiled is not None
-                               else rtype_compiled.c_name)
-
-                cast.func_decls.append(cfunc)
-                compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled, etype_obj=etype_compiled)
-
-                if node.etype is not None:
-                    compiled.etype_obj = ctx.get_compiled_type(node.etype)
-
-                # compile tags
-                compiled.tags = ctx.eval_tags(node.tags)
-                if "xy.string" in compiled.tags:
-                    # TODO assert it is a StrCtor indeed
-                    str_lit = compiled.tags["xy.string"].fields["prefix"]
-                    prefix = str_lit.parts[0].value if len(str_lit.parts) else ""
-                    ctx.str_prefix_reg[prefix] = compiled
-                if "xy.entrypoint" in compiled.tags:
-                    # TODO assert it is the correct type
-                    ctx.entrypoint_obj = compiled
-
-                func_space.append(compiled)
+                compile_func_prototype(node, cast, ctx)
 
     return cast
+
+def compile_func_prototype(node, cast, ctx):
+    func_space = ctx.ensure_func_space(node.name)
+    expand_name = len(func_space) > 0
+    if len(func_space) == 1:
+        # Already present. Expand name.
+        func_desc = func_space[0]
+        func_desc.c_node.name = mangle_def(
+            func_desc.xy_node, ctx, expand=True
+        )
+    
+    cname = mangle_def(node, ctx, expand=expand_name)
+    cfunc = c.Func(name=cname)
+    for param in node.params:
+        if not param.is_pseudo:
+            c_type = get_c_type(param.type, ctx)
+            if should_pass_by_ref(param):
+                c_type = c_type + "*"
+            cparam = c.VarDecl(param.name, c_type)
+            cfunc.params.append(cparam)
+
+    etype_compiled = None
+    if return_by_param(node):
+        for iret, ret in enumerate(node.returns):
+            if ctx.eval(ret.type) is ctx.void_obj:
+                rtype_compiled = ctx.void_obj
+                assert len(node.returns) == 1
+                continue
+            param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
+            retparam = c.VarDecl(param_name, get_c_type(ret.type, ctx) + "*")
+            cfunc.params.append(retparam)
+            rtype_compiled = ctx.get_compiled_type(ret.type)
+        if node.etype is not None:
+            etype_compiled = ctx.get_compiled_type(node.etype)
+    elif len(node.returns) == 1:
+        rtype_compiled = ctx.get_compiled_type(node.returns[0].type)
+    else:
+        rtype_compiled = ctx.void_obj
+
+    cfunc.rtype = (etype_compiled.c_name
+                    if etype_compiled is not None
+                    else rtype_compiled.c_name)
+
+    cast.func_decls.append(cfunc)
+    compiled = FuncObj(node, cfunc, rtype_obj=rtype_compiled, etype_obj=etype_compiled)
+
+    if node.etype is not None:
+        compiled.etype_obj = ctx.get_compiled_type(node.etype)
+
+    # compile tags
+    compiled.tags = ctx.eval_tags(node.tags)
+    if "xy.string" in compiled.tags:
+        # TODO assert it is a StrCtor indeed
+        str_lit = compiled.tags["xy.string"].fields["prefix"]
+        prefix = str_lit.parts[0].value if len(str_lit.parts) else ""
+        ctx.str_prefix_reg[prefix] = compiled
+    if "xy.entrypoint" in compiled.tags:
+        # TODO assert it is the correct type
+        ctx.entrypoint_obj = compiled
+
+    func_space.append(compiled)
 
 def import_builtins(ctx: CompilerContext, cast):
     # always include it as it is everywhere
@@ -630,7 +637,8 @@ def compile_func(node, ctx, ast, cast):
         ctx.module_ns[param.name] = VarObj(
             xy_node=param,
             c_node=cparam,
-            type_desc=param_type
+            type_desc=param_type,
+            passed_by_ref=should_pass_by_ref(param)
         )
 
     ctx.current_fobj = fdesc
@@ -724,7 +732,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
                 if field_name not in struct_obj.fields:
                     raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
                 field_obj = struct_obj.fields[field_name]
-                res = c.Expr(arg1_obj.c_node, c.Id(field_obj.c_node.name), op=expr.op)
+                res = c_deref(arg1_obj.c_node, field=c.Id(field_obj.c_node.name))
                 return ExprObj(
                     c_node=res,
                     infered_type=field_obj.type_desc
@@ -746,8 +754,11 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
             var_name = f" '{expr.name}'" if isinstance(expr, xy.Id) else ""
             raise CompilationError(f"Cannot find variable{var_name}", expr)
         if isinstance(var_obj, VarObj):
+            c_node = c.Id(var_obj.c_node.name)
+            if var_obj.passed_by_ref:
+                c_node = c.UnaryExpr(c_node, op="*", prefix=True)
             return ExprObj(
-                c_node=c.Id(var_obj.c_node.name),
+                c_node=c_node,
                 infered_type=var_obj.type_desc
             )
         elif isinstance(var_obj, TypeObj):
@@ -827,7 +838,15 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         return compile_break(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
-    
+
+def should_pass_by_ref(param: xy.VarDecl):
+    return param.is_out or param.is_inout
+
+def c_deref(c_node, field=None):
+    if isinstance(c_node, c.UnaryExpr) and c_node.op == "*" and c_node.prefix:
+        return c.Expr(c_node.arg, field, op='->') 
+    return c.Expr(c_node, field, op='.')
+
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     fspace = ctx.eval_to_fspace(expr.name)
 

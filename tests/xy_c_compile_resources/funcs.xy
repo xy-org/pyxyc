@@ -1,0 +1,9 @@
+struct A {
+    num: int;
+}
+
+def double(a: A) = A{a.num * 2}
+
+def doubleInout(a: inout A) {
+    a.num *= 2;
+}

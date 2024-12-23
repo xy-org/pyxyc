@@ -127,7 +127,7 @@ def stringify_expr(expr, frags):
         frags.append(expr.name)
     elif isinstance(expr, Expr):
         stringify_expr(expr.arg1, frags)
-        if expr.op != ".":
+        if expr.op not in {".", "->"}:
             frags.extend((" ", expr.op, " "))
         else:
             frags.append(expr.op)
