@@ -298,6 +298,9 @@ class CompilerContext:
     def __post_init__(self):
         self.namespaces = [self.global_ns, self.module_ns]
 
+    def is_prim_int(self, type_obj):
+        return type_obj in self.prim_int_objs
+
     def push_ns(self):
         self.namespaces.append(dict())
 
@@ -530,6 +533,17 @@ def compile_module(builder, module_name, asts):
     ctx.ptr_obj = ctx.global_ns["Ptr"]
     ctx.size_obj = ctx.global_ns["Size"]
     ctx.tagctor_obj = ctx.global_ns["TagCtor"]
+    ctx.uint_obj = ctx.global_ns["uint"]
+    ctx.prim_int_objs = (
+        # ctx.global_ns["byte"],
+        # ctx.global_ns["ubyte"],
+        # ctx.global_ns["short"],
+        # ctx.global_ns["ushort"],
+        ctx.global_ns["int"],
+        ctx.global_ns["uint"],
+        ctx.global_ns["long"],
+        ctx.global_ns["ulong"],
+    )
 
     compile_header(ctx, asts, res)
     
@@ -1018,36 +1032,8 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
             obj = compile_error(node, cast, cfunc, ctx)
             cfunc.body.append(obj.c_node)
         elif isinstance(node, xy.VarDecl):
-            cvar = c.VarDecl(name=node.name, type=None, is_const=not node.varying)
-            value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
-            type_desc = find_type(node.type, ctx) if node.type is not None else None
-            if type_desc is None:
-                if value_obj is None:
-                    raise CompilationError(
-                        "Cannot create variable with no type and no value",
-                        node
-                    )
-                type_desc = value_obj.infered_type
-                if isinstance(type_desc, TypeInferenceError):
-                    raise CompilationError(
-                        type_desc.msg,
-                        node
-                    )
-            if isinstance(type_desc, ArrTypeObj):
-                cvar.type = type_desc.base.c_name
-                cvar.dims = type_desc.dims
-            else:
-                cvar.type = type_desc.c_name
-            ctx.ns[node.name] = VarObj(node, cvar, type_desc)
-
-            if node.value is not None:
-                cvar.value = value_obj.c_node
-            if node.value is None and isinstance(type_desc, ArrTypeObj):
-                cvar.value = c.InitList()
-            if cvar.value is None:
-                cvar.value = type_desc.init_value
-
-            cfunc.body.append(cvar)
+            vardecl_obj = compile_vardecl(node, cast, cfunc, ctx)
+            cfunc.body.append(vardecl_obj.c_node)
         else:
             expr_obj = compile_expr(node, cast, cfunc, ctx)
             if expr_obj.c_node is not None:
@@ -1056,6 +1042,39 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
         if len(body) == 0 or not isinstance(body[-1], xy.Return):
             cfunc.body.append(c.Return(ctx.current_fobj.etype_obj.init_value))
     ctx.exit_block()
+
+def compile_vardecl(node, cast, cfunc, ctx):
+    cvar = c.VarDecl(name=node.name, type=None, is_const=not node.varying)
+    value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
+    type_desc = find_type(node.type, ctx) if node.type is not None else None
+    if type_desc is None:
+        if value_obj is None:
+            raise CompilationError(
+                "Cannot create variable with no type and no value",
+                node
+            )
+        type_desc = value_obj.infered_type
+        if isinstance(type_desc, TypeInferenceError):
+            raise CompilationError(
+                type_desc.msg,
+                node
+            )
+    if isinstance(type_desc, ArrTypeObj):
+        cvar.type = type_desc.base.c_name
+        cvar.dims = type_desc.dims
+    else:
+        cvar.type = type_desc.c_name
+    res_obj = VarObj(node, cvar, type_desc)
+    ctx.ns[node.name] = res_obj
+
+    if node.value is not None:
+        cvar.value = value_obj.c_node
+    if node.value is None and isinstance(type_desc, ArrTypeObj):
+        cvar.value = c.InitList()
+    if cvar.value is None:
+        cvar.value = type_desc.init_value
+
+    return res_obj
 
 c_symbol_type = TypeInferenceError(
     "The types of c symbols cannot be inferred. Please be explicit and specify the type."
@@ -1794,16 +1813,15 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
     else:
         inferred_type = ctx.void_obj
 
+    # compile cond
+    cond_obj = compile_expr(xydowhile.cond, cast, cfunc, ctx)
+    cdowhile.cond = cond_obj.c_node
 
-    # compile body
+    # finaly compile body
     if update_expr_obj is None:
         compile_body(xydowhile.block.body, cast, cdowhile, ctx)
     else:
         cdowhile.body.append(update_expr_obj.c_node)
-
-    # finaly compile cond
-    cond_obj = compile_expr(xydowhile.cond, cast, cfunc, ctx)
-    cdowhile.cond = cond_obj.c_node
 
     cfunc.body.append(cdowhile)
 
@@ -1815,11 +1833,12 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
 
 def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
     cfor = c.For()
+    ctx.push_ns()
+
     for iter_node in for_node.over:
         if isinstance(iter_node, xy.BinExpr) and iter_node.op == "in":
             iter_name = ctx.eval_to_id(iter_node.arg1)
             collection_node = iter_node.arg2
-            collection_obj = compile_expr(collection_node, cast, cfunc, ctx)
 
             if isinstance(collection_node, xy.SliceExpr):
                 # iterating over a slice. Check for built-in case
@@ -1836,19 +1855,54 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
                     if collection_node.step is not None else None
                 )
                 is_prim_int = (
-                    (start_obj is None or ctx.is_prim_int(start_obj)) and
-                    (end_obj is None or ctx.is_prim_int(end_obj)) and
-                    (step_obj is None or ctx.is_prim_int(step_obj))
+                    (start_obj is None or ctx.is_prim_int(start_obj.infered_type)) and
+                    (end_obj is None or ctx.is_prim_int(end_obj.infered_type)) and
+                    (step_obj is None or ctx.is_prim_int(step_obj.infered_type))
                 )
 
                 if is_prim_int:
-                    # built-in case
-                    iter_var_decl = c.VarDecl(iter_name, "size_t", is_const=False, value=c.Const(0))
-                    ctx.ns[iter_name] = VarObj(xy_node=iter_node, c_node=iter_var_decl, type_desc=ctx.size_obj)
+                    # built-in case of a slice of only ints
+
+                    if start_obj is not None:
+                        iter_type = start_obj.infered_type
+                    elif end_obj is not None:
+                        iter_type = end_obj.infered_type
+                    elif step_obj is not None:
+                        iter_type = step_obj.infered_type
+                    else:
+                        iter_type = ctx.uint_obj
+
+                    # compile start
+                    start_value = start_obj.c_node if start_obj is not None else iter_type.init_value 
+                    iter_var_decl = c.VarDecl(iter_name, iter_type.c_name, is_const=False, value=start_value)
+                    ctx.ns[iter_name] = VarObj(xy_node=iter_node, c_node=iter_var_decl, type_desc=iter_type)
                     cfor.inits.append(iter_var_decl)
-                    cfor.updates.append(
-                        c.UnaryExpr(c.Id(iter_name), op="++", prefix=True)
-                    )
+
+                    # compile condition
+                    if end_obj is not None:
+                        c_cond = c.Expr(
+                            c.Id(iter_var_decl.name),
+                            end_obj.c_node,
+                            op="<"
+                        )
+                        cfor.cond = c_cond
+
+                    # compile step
+                    if (step_obj is None or
+                        (isinstance(step_obj.c_node, c.Const) and
+                        step_obj.c_node.value in (1, -1))):
+                        op = "++" if step_obj is None or step_obj.c_node.value == 1 else "--"
+                        cfor.updates.append(
+                            c.UnaryExpr(c.Id(iter_name), op=op, prefix=True)
+                        )
+                    else:
+                        cfor.updates.append(
+                            c.Expr(
+                                arg1=c.Id(iter_name),
+                                arg2=step_obj.c_node,
+                                op="+="
+                            )
+                        )
                 else:
                     pass # TODO
             else:
@@ -1858,12 +1912,29 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
         else:
             pass # TODO check expression
 
-    compile_body(for_node.block.body, cast, cfor, ctx)
+    inferred_type = ctx.void_obj
+    return_objs = []
+    for rtn in for_node.block.returns:
+        ret_obj = compile_vardecl(rtn, cast, cfunc, ctx)
+        return_objs.append(ret_obj)
+        cfunc.body.append(ret_obj.c_node)
+        inferred_type = ret_obj.type_desc
+    assert len(return_objs) <= 1
+
+    if for_node.block.is_embedded:
+        update_expr = compile_expr(for_node.block.body, cast, cfor, ctx)
+        cfor.body.append(update_expr.c_node)
+    else:
+        compile_body(for_node.block.body, cast, cfor, ctx)
+    ctx.pop_ns()
+
+    if len(return_objs) > 0:
+        cfunc.body.append(cfor)
 
     return ExprObj(
         xy_node=for_node,
-        c_node=cfor,
-        infered_type=ctx.void_obj,
+        c_node=cfor if len(return_objs) == 0 else c.Id(return_objs[0].c_node.name),
+        infered_type=inferred_type,
     )
 
 def compile_break(xybreak, cast, cfunc, ctx):

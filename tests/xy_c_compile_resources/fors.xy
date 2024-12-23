@@ -4,18 +4,22 @@ def busywait() {
     }
 }
 
-# def sumUpTo(start: int, end: int) -> int {
-#     return for (i in start:end) -> (res: int) res += i;
-# }
-# 
-# def doubleLoop(limX: int, limY: int) -> int {
-#     res : var = 1;
-#     for (i in :limX) for (j in :limY) {
-#         res *= i + j;
-#     }
-#     return res;
-# }
-# 
+def sumUpTo(start: int, end: int) -> int {
+    return for (i in start:end) -> (res: int) res += i;
+}
+
+def multUpTo(start: int, end: int, step: int) -> int {
+    res : var = 0;
+    for (i in start:end:step) res *= sumUpTo(start, i);
+    return res;
+}
+
+def doubleLoop(limX: int, limY: int) -> int {
+    return for (i in :limX) -> (res := 1) for (j in :limY) {
+        res *= i + j;
+    };
+}
+
 # ;; Fibonacci number iteerator
 # ;; --------------------------
 # 

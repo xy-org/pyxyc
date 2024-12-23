@@ -116,6 +116,7 @@ def stringify_body(body, frags, ident=1):
                     frags.append(", ")
             frags.append(";")
             if stmt.cond is not None:
+                frags.append(" ")
                 stringify_expr(stmt.cond, frags)
             frags.append(";")
             if len(stmt.updates) > 0:
