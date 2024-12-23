@@ -533,9 +533,11 @@ def parse_expression(
                 arg2 = None
                 if not is_end_of_expr(itoken):
                     arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-                sliceop = SliceExpr(end=arg2, src=itoken.src, coords=arg1.coords)
+                sliceop = SliceExpr(src=itoken.src, coords=arg1.coords)
                 if not isinstance(arg1, Empty):
                     sliceop.start = arg1
+                if not isinstance(arg2, Empty):
+                    sliceop.end = arg2
                 arg1 = sliceop
         elif op == "=" and isinstance(arg1, SliceExpr):
             decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=op_coords)

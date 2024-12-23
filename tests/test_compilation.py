@@ -19,6 +19,7 @@ from xyc.compiler import CompilationError
     "ifs",
     "whiles",
     "dowhiles",
+    "slices",
     "fors",
     "pointers",
     "pseudoParams",

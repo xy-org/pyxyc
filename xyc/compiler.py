@@ -151,10 +151,11 @@ class FuncSpace:
     def report_multiple_matches(self, candidate_fobjs, node, args_infered_types, ctx):
         fsig = ctx.eval_to_id(node.name) + "(" + \
             ", ".join(t.xy_node.name for t in args_infered_types) + \
+            ", ".join(f"{pname}: {t.xy_node.name}" for pname, t in args_infered_types.kwargs.items()) + \
             ")"
         err_msg = f"Multiple function matches for '{fsig}'"
         candidates = "\n    ".join((
-            func_sig(f.xy_node) for f in candidate_fobjs
+            func_sig(f) for f in candidate_fobjs
         ))
         raise CompilationError(
             err_msg, node,
@@ -164,10 +165,11 @@ class FuncSpace:
     def report_no_matches(self, candidate_fobjs, node, args_infered_types, ctx):
         fsig = ctx.eval_to_id(node.name) + "(" + \
             ", ".join(t.xy_node.name for t in args_infered_types) + \
+            ", ".join(f"{pname}: {t.xy_node.name}" for pname, t in args_infered_types.kwargs.items()) + \
             ")"
         err_msg = f"Cannot find function '{fsig}'"
         candidates = "\n    ".join((
-            func_sig(f.xy_node) for f in candidate_fobjs
+            func_sig(f) for f in candidate_fobjs
         ))
         raise CompilationError(
             err_msg, node,
@@ -232,8 +234,6 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
         if isinstance(type_obj, ArrTypeObj):
             continue
         if type_obj.get_base_type() is not param_obj.type_desc.get_base_type():
-            #if fobj.xy_node.name.name == "len":
-            #    import pdb; pdb.set_trace()
             return False
         if param_obj.xy_node is not None and param_obj.xy_node.name is not None:
             satisfied_params.add(param_obj.xy_node.name)
@@ -253,19 +253,20 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, ctx):
             return False
         satisfied_params.add(pname)
 
-    for p in fobj.xy_node.params[len(fcall_args_types):]:
+    for p in fobj.xy_node.params[len(fcall_args_types.args):]:
         if p.name not in satisfied_params and p.value is None:
             return False
 
     return True
 
-def func_sig(fdef):
+def func_sig(fobj: FuncObj):
+    fdef = fobj.xy_node
     name = fdef.name if isinstance(fdef.name, str) else fdef.name.name
-    res = name + "(" + ", ".join(p.type.name for p in fdef.params) + ")"
+    res = name + "(" + ", ".join(pobj.type_desc.xy_node.name for pobj in fobj.param_objs) + ")"
     res += " -> "
     if len(fdef.returns) > 1:
         res += "("
-    res += ",".join(r.type.name for r in fdef.returns)
+    res += fobj.rtype_obj.xy_node.name
     if len(fdef.returns) > 1:
         res += ")"
     return res
@@ -435,10 +436,12 @@ class CompilerContext:
                 return ns[name]
         return None
 
-    def eval(self, node, msg="Cannot find symbol"):
+    def eval(self, node, msg=None):
         if isinstance(node, xy.Id):
             res = self.lookup(node.name)
             if res is None:
+                if msg is None:
+                    msg = f"Cannot find symbol '{node.name}'"
                 raise CompilationError(msg, node)
             return res
         elif isinstance(node, xy.Const):
@@ -684,9 +687,12 @@ def compile_func_prototype(node, cast, ctx):
         move_args_to_temps = node.params[-1].is_pseudo
 
     expand_name = len(func_space) > 0
+    if expand_name:
+        check_params_have_types(param_objs, ctx)
     if len(func_space) == 1:
         # Already present. Expand name.
         func_desc = func_space[0]
+        check_params_have_types(func_desc.param_objs, ctx)
         func_desc.c_node.name = mangle_def(
             func_desc.xy_node, func_desc.param_objs, ctx, expand=True
         )
@@ -718,6 +724,11 @@ def compile_func_prototype(node, cast, ctx):
         rtype_compiled = do_infer_type(node.body, ctx)
         ctx.pop_ns()
 
+    if isinstance(rtype_compiled, TypeInferenceError):
+        raise CompilationError(
+            rtype_compiled.msg,
+            node.returns[0] if len(node.returns) > 0 else node.body
+        )
     cfunc.rtype = (etype_compiled.c_name
                     if etype_compiled is not None
                     else rtype_compiled.c_name)
@@ -745,6 +756,12 @@ def compile_func_prototype(node, cast, ctx):
     func_space.append(compiled)
 
     return compiled
+
+def check_params_have_types(param_objs, ctx):
+    for pobj in param_objs:
+        if pobj.type_desc is None:
+            do_infer_type(pobj.xy_node.value, ctx)
+            raise CompilationError("Unreachable. Report Bug.", pobj.xy_node)
 
 def fill_param_default_values(node, cast, ctx):
     fspace = ctx.eval_to_fspace(node.name)
@@ -1164,6 +1181,22 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
         obj = compile_expr(expr.arg, cast, cfunc, ctx)
         obj.tags = ctx.eval_tags(expr.tags)
         return obj
+    elif isinstance(expr, xy.SliceExpr):
+        # rewrite slice
+        kwargs = {}
+        if expr.start is not None:
+            kwargs["start"] = expr.start
+        if expr.end is not None:
+            kwargs["end"] = expr.end
+        if expr.step is not None:
+            kwargs["step"] = expr.step
+        slice_ctor_fcall = xy.FuncCall(
+            xy.Id("slice", src=expr.src, coords=expr.coords),
+            kwargs=kwargs,
+            src=expr.src,
+            coords=expr.coords
+        )
+        return compile_fcall(slice_ctor_fcall, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
 
@@ -1785,16 +1818,39 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx):
     for iter_node in for_node.over:
         if isinstance(iter_node, xy.BinExpr) and iter_node.op == "in":
             iter_name = ctx.eval_to_id(iter_node.arg1)
-
             collection_node = iter_node.arg2
+            collection_obj = compile_expr(collection_node, cast, cfunc, ctx)
+
             if isinstance(collection_node, xy.SliceExpr):
-                if collection_node.start is None and collection_node.end is None and collection_node.step is None:
+                # iterating over a slice. Check for built-in case
+                start_obj = (
+                    compile_expr(collection_node.start, cast, cfunc, ctx)
+                    if collection_node.start is not None else None
+                )
+                end_obj = (
+                    compile_expr(collection_node.end, cast, cfunc, ctx)
+                    if collection_node.end is not None else None
+                )
+                step_obj = (
+                    compile_expr(collection_node.step, cast, cfunc, ctx)
+                    if collection_node.step is not None else None
+                )
+                is_prim_int = (
+                    (start_obj is None or ctx.is_prim_int(start_obj)) and
+                    (end_obj is None or ctx.is_prim_int(end_obj)) and
+                    (step_obj is None or ctx.is_prim_int(step_obj))
+                )
+
+                if is_prim_int:
+                    # built-in case
                     iter_var_decl = c.VarDecl(iter_name, "size_t", is_const=False, value=c.Const(0))
                     ctx.ns[iter_name] = VarObj(xy_node=iter_node, c_node=iter_var_decl, type_desc=ctx.size_obj)
                     cfor.inits.append(iter_var_decl)
                     cfor.updates.append(
                         c.UnaryExpr(c.Id(iter_name), op="++", prefix=True)
                     )
+                else:
+                    pass # TODO
             else:
                 raise CompilationError("NYI", iter_node)
                 collection_obj = compile_expr(iter_node.arg2, cast, cfunc, ctx)
