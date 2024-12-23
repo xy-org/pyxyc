@@ -226,3 +226,36 @@ def test_auto_inject_syntax(code, err_msg):
 def test_callbacks_and_fselect(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
+
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def main~Tag{}() {
+            cb := $(int)->int;
+        }""",
+        "Syntax ambiguity"
+    ),
+])
+def test_func_def_errors(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)
+
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """struct Struct {
+            value=10;
+        }
+        """,
+        "Unexpected expression in struct definition"
+    ),
+    (
+        """struct Struct~Tag{value=10} {
+            value: int;
+        }""",
+        "Unexpected expression in struct definition"
+    ),
+])
+def test_struct_errors(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)

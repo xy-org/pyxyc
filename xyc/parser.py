@@ -207,6 +207,8 @@ def parse_def(itoken: TokenIter):
     )
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
+        if itoken.peak() == "{":
+            raise ParsingError("Syntax ambiguity. Please be specific and use square brackets to separate tags.", itoken)
     node.params = parse_params(itoken)
 
     itoken.check("=")
@@ -1015,11 +1017,15 @@ def parse_tags(itoken):
         res.kwargs = kwargs
         itoken.expect("]")
     else:
-        tk_coords = itoken.peak_coords()
-        token = itoken.consume()
-        tag = Id(token, src=itoken.src, coords=tk_coords)
-        
-        if itoken.peak() == "~":
+        # this new map is to limit the parsing to the first opening bracket (
+        toplevel_precedence_map = {**operator_precedence}
+        del toplevel_precedence_map["("]
+        del toplevel_precedence_map["{"]
+        del toplevel_precedence_map["~"]
+
+        tag = parse_expression(itoken, op_prec=toplevel_precedence_map)
+
+        if itoken.peak() in "~":
             raise ParsingError(
                 "These long chains of tags get very ambiguous. Please be explicit and seprate the tags in square brackets.",
                 itoken
@@ -1046,6 +1052,8 @@ def parse_struct(itoken: TokenIter):
             # Id's are VarDecls in the context of enums and flags
             field = VarDecl(field.name, tags=field.tags, 
                             src=field.src, coords=field.coords)
+        if not isinstance(field, VarDecl):
+            raise ParsingError("Unexpected expression in struct definition. Only variable declarations are valid.", itoken)
         node.fields.append(field)
         itoken.expect_semicolon(msg="Missing ';' at end of field")
 
