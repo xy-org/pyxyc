@@ -9,6 +9,7 @@ import xyc.xyc as xyc
     ("globalConstants", "Speed of Light = 299792458 m/s\nPi = 3.14\n"),
     ("argEval", "In Func 1\nIn Func 2\nIn Func 1\nIn Func 2\nIn Take2\nIn Func 1\nIn Func 2\nIn Ignore Second\n"),
     ("dynamicArray", "len=100\n"),
+    ("operatorSlices", "In compute\nIn len\nSlice 42 52\nSlice 52 62\n")
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir):
     test_base = resource_dir / "end_to_end" / testname

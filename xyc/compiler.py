@@ -610,9 +610,7 @@ class CompilerContext:
                 node)
         
     def create_tmp_var(self, type_obj, name_hint="") -> VarObj:
-        tmp_var_name = f"tmp{'_' if name_hint else ''}{name_hint}"
-        tmp_var_name = f"{tmp_var_name}{self.tmp_var_i}"
-        self.tmp_var_i += 1
+        tmp_var_name = self.gen_tmp_name(name_hint)
 
         # TODO rewrite expression and call other func
         c_tmp = c.VarDecl(name=tmp_var_name, qtype=c.QualType(is_const=False))
@@ -632,6 +630,22 @@ class CompilerContext:
         res = VarObj(dummy_xy_node, c_tmp, type_obj, needs_dtor=type_needs_dtor(type_obj))
         self.ns[tmp_var_name] = res
         return res
+    
+    def compile_tmp_var(self, value_expr, cast, cfunc, name_hint="") -> VarObj:
+        tmp_var_name = self.gen_tmp_name(name_hint)
+        tmp = xy.VarDecl(
+            tmp_var_name, value=value_expr,
+            src=value_expr.src, coords=value_expr.coords
+        )
+        obj = compile_vardecl(tmp, cast, cfunc, self)
+        cfunc.body.append(obj.c_node)
+        return obj
+    
+    def gen_tmp_name(self, name_hint="") -> str:
+        tmp_var_name = f"tmp{'_' if name_hint else ''}{name_hint}"
+        tmp_var_name = f"{tmp_var_name}{self.tmp_var_i}"
+        self.tmp_var_i += 1
+        return tmp_var_name
     
     def enter_block(self):
         # TODO implement
@@ -1515,6 +1529,12 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, lhs=False) -> ExprObj:
         return obj
     elif isinstance(expr, xy.SliceExpr):
         # rewrite slice
+        if expr.op is not None:
+            if expr.op not in {"+", "-", "*"}:
+                raise CompilationError(f"'{expr.op}' slices are not supported.", expr)
+            tmp_obj = ctx.compile_tmp_var(expr.start, cast, cfunc, name_hint="slice")
+            expr.start = xy.Id(tmp_obj.xy_node.name)
+            expr.end = xy.BinExpr(expr.start, expr.end, op=expr.op, src=expr.src, coords=expr.coords)
         kwargs = {}
         if expr.start is not None:
             kwargs["start"] = expr.start
