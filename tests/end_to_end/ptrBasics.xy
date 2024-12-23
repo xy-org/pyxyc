@@ -8,7 +8,7 @@ struct Struct {
 
 def main~EntryPoint() {
     a : mut = 0;
-    ptr : mut = a'addrof;
+    ptr := a'addrof;
     print(f"{a} {[ptr]}\n");
 
     [ptr] = 1;
@@ -18,7 +18,7 @@ def main~EntryPoint() {
     print(f"{a} {[ptr]}\n");
 
     b : mut = Struct{1, 2};
-    ptrB : mut = b'addrof;
+    ptrB := b'addrof;
     [ptrB].a = [ptrB].b + [ptrB].a + 1;
     print(f"{b.a} {[ptrB].a} {b.b} {[ptrB].b}\n");
 }

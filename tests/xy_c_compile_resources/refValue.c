@@ -18,8 +18,8 @@ int32_t refValue_func1(refValue_Data d, int32_t i) {
 
 void refValue_test(void) {
     int32_t a = 10;
-    const int32_t* b = &a;
-    const int32_t* c = &a;
+    int32_t* const b = &a;
+    int32_t* const c = &a;
     const refValue_Data d = (refValue_Data){0};
     const float e = refValue_get(d, refValue_func1(d, 10));
     const int32_t f = refValue_func1(d, 10);

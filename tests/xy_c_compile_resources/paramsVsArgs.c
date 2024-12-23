@@ -18,7 +18,7 @@ void paramsVsArgs_test(void) {
     int32_t a = paramsVsArgs_func1(0, 1, 0 + 1);
     const int32_t b = paramsVsArgs_func1(a, a, a + a);
     const int32_t c = paramsVsArgs_func2(a + b);
-    const int32_t* d = (int32_t*)paramsVsArgs_func3(&a);
+    int32_t* const d = (int32_t*)paramsVsArgs_func3(&a);
     float* e = (float*)paramsVsArgs_func3(&a);
-    const int32_t* f = (int32_t*)paramsVsArgs_func3(&e);
+    int32_t* const f = (int32_t*)paramsVsArgs_func3(&e);
 }

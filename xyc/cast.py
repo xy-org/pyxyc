@@ -15,6 +15,10 @@ class Type:
     @property
     def is_array(self):
         return len(self.dims) > 0
+    
+    @property
+    def is_ptr(self):
+        return self.name is not None and len(self.name) > 0 and self.name[-1] == "*"
 
 @dataclass
 class QualType:

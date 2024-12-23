@@ -268,9 +268,12 @@ def stringify_expr(expr, frags, parent_op_precedence=-10):
         raise CGenerationError(f"Unknown expression {type(expr).__name__}")
     
 def stringify_var_decl(stmt, frags):
-    if stmt.qtype.is_const:
+    if stmt.qtype.is_const and not stmt.qtype.type.is_ptr:
         frags.append("const ")
-    frags.extend([stmt.qtype.type.name, " ", stmt.name])
+    frags.extend([stmt.qtype.type.name, " "])
+    if stmt.qtype.is_const and stmt.qtype.type.is_ptr:
+        frags.append("const ")
+    frags.append(stmt.name)
     if stmt.qtype.type.is_array:
         for dim in stmt.qtype.type.dims:
             frags.extend(["[", str(dim), "]"])
