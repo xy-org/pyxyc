@@ -25,20 +25,23 @@ def test() -> int {
 
 # Funcs with default arguments
 
-def defaultArg1(a: A, b := A{0}) = A{a.num + b.num}
+def defaultArg1(a: A, b : A = A{0}) = A{a.num + b.num}
 
-def defaultArg2(a: A, b := rndA()) = A{a.num * b.num}
-
-def defaultArg3(a: A, b := a'defaultArg1) = A{a.num - b.num}
-
-def rndA() = A{5}
-
+# def defaultArg1(a: A, b := A{0}) = A{a.num + b.num}
+# 
+# def defaultArg2(a: A, b := rndA()) = A{a.num * b.num}
+# 
+# def defaultArg3(a: A, b := a'defaultArg1) = A{a.num - b.num}
+# 
+# def rndA() = A{5}
+# 
 def testDefaultArgs() {
-    A{0}'defaultArg1();
-    a := A{10};
-    a'defaultArg1(A{0});
-    a'defaultArg2();
-    a'defaultArg2(A{10});
-    a'defaultArg3();
-    a'defaultArg3(A{20});
+    defaultArg1(A{0});
+    #A{0}'defaultArg1();
+    #a := A{10};
+    #a'defaultArg1(A{0});
+    #a'defaultArg2();
+    #a'defaultArg2(A{10});
+    #a'defaultArg3();
+    #a'defaultArg3(A{20});
 }

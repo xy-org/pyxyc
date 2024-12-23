@@ -148,13 +148,14 @@ class ExtSpace(FuncSpace):
 
 def cmp_call_def(fcall_args_types, fdef, ctx):
     # TODO what about kwargs
-    if len(fcall_args_types) != len(fdef.params):
-        return False
     for arg_type, param in zip(fcall_args_types, fdef.params):
         # XXX
         if isinstance(arg_type, ArrTypeObj):
             continue
         if arg_type.xy_node.name != param.type.name:
+            return False
+    for p in fdef.params[len(fcall_args_types):]:
+        if p.value is None:
             return False
     return True
 
@@ -1114,6 +1115,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: list[CompiledObj], cast, cfunc, 
                 res.args.append(c_getref(arg.c_node))
             else:
                 res.args.append(arg.c_node)
+        for xy_param in func_obj.xy_node.params[len(arg_exprs):]:
+            default_obj = compile_expr(xy_param.value, cast, cfunc, ctx)
+            res.args.append(default_obj.c_node)
     else:
         # external c function
         for arg in arg_exprs:
