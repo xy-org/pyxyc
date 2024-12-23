@@ -105,7 +105,7 @@ def test_parse_comments(code, exp_ast):
         [
             ast.FuncDef(name="main", params=[], rtype=ast.Type("void"), body=[
                 ast.FuncCall(name="print", args=[
-                    ast.Id(name="\"abc\"")
+                    ast.StrLiteral(parts=[ast.Const("abc")])
                 ])
             ])
         ]
@@ -545,3 +545,78 @@ def test_ambiguous_tags(code, err_msg):
     act_error = None
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() -> void {
+            empty := "";
+            str := "abc";
+            prefixed := prefix"String with prefix";
+        }
+        """,
+        [
+            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+                ast.VarDecl("empty", type=None, value=ast.StrLiteral(
+                    parts=[]
+                )),
+                ast.VarDecl("str", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("abc")]
+                )),
+                ast.VarDecl("prefixed", type=None, value=ast.StrLiteral(
+                    prefix="prefix",
+                    parts=[ast.Const("String with prefix")]
+                )),
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            f := f"before{a + b}after";
+            g := f"complex {a + b, 2, arg=3}";
+            h := f"literal {arg=MyStruct{field=10}}";
+        }
+        """,
+        [
+            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+                ast.VarDecl("f", type=None, value=ast.StrLiteral(
+                    prefix="f",
+                    parts=[
+                        ast.Const("before"),
+                        ast.BinExpr(ast.Id("a"), ast.Id("b"), "+"),
+                        ast.Const("after"),
+                    ]
+                )),
+                ast.VarDecl("g", type=None, value=ast.StrLiteral(
+                    prefix="f",
+                    parts=[
+                        ast.Const("complex "),
+                        ast.Args([
+                            ast.BinExpr(ast.Id("a"), ast.Id("b"), "+"),
+                            ast.Const(2),
+                        ], {
+                            "arg": ast.Const(3)
+                        }),
+                    ]
+                )),
+                ast.VarDecl("h", type=None, value=ast.StrLiteral(
+                    prefix="f",
+                    parts=[
+                        ast.Const("literal "),
+                        ast.Args([], {
+                            "arg": ast.StructLiteral(
+                                name=ast.Id("MyStruct"),
+                                kwargs={
+                                    "field": ast.Const(10)
+                                }
+                            )
+                        }),
+                    ]
+                )),
+            ]),
+        ]
+    ],
+])
+def test_parse_string_literals(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast

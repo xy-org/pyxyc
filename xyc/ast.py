@@ -62,10 +62,20 @@ class FuncCall(Node):
     kwargs: dict[str, Node] = field(default_factory=dict)
 
 @dataclass
+class Args(Node):
+    args: list[Node] = field(default_factory=list)
+    kwargs: dict[str, Node] = field(default_factory=dict)
+
+@dataclass
 class StructLiteral(Node):
     name: Node | None
     args: list[Node] = field(default_factory=list)
     kwargs: dict[str, Node] = field(default_factory=dict)
+
+@dataclass
+class StrLiteral(Node):
+    prefix: str = ""
+    parts: list[Node] = field(default_factory=list)
 
 @dataclass
 class Id(Node):

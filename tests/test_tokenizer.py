@@ -97,6 +97,36 @@ from xyc.tokenizer import split_tokens
         ["func0x10", "(", ")", ";", "call_me", "(", ")", ";", "_hidden", ";"],
         None
     ),
+    (
+        '"str"; f"str"; f"str{expr}";',
+        ['"', 'str', '"', ";", 'f', '"', 'str', '"', ";", 'f', '"', 'str', "{", "expr", "}", '"', ";"],
+        None
+    ),
+    (
+        'f"str\\{expr\\}";',
+        ['f', '"', 'str', '\\', '{', 'expr', '\\', '}', '"', ';'],
+        None
+    ),
+    (
+        'f "str"',
+        ['f', '"', 'str', '"'],
+        None
+    ),
+    (
+        '"line1\\line2\\n"',
+        ['"', 'line1', '\\', 'line2', '\\', 'n', '"'],
+        None
+    ),
+    (
+        'f"before{a+b}after";',
+        ['f', '"', 'before', '{', 'a', '+', 'b', '}', 'after', '"', ';'],
+        None
+    ),
+    (
+        'f"str={str("abc")}";',
+        ['f', '"', 'str', '=', '{', 'str', '(', '"', 'abc', '"', ')', '}', '"', ';'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)

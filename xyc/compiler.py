@@ -15,6 +15,7 @@ class FuncDesc:
     xy_func: any = None
     c_func: any = None
     c_name : str | None = None
+    rtype_desc: TypeDesc = None
 
 @dataclass
 class VarDesc:
@@ -79,6 +80,7 @@ def func_sig(fdef):
 class CompilerContext:
     module_name: str  # TODO maybe module_name should be a list of the module names
     id_table: IdTable = field(default_factory=IdTable)
+    str_prefix_reg: dict[str, any] = field(default_factory=dict)
 
     def ensure_func_space(self, name: xy.Id):
         if name.name not in self.id_table:
@@ -105,6 +107,8 @@ class CompilerContext:
             raise CompilationError(f"{name.name} is not a function.", name)
         return space
 
+    def get_compiled_type(self, name: xy.Id):
+        return self.id_table[name.name]
 
 def compile_module(module_name, ast):
     ctx = CompilerContext(module_name)
@@ -115,7 +119,7 @@ def compile_module(module_name, ast):
 
     return res
 
-def compile_header(ctx, ast, cast):
+def compile_header(ctx: CompilerContext, ast, cast):
     import_builtins(ctx, cast)
 
     for node in ast:
@@ -149,14 +153,29 @@ def compile_header(ctx, ast, cast):
                 func_desc.c_func.name = func_desc.c_name
             
             cname = mangle_def(node, ctx, expand=expand_name)
-            rtype = get_c_type(node.rtype, ctx)
+            rtype_compiled = ctx.get_compiled_type(node.rtype)
+            rtype = rtype_compiled.c_name
             cfunc = c.Func(name=cname, rtype=rtype)
             for param in node.params:
                 cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
                 cfunc.params.append(cparam)
             cast.func_decls.append(cfunc)
 
-            func_space.append(FuncDesc(node, cfunc, cname))
+            compiled = FuncDesc(node, cfunc, cname, rtype_desc=rtype_compiled)
+
+            # compile tags
+            for tag in node.tags.args:
+                if isinstance(tag, xy.StructLiteral):
+                    type_obj = ctx.get_compiled_type(tag.name)
+                    # XXX Fix that
+                    if type_obj.c_name == "StringCtor":
+                        str_lit = tag.kwargs["prefix"]
+                        prefix = str_lit.parts[0] if len(str_lit.parts) else ""
+                        ctx.str_prefix_reg[prefix] = compiled
+                else:
+                    raise "NYI"
+
+            func_space.append(compiled)
 
     return cast
 
@@ -203,7 +222,14 @@ def import_builtins(ctx, cast):
                 ],
                 rtype=xy.Type(rtype_name)
             )
-            _desc = register_func(func, ctx)
+            desc = register_func(func, ctx)
+            desc.rtype_desc = ctx.id_table[rtype_name]
+
+    str_ctor = xy.StructDef(name="StrCtor", fields=[
+        xy.VarDecl("prefix", type=None)
+    ])
+    str_obj = TypeDesc(str_ctor, None, c_name="StringCtor", builtin=True)
+    ctx.id_table["StrCtor"] = str_obj
 
 def compile_funcs(ctx, ast, cast):
     for node in ast:
@@ -275,6 +301,20 @@ def compile_expr(expr, cast, cfunc, ctx):
         )
         # TODO what about kwargs
         return res
+    elif isinstance(expr, xy.StrLiteral):
+            if expr.prefix not in ctx.str_prefix_reg:
+                raise CompilationError(
+                    f"No string constructor registered for prefix '{expr.prefix}'",
+                    expr
+                )
+            func_desc = ctx.str_prefix_reg[expr.prefix]
+
+            str_const = expr.parts[0].value if len(expr.parts) else ""
+            c_func = c.FuncCall(func_desc.c_name, args=[
+                c.Const('"' + str_const + '"'),
+                c.Const(len(str_const))
+            ])
+            return c_func
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
 
@@ -347,13 +387,23 @@ def infer_type(expr, ctx):
     elif isinstance(expr, xy.Id):
         vardesc = ctx.id_table[expr.name]
         return vardesc.type_desc
+    elif isinstance(expr, xy.StrLiteral):
+        if expr.prefix not in ctx.str_prefix_reg:
+            raise CompilationError(
+                f"No string constructor registered for prefix '{expr.prefix}'",
+                expr
+            )
+        func_desc = ctx.str_prefix_reg[expr.prefix]
+        return func_desc.rtype_desc
     else:
         raise CompilationError("Cannot infer type", expr)
 
 
 def register_func(fdef, ctx):
     fspace = ctx.ensure_func_space(fdef)
-    fspace.append(FuncDesc(fdef))
+    res = FuncDesc(fdef)
+    fspace.append(res)
+    return res
 
 
 def find_func(fcall, ctx):

@@ -14,7 +14,7 @@ def resource_dir(request):
     "typeInferenceBasic",
     "typeInferenceAdvanced",
     "funcOverloadingSimple",
-    # "stringCtor",
+    "stringCtor",
     # "cimport",  # TODO
     # "entry_point",  # TODO
 ])

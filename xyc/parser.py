@@ -1,3 +1,4 @@
+import re
 from xyc.tokenizer import split_tokens
 from xyc.ast import *
 
@@ -199,13 +200,18 @@ def parse_params(itoken):
     res = []
     itoken.expect("(")
     while itoken.peak() != ")":
+        itoken.skip_empty_lines()
         pname = itoken.consume()
         param = Param(pname, src=itoken.src)
         itoken.expect(":")
         param.type = parse_type(itoken)
         res.append(param)
+
+        itoken.skip_empty_lines()
         if itoken.peak() != ")":
             itoken.expect(",")
+
+    itoken.skip_empty_lines()
     itoken.expect(")")
     return res
 
@@ -255,6 +261,13 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
                 arg1 = Const(int(token[2:], base=16), token, "int")
             else:
                 arg1 = Const(int(token), token, "int")
+        elif token == '"':
+            arg1 = parse_str_literal("", tk_coords[0], itoken)
+        elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:
+            if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*', token):
+                raise ParsingError(f"Invalid Prefix Name", itoken)
+            itoken.expect('"')
+            arg1 = parse_str_literal(token, tk_coords[0], itoken)
         else:
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
     else:
@@ -364,6 +377,36 @@ def parse_struct_literal(itoken, struct_expr):
         struct_expr, args, kwargs, src=itoken.src, coords=struct_expr.coords
     )
 
+def parse_str_literal(prefix, prefix_start, itoken):
+    res = StrLiteral(prefix=prefix, src=itoken.src)
+    part_start = itoken.peak_coords()[0]
+    part_end = part_start
+    while not itoken.check('"'):
+        if itoken.check("{"):
+            if part_start < part_end:
+                part_end = itoken.peak_coords()[0] - 1
+                lit = itoken.src.code[part_start:part_end]
+                res.parts.append(Const(lit))
+
+            args, kwargs = parse_args(itoken)
+            if (len(kwargs) == 0 and len(args) == 1):
+                res.parts.append(args[0])
+            else:
+                res.parts.append(Args(args, kwargs, src=itoken.src))
+            itoken.expect("}")
+
+            if part_start < part_end:
+                part_start = itoken.peak_coords()[0]
+        else:
+            part_end = itoken.peak_coords()[1]
+            itoken.consume()
+
+    if part_start < part_end:
+        lit = itoken.src.code[part_start:part_end]
+        res.parts.append(Const(lit))
+    
+    res.coords = (prefix_start, part_end+1)
+    return res
 
 def parse_args(itoken):
     positional, named = [], {}

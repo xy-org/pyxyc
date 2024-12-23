@@ -1,13 +1,19 @@
-struct Str {
+struct Str~Utf8 {
     addr: Ptr;
     size: Size;
 }
 
-def string~[StrCtor{prefix=""}](addr: Ptr, size: Size) -> String~Unicode {
+struct Utf8~[TagCtor{label="encoding"}] {}
+struct Ascii~[TagCtor{label="encoding"}] {}
+
+def str~[StrCtor{prefix="", interpolation=false}](
+    addr: Ptr, size: Size
+) -> Str {
     return Str{addr, size};
 }
 
 def createStrings() -> void {
+    str := "";
     str1 := "abc";
     str2 := "def";
 }
