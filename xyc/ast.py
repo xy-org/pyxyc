@@ -68,7 +68,7 @@ class Args(Node):
 
 @dataclass
 class Select(Node):
-    var: Node
+    base: Node
     args: Args = field(default_factory=Args)
 
 @dataclass
@@ -81,6 +81,9 @@ class StructLiteral(Node):
 class StrLiteral(Node):
     prefix: str = ""
     parts: list[Node] = field(default_factory=list)
+
+def SimpleStr(value):
+    return StrLiteral(parts=[Const(value)])
 
 @dataclass
 class ArrLit(Node):

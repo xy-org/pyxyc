@@ -387,7 +387,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
 
 def expr_to_type(expr):
     if isinstance(expr, Select):
-        return ArrType(expr.var, expr.args.args)
+        return ArrType(expr.base, expr.args.args)
     return expr
 
 def parse_struct_literal(itoken, struct_expr):

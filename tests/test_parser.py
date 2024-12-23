@@ -656,28 +656,43 @@ def test_parse_string_literals(code, exp_ast):
             ]),
         ]
     ],
-    # [
-    #     """def main() -> Str {
-    #         m: int[2, 2] = [[0, 1], [2, 3]];
-    #         letters := ["a", "b", "c", "d"]
-    #         return letters[m[1, 0]];
-    #     }
-    #     """,
-    #     [
-    #         ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
-    #             ast.VarDecl("empty", type=None, value=ast.ArrLit(
-    #                 elems=[]
-    #             )),
-    #             ast.VarDecl("arr", type=None, value=ast.ArrLit(
-    #                 elems=[ast.Const("2.718"), ast.Const("3.14")]
-    #             )),
-    #             ast.VarDecl("uninitialized", varying=True, type=ast.ArrType(
-    #                 base=ast.Type("int"),
-    #                 dims=[ast.Const(2), ast.Const(2)]
-    #             )),
-    #         ]),
-    #     ]
-    # ],
+    [
+        """def main() -> Str {
+            m: int[2, 2] = [[0, 1], [2, 3]];
+            letters := ["a", "b", "c", "d"];
+            return letters[m[1, 0]];
+        }
+        """,
+        [
+            ast.FuncDef(name="main", rtype=ast.Type("Str"), body=[
+                ast.VarDecl("m", type=ast.ArrType(
+                    base=ast.Id("int"),
+                    dims=[ast.Const(2), ast.Const(2)]
+                ), value=ast.ArrLit(elems=[
+                    ast.ArrLit([ast.Const(0), ast.Const(1)]),
+                    ast.ArrLit([ast.Const(2), ast.Const(3)]),
+                ]
+                )),
+                ast.VarDecl("letters", type=None, value=ast.ArrLit(
+                    elems=[
+                        ast.SimpleStr("a"), ast.SimpleStr("b"),
+                        ast.SimpleStr("c"), ast.SimpleStr("d")
+                    ]
+                )),
+                ast.Return(value=ast.Select(
+                    base=ast.Id("letters"),
+                    args=ast.Args([
+                        ast.Select(
+                            base=ast.Id("m"),
+                            args=ast.Args([
+                                ast.Const(1), ast.Const(0)
+                            ])
+                        )
+                    ])
+                )),
+            ]),
+        ]
+    ],
 ])
 def test_arrays(code, exp_ast):
     act_ast = parse_code(code)
