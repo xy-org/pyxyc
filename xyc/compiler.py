@@ -915,22 +915,24 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                 )
                 cfunc.body.append(append_call.c_node)
         
-        to_obj = func_desc.tags["xy.string"].fields["to"]
-        to_call_obj = find_and_call(
-            "to",
-            [
-                builder_tmpvar_id,
-                ExprObj(
-                    c_node=c.Id(to_obj.c_node.name),
-                    infered_type=to_obj
-                )
-            ],
-            cast,
-            cfunc,
-            ctx,
-            xy_node=expr
-        )
-        return to_call_obj
+        to_obj = func_desc.tags["xy.string"].fields.get("to", None)
+        if to_obj is not None:
+            return find_and_call(
+                "to",
+                [
+                    builder_tmpvar_id,
+                    ExprObj(
+                        c_node=c.Id(to_obj.c_node.name),
+                        infered_type=to_obj
+                    )
+                ],
+                cast,
+                cfunc,
+                ctx,
+                xy_node=expr
+            )
+        else:
+            return builder_tmpvar_id
     
 def is_str_const(node: xy.Node) -> bool:
     return isinstance(node, xy.Const) and isinstance(node.value, str)
