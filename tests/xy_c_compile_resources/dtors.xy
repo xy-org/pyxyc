@@ -1,0 +1,57 @@
+struct Array~[xy_dtor=true] {
+    mem: Ptr;
+}
+
+def push(arr: inout Array, val: int) {
+    # ...
+}
+
+def dtor(p: Array) {
+    mem'free();
+}
+
+struct Static {}
+
+def dtor(p: Array~Static) {}
+
+struct CustomAllocator {}
+
+def dtor(p: Array~CustomeAllocator) {
+    mem'myfree();
+}
+
+def test() {
+    arr: var Array{};
+    arr'push(10);
+
+    update(arr);
+
+    update(funcReturningAnObjectWithDtor(10));
+
+    errorProne(arr);
+    errorProne(funcReturningAnObjectWithDtor(10));
+
+    print(at(arr, 10));
+    print(at(arr, 10));
+}
+
+def addr(p: Array) {
+    return p.addr; # Copy as this is not a tmp variable
+}
+
+def funcReturningAnObjectWithDtor(int num) -> Array {
+    arr: var Array{};
+    for (i in :num) {
+        arr.push(i);
+    }
+    return arr;  # Move out as this is a tmp variable
+}
+
+def update(arr: inout Array) {
+    # ...
+}
+
+def errorProne(arr: Array) -> void || int {
+    # ...
+}
+

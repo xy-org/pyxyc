@@ -1,0 +1,18 @@
+def test() {
+    a: int;
+    b: int;
+    a.bits[0] = 1;
+    b.bits[1] = 1;
+    b.bits[2] = true;
+    a.bits[10] = false;
+
+    c := a.bits | b.bits;
+    d := a.bits & b.bits;
+    e := a.bits != b.bits;
+
+    f := a.bits \shiftl 3;
+    g := a.bits \shiftr 5;
+
+    i := a.bits \shiftl 3;
+}
+

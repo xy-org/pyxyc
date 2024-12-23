@@ -25,10 +25,38 @@ def set(p: inout Point, idx: ubyte, v: float)
     }
 }
 
-def test(i: ubyte) {
+def testPoint(i: ubyte) {
     p1: var = Point{w=i'to(float)};
     p2: Point;
-    p1.x = p1[ubyte];
-    p2.z = p1[4-ubyte];
+    p1.x = p1[i];
+    p2.z = p1[4-i];
     return p1.x + p2.w + p2.z + p1.w;
+}
+
+struct  Mesh {
+    mem: Ptr;
+}
+
+def select(t: Triangle, i: ubyte) -> ref(t) ubyte = ubyte
+
+def get(t: inout Triangle, i: ubyte) -> ref(t) Ptr~Point = t.addrof + i * sizeof(Point)
+
+def set(t: inout Triangle, i: ubyte, p: Point) {
+    # not implemented for brievity
+}
+
+def testTriangle(m0: inout Mesh, m1: Mesh) {
+    m0[0].y = 10;
+
+    print(m1[1].y);
+    print(m1[1]);
+
+    m2 : var = Mesh{};
+    m2[2] = m0[2];
+    m2[2].x = m0[2].y;
+    m2[4] .= {x=5, y=10};
+
+    m3 := Mesh{};
+    print(m3[3].z);
+    print(m3[3]);
 }

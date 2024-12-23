@@ -1,0 +1,32 @@
+struct Point {
+    x: int;
+    y: int;
+    w: int = 1;
+}
+
+def testMovingOutInout(p: inout Point) -> Point {
+    return p->;
+}
+
+def testMovingSimple() -> Point {
+    p1: Point;
+    p.x = 10;
+    p2 : Point;
+    p2 <- p1;
+    return Point{p1.x, p2.y};
+}
+
+# --- Test move and dtor ---
+struct Array~[xy_dtor=True] {
+    # ...
+}
+
+def dtor(arr: Array) {
+}
+
+def testMovingDtor() -> Array {
+    arr1: Array;
+    arr2: Array;
+    arr2 <- arr1;
+    return arr2;
+}

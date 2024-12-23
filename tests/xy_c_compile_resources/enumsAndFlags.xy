@@ -1,8 +1,4 @@
-struct OpenFlags~Flags {
-    read : bit~[xy.bitmask=c.O_READ] = 0;
-    write : bit~[xy.bitmask=c.O_WRITE] = 0;
-    append : bit~[xy.bitmask=c.O_APPEND] = 0;
-} ;; the Flags tag will generatte the | and & methods
+# --- Enums ---
 
 struct Status~Enum {
     pending;
@@ -10,7 +6,7 @@ struct Status~Enum {
     canceled;
 } ;; the Enum tag will generate the & method
 
-def func(a: int) {
+def testEnums(a: int) {
     orderStatus := Status.pending;
     printStatus(orderStatus);
     printStatus(.processed);
@@ -19,7 +15,37 @@ def func(a: int) {
     if (a > 0) {
         type = .processed;
     }
+}
 
+# --- Flags ---
+
+struct OpenFlags~Flags {
+    read : bit~[xy_bitmask=c.O_READ] = 0;
+    write : bit~[xy_bitmask=c.O_WRITE] = 0;
+    append : bit~[xy_bitmask=c.O_APPEND] = 0;
+} ;; the Flags tag will generatte the | operator
+
+def String {
+    addr: Ptr;
+    size: Size;
+}
+
+def string~[StringCtor{prefix=""}](addr: Ptr, size: Size) = String{addr, size}
+
+def open(fn: String, flags=OpenFlags{.read}) {
+    if (flags.read & flags.write) {
+        # reading and writing
+    } if (flags == OpenFlags{.read, .append}) {
+        # reading and appending ...
+    } elif (flags.read) {
+        # reading ...
+    } elif (flags.write) {
+        # writing ...
+    }
+}
+
+def testFlags() {
+    open("file.txt")
     open("file.txt", OpenFlags.read);
     open("file.txt", OpenFlags.read | OpenFlags.write);
     open("file.txt", .read | .write);
