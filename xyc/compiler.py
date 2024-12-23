@@ -254,7 +254,7 @@ class CompilerContext:
             if isinstance(tag_obj, InstanceObj):
                 if tag_obj.type_obj is not self.tagctor_obj:
                     continue
-                label = tag_obj.type_obj.tags["xy.tag"].fields["label"].as_str()
+                label = tag_obj.type_obj.tags["xyTag"].fields["label"].as_str()
 
             res[label] = tag_obj
         return res
@@ -264,18 +264,18 @@ class CompilerContext:
         for xy_tag in tags.args:
             tag_obj = self.eval(xy_tag)
             if isinstance(tag_obj, TypeObj):
-                if "xy.tag" not in tag_obj.tags:
+                if "xyTag" not in tag_obj.tags:
                     raise CompilationError(
                         f"Missing default label for type '{tag_obj.xy_node.name}'",
                         xy_tag, notes=[("Please associate default label by adding the TagCtor tag: ~[TagCtor{label=\"default-label\"}]", None)])
-                label = tag_obj.tags["xy.tag"].fields["label"].as_str()
+                label = tag_obj.tags["xyTag"].fields["label"].as_str()
             elif isinstance(tag_obj, InstanceObj):
                 assert tag_obj.type_obj is not None
-                if "xy.tag" not in tag_obj.type_obj.tags:
+                if "xyTag" not in tag_obj.type_obj.tags:
                     raise CompilationError(
                         f"Missing default label for type '{tag_obj.type_obj.xy_node.name}'",
                         xy_tag, notes=[("Please associate default label by adding the TagCtor tag: ~[TagCtor{label=\"default-label\"}]", None)])
-                label = tag_obj.type_obj.tags["xy.tag"].fields["label"].as_str()
+                label = tag_obj.type_obj.tags["xyTag"].fields["label"].as_str()
             elif tag_obj.primitive:
                 raise CompilationError("Primitive types have to have an explicit label", xy_tag)
             else:
@@ -527,9 +527,9 @@ def compile_func_prototype(node, cast, ctx):
 
     # compile tags
     compiled.tags = ctx.eval_tags(node.tags)
-    if "xy.string" in compiled.tags:
+    if "xyStr" in compiled.tags:
         # TODO assert it is a StrCtor indeed
-        str_lit = compiled.tags["xy.string"].fields["prefix"]
+        str_lit = compiled.tags["xyStr"].fields["prefix"]
         prefix = str_lit.parts[0].value if len(str_lit.parts) else ""
         ctx.str_prefix_reg[prefix] = compiled
     if "xy.entrypoint" in compiled.tags:
@@ -643,9 +643,9 @@ def import_builtins(ctx: CompilerContext, cast):
         xy.VarDecl("label", type=None)
     ])
     tag_obj = TypeObj(tag_ctor, c.Struct("TagCtor"), builtin=True)
-    tag_obj.tags["xy.tag"] = InstanceObj(
+    tag_obj.tags["xyTag"] = InstanceObj(
         fields={
-            "label": StrObj(parts=[ConstObj(value="xy.tag")])
+            "label": StrObj(parts=[ConstObj(value="xyTag")])
         },
         type_obj=tag_obj
     )
@@ -657,9 +657,9 @@ def import_builtins(ctx: CompilerContext, cast):
         xy.VarDecl("prefix", type=None)
     ])
     str_obj = TypeObj(str_ctor, c.Struct("StrCtor"), builtin=True)
-    str_obj.tags["xy.tag"] = InstanceObj(
+    str_obj.tags["xyTag"] = InstanceObj(
         fields={
-            "label": StrObj(parts=[ConstObj(value="xy.string")])
+            "label": StrObj(parts=[ConstObj(value="xyStr")])
         },
         type_obj=tag_obj
     )
@@ -668,7 +668,7 @@ def import_builtins(ctx: CompilerContext, cast):
     # entry point
     entrypoint = xy.StructDef(name="EntryPoint")
     ep_obj = TypeObj(entrypoint, builtin=True)
-    ep_obj.tags["xy.tag"] = InstanceObj(
+    ep_obj.tags["xyTag"] = InstanceObj(
         fields={
             "label": StrObj(parts=[ConstObj(value="xy.entrypoint")])
         }
@@ -678,7 +678,7 @@ def import_builtins(ctx: CompilerContext, cast):
     # clib
     clib = xy.StructDef(name="CLib")
     clib_ojb = TypeObj(clib, builtin=True)
-    clib_ojb.tags["xy.tag"] = InstanceObj(
+    clib_ojb.tags["xyTag"] = InstanceObj(
         fields={
             "label": StrObj(parts=[ConstObj(value="xyc.lib")])
         }
@@ -907,8 +907,8 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
         )
     func_desc: FuncObj = ctx.str_prefix_reg[expr.prefix]
 
-    interpolation = ("interpolation" in func_desc.tags["xy.string"].fields and
-                     ct_isTrue(func_desc.tags["xy.string"].fields["interpolation"]))
+    interpolation = ("interpolation" in func_desc.tags["xyStr"].fields and
+                     ct_isTrue(func_desc.tags["xyStr"].fields["interpolation"]))
     if not interpolation:
         is_error = len(expr.parts) > 1
         if not is_error and len(expr.parts) == 1:
@@ -975,7 +975,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                 )
                 cfunc.body.append(append_call.c_node)
         
-        to_obj = func_desc.tags["xy.string"].fields.get("to", None)
+        to_obj = func_desc.tags["xyStr"].fields.get("to", None)
         if to_obj is not None:
             return find_and_call(
                 "to",
