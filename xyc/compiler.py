@@ -673,6 +673,13 @@ def compile_structs(ctx: CompilerContext, asts, cast):
                     )
                     cstruct.fields.append(cfield)
                 type_obj.fields = fields
+
+                if len(fields) == 0:
+                    cstruct.fields.append(c.VarDecl(
+                        name="__empty_structs_are_not_allowed_in_c__",
+                        type="char"
+                    ))
+
                 all_zeros = all((isinstance(dv, c.Const) and dv.value == 0)
                                 for dv in default_values)
                 c_init_args = [c.Const(0)] if all_zeros else default_values

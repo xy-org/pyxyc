@@ -11,8 +11,10 @@ struct stringCtor_Str {
     size_t m_size;
 };
 struct stringCtor_Utf8 {
+    char __empty_structs_are_not_allowed_in_c__;
 };
 struct stringCtor_Ascii {
+    char __empty_structs_are_not_allowed_in_c__;
 };
 
 stringCtor_Str stringCtor_str(void* addr, size_t size) {

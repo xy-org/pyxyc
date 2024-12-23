@@ -9,6 +9,7 @@ typedef struct slices_Date slices_Date;
 typedef struct slices_DateSlice slices_DateSlice;
 
 struct slices_AllSlice {
+    char __empty_structs_are_not_allowed_in_c__;
 };
 struct slices_IntSlice {
     int32_t m_start;
