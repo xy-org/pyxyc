@@ -230,7 +230,7 @@ def parse_func_select(itoken: TokenIter):
         name=None,
         src=itoken.src, coords=itoken.peak_coords()
     )
-    assert itoken.check("def")
+    assert itoken.check("$")
 
     if itoken.check("*"):
         node.multiple = True
@@ -242,28 +242,12 @@ def parse_func_select(itoken: TokenIter):
 
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
-    node.type.params = parse_params(itoken)
+    itoken.expect("(")
+    node.args, node.kwargs = parse_args_kwargs(itoken)
+    itoken.expect(")")
 
-    args = []
     if itoken.check("->"):
-        if itoken.check("("):
-            args = parse_expr_list(itoken)
-            itoken.expect(")")
-        else:
-            args = [parse_toplevel_type_expr(itoken)]
-
-        if itoken.check("||"):
-            node.type.etype = parse_toplevel_type_expr(itoken)
-
-    for expr in args:
-        expr = expr_to_type(expr)
-        if isinstance(expr, VarDecl):
-            expr.varying = True
-            node.type.returns.append(expr)
-        else:
-            node.type.returns.append(
-                VarDecl(type=expr, src=expr.src, coords=expr.coords)
-            )
+        raise ParsingError("Cannot select based on return types", itoken)
 
     return node
 
@@ -454,7 +438,7 @@ def parse_expression(
         arg1 = parse_struct_literal(itoken, None)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "ref":
         arg1 = parse_var_decl(itoken, Empty(), MIN_PRECEDENCE, op_prec)
-    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "def":
+    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "$":
         arg1 = parse_func_select(itoken)
     elif precedence >= MAX_PRECEDENCE:
         tk_coords = itoken.peak_coords()

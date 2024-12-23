@@ -47,7 +47,8 @@ class FuncType(Node):
 @dataclass
 class FuncSelect(Node):
     name: Node
-    type: 'FuncType' = field(default_factory=FuncType)
+    args: list[Node] = field(default_factory=list)
+    kwargs: dict[str, Node] = field(default_factory=dict)
     multiple: bool = False
 
 @dataclass

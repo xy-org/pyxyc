@@ -2433,7 +2433,8 @@ def cstr_len(s: str) -> int:
 
 def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
     arg_infered_types = ArgList(
-        args=[ctx.eval_to_type(arg.type) for arg in expr.type.params],
+        args=[ctx.eval_to_type(arg) for arg in expr.args],
+        kwargs={k: ctx.eval_to_type(t) for k, t in expr.kwargs},
     )
 
     if not expr.multiple:
@@ -2547,7 +2548,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
     
     if isinstance(fspace, ExtSymbolObj):
-            fspace = ExtSpace(fspace.symbol)
+        fspace = ExtSpace(fspace.symbol)
 
     if isinstance(fspace, RefObj):
         fspace = ref_get(fspace, cast, cfunc, ctx)

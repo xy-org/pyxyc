@@ -1181,35 +1181,28 @@ def test_expressions(code, exp_ast):
     ],
     [
         """def test() -> void {
-            cb1 := def(:int, :int)->int;
-            cb2 := def name(:int, :inout long)->Str||Error;
-            cb3 := def* ~Test()->void||Error;
-            cb4 := def name~Tag();
-            sum := (def add(:int, :int))(1, 2);
+            cb1 := $(int, int);
+            cb2 := $ name(int, long);
+            cb3 := $* ~Test();
+            cb4 := $ name~Tag();
+            sum := ($ add(int, int))(1, 2);
         }
         """,
         [
             ast.FuncDef(ast.Id("test"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl("cb1", value=ast.FuncSelect(
                     name=None,
-                    type=ast.FuncType(
-                        params=[
-                            ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
-                            ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
-                        ],
-                        returns=[ast.VarDecl(type=ast.Id("int"))],
-                    )
+                    args=[
+                        ast.Id("int"),
+                        ast.Id("int"),
+                    ],
                 )),
                 ast.VarDecl("cb2", value=ast.FuncSelect(
                     name=ast.Id("name"),
-                    type=ast.FuncType(
-                        params=[
-                            ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
-                            ast.VarDecl(type=ast.Id("long"), is_param=True, is_inout=True, is_pseudo=True),
-                        ],
-                        returns=[ast.VarDecl(type=ast.Id("Str"))],
-                        etype=ast.Id("Error"),
-                    )
+                    args=[
+                        ast.Id("int"),
+                        ast.Id("long"),
+                    ]
                 )),
                 ast.VarDecl("cb3", value=ast.FuncSelect(
                     name=None,
@@ -1218,11 +1211,7 @@ def test_expressions(code, exp_ast):
                             ast.Id("Test"),
                         ],
                     ),
-                    type=ast.FuncType(
-                        params=[],
-                        returns=[ast.VarDecl(type=ast.Id("void"))],
-                        etype=ast.Id("Error"),
-                    ),
+                    args=[],
                     multiple=True,
                 )),
                 ast.VarDecl("cb4", value=ast.FuncSelect(
@@ -1232,21 +1221,15 @@ def test_expressions(code, exp_ast):
                             ast.Id("Tag"),
                         ],
                     ),
-                    type=ast.FuncType(
-                        params=[],
-                        returns=[],
-                    ),
+                    args=[],
                 )),
                 ast.VarDecl("sum", value=ast.FuncCall(
                     name=ast.FuncSelect(
                         name=ast.Id("add"),
-                        type=ast.FuncType(
-                            params=[
-                                ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
-                                ast.VarDecl(type=ast.Id("int"), is_param=True, is_in=True, is_pseudo=True),
-                            ],
-                            returns=[],
-                        ),
+                        args=[
+                            ast.Id("int"),
+                            ast.Id("int"),
+                        ],
                     ),
                     args=[ast.Const(1), ast.Const(2)]
                 )),

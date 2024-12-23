@@ -213,3 +213,16 @@ def test_invalid_floats(code, err_msg):
 def test_auto_inject_syntax(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
+
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def main() {
+            cb := $(int)->int;
+        }""",
+        "Cannot select based on return type"
+    ),
+])
+def test_callbacks_and_fselect(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)
