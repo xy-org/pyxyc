@@ -261,11 +261,11 @@ operator_precedence = {
     "^": 9, "\\": 9,
     "*": 8, "/": 8,
     "+": 7, "-": 7,
-    "<": 6, "<=": 6, ">=": 6, ">": 6,
-    "==": 5, "!=": 5,
+    "<": 6, "<=": 6, ">=": 6, ">": 6, ":": 6,
+    "==": 5, "!=": 5, "in": 5,
     "&": 4,
     "|": 3,
-    "=": 2, ":": 2, '+=': 2, '-=': 2
+    "=": 2, '+=': 2, '-=': 2
 }
 MIN_PRECEDENCE=2
 UNARY_PRECEDENCE=11
@@ -285,6 +285,8 @@ def parse_expression(
         return parse_do_while(itoken)
     elif itoken.peak() == "break":
         return parse_break(itoken)
+    elif itoken.peak() == "for":
+        return parse_for(itoken)
 
     if precedence >= MAX_PRECEDENCE and itoken.check("("):
         # bracketed expression
@@ -298,7 +300,7 @@ def parse_expression(
         itoken.expect("]", msg="Missing closing bracket")
         arg1 = ArrayLit(args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE:
-        if itoken.peak() != '-' and itoken.peak() in operator_precedence.keys():
+        if itoken.peak() != '-' and itoken.peak() in operator_precedence or itoken.peak() == ",":
             return None  # Reach a delimiter
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
@@ -432,15 +434,16 @@ def parse_expression(
             arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
         else:
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+            end_coord = arg2.coords[1] if arg2 is not None else arg1.coords[0] + len(op)
             binop = BinExpr(
                 arg1, arg2, op, src=itoken.src,
-                coords=[arg1.coords[0], arg2.coords[1]]
+                coords=[arg1.coords[0], end_coord]
             )
             arg1 = binop
         op = itoken.peak()
 
     if (precedence == MIN_PRECEDENCE and isinstance(arg1, SliceExpr)
-        and arg1.step is None):
+        and arg1.step is None and arg1.end is not None):
         # it's actually a var decl
         decl = VarDecl(name=arg1.start.name, varying=not is_struct)
         decl.type = expr_to_type(arg1.end)
@@ -524,6 +527,33 @@ def parse_do_while(itoken):
         else:
             dowhile_expr.else_block = parse_expression(itoken)
     return dowhile_expr
+
+
+def parse_for(itoken):
+    for_coords = itoken.peak_coords()
+    itoken.consume()  # "for" token
+    for_expr = ForExpr(src=itoken.src, coords=for_coords)
+    if itoken.peak() != "(":
+        name_coords = itoken.peak_coords()
+        for_expr.name = Id(
+            itoken.consume(), src=itoken.src, coords=name_coords
+        )
+    itoken.expect("(")
+    for_expr.over = parse_expr_list(itoken)
+    itoken.expect(")", msg="Missing closing bracket")
+    if itoken.check("->"):
+        for_expr.type = parse_toplevel_type(itoken)
+    itoken.check("=")
+    if itoken.peak() == "{":
+        for_expr.block = parse_body(itoken)
+    else:
+        for_expr.block = parse_expression(itoken)
+    if itoken.check("else"):
+        if itoken.peak() == "{":
+            for_expr.else_block = parse_body(itoken)
+        else:
+            for_expr.else_block = parse_expression(itoken)
+    return for_expr
 
 
 def parse_break(itoken):

@@ -133,7 +133,11 @@ class IfExpr(Node):
 
 @dataclass
 class ForExpr(Node):
-    pass
+    over: list[Node] = field(default_factory=list)
+    type: Node | Node = None
+    name: Node | None = None
+    block: Node | list | None = None
+    else_block: Node | list | None = None
 
 @dataclass
 class WhileExpr(Node):

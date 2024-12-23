@@ -1186,3 +1186,103 @@ def test_while(code, exp_ast):
 def test_do_while(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() -> void {
+            for (elem in arr) {
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.ForExpr(
+                    over=[
+                        ast.BinExpr(op="in", arg1=ast.Id("elem"), arg2=ast.Id("arr"))
+                    ],
+                    block=[
+                    ]
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            for (e1 in arr1, e2 in arr2) {
+            } else {
+                x = b;
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.ForExpr(
+                    over=[
+                        ast.BinExpr(op="in", arg1=ast.Id("e1"), arg2=ast.Id("arr1")),
+                        ast.BinExpr(op="in", arg1=ast.Id("e2"), arg2=ast.Id("arr2"))
+                    ],
+                    block=[
+                    ],
+                    else_block=[
+                        ast.BinExpr(op="=", arg1=ast.Id("x"), arg2=ast.Id("b"))
+                    ]
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            for (i in :, e in arr, i'isPrime) {
+            }
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.ForExpr(
+                    over=[
+                        ast.BinExpr(
+                            op="in",
+                            arg1=ast.Id("i"),
+                            arg2=ast.SliceExpr()
+                        ),
+                        ast.BinExpr(
+                            op="in",
+                            arg1=ast.Id("e"),
+                            arg2=ast.Id("arr")
+                        ),
+                        ast.FuncCall(ast.Id("isPrime"), args=[ast.Id("i")])
+                    ],
+                    block=[]
+                )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            for or(e in arr) -> bool e | or;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), rtype=ast.Id("void"), body=[
+                ast.ForExpr(
+                    name=ast.Id("or"),
+                    over=[
+                        ast.BinExpr(
+                            op="in",
+                            arg1=ast.Id("e"),
+                            arg2=ast.Id("arr")
+                        ),
+                    ],
+                    type=ast.Id("bool"),
+                    block=ast.BinExpr(
+                        op="|", arg1=ast.Id("e"), arg2=ast.Id("or")
+                    ),
+                )
+            ]),
+        ]
+    ],
+])
+def test_for(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
