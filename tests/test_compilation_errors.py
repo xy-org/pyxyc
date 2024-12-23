@@ -30,8 +30,9 @@ src.xy:7:13: error: Cannot find function 'func(double)'
 |             func(0.0);
               ^^^^
 note: Candidates are:
-    func(int) -> void
-    func(ubyte) -> int
+    in module src
+        func(int) -> void
+        func(ubyte) -> int
 """),
     ("""
         struct Array {
@@ -45,11 +46,12 @@ src.xy:6:21: error: Cannot find function 'get(Array, int)'
 |             a := arr[0];
                       ^
 note: Candidates are:
-    get(Ptr, int) -> Ptr
-    get(Ptr, Size) -> Ptr
-    get(?[], int) -> Ptr
-    get(?[], uint) -> Ptr
-    get(?[], Size) -> Ptr
+    in module xy.builtins
+        get(Ptr, int) -> Ptr
+        get(Ptr, Size) -> Ptr
+        get(?[], int) -> Ptr
+        get(?[], uint) -> Ptr
+        get(?[], Size) -> Ptr
 """),
     ("""
         def func1(x: int) = x*2;
@@ -281,7 +283,7 @@ src.xy:2:26: error: Underscores are not allowed in names. For more info go to TB
 |         def func() {a_b := 10;}
                            ^
 """),
-(   """
+    ("""
         def func(_:int=0) {}
      """, """\
 src.xy:2:23: error: Underscores are not allowed in names. For more info go to TBD
@@ -307,3 +309,20 @@ def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     # err_msg = err_msg[err_msg.find("src.xy"):]
     assert err_msg == exp_err_msg, f"Error\n{err_msg}\n"\
            f"Doesnt match pattern:\n {exp_err_msg}"
+
+@pytest.mark.parametrize("package, exp_err_msg", [
+    ("moduleVis", r".*Cannot find function 'func\(\)'.*"),
+])
+def test_compilation_errors_multi_src(package, exp_err_msg, tmp_path, resource_dir):
+    executable = tmp_path / "a.out"
+    input_dir = str(resource_dir / "compile_errors_multi_src" / package)
+    with pytest.raises(CompilationError) as err:
+        builder = xyc.setup_builder([
+            input_dir,
+            "-P", str(resource_dir / "end_to_end_deps/libxy"),
+            "-o", str(executable),
+            "-c",
+        ])
+        builder.build()
+    err_msg = str(err.value)
+    assert re.match(exp_err_msg, err_msg) is not None

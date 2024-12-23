@@ -1,0 +1,8 @@
+import package1.module1
+import package1.module2
+import package2.module1
+
+def test() {
+    work1();
+    work2();
+}

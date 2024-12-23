@@ -23,10 +23,16 @@ class Builder:
         if not output:
             self.output = self.project_name
         self.module_cache = {}
+
+        if not path.isfile(input):
+            current_package_path = path.dirname(path.abspath(input))
+            package_paths = package_paths + [current_package_path]
+
         if builtin_lib_path is None:
             builtin_lib_path = path.join(path.dirname(__file__), "libs")
         self.builtin_lib_path = builtin_lib_path
         self.search_paths = package_paths + [builtin_lib_path]
+
         self.compile_only = compile_only
         self.work_dir = work_dir
 

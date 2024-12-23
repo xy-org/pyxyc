@@ -134,6 +134,12 @@ class FuncObj(CompiledObj):
         if self.c_node is not None:
             return self.c_node.name
         return None
+    
+    @property
+    def visibility(self):
+        if hasattr(self.xy_node, 'visibility'):
+            return self.xy_node.visibility
+        return xy.PackageVisibility
 
 @dataclass
 class VarObj(CompiledObj):
@@ -271,12 +277,23 @@ class FuncSpace:
     def report_no_matches(self, candidate_fobjs, node, args_infered_types, ctx):
         fsig = fcall_sig(node.name.name, args_infered_types, node.inject_args)
         err_msg = f"Cannot find function '{fsig}'"
-        candidates = "\n    ".join((
-            func_sig(f, include_ret=True) for f in candidate_fobjs
-        ))
+
+        candidates = ''
+        prev_module_name = None
+        for i, cfobj in enumerate(candidate_fobjs):
+            if i > 0:
+                candidates += "\n";
+            module_name = cfobj.module_header.module_name if cfobj.module_header is not None else ctx.module_name
+            if module_name != prev_module_name:
+                candidates += f"    in module {module_name}\n"
+                prev_module_name = module_name
+            candidates += "        " + func_sig(cfobj, include_ret=True)
+            if not is_func_visible(cfobj, ctx):
+                candidates += ";; not visible"
+
         raise CompilationError(
             err_msg, node,
-            notes=[(f"Candidates are:\n    {candidates}", None)]
+            notes=[(f"Candidates are:\n{candidates}", None)]
         )
     
     def find(self, node, args_infered_types, ctx, partial_matches=False):
@@ -332,6 +349,11 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx)
         return False
     if fobj.builtin and fobj.xy_node.name.name in {"sizeof", "addrof", "typeEqs"}:
         return fobj
+    
+    # check visibility
+    if not is_func_visible(fobj, ctx):
+        return False
+
     satisfied_params = set()
     # go through positional
     for type_obj, param_obj in zip(fcall_args_types.args, fobj.param_objs):
@@ -359,6 +381,12 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx)
             if p_obj.xy_node.name not in satisfied_params and p_obj.xy_node.value is None:
                 return False
 
+    return True
+
+def is_func_visible(fobj, ctx):
+    if fobj.visibility == xy.ModuleVisibility:
+        if fobj.module_header is not None:
+            return False
     return True
 
 def cmp_arg_param_types(arg_type, param_type):
@@ -391,9 +419,15 @@ def fcall_sig(name, args_infered_types, inject_args=False):
         ")"
 
 def func_sig(fobj: FuncObj, include_ret=False):
-    fdef = fobj.xy_node
+    fdef: xy.FuncDef = fobj.xy_node
     name = fdef.name if isinstance(fdef.name, str) else fdef.name.name
-    res = name + "("
+    if fdef.visibility == xy.ModuleVisibility:
+        res = '-'
+    elif fdef.visibility == xy.PublicVisibility:
+        res = '*'
+    else:
+        res = ''
+    res += name + "("
     for i, pobj in enumerate(fobj.param_objs):
         if i > 0:
             res += ", "
