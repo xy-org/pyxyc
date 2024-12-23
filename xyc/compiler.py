@@ -19,11 +19,70 @@ class FuncDesc:
 class IdTable(dict):
     pass
 
+class FuncSpace:
+    def __init__(self):
+        self._funcs = []
+
+    def __len__(self):
+        return len(self._funcs)
+    
+    def append(self, fdesc: FuncDesc):
+        self._funcs.append(fdesc)
+
+    def __getitem__(self, i):
+        return self._funcs[i]
+    
+    def find(self, node, ctx):
+        if isinstance(node, xy.FuncCall):
+            for desc in self._funcs:
+                if cmp_call_def(node, desc.xy_func, ctx):
+                    return desc
+            raise "Cannot find func"
+        else:
+            assert isinstance(node, xy.FuncDef)
+            for desc in self._funcs:
+                if desc.xy_func == node:
+                    return desc
+            raise "Cannot find func"
+
+def cmp_call_def(fcall, fdef, ctx):
+    # TODO what about kwargs
+    if len(fcall.args) != len(fdef.params):
+        return False
+    for arg, param in zip(fcall.args, fdef.params):
+        if infer_type(arg, ctx).xy_struct.name != param.type.name:
+            return False
+    return True
 
 @dataclass
 class CompilerContext:
     module_name: str  # TODO maybe module_name should be a list of the module names
     id_table: IdTable = field(default_factory=IdTable)
+
+    def ensure_func_space(self, name: xy.Id):
+        if name.name not in self.id_table:
+            fspace = FuncSpace()
+            self.id_table[name.name] = fspace
+            return fspace
+        candidate = self.id_table[name.name]
+        if isinstance(candidate, FuncSpace):
+            return candidate
+        # something else already defined with the same name
+        raise CompilationError(
+            f"Symbol '{name.name}' already defined.", name,
+            notes=[
+                (f"Previous definition of '{name.name}'", candidate.xy_struct)
+            ]
+        )
+    
+    def get_func_space(self, name: xy.Id):
+        if name.name not in self.id_table:
+            raise CompilationError(f"Cannot find function '{name.name}", name)
+        space = self.id_table[name.name]
+        if not isinstance(space, FuncSpace):
+            # TODO add notes here
+            raise CompilationError(f"{name.name} is not a function.", name)
+        return space
 
 
 def compile_module(module_name, ast):
@@ -40,7 +99,7 @@ def compile_header(ctx, ast, cast):
 
     for node in ast:
         if isinstance(node, xy.StructDef):
-            cstruct = c.Struct(name=mangle(node.name, ctx))
+            cstruct = c.Struct(name=mangle_struct(node, ctx))
             for field in node.fields:
                 cfield = c.VarDecl(
                     name=field.name,
@@ -58,14 +117,25 @@ def compile_header(ctx, ast, cast):
 
     for node in ast:
         if isinstance(node, xy.FuncDef):
-            name = mangle(node.name, ctx)
+            func_space = ctx.ensure_func_space(node)
+            expand_name = len(func_space) > 0
+            if len(func_space) == 1:
+                # Already present. Expand name.
+                func_desc = func_space[0]
+                func_desc.c_name = mangle_def(
+                    func_desc.xy_func, ctx, expand=True
+                )
+                func_desc.c_func.name = func_desc.c_name
+            
+            cname = mangle_def(node, ctx, expand=expand_name)
             rtype = get_c_type(node.rtype, ctx)
-            cfunc = c.Func(name=name, rtype=rtype)
+            cfunc = c.Func(name=cname, rtype=rtype)
             for param in node.params:
                 cparam = c.VarDecl(param.name, get_c_type(param.type, ctx))
                 cfunc.params.append(cparam)
             cast.func_decls.append(cfunc)
-            ctx.id_table[node.name] = FuncDesc(node, cfunc, name)
+
+            func_space.append(FuncDesc(node, cfunc, cname))
 
     return cast
 
@@ -88,7 +158,10 @@ def import_builtins(ctx, cast):
     builtin_types = {**num_types, **misc_types}
 
     for xtype, ctype in builtin_types.items():
-        ctx.id_table[xtype] = TypeDesc(c_name = ctype, builtin=True)
+        ctx.id_table[xtype] = TypeDesc(
+            xy_struct=xy.StructDef(name=xtype),
+            c_name = ctype, builtin=True
+        )
 
 
     for xtype in ["int"]:
@@ -112,7 +185,9 @@ def compile_funcs(ctx, ast, cast):
             raise CompilationError("NYI", node)
 
 def compile_func(node, ctx, ast, cast):
-    cfunc = ctx.id_table[node.name].c_func
+    fspace = ctx.get_func_space(node)
+    fdesc = fspace.find(node, ctx)
+    cfunc = fdesc.c_func
     compile_body(node.body, cast, cfunc, ctx)
     cast.funcs.append(cfunc)
 
@@ -154,7 +229,8 @@ def compile_expr(expr, cast, cfunc, ctx):
         res = c.Name(expr.name)
         return res
     elif isinstance(expr, xy.FuncCall):
-        c_name = mangle(expr.name, ctx)
+        fspace = ctx.get_func_space(expr)
+        c_name = fspace.find(expr, ctx).c_name
         res = c.FuncCall(name=c_name)
         for i in range(len(expr.args)):
             res.args.append(compile_expr(expr.args[i], cast, cfunc, ctx))
@@ -175,12 +251,22 @@ def get_c_type(type_expr, ctx):
     id_desc = ctx.id_table[type_expr.name]
     return id_desc.c_name
 
-def mangle(name, ctx):
-    return ctx.module_name + "_" + name
+def mangle_def(fdef: xy.FuncDef, ctx, expand=False):
+    mangled = ctx.module_name + "_" + fdef.name
+    if expand:
+        mangled = [mangled, "__with__"]
+        for param in fdef.params:
+            mangled.append(param.type.name)
+        mangled = "".join(mangled)
+    return mangled
+
+def mangle_struct(struct: xy.StructDef, ctx):
+    return ctx.module_name + "_" + struct.name
 
 
 class CompilationError(Exception):
-    def __init__(self, msg, node):
+    def __init__(self, msg, node, notes=None):
+        # TODO print notes as well
         loc = node.coords[0]
         loc_len = node.coords[1] - node.coords[0]
 
@@ -229,11 +315,13 @@ def infer_type(expr, ctx):
 
 
 def register_func(fdef, ctx):
-    ctx.id_table[fdef.name] = FuncDesc(fdef)
+    fspace = ctx.ensure_func_space(fdef)
+    fspace.append(FuncDesc(fdef))
 
 
 def find_func(fcall, ctx):
-    return ctx.id_table[fcall.name]
+    fspace = ctx.get_func_space(fcall)
+    return fspace.find(fcall, ctx)
 
 def rewrite_op(binexpr, ctx):
     fname = {

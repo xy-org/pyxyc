@@ -2,8 +2,8 @@ def func(a: int) -> int {
     return 0;
 }
 
-def func(b: double) -> int {
-    return 1;
+def func(b: double) -> double {
+    return 1.0;
 }
 
 def main() -> int {
