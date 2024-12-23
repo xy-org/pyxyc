@@ -1,6 +1,6 @@
 import os
-from xyc import ast as xy
-from xyc import cast as c
+import xyc.ast as xy
+import xyc.cast as c
 from dataclasses import dataclass, field
 
 @dataclass
@@ -697,21 +697,34 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         cfunc.body.append(var_obj.c_node)
         ctx.id_table[if_name] = var_obj
         c_res = c.Id(var_obj.c_node.name)
+    elif isinstance(ifexpr.block, xy.Node):
+        name_hint = ctx.eval_to_id(ifexpr.name) if ifexpr.name else ""
+        if_exp_obj = compile_expr(ifexpr.block, cast, cfunc, ctx)
+        var_obj = ctx.create_tmp_var(if_exp_obj.infered_type, name_hint=name_hint)
+        cfunc.body.append(var_obj.c_node)
+        c_res = c.Id(var_obj.c_node.name)
+        infered_type = if_exp_obj.infered_type
     else:
         c_res = None
         infered_type = find_type(xy.Id("void"), ctx)  # TODO remove this call to find type
 
     cfunc.body.append(c_if)
-    body_to_compile = ifexpr.block
-    if not isinstance(body_to_compile, list):
-        body_to_compile = [body_to_compile]
-    compile_body(body_to_compile, cast, c_if, ctx)
+    if isinstance(ifexpr.block, list):
+        compile_body(ifexpr.block, cast, c_if, ctx)
+    else:
+        res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
+        c_if.body.append(res_assign)
 
     if isinstance(ifexpr.else_block, list):
         # XXX fix that
         hack_if = c.If()
         compile_body(ifexpr.else_block, cast, hack_if, ctx)
         c_if.else_body = hack_if.body
+    else:
+        else_exp_obj = compile_expr(ifexpr.else_block, cast, cfunc, ctx)
+        res_assign = c.Expr(c_res, else_exp_obj.c_node, op='=')
+        # TODO compare types
+        c_if.else_body = [res_assign]
 
     return ExprObj(
         xy_node=ifexpr,

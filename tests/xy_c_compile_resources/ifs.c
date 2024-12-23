@@ -10,6 +10,16 @@ int32_t ifs_statementLike(int32_t x, int32_t y) {
     }
 }
 
+int32_t ifs_expressionLike(int32_t x, int32_t y) {
+    int32_t __tmp0;
+    if (x < y) {
+        __tmp0 = x * y * 3;
+    } else {
+        __tmp0 = y * 2;
+    }
+    return __tmp0;
+}
+
 int32_t ifs_namedIf(int32_t x, int32_t y) {
     int32_t __tmp_res0;
     if (x < y) {
