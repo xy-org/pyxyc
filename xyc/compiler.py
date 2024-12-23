@@ -133,6 +133,12 @@ class RefObj(CompiledObj):
 class FCallObj(ExprObj):
     func_obj: FuncObj | None = None
 
+@dataclass()
+class ExtSymbolObj(CompiledObj):
+    @property
+    def symbol(self):
+        return self.c_node.name
+
 @dataclass
 class ArgList:
     args: list[ExprObj] = field(default_factory=list)
@@ -260,7 +266,7 @@ class FuncSpace:
                 if desc.xy_node == node:
                     return [desc]
             raise "Cannot find func"
-        
+     
 class ExtSpace(FuncSpace):
     def __init__(self, ext_name: str):
         self.ext_name = ext_name
@@ -399,7 +405,9 @@ class CompilerContext:
         if space is None:
             msg = msg or f"Cannot find any functions named '{name.name}'"
             raise CompilationError(msg, name)
-        if not (isinstance(space, FuncSpace) or isinstance(space, ExtSpace)):
+        if isinstance(space, ExtSymbolObj):
+            return ExtSpace(space.symbol)
+        if not isinstance(space, FuncSpace):
             # TODO add notes here
             raise CompilationError(f"Not a function.", name)
         return space
@@ -529,8 +537,13 @@ class CompilerContext:
                 base = self.eval(node.arg1)
                 assert isinstance(node.arg2, xy.Id)
                 if isinstance(base, ImportObj):
-                    # XXX assume c library
-                    return ExtSpace(node.arg2.name)
+                    if base.is_external:
+                        return ExtSymbolObj(
+                            c_node=c.Id(node.arg2.name),
+                            xy_node=node,
+                        )
+                    else:
+                        raise CompilationError("NYI", node)
                 elif isinstance(base, TypeObj):
                     return base.fields[node.arg2.name]
                 elif isinstance(base, VarObj):

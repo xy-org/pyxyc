@@ -2,20 +2,11 @@ import posic~[CLib{headers=["unistd.h", "fcntl.h"]}] in c
 
 # --- Flags ---
 
-#define flags_OpenFlags__readOnly O_RDONLY
-#define flags_OpenFlags__writeOnly O_WRONLY
-#define flags_OpenFlags__readWrite O_RDWR
-#define flags_OpenFlags__append O_APPEND
-
 struct OpenFlags~Flags {
-    # readOnly : pseudo int = c.O_RDONLY;
-    # writeOnly : pseudo int = c.O_WRONLY;
-    # readWrite : pseudo int = c.O_RDWD;
-    # append : pseudo int = c.O_APPEND;
-    readOnly : pseudo int = 1;
-    writeOnly : pseudo int = 2;
-    readWrite : pseudo int = 4;
-    append : pseudo int = 8;
+    readOnly : pseudo int = c.O_RDONLY;
+    writeOnly : pseudo int = c.O_WRONLY;
+    readWrite : pseudo int = c.O_RDWR;
+    append : pseudo int = c.O_APPEND;
 
     value : int;
 } ;; the Flags tag will generatte the | operator

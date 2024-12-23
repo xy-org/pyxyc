@@ -7,10 +7,10 @@
 typedef int32_t flags_OpenFlags;
 typedef struct flags_String flags_String;
 
-#define flags_OpenFlags__readOnly 1
-#define flags_OpenFlags__writeOnly 2
-#define flags_OpenFlags__readWrite 4
-#define flags_OpenFlags__append 8
+#define flags_OpenFlags__readOnly O_RDONLY
+#define flags_OpenFlags__writeOnly O_WRONLY
+#define flags_OpenFlags__readWrite O_RDWR
+#define flags_OpenFlags__append O_APPEND
 
 struct flags_String {
     void* m_addr;
