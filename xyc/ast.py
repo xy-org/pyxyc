@@ -65,13 +65,17 @@ class FuncCall(Node):
     name: Node
     args: list[Node] = field(default_factory=list)
     kwargs: dict[str, Node] = field(default_factory=dict)
-    inject_args: bool = False
+    inject_args: 'ScopeArgsInject' = None
 
 @dataclass
 class Args(Node):
     args: list[Node] = field(default_factory=list)
     kwargs: dict[str, Node] = field(default_factory=dict)
     is_introspective: bool = False
+
+@dataclass
+class ScopeArgsInject(Node):
+    pass  # Used only to store the coordinates of ...
 
 @dataclass
 class Select(Node):

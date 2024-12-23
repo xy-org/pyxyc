@@ -803,10 +803,10 @@ def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False, accept_inject=
 
 def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False, accept_inject=False):
     res = []
-    inject = False
+    inject = None
     if ignore_eols: itoken.skip_empty_lines()
     while itoken.peak() not in {")", "]", "}", ";"}:
-        if inject:
+        if inject is not None:
             raise ParsingError("Cannot have any arguments after ...", itoken)
         calltime_coords = itoken.peak_coords()
         if itoken.peak() != "...":
@@ -818,8 +818,8 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False
             res.append(expr)
         else:
             if accept_inject:
+                inject = ScopeArgsInject(src=itoken.src, coords=itoken.peak_coords())
                 itoken.consume()
-                inject = True
             else:
                 raise ParsingError("... Can appear only at the end of an argument list", itoken)
         if ignore_eols: itoken.skip_empty_lines()
