@@ -16,7 +16,12 @@ class VarDecl:
 @dataclass
 class Struct:
     name: str
-    fields: list[VarDecl]
+    fields: list[VarDecl] = field(default_factory=list)
+
+@dataclass
+class StructLiteral:
+    name: str
+    args: list = field(default_factory=list)
 
 @dataclass
 class Expr:
@@ -65,9 +70,25 @@ def stringify(ast: Ast):
         else:
             frags.extend(("<", inc.path, ">"))
         frags.append("\n")
+    if len(ast.includes) > 0:
+        frags.append("\n")
+
+    for struct in ast.struct_decls:
+        frags.append("typedef struct ")
+        frags.extend([struct.name, " ", struct.name, ";\n"])
+    if len(ast.struct_decls) > 0:
+        frags.append("\n")
+
+    ident = 1
+    for struct in ast.structs:
+        frags.extend(["struct ", struct.name, " {\n"])
+        for field in struct.fields:
+            frags.extend([" " * ident * 4, field.type, " ", field.name, ";\n"])
+        frags.append("};\n")
+    if len(ast.structs) > 0:
+        frags.append("\n")
 
     for func in ast.funcs:
-        frags.append("\n")
         frags.extend((func.rtype, " ", func.name, "("))
         for i, param in enumerate(func.params):
             frags.extend((param.type, " ", param.name))
@@ -78,6 +99,10 @@ def stringify(ast: Ast):
         frags.append(") {\n")
         stringify_body(func.body, frags)
         frags.append("}\n")
+        frags.append("\n")
+    if len(ast.funcs) > 0:
+        frags.pop()  # Remove double new line at end of file
+    
     return "".join(frags)
 
 def stringify_body(body, frags, ident=1):
@@ -85,6 +110,12 @@ def stringify_body(body, frags, ident=1):
         if isinstance(stmt, Return):
             frags.append(" " * (ident*4) + "return ")
             stringify_expr(stmt.value, frags)
+            frags.append(";\n")
+        elif isinstance(stmt, VarDecl):
+            frags.append(" " * ident * 4)
+            frags.extend([stmt.type, " ", stmt.name, " = "])
+            if stmt.value is not None:
+                stringify_expr(stmt.value, frags)
             frags.append(";\n")
         else:
             raise CGenerationError(f"Unknown statement {type(stmt).__name__}")
@@ -96,15 +127,25 @@ def stringify_expr(expr, frags):
         frags.append(expr.name)
     elif isinstance(expr, Expr):
         stringify_expr(expr.arg1, frags)
-        frags.extend((" ", expr.op, " "))
+        if expr.op != ".":
+            frags.extend((" ", expr.op, " "))
+        else:
+            frags.append(expr.op)
         stringify_expr(expr.arg2, frags)
     elif isinstance(expr, FuncCall):
         frags.extend((expr.name, "("))
         for arg in expr.args:
             stringify_expr(arg, frags)
         frags.append(")")
+    elif isinstance(expr, StructLiteral):
+        frags.extend(["(", expr.name, "){"])
+        for arg in expr.args:
+            stringify_expr(arg, frags)
+            frags.append(", ")
+        frags.pop()
+        frags.append("}")
     else:
-        raise CGenerationError(f"Unknown statement {type(expr).__name__}")
+        raise CGenerationError(f"Unknown expression {type(expr).__name__}")
 
 class CGenerationError(Exception):
     def __init__(self, msg):

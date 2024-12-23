@@ -1,0 +1,13 @@
+struct Pair {
+    a : int;
+    b : int;
+}
+
+def func() -> void {
+    a := 0;
+    b := 0x10;
+    c := 5.5;
+    d := 3.14f;
+    e := .333f;
+    p := Pair{a, b};
+}

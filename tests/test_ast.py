@@ -89,6 +89,16 @@ from xyc import ast
         ["a", ":", "=", "b", "\\", "func", "c", ";"],
         None
     ),
+    (
+        "func1(a'func2, func3(), 4);",
+        ["func1", "(", "a", "'", "func2", ",", "func3", "(", ")", ",", "4", ")", ";"],
+        None
+    ),
+    (
+        "func0x10(); call_me(); _hidden;",
+        ["func0x10", "(", ")", ";", "call_me", "(", ")", ";", "_hidden", ";"],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)
@@ -334,7 +344,7 @@ def test_parse_func_call(code, exp_ast):
                     )
                 ),
                 ast.VarDecl("d", type=None, value=ast.Const(10), varying=True),
-                ast.VarDecl("pi", type=None, value=ast.Const(3.14)),
+                ast.VarDecl("pi", type=None, value=ast.Const(3.14, "3.14f", "float")),
                 ast.VarDecl(
                     "ptr",
                     type=ast.AttachTags(
@@ -357,6 +367,36 @@ def test_parse_func_call(code, exp_ast):
     ],
 ])
 def test_parse_var_decl(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() -> void {
+            a := 0 + 1 * 2 + 3;
+        }
+        """,
+        [
+            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+                ast.VarDecl("a", type=None, value=ast.BinExpr(
+                    arg1 = ast.BinExpr(
+                        arg1=ast.Const(0),
+                        arg2=ast.BinExpr(
+                            arg1=ast.Const(1),
+                            arg2=ast.Const(2),
+                            op="*"
+                        ),
+                        op = "+"
+                    ),
+                    arg2 = ast.Const(3),
+                    op = "+"
+                )),
+            ]),
+        ]
+    ],
+])
+def test_expressions(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
@@ -399,3 +439,136 @@ def test_parse_var_decl(code, exp_ast):
 def test_parse_struct(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        def func() -> void {
+            a := int{1};
+            p := Pair{1, a};
+            func2(Pair{3, 4} * Pair{5, 6});
+            b: ComplexType~[OtherType{}] = 5;
+            c: Ptr~[Type2~[Type3{val=Type4{val=5}}]{val=1}];
+        }
+        """,
+        [
+            ast.FuncDef(name="func", rtype=ast.Type("void"), body=[
+                ast.VarDecl("a", type=None, value=ast.StructLiteral(
+                    name=ast.Var("int"), args=[ast.Const(1)]
+                )),
+                ast.VarDecl("p", type=None, value=ast.StructLiteral(
+                    name=ast.Var("Pair"), args=[ast.Const(1), ast.Var("a")]
+                )),
+                ast.FuncCall("func2", args=[
+                    ast.BinExpr(
+                        arg1=ast.StructLiteral(
+                            name=ast.Var("Pair"), args=[ast.Const(3), ast.Const(4)]
+                        ),
+                        arg2=ast.StructLiteral(
+                            name=ast.Var("Pair"), args=[ast.Const(5), ast.Const(6)]
+                        ),
+                        op="*"
+                    )
+                ]),
+                ast.VarDecl("b", type=ast.AttachTags(
+                    ast.Var("ComplexType"), ast.TagList([
+                        ast.StructLiteral(ast.Var("OtherType"), args=[])
+                    ])
+                ), value=ast.Const(5)),
+                ast.VarDecl(
+                    "c", varying=True, type=ast.AttachTags(
+                        ast.Var("Ptr"), ast.TagList([
+                            ast.StructLiteral(
+                                ast.AttachTags(
+                                    ast.Var("Type2"),
+                                    tags=ast.TagList([
+                                        ast.StructLiteral(
+                                            ast.Var("Type3"),
+                                            kwargs={"val": ast.StructLiteral(
+                                                ast.Var("Type4"),
+                                                kwargs={
+                                                    "val": ast.Const(5)
+                                                }
+                                            )}
+                                        )
+                                    ])
+                                ),
+                                kwargs={
+                                    "val": ast.Const(1)
+                                }
+                            ),
+                        ])
+                    )
+                ),
+            ]),
+        ]
+    ],
+])
+def test_struct_literals(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        def func~Tag() -> void {}
+        def func~[Tag{val=1}]() -> void {}
+        def func~[Tag{val=Tag2{val2=2}}]() -> void {}
+        """,
+        [
+            ast.FuncDef(
+                name="func", rtype=ast.Type("void"), body=[],
+                tags=ast.TagList(positional=[
+                    ast.Var("Tag")
+                ])
+            ),
+            ast.FuncDef(
+                name="func", rtype=ast.Type("void"), body=[],
+                tags=ast.TagList(positional=[
+                    ast.StructLiteral(
+                        name=ast.Var("Tag"),
+                        kwargs={
+                            "val": ast.Const(1)
+                        }
+                    )
+                ])
+            ),
+            ast.FuncDef(
+                name="func", rtype=ast.Type("void"), body=[],
+                tags=ast.TagList(positional=[
+                    ast.StructLiteral(
+                        name=ast.Var("Tag"),
+                        kwargs={
+                            "val": ast.StructLiteral(
+                                name=ast.Var("Tag2"),
+                                kwargs={
+                                    "val2": ast.Const(2)
+                                }
+                            ),
+                        }
+                    )
+                ])
+            ),
+        ]
+    ],
+])
+def test_func_def_with_tags(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
+code_ast = [
+    ("def func~Tag1~Tag2~Tag3() -> void {}",
+     "These long chains of tags get very ambiguous. "
+     "Please be explicit and seprate the tags in square brackets."),
+    ("def func() -> void {c : Ptr~Type2{val=1}~Type3{val=Type4{val=5}};}",
+     "Only simple positional tags can be chained. "
+     "Please be explicit and put the tags in square brackets.")
+]
+@pytest.mark.parametrize("code, err_msg", code_ast)
+def test_ambiguous_tags(code, err_msg):
+    act_error = None
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)

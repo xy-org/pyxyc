@@ -1,0 +1,3 @@
+def main~EntryPoint() -> int {
+    return 0;
+}

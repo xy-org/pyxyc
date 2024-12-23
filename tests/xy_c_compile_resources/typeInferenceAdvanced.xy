@@ -1,0 +1,28 @@
+struct Pair {
+    a : int;
+    b : int;
+}
+
+
+def rng() -> int {
+    return 0;
+}
+
+def myadd(a: int, b: int) -> long {
+    return 0;
+}
+
+def ctorPair() -> Pair {
+    return Pair{0, 1};
+}
+
+def transform(num : long) -> float{
+    return 0;
+}
+
+def func() -> void {
+    a := rng();
+    b := rng() + 10;
+    c := (a \myadd b)'transform;
+    d := ctorPair();
+}

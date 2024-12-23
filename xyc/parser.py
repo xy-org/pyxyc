@@ -153,7 +153,10 @@ def parse_sl_comment(itoken):
     comment_end = itoken.token_pos[itoken.i-1]
 
     comment = itoken.src.code[comment_start:comment_end]
-    return Comment(comment=comment, src=itoken.src)
+    return Comment(
+        comment=comment,
+        src=itoken.src, coords=[comment_start-1, comment_start]
+    )
 
 def parse_ml_comment(itoken):
     comment_start = itoken.token_pos[itoken.i-1]
@@ -163,7 +166,8 @@ def parse_ml_comment(itoken):
     comment_end = itoken.token_pos[itoken.i-1]
 
     comment = itoken.src.code[comment_start:comment_end]
-    return Comment(comment=comment, is_doc=True, src=itoken.src)
+    return Comment(comment=comment, is_doc=True, src=itoken.src,
+                   coords=[comment_start, comment_start+2])
 
 def parse_def(itoken):
     name = itoken.consume()
@@ -228,17 +232,24 @@ MIN_PRECEDENCE=2
 MAX_PRECEDENCE=11
 
 def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
+    # if precedence >= MAX_PRECEDENCE and itoken.peak() == "(":
     if precedence >= MAX_PRECEDENCE:
         if itoken.peak() != '-' and itoken.peak() in operator_precedence.keys():
             return None  # Reach a delimiter
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
         if "." in token:
+            type = "double"
+            value_str = token
             if token[-1] == 'f':
                 token = token[:-1]
-            arg1 = Const(float(token))
+                type = "float"
+            arg1 = Const(float(token), value_str, type)
         elif token[0] >= '0' and token[0] <= '9':
-            arg1 = Const(int(token))
+            if token.startswith("0x"):
+                arg1 = Const(int(token[2:], base=16), token, "int")
+            else:
+                arg1 = Const(int(token), token, "int")
         else:
             arg1 = Var(token, src=itoken.src, coords=tk_coords)
     else:
@@ -251,17 +262,20 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
         if op == "(":
             if not isinstance(arg1, Var):
                 itoken.i -= 1
-                raise ParsingError("Only functions are callable.")
-            args = parse_args(itoken)
+                raise ParsingError("Only functions are callable.", itoken)
+            args, kwargs = parse_args(itoken)
             itoken.expect(")")
             fcall = FuncCall(arg1.name, args, src=itoken.src, coords=arg1.coords)
+            fcall.kwargs = kwargs
             arg1 = fcall
         elif op == "'":
             f_coords = itoken.peak_coords()
             fname = itoken.consume()
             fcall = FuncCall(fname, [arg1], src=itoken.src, coords=f_coords)
             if itoken.check("("):
-                fcall.args.extend(parse_args(itoken))
+                args, kwargs = parse_args(itoken)
+                fcall.args.extend(args)
+                fcall.kwargs = kwargs
                 itoken.expect(")")
             arg1 = fcall
         elif op == "\\":
@@ -306,10 +320,23 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
                     arg1.tags.positional[0],
                     TagList([arg2]),
                 )
+            elif itoken.check("["):
+                args, kwargs = parse_args(itoken)
+                itoken.expect("]")
+                attach_tags = AttachTags(arg1, TagList(args, kwargs))
+                arg1 = attach_tags
             else:
                 arg2 = parse_expression(itoken, precedence+1)
                 attach_tags = AttachTags(arg1, TagList([arg2]))
                 arg1 = attach_tags
+        elif op == "{":
+            arg1 = parse_struct_literal(itoken, arg1)
+            if itoken.peak() == "~":
+                raise ParsingError(
+                    "Only simple positional tags can be chained. "
+                    "Please be explicit and put the tags in square brackets.",
+                    itoken
+                )
         else:
             arg2 = parse_expression(itoken, precedence+1)
             binop = BinExpr(arg1, arg2, op, src=itoken.src, coords=op_coords)
@@ -325,15 +352,29 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
 
     return arg1
 
+def parse_struct_literal(itoken, struct_expr):
+    args, kwargs = parse_args(itoken)
+    itoken.expect("}")
+    return StructLiteral(
+        struct_expr, args, kwargs, src=itoken.src, coords=struct_expr.coords
+    )
+
 
 def parse_args(itoken):
-    args = []
+    positional, named = [], {}
     while itoken.peak() not in {")", "]", "}"}:
         expr = parse_expression(itoken)
-        args.append(expr)
+        is_named = (
+            isinstance(expr, BinExpr) and expr.op == "=" and
+            isinstance(expr.arg1, Var)
+        )
+        if is_named:
+            named[expr.arg1.name] = expr.arg2
+        else:
+            positional.append(expr)
         if itoken.peak() not in {")", "]", "}"}:
             itoken.expect(",")
-    return args
+    return positional, named
 
 def parse_body(itoken):
     body = []
@@ -355,23 +396,28 @@ def parse_body(itoken):
 def parse_tags(itoken):
     res = TagList()
     if itoken.check("["):
-        while itoken.peak() != "]":
-            expr = parse_expression(itoken)
-            if isinstance(expr, BinExpr) and expr.op == "=":
-                res.named[expr.arg1.name] = expr.arg2
-            else:
-                res.positional.append(expr)
-            itoken.check(",")
+        args, kwargs = parse_args(itoken)
+        res.positional = args
+        res.named = kwargs
         itoken.expect("]")
     else:
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
-        res.positional.append(Var(token, src=itoken.src, coords=tk_coords))
+        tag = Var(token, src=itoken.src, coords=tk_coords)
+        
+        if itoken.peak() == "~":
+            raise ParsingError(
+                "These long chains of tags get very ambiguous. Please be explicit and seprate the tags in square brackets.",
+                itoken
+            )
+        
+        res.positional = [tag]
     return res
 
 def parse_struct(itoken):
+    coords = itoken.peak_coords()
     name = itoken.consume()
-    node = StructDef(name=name)
+    node = StructDef(name=name, src=itoken.src, coords=coords)
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
     itoken.expect("{")

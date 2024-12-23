@@ -59,6 +59,13 @@ class FuncDef(Node):
 class FuncCall(Node):
     name: str
     args: list[Node] = field(default_factory=list)
+    kwargs: dict[str, Node] = field(default_factory=dict)
+
+@dataclass
+class StructLiteral(Node):
+    name: Node | None
+    args: list[Node] = field(default_factory=list)
+    kwargs: dict[str, Node] = field(default_factory=dict)
 
 @dataclass
 class Var(Node):
@@ -67,6 +74,18 @@ class Var(Node):
 @dataclass
 class Const(Node):
     value: str | int | float
+    value_str: str = ""
+    type: str | None = None
+
+    def __init__(self, value, value_str=None, type=None):
+        self.value = value
+        self.value_str = value_str if value_str is not None else str(value)
+        if type is None:
+            if isinstance(value, int):
+                type = "int"
+            elif isinstance(value, float):
+                type = "float"
+        self.type = type
 
 @dataclass
 class BinExpr(Node):

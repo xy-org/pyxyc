@@ -29,7 +29,9 @@ def parse_project(input):
         return {
             virtual_module: parse_file(input)  # TODO this should be a list
         }
-    raise("Compiling multi module projects is NYI")
+    elif not path.exists(input):
+        raise ValueError(f"Input {input} doesn't exist")
+    raise ValueError("Compiling multi module projects is NYI")
 
 
 def parse_file(fn):

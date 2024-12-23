@@ -1,0 +1,17 @@
+struct Str {
+    addr: Ptr;
+    size: Size;
+}
+
+def string~[StrCtor{prefix=""}](addr: Ptr, size: Size) -> String~Unicode {
+    return Str{addr, size};
+}
+
+def createStrings() -> void {
+    str1 := "abc";
+    str2 := "def";
+}
+
+def strLen(str: Str) -> Size {
+    return str.size;
+}

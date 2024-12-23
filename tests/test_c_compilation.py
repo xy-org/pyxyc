@@ -8,14 +8,23 @@ from xyc.cast import stringify
 def resource_dir(request):
     return pathlib.Path(os.path.dirname(request.path))
 
-def test_c_compilation(resource_dir):
+
+@pytest.mark.parametrize("filename", [
+    "noop",
+    "typeInferenceBasic",
+    "typeInferenceAdvanced",
+    # "stringCtor",
+    # "cimport",  # TODO
+    # "entry_point",  # TODO
+])
+def test_c_compilation(resource_dir, filename):
     project = xyc.parse_project(
-        str(resource_dir / "xy_c_compile_resources" / "noop.xy")
+        str(resource_dir / "xy_c_compile_resources" / f"{filename}.xy")
     )
     c_project = xyc.compile_project(project)
     assert len(c_project) == 1
-    assert "noop.c" in c_project
-    c_act = stringify(c_project["noop.c"])
+    assert f"{filename}.c" in c_project
+    c_act = stringify(c_project[f"{filename}.c"])
 
-    c_exp = open(resource_dir / "xy_c_compile_resources" / "noop.c").read()
+    c_exp = open(resource_dir / "xy_c_compile_resources" / f"{filename}.c").read()
     assert c_act == c_exp
