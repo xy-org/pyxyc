@@ -249,7 +249,7 @@ src.xy:2:16: note: Previous definition
     ("""
         struct My_Structure {}
      """, """\
-src.xy:2:16: error: Underscores are not allowed in names. For more info go to RBD
+src.xy:2:16: error: Underscores are not allowed in names. For more info go to TBD
 |         struct My_Structure {}
                  ^^^^^^^^^^^^
 """),
@@ -270,16 +270,23 @@ src.xy:2:16: error: Names should start with a letter
     ("""
         def my_func() {}
      """, """\
-src.xy:2:13: error: Underscores are not allowed in names. For more info go to RBD
+src.xy:2:13: error: Underscores are not allowed in names. For more info go to TBD
 |         def my_func() {}
               ^^^^^^^
 """),
     ("""
         def func() {a_b := 10;}
      """, """\
-src.xy:2:26: error: Underscores are not allowed in names. For more info go to RBD
+src.xy:2:26: error: Underscores are not allowed in names. For more info go to TBD
 |         def func() {a_b := 10;}
                            ^
+"""),
+(   """
+        def func(_:int=0) {}
+     """, """\
+src.xy:2:23: error: Underscores are not allowed in names. For more info go to TBD
+|         def func(_:int=0) {}
+                        ^
 """),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):

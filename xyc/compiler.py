@@ -916,7 +916,7 @@ def validate_name(node: xy.Node, ctx: CompilerContext):
         name = name.name
     assert isinstance(name, str)
     if '_' in name:
-        raise CompilationError("Underscores are not allowed in names. For more info go to RBD", node)
+        raise CompilationError("Underscores are not allowed in names. For more info go to TBD", node)
     if not name[0].isalpha():
         raise CompilationError("Names should start with a letter", node)
     for i in range(1, len(name)):
@@ -1293,6 +1293,8 @@ def compile_params(params, cast, cfunc, ctx):
     param_objs = []
     any_default_value_params = False
     for param in params:
+        if param.name is not None:
+            validate_name(param, ctx)
         param_obj = VarObj(xy_node=param, passed_by_ref=should_pass_by_ref(param))
 
         if param.value is not None:
