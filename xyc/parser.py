@@ -644,7 +644,7 @@ def parse_str_literal(prefix, prefix_start, itoken):
 
 def parse_args_kwargs(itoken):
     positional, named = [], {}
-    args = parse_expr_list(itoken)
+    args = parse_expr_list(itoken, ignore_eols=True)
     for expr in args:
         is_named = (
             isinstance(expr, BinExpr) and expr.op == "=" and
@@ -657,11 +657,13 @@ def parse_args_kwargs(itoken):
     return positional, named
     
 
-def parse_expr_list(itoken):
+def parse_expr_list(itoken, ignore_eols=True):
     res = []
+    if ignore_eols: itoken.skip_empty_lines()
     while itoken.peak() not in {")", "]", "}", ";"}:
         expr = parse_expression(itoken)
         res.append(expr)
+        if ignore_eols: itoken.skip_empty_lines()
         if itoken.peak() not in {")", "]", "}", ";"}:
             itoken.expect(",")
     return res

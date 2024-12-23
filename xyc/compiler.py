@@ -244,7 +244,6 @@ class CompilerContext:
 
     def eval(self, node):
         if isinstance(node, xy.Id):
-            # maybe instead of None we can return a special object
             return self.lookup(node.name)
         elif isinstance(node, xy.Const):
             return ConstObj(value=node.value, xy_node=node)
@@ -356,7 +355,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 expand_name = len(func_space) > 0
                 if len(func_space) == 1:
                     # Already present. Expand name.
-                    func_desc = func_space[0]
+                    func_desc = func_spacparam = c.VarDecl(param.name, get_c_type(param.type, ctx))ce[0]
                     func_desc.c_node.name = mangle_def(
                         func_desc.xy_node, ctx, expand=True
                     )
