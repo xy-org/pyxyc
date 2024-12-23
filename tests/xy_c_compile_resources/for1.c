@@ -2,14 +2,14 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct fors_Fib fors_Fib;
+typedef struct for1_Fib for1_Fib;
 
-struct fors_Fib {
+struct for1_Fib {
     int32_t m_a;
     int32_t m_b;
 };
 
-void fors_busywait(void) {
+void for1_busywait(void) {
     for (uint32_t i = 0;; ++i) {
         if (i == 10000) {
             break;
@@ -17,12 +17,12 @@ void fors_busywait(void) {
     }
 }
 
-void fors_busywait2(void) {
+void for1_busywait2(void) {
     for (int32_t tmp_iter0 = 0; tmp_iter0 < 10000; ++tmp_iter0) {
     }
 }
 
-int32_t fors_sumUpTo(int32_t start, int32_t end) {
+int32_t for1_sumUpTo(int32_t start, int32_t end) {
     int32_t res = 0;
     for (int32_t i = start; i < end; ++i) {
         res += i;
@@ -30,15 +30,15 @@ int32_t fors_sumUpTo(int32_t start, int32_t end) {
     return res;
 }
 
-int32_t fors_multUpTo(int32_t start, int32_t end, int32_t step) {
+int32_t for1_multUpTo(int32_t start, int32_t end, int32_t step) {
     int32_t res = 0;
     for (int32_t i = start; i < end; i += step) {
-        res *= fors_sumUpTo(start, i);
+        res *= for1_sumUpTo(start, i);
     }
     return res;
 }
 
-int32_t fors_doubleLoop(int32_t limX, int32_t limY) {
+int32_t for1_doubleLoop(int32_t limX, int32_t limY) {
     int32_t res = 1;
     for (int32_t i = 0; i < limX; ++i) {
         for (int32_t j = 0; j < limY; ++j) {
@@ -48,7 +48,7 @@ int32_t fors_doubleLoop(int32_t limX, int32_t limY) {
     return res;
 }
 
-int32_t fors_zipLoop(int32_t limX, int32_t limY) {
+int32_t for1_zipLoop(int32_t limX, int32_t limY) {
     int32_t res = 1;
     {
         int32_t i = 0;
@@ -60,29 +60,29 @@ int32_t fors_zipLoop(int32_t limX, int32_t limY) {
     return res;
 }
 
-fors_Fib fors_fibonacci(void) {
-    return (fors_Fib){0, 1};
+for1_Fib for1_fibonacci(void) {
+    return (for1_Fib){0, 1};
 }
 
-bool fors_valid(fors_Fib fib) {
+bool for1_valid(for1_Fib fib) {
     return true;
 }
 
-fors_Fib fors_next(fors_Fib fib) {
-    return (fors_Fib){fib.m_a + fib.m_b, fib.m_a};
+for1_Fib for1_next(for1_Fib fib) {
+    return (for1_Fib){fib.m_a + fib.m_b, fib.m_a};
 }
 
-int32_t fors_deref(fors_Fib fib) {
+int32_t for1_deref(for1_Fib fib) {
     return fib.m_a;
 }
 
-int32_t fors_mulFibs(int32_t lim) {
+int32_t for1_mulFibs(int32_t lim) {
     int32_t res = 1;
     {
         int32_t tmp_iter0 = 0;
-        fors_Fib tmp_iter1 = fors_fibonacci();
-        for (; tmp_iter0 < lim && fors_valid(tmp_iter1); ++tmp_iter0, tmp_iter1 = fors_next(tmp_iter1)) {
-            const int32_t fib = fors_deref(tmp_iter1);
+        for1_Fib tmp_iter1 = for1_fibonacci();
+        for (; tmp_iter0 < lim && for1_valid(tmp_iter1); ++tmp_iter0, tmp_iter1 = for1_next(tmp_iter1)) {
+            const int32_t fib = for1_deref(tmp_iter1);
             res *= fib;
         }
     }

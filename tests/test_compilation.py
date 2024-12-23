@@ -20,7 +20,7 @@ from xyc.compiler import CompilationError
     "whiles",
     "dowhiles",
     "slices",
-    "fors",
+    "for1",
     "pointers",
     "pseudoParams",
     "errors",

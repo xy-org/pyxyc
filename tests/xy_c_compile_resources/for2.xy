@@ -1,0 +1,46 @@
+;; An array of up to 100 floats
+struct Array {
+    elems: float[100];
+    len: Size;
+}
+
+def iter(arr: Array) -> ref(arr) Size {
+    return 0;
+}
+
+def valid(arr: Array, idx: Size) = idx < arr.len
+
+def get(arr: Array, idx: Size) -> float
+>> valid(arr, idx)
+{
+    return arr'elems[idx];
+}
+
+def set(arr: inout Array, idx: Size, elem: int) 
+>> valid(arr, idx)
+{
+    arr.elems[idx] = elem;
+}
+
+def sum(arr: Array) -> float {
+    return for(elem in arr) -> (res: float) {
+        res += elem;
+    }
+    return res;
+}
+
+def mix(arr1: Array, arr2: Array) -> float
+>> arr1'len == arr2'len
+{
+    return for(i in :, e1 in arr1, e2 in arr2) -> (res: float) {
+        res += i * e1 * e2;
+    }
+}
+
+def double(arr1: inout Array) {
+    for(elem in arr) {
+        if (elem > 0) {
+            elem += elem;
+        }
+    }
+}
