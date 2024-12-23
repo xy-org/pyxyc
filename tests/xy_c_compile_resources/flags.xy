@@ -3,12 +3,12 @@ import posic~[CLib{headers=["unistd.h", "fcntl.h"]}] in c
 # --- Flags ---
 
 struct OpenFlags~Flags {
+    value : int;
+
     readOnly : pseudo int = c.O_RDONLY;
     writeOnly : pseudo int = c.O_WRONLY;
     readWrite : pseudo int = c.O_RDWR;
     append : pseudo int = c.O_APPEND;
-
-    value : int;
 } ;; the Flags tag will generatte the | operator
 
 struct String {
@@ -44,4 +44,6 @@ def testFlags() {
     flags2 := OpenFlags{.append};
     open("file.txt", flags | flags2);
     open("file.txt", flags & flags2);
+    flags3 := OpenFlags{value=0x80};
+    flags4 := OpenFlags{0x08};
 }

@@ -53,4 +53,6 @@ void flags_testFlags(void) {
     flags_open(tmp_arg8, flags | flags2);
     flags_String tmp_arg9 = flags_string("file.txt", 8);
     flags_open(tmp_arg9, flags & flags2);
+    const flags_OpenFlags flags3 = 0x80;
+    const flags_OpenFlags flags4 = 0x08;
 }

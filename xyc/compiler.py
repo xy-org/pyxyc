@@ -847,13 +847,13 @@ def compile_enumflags_fields(type_obj, ast, cast, ctx):
                 raise CompilationError("Enums can have only 1 non pseudo field", field)
 
     base_type_obj = None
-    if field.type is not None:
-        base_type_obj = find_type(field.type, ctx)
+    if base_field.type is not None:
+        base_type_obj = find_type(base_field.type, ctx)
         fully_compile_type(base_type_obj, cast, ast, ctx)
     else:
         raise CompilationError("An explicit type must be specified", field)
 
-    if field.value is not None:
+    if base_field.value is not None:
         raise CompilationError(
             "The default value for the enum is the value associated "
             "with the first flag", field)
@@ -1841,7 +1841,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
 
 def do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: CompilerContext):
     res = None if tmp_obj is None else c.Id(tmp_obj.c_node.name)
-    field_objs = list(type_obj.fields)
+    field_objs = list(type_obj.fields.values())
     for i, arg in enumerate(expr.args):
         if field_objs[i].xy_node.is_pseudo:
             val_obj = field_get(type_obj, field_objs[i], cast, cfunc, ctx)
@@ -1853,6 +1853,8 @@ def do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compiler
                 )
             else:
                 res = val_obj.c_node
+        else:
+            res = compile_expr(arg, cast, cfunc, ctx).c_node
 
     for fname, arg in expr.kwargs.items():
         if fname not in type_obj.fields:
@@ -1867,6 +1869,8 @@ def do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compiler
                 )
             else:
                 res = val_obj.c_node
+        else:
+            res = compile_expr(arg, cast, cfunc, ctx).c_node
 
     if res is None:
         res = c.Const(0)
