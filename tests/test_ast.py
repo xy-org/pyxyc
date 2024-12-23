@@ -209,7 +209,7 @@ def test_parse_comments(code, exp_ast):
         [
             ast.FuncDef(name="main", params=[], rtype=ast.Type("void"), body=[
                 ast.FuncCall(name="print", args=[
-                    ast.Var(name="\"abc\"")
+                    ast.Id(name="\"abc\"")
                 ])
             ])
         ]
@@ -240,7 +240,7 @@ def test_parse_comments(code, exp_ast):
             ast.Import(lib="xylib"),
             ast.FuncDef(
                 name="main",
-                tags=ast.TagList(positional=[ast.Var("EntryPoint")]),
+                tags=ast.TagList(positional=[ast.Id("EntryPoint")]),
                 rtype=ast.Type("int"), body=[
                     ast.Return(value=ast.Const(0))
                 ]
@@ -258,7 +258,7 @@ def test_parse_comments(code, exp_ast):
         [
             ast.FuncDef(
                 name="main",
-                tags=ast.TagList(positional=[ast.Var("EntryPoint")]),
+                tags=ast.TagList(positional=[ast.Id("EntryPoint")]),
                 params=[
                     ast.Param("a", type=ast.Type("int")),
                     ast.Param("b", type=ast.Type("long"))
@@ -266,11 +266,11 @@ def test_parse_comments(code, exp_ast):
                 rtype=ast.Type("int"),
                 etype=ast.Type("Error"),
                 in_guards=[
-                    ast.BinExpr(ast.Var("a"), ast.Var("b"), ">")
+                    ast.BinExpr(ast.Id("a"), ast.Id("b"), ">")
                 ],
                 body=[
                     ast.Return(
-                        ast.BinExpr(ast.Var("a"), ast.Var("b"), "+")
+                        ast.BinExpr(ast.Id("a"), ast.Id("b"), "+")
                     )
                 ]
             )
@@ -293,10 +293,10 @@ def test_parse_simple_func(code, exp_ast):
         """,
         [
             ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
-                ast.FuncCall("func", args=[ast.Var("a")]),
-                ast.FuncCall("func", args=[ast.Var("a")]),
-                ast.FuncCall("func", args=[ast.Var("a"), ast.Var("b")]),
-                ast.FuncCall("func", args=[ast.Var("a"), ast.Var("b")]),
+                ast.FuncCall("func", args=[ast.Id("a")]),
+                ast.FuncCall("func", args=[ast.Id("a")]),
+                ast.FuncCall("func", args=[ast.Id("a"), ast.Id("b")]),
+                ast.FuncCall("func", args=[ast.Id("a"), ast.Id("b")]),
             ]),
         ]
     ],
@@ -314,7 +314,7 @@ def test_parse_func_call(code, exp_ast):
         """,
         [
             ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
-                ast.VarDecl("a", type=None, value=ast.Var("b")),
+                ast.VarDecl("a", type=None, value=ast.Id("b")),
             ]),
         ]
     ],
@@ -333,13 +333,13 @@ def test_parse_func_call(code, exp_ast):
         [
             ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
                 ast.VarDecl("b", type=None, value=ast.Const(0)),
-                ast.VarDecl("c", type=ast.Var("int"), value=ast.Const(5)),
-                ast.VarDecl("cv", type=ast.Var("int"), varying=True),
+                ast.VarDecl("c", type=ast.Id("int"), value=ast.Const(5)),
+                ast.VarDecl("cv", type=ast.Id("int"), varying=True),
                 ast.VarDecl(
                     "a", type=None,
                     value=ast.BinExpr(
-                        ast.BinExpr(ast.Var("b"), ast.Const(5), "+"),
-                        ast.Var("c"),
+                        ast.BinExpr(ast.Id("b"), ast.Const(5), "+"),
+                        ast.Id("c"),
                         "-"
                     )
                 ),
@@ -348,19 +348,19 @@ def test_parse_func_call(code, exp_ast):
                 ast.VarDecl(
                     "ptr",
                     type=ast.AttachTags(
-                        ast.Var("Ptr"), ast.TagList([ast.Var("int")])
+                        ast.Id("Ptr"), ast.TagList([ast.Id("int")])
                     ),
                     value=None, varying=True
                 ),
                 ast.VarDecl(
                     "pp",
                     type=ast.AttachTags(
-                        ast.Var("Ptr"),
+                        ast.Id("Ptr"),
                         ast.TagList([ast.AttachTags(
-                            ast.Var("Ptr"), ast.TagList([ast.Var("int")])
+                            ast.Id("Ptr"), ast.TagList([ast.Id("int")])
                         )]),
                     ),
-                    value=ast.FuncCall("addr", args=[ast.Var("ptr")]),
+                    value=ast.FuncCall("addr", args=[ast.Id("ptr")]),
                 ),
             ]),
         ]
@@ -417,8 +417,8 @@ def test_expressions(code, exp_ast):
         """,
         [
             ast.StructDef(name="Str", fields=[
-                ast.VarDecl("ptr", type=ast.Var("Ptr"), varying=False),
-                ast.VarDecl("len", type=ast.Var("Size"), varying=False),
+                ast.VarDecl("ptr", type=ast.Id("Ptr"), varying=False),
+                ast.VarDecl("len", type=ast.Id("Size"), varying=False),
             ]),
         ]
     ],
@@ -429,9 +429,9 @@ def test_expressions(code, exp_ast):
         """,
         [
             ast.StructDef(name="MyName", fields=[
-                ast.VarDecl("name", type=ast.Var("Str"), varying=False),
+                ast.VarDecl("name", type=ast.Id("Str"), varying=False),
             ], tags=ast.TagList(
-                named={"copy": ast.Var("False")}
+                named={"copy": ast.Id("False")}
             )),
         ]
     ],
@@ -455,38 +455,38 @@ def test_parse_struct(code, exp_ast):
         [
             ast.FuncDef(name="func", rtype=ast.Type("void"), body=[
                 ast.VarDecl("a", type=None, value=ast.StructLiteral(
-                    name=ast.Var("int"), args=[ast.Const(1)]
+                    name=ast.Id("int"), args=[ast.Const(1)]
                 )),
                 ast.VarDecl("p", type=None, value=ast.StructLiteral(
-                    name=ast.Var("Pair"), args=[ast.Const(1), ast.Var("a")]
+                    name=ast.Id("Pair"), args=[ast.Const(1), ast.Id("a")]
                 )),
                 ast.FuncCall("func2", args=[
                     ast.BinExpr(
                         arg1=ast.StructLiteral(
-                            name=ast.Var("Pair"), args=[ast.Const(3), ast.Const(4)]
+                            name=ast.Id("Pair"), args=[ast.Const(3), ast.Const(4)]
                         ),
                         arg2=ast.StructLiteral(
-                            name=ast.Var("Pair"), args=[ast.Const(5), ast.Const(6)]
+                            name=ast.Id("Pair"), args=[ast.Const(5), ast.Const(6)]
                         ),
                         op="*"
                     )
                 ]),
                 ast.VarDecl("b", type=ast.AttachTags(
-                    ast.Var("ComplexType"), ast.TagList([
-                        ast.StructLiteral(ast.Var("OtherType"), args=[])
+                    ast.Id("ComplexType"), ast.TagList([
+                        ast.StructLiteral(ast.Id("OtherType"), args=[])
                     ])
                 ), value=ast.Const(5)),
                 ast.VarDecl(
                     "c", varying=True, type=ast.AttachTags(
-                        ast.Var("Ptr"), ast.TagList([
+                        ast.Id("Ptr"), ast.TagList([
                             ast.StructLiteral(
                                 ast.AttachTags(
-                                    ast.Var("Type2"),
+                                    ast.Id("Type2"),
                                     tags=ast.TagList([
                                         ast.StructLiteral(
-                                            ast.Var("Type3"),
+                                            ast.Id("Type3"),
                                             kwargs={"val": ast.StructLiteral(
-                                                ast.Var("Type4"),
+                                                ast.Id("Type4"),
                                                 kwargs={
                                                     "val": ast.Const(5)
                                                 }
@@ -521,14 +521,14 @@ def test_struct_literals(code, exp_ast):
             ast.FuncDef(
                 name="func", rtype=ast.Type("void"), body=[],
                 tags=ast.TagList(positional=[
-                    ast.Var("Tag")
+                    ast.Id("Tag")
                 ])
             ),
             ast.FuncDef(
                 name="func", rtype=ast.Type("void"), body=[],
                 tags=ast.TagList(positional=[
                     ast.StructLiteral(
-                        name=ast.Var("Tag"),
+                        name=ast.Id("Tag"),
                         kwargs={
                             "val": ast.Const(1)
                         }
@@ -539,10 +539,10 @@ def test_struct_literals(code, exp_ast):
                 name="func", rtype=ast.Type("void"), body=[],
                 tags=ast.TagList(positional=[
                     ast.StructLiteral(
-                        name=ast.Var("Tag"),
+                        name=ast.Id("Tag"),
                         kwargs={
                             "val": ast.StructLiteral(
-                                name=ast.Var("Tag2"),
+                                name=ast.Id("Tag2"),
                                 kwargs={
                                     "val2": ast.Const(2)
                                 }

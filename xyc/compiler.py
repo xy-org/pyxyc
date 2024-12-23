@@ -118,7 +118,7 @@ def compile_expr(expr, cast, cfunc, ctx):
         arg2 = compile_expr(expr.arg2, cast, cfunc, ctx)
         res = c.Expr(arg1, arg2, op=expr.op)
         return res
-    elif isinstance(expr, xy.Var):
+    elif isinstance(expr, xy.Id):
         res = c.Name(expr.name)
         return res
     elif isinstance(expr, xy.FuncCall):

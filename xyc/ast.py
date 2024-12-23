@@ -68,7 +68,7 @@ class StructLiteral(Node):
     kwargs: dict[str, Node] = field(default_factory=dict)
 
 @dataclass
-class Var(Node):
+class Id(Node):
     name: str
 
 @dataclass

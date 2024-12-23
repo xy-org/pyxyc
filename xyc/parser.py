@@ -251,7 +251,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
             else:
                 arg1 = Const(int(token), token, "int")
         else:
-            arg1 = Var(token, src=itoken.src, coords=tk_coords)
+            arg1 = Id(token, src=itoken.src, coords=tk_coords)
     else:
         arg1 = parse_expression(itoken, precedence+1)
 
@@ -260,7 +260,7 @@ def parse_expression(itoken, precedence=MIN_PRECEDENCE, is_struct=False):
     while op in operator_precedence and operator_precedence[op] == precedence:
         itoken.consume()  # operator
         if op == "(":
-            if not isinstance(arg1, Var):
+            if not isinstance(arg1, Id):
                 itoken.i -= 1
                 raise ParsingError("Only functions are callable.", itoken)
             args, kwargs = parse_args(itoken)
@@ -366,7 +366,7 @@ def parse_args(itoken):
         expr = parse_expression(itoken)
         is_named = (
             isinstance(expr, BinExpr) and expr.op == "=" and
-            isinstance(expr.arg1, Var)
+            isinstance(expr.arg1, Id)
         )
         if is_named:
             named[expr.arg1.name] = expr.arg2
@@ -403,7 +403,7 @@ def parse_tags(itoken):
     else:
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
-        tag = Var(token, src=itoken.src, coords=tk_coords)
+        tag = Id(token, src=itoken.src, coords=tk_coords)
         
         if itoken.peak() == "~":
             raise ParsingError(
