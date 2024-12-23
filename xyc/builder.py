@@ -15,7 +15,7 @@ class CompiledModule:
 
 class Builder:
     def __init__(self, input: str, output: str | None = None,
-                 compile_only=False, work_dir=".xy_build"):
+                 compile_only=False, work_dir=".xyc_build"):
         self.input = input
         self.output = output
         self.project_name = path.splitext(path.basename(path.abspath(input)))[0]

@@ -6,10 +6,6 @@ from xyc.builder import Builder
 from xyc.cstringifier import stringify
 from xyc.compiler import CompilationError
 
-@pytest.fixture
-def resource_dir(request):
-    return pathlib.Path(os.path.dirname(request.path))
-
 
 @pytest.mark.parametrize("filename", [
     "noop",

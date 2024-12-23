@@ -2,7 +2,7 @@
 import argparse
 from xyc.builder import Builder
 
-def main():
+def main(cli_args=None):
     parser = argparse.ArgumentParser(
         prog='xyc',
         description='The XY compiler',
@@ -13,7 +13,7 @@ def main():
         '-C', '--compile-only', action='store_true', default=False,
         help="Run only the xy to c compilation, producing c source files"
     )
-    args = parser.parse_args()
+    args = parser.parse_args(args=cli_args)
 
     builder = Builder(
         input=args.path, output=args.output,

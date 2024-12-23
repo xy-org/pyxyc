@@ -1,0 +1,13 @@
+import posix~[CLib{headers=["unistd.h"]}] in c
+import libc~[CLib{headers=["errno.h"]}] in c
+
+
+def cstr~[StrCtor{prefix="c"}](addr: Ptr, size: Size) -> Ptr {
+    return addr;
+}
+
+
+def main~EntryPoint() -> int {
+    c.write(1, c"Hello World\n", 12);
+    return 0;
+}
