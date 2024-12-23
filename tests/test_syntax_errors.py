@@ -50,3 +50,23 @@ def test_misplaced_semicolon(code, err_msg):
     act_error = None
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
+
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def double(x: int) -> int || Error {
+            error;
+        }""",
+        "Missing value for \"error\" statement"
+    ),
+    (
+        """def double(x: int) -> int || Error {
+            error Error{code=1}, Error{code=2};
+        }""",
+        "Only one error can be issued"
+    ),
+])
+def test_error_statement(code, err_msg):
+    act_error = None
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)

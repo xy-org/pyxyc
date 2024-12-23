@@ -713,8 +713,12 @@ def parse_body(itoken):
             node = Return(expr, src=itoken.src, coords=coords)
             itoken.expect(";")
         elif itoken.check("error"):
-            expr = parse_expression(itoken)
-            node = Error(expr, src=itoken.src, coords=coords)
+            exprs = parse_expr_list(itoken)
+            if len(exprs) == 0:
+                raise ParsingError("Missing value for \"error\" statement", itoken)
+            if len(exprs) > 1:
+                raise ParsingError("Only one error can be issued", itoken)
+            node = Error(exprs[0], src=itoken.src, coords=coords)
             itoken.expect(";")
         elif itoken.peak() == "import":
             raise ParsingError("Imports are not allowed in functions", itoken)
