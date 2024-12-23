@@ -35,13 +35,9 @@ class Comment(Node):
     is_doc : bool = False
 
 @dataclass
-class Type(Node):
-    name: str
-
-@dataclass
 class Param(Node):
     name: str
-    type: Type | None = None
+    type: Node | None = None
     value: Node | None = None
     outin: bool = False
 
@@ -49,8 +45,8 @@ class Param(Node):
 class FuncDef(Node):
     name: str
     params: list[Param] = field(default_factory=list)
-    rtype: Type | None = None
-    etype: Type | None = None
+    rtype: Node | None = None
+    etype: Node | None = None
     in_guards: list[Node] = field(default_factory=list)
     out_guards: list[Node] = field(default_factory=list)
     body: list[Node] = field(default_factory=list)
@@ -138,7 +134,7 @@ class Return(Node):
 @dataclass
 class VarDecl(Node):
     name: str
-    type: Type | None = None
+    type: Node | None = None
     value: Node | None = None
     varying: bool = False
 

@@ -103,7 +103,7 @@ def test_parse_comments(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(name="main", params=[], rtype=ast.Type("void"), body=[
+            ast.FuncDef(name="main", params=[], rtype=ast.Id("void"), body=[
                 ast.FuncCall(name="print", args=[
                     ast.StrLiteral(parts=[ast.Const("abc")])
                 ])
@@ -120,7 +120,7 @@ def test_parse_comments(code, exp_ast):
         [
             ast.Comment(" multi word comment"),
             ast.Import(lib="xylib"),
-            ast.FuncDef(name="main", rtype=ast.Type("int"), body=[]),
+            ast.FuncDef(name="main", rtype=ast.Id("int"), body=[]),
         ]
     ],
     [
@@ -137,7 +137,7 @@ def test_parse_comments(code, exp_ast):
             ast.FuncDef(
                 name="main",
                 tags=ast.TagList(args=[ast.Id("EntryPoint")]),
-                rtype=ast.Type("int"), body=[
+                rtype=ast.Id("int"), body=[
                     ast.Return(value=ast.Const(0))
                 ]
             ),
@@ -156,11 +156,11 @@ def test_parse_comments(code, exp_ast):
                 name="main",
                 tags=ast.TagList(args=[ast.Id("EntryPoint")]),
                 params=[
-                    ast.Param("a", type=ast.Type("int")),
-                    ast.Param("b", type=ast.Type("long"))
+                    ast.Param("a", type=ast.Id("int")),
+                    ast.Param("b", type=ast.Id("long"))
                 ],
-                rtype=ast.Type("int"),
-                etype=ast.Type("Error"),
+                rtype=ast.Id("int"),
+                etype=ast.Id("Error"),
                 in_guards=[
                     ast.BinExpr(ast.Id("a"), ast.Id("b"), ">")
                 ],
@@ -188,7 +188,7 @@ def test_parse_simple_func(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+            ast.FuncDef(name="main", rtype=ast.Id("void"), body=[
                 ast.FuncCall("func", args=[ast.Id("a")]),
                 ast.FuncCall("func", args=[ast.Id("a")]),
                 ast.FuncCall("func", args=[ast.Id("a"), ast.Id("b")]),
@@ -209,7 +209,7 @@ def test_parse_func_call(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+            ast.FuncDef(name="main", rtype=ast.Id("void"), body=[
                 ast.VarDecl("a", type=None, value=ast.Id("b")),
             ]),
         ]
@@ -227,7 +227,7 @@ def test_parse_func_call(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+            ast.FuncDef(name="main", rtype=ast.Id("void"), body=[
                 ast.VarDecl("b", type=None, value=ast.Const(0)),
                 ast.VarDecl("c", type=ast.Id("int"), value=ast.Const(5)),
                 ast.VarDecl("cv", type=ast.Id("int"), varying=True),
@@ -281,7 +281,7 @@ def test_parse_var_decl(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+            ast.FuncDef(name="main", rtype=ast.Id("void"), body=[
                 ast.VarDecl("a", type=None, value=ast.BinExpr(
                     arg1 = ast.BinExpr(
                         arg1=ast.Const(0),
@@ -426,7 +426,7 @@ def test_parse_struct(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(name="func", rtype=ast.Type("void"), body=[
+            ast.FuncDef(name="func", rtype=ast.Id("void"), body=[
                 ast.VarDecl("a", type=None, value=ast.StructLiteral(
                     name=ast.Id("int"), args=[ast.Const(1)]
                 )),
@@ -492,13 +492,13 @@ def test_struct_literals(code, exp_ast):
         """,
         [
             ast.FuncDef(
-                name="func", rtype=ast.Type("void"), body=[],
+                name="func", rtype=ast.Id("void"), body=[],
                 tags=ast.TagList(args=[
                     ast.Id("Tag")
                 ])
             ),
             ast.FuncDef(
-                name="func", rtype=ast.Type("void"), body=[],
+                name="func", rtype=ast.Id("void"), body=[],
                 tags=ast.TagList(args=[
                     ast.StructLiteral(
                         name=ast.Id("Tag"),
@@ -509,7 +509,7 @@ def test_struct_literals(code, exp_ast):
                 ])
             ),
             ast.FuncDef(
-                name="func", rtype=ast.Type("void"), body=[],
+                name="func", rtype=ast.Id("void"), body=[],
                 tags=ast.TagList(args=[
                     ast.StructLiteral(
                         name=ast.Id("Tag"),
@@ -556,7 +556,7 @@ def test_ambiguous_tags(code, err_msg):
         }
         """,
         [
-            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+            ast.FuncDef(name="main", rtype=ast.Id("void"), body=[
                 ast.VarDecl("empty", type=None, value=ast.StrLiteral(
                     parts=[]
                 )),
@@ -578,7 +578,7 @@ def test_ambiguous_tags(code, err_msg):
         }
         """,
         [
-            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+            ast.FuncDef(name="main", rtype=ast.Id("void"), body=[
                 ast.VarDecl("f", type=None, value=ast.StrLiteral(
                     prefix="f",
                     parts=[
@@ -632,7 +632,7 @@ def test_parse_string_literals(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(name="main", rtype=ast.Type("void"), body=[
+            ast.FuncDef(name="main", rtype=ast.Id("void"), body=[
                 ast.VarDecl("empty", type=None, value=ast.ArrayLit(
                     elems=[]
                 )),
@@ -664,7 +664,7 @@ def test_parse_string_literals(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(name="main", rtype=ast.Type("Str"), body=[
+            ast.FuncDef(name="main", rtype=ast.Id("Str"), body=[
                 ast.VarDecl("m", type=ast.ArrayType(
                     base=ast.Id("int"),
                     dims=[ast.Const(2), ast.Const(2)]
@@ -699,7 +699,7 @@ def test_parse_string_literals(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(name="sum", rtype=ast.Type("int"), params=[
+            ast.FuncDef(name="sum", rtype=ast.Id("int"), params=[
                 ast.Param(
                     "nums", type=ast.ArrayType(
                         base=ast.Id("int"),

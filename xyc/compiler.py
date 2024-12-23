@@ -253,10 +253,10 @@ def import_builtins(ctx, cast):
             func = xy.FuncDef(
                 "add",
                 params=[
-                    xy.Param("x", xy.Type(type1)),
-                    xy.Param("y", xy.Type(type2))
+                    xy.Param("x", xy.Id(type1)),
+                    xy.Param("y", xy.Id(type2))
                 ],
-                rtype=xy.Type(rtype_name)
+                rtype=xy.Id(rtype_name)
             )
             desc = register_func(func, ctx)
             desc.builtin = True
@@ -264,7 +264,7 @@ def import_builtins(ctx, cast):
     
     select = xy.FuncDef(name="select", params=[
         xy.Param("arr", xy.ArrayType(base=None)),
-        xy.Param("index", xy.Type("int")),
+        xy.Param("index", xy.Id("int")),
     ])
     select_obj = register_func(select, ctx)
     select_obj.builtin = True
@@ -485,7 +485,7 @@ def register_func(fdef, ctx):
     return res
 
 def find_type(texpr, ctx):
-    if isinstance(texpr, xy.Id) or isinstance(texpr, xy.Type):
+    if isinstance(texpr, xy.Id):
         return ctx.id_table[texpr.name]
     elif isinstance(texpr, xy.ArrayType):
         base_type = find_type(texpr.base, ctx)

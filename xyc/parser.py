@@ -181,9 +181,9 @@ def parse_def(itoken):
     node.params = parse_params(itoken)
     itoken.expect("->", "Missing -> in func def."
                   " Please put '-> void' if the func doesn't return anything.")
-    node.rtype = parse_return_type(itoken)
+    node.rtype = parse_toplevel_type(itoken)
     if itoken.check("|"):
-        node.etype = parse_return_type(itoken)
+        node.etype = parse_toplevel_type(itoken)
     num_empty = itoken.skip_empty_lines()
     while itoken.peak() in {">>", "<<"}:
         guard_token = itoken.consume()
@@ -220,13 +220,9 @@ def parse_params(itoken):
 
 def parse_type(itoken):
     type_expr = parse_expression(itoken)
-
-    if isinstance(type_expr, Id):
-        return Type(name=type_expr.name, src=type_expr.src, coords=type_expr.coords)
-    else:
-        return expr_to_type(type_expr)
+    return expr_to_type(type_expr)
     
-def parse_return_type(itoken):
+def parse_toplevel_type(itoken):
     # this new map is here purely to provide better error messages in cases like
     # def func() -> MyType{} {...}
     # or
@@ -234,26 +230,9 @@ def parse_return_type(itoken):
     toplevel_precedence_map = {**operator_precedence}
     del toplevel_precedence_map["|"]
     del toplevel_precedence_map["{"]
-    type_expr = parse_expression(itoken, op_prec=toplevel_precedence_map)
-
-    if isinstance(type_expr, Id):
-        return Type(name=type_expr.name, src=type_expr.src, coords=type_expr.coords)
-    else:
-        return expr_to_type(type_expr)
-
-    # # This function has a really bad smell
-    # name, next = itoken.peakn(2)
-    # if next in {"|", "{", "~", "\n"}:
-    #     itoken.consume()  # name
-    #     res = Type(name=name, src=itoken.src)
-    #     if next == "~":
-    #         res.tags = parse_tags(itoken)
-    #     return res
     
-    # if name == "(":
-    #     return parse_type(itoken)
-
-    # raise ParsingError("Return type expressions need to be enclosed in brackets", itoken)
+    type_expr = parse_expression(itoken, op_prec=toplevel_precedence_map)
+    return expr_to_type(type_expr)
 
 operator_precedence = {
     "~": 11,
