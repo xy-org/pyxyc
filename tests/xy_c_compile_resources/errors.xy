@@ -1,0 +1,20 @@
+struct Error {
+    errorCode: int;
+}
+
+def to(err: Error, :bool) -> bool = err.errorCode != 0;
+
+def power(x: int, y: int) -> int | Error {
+    if (y < 0) {
+        error Error{1};
+    }
+    i: var = 0;
+    return while (i <= y) -> (res: int = 1) {
+        res *= x;
+        i++;
+    };
+}
+
+def errorPropagation(x: int, y: int) -> int | Error {
+    return power(x, y) - 1;
+}

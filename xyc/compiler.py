@@ -547,6 +547,8 @@ def compile_func(node, ctx, ast, cast):
 
 def compile_body(body, cast, cfunc, ctx):
     for node in body:
+        if isinstance(node, xy.Comment):
+            continue
         if isinstance(node, xy.Return):
             ret = c.Return()
             if node.value:
