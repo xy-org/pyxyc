@@ -17,6 +17,8 @@ class TypeObj(CompiledObj):
     fields: dict[str, 'VarObj'] = field(default_factory=list)
     init_value: any = None
     base_type_obj: 'TypeObj' = None
+    is_enum: bool = False
+    is_flags: bool = False
 
     def get_base_type(self):
         return self if self.base_type_obj is None else self.base_type_obj
@@ -319,6 +321,7 @@ class CompilerContext:
     ptr_obj: any = None
     size_obj: any = None
     enum_obj: any = None
+    flags_obj: any = None
 
     stdlib_included = False
 
@@ -587,6 +590,7 @@ def compile_module(builder, module_name, asts):
         ctx.global_ns["ulong"],
     )
     ctx.enum_obj = ctx.global_ns["Enum"]
+    ctx.flags_obj = ctx.global_ns["Flags"]
 
     compile_header(ctx, asts, res)
     
@@ -687,8 +691,9 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
                 type_obj.tag_specs = tag_specs
 
                 type_obj.is_enum = type_obj.tags.get("xy_enum", None) is ctx.enum_obj
+                type_obj.is_flags = type_obj.tags.get("xy_flags", None) is ctx.flags_obj
 
-                if not type_obj.is_enum:
+                if not (type_obj.is_enum or type_obj.is_flags):
                     cstruct = c.Struct(name=mangle_struct(node, ctx))
                     type_obj.c_node = cstruct
                     cast.type_decls.append(c.Typedef("struct " + cstruct.name, cstruct.name))
@@ -706,7 +711,7 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
             if isinstance(node, xy.StructDef):
                 type_obj = ctx.module_ns[node.name]
                 
-                if not type_obj.is_enum:
+                if not (type_obj.is_enum or type_obj.is_flags):
                     compile_struct_fields(type_obj, ast, cast, ctx)
                 else:
                     compile_enum_fields(type_obj, ast, cast, ctx)
@@ -1166,6 +1171,16 @@ def import_builtins(ctx: CompilerContext, cast):
     )
     ctx.module_ns["Enum"] = enum_ojb
 
+    # Flags
+    flags = xy.StructDef(name="Flags")
+    flags_ojb = TypeObj(flags, builtin=True)
+    flags_ojb.tags["xyTag"] = InstanceObj(
+        fields={
+            "label": StrObj(parts=[ConstObj(value="xy_flags")])
+        }
+    )
+    ctx.module_ns["Flags"] = flags_ojb
+
 def compile_funcs(ctx, ast, cast):
     for node in ast:
         if isinstance(node, xy.FuncDef):
@@ -1292,15 +1307,28 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext) -> ExprObj:
                 if field_name not in struct_obj.fields:
                     raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
                 field_obj = struct_obj.fields[field_name]
-                if not struct_obj.is_enum:
+                if not (struct_obj.is_enum or struct_obj.is_flags):
+                    # normal field
                     res = c_deref(arg1_obj.c_node, field=c.Id(field_obj.c_node.name))
-                elif arg1_obj.infered_type is arg1_obj.compiled_obj:
-                    res = c.Id(field_obj.c_node.name)
+                elif struct_obj.is_enum:
+                    # field of an enum
+                    if arg1_obj.infered_type is arg1_obj.compiled_obj:
+                        res = c.Id(field_obj.c_node.name)
+                    else:
+                        res = c.Expr(
+                            op='==',
+                            arg1=arg1_obj.c_node,
+                            arg2=c.Id(field_obj.c_node.name)
+                    )
                 else:
-                    res = c.Expr(
-                        op='==',
-                        arg1=arg1_obj.c_node,
-                        arg2=c.Id(field_obj.c_node.name)
+                    assert struct_obj.is_flags
+                    if arg1_obj.infered_type is arg1_obj.compiled_obj:
+                        res = c.Id(field_obj.c_node.name)
+                    else:
+                        res = c.Expr(
+                            op='&',
+                            arg1=arg1_obj.c_node,
+                            arg2=c.Id(field_obj.c_node.name)
                     )
                 return ExprObj(
                     c_node=res,

@@ -1,33 +1,42 @@
+import posic~[CLib{headers=["unistd.h", "fcntl.h"]}] in c
+
 # --- Flags ---
 
-# struct OpenFlags~Flags {
-#     read : bit~[xy_bitmask=c.O_READ] = false;
-#     write : bit~[xy_bitmask=c.O_WRITE] = flase;
-#     append : bit~[xy_bitmask=c.O_APPEND] = false;
-# } ;; the Flags tag will generatte the | operator
-# 
-# struct String {
-#     addr: Ptr;
-#     size: Size;
-# }
-# 
-# def string~[StringCtor{prefix=""}](addr: Ptr, size: Size) = String{addr, size}
-# 
-# def open(fn: String, flags:=OpenFlags{.read}) {
-#     if (flags.read & flags.write) {
-#         # reading and writing
-#     } if (flags == OpenFlags{.read, .append}) {
-#         # reading and appending ...
-#     } elif (flags.read) {
-#         # reading ...
-#     } elif (flags.write) {
-#         # writing ...
+struct OpenFlags~Flags {
+    # readOnly : pseudo int = c.O_RDONLY;
+    # writeOnly : pseudo int = c.O_WRONLY;
+    # readWrite : pseudo int = c.O_RDWD;
+    # append : pseudo int = c.O_APPEND;
+    readOnly : pseudo int = 1;
+    writeOnly : pseudo int = 2;
+    readWrite : pseudo int = 4;
+    append : pseudo int = 8;
+
+    value : int;
+} ;; the Flags tag will generatte the | operator
+
+struct String {
+    addr: Ptr;
+    size: Size;
+}
+
+def string~[StrCtor{prefix=""}](addr: Ptr, size: Size) = String{addr, size}
+
+def open(fn: String, flags:=OpenFlags.readOnly) {
+#     if (flags.readWrite) {
+#         # reading, writing and maybe something else
+#     } if (flags == OpenFlags{.readOnly, .append}) {
+#         # reading and appending only ...
+#     } elif (flags.readOnly) {
+#         # at least reading ...
+#     } elif (flags.writeOnly) {
+#         # at least writing ...
 #     }
-# }
-# 
-# def testFlags() {
-#     open("file.txt")
-#     open("file.txt", OpenFlags.read);
-#     open("file.txt", OpenFlags.read | OpenFlags.write);
-#     open("file.txt", OpenFlags{.read, .write});
-# }
+}
+
+def testFlags() {
+    open("file.txt");
+    open("file.txt", OpenFlags.readOnly);
+    #open("file.txt", OpenFlags.read | OpenFlags.write);
+    # open("file.txt", OpenFlags{.read, .write});
+}
