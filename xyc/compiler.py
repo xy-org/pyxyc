@@ -146,6 +146,10 @@ class ExtSymbolObj(CompiledObj):
     def symbol(self):
         return self.c_node.name
     
+    @property
+    def c_name(self):
+        return self.c_node.name
+    
 any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 any_struct_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 fieldarray_type_obj = TypeObj(xy_node=xy.Id("FieldArray"), builtin=True, c_node=c.Id("FIELD_TYPE_ARRAY_REPORT_IF_YOU_SEE_ME"))
@@ -605,13 +609,20 @@ class CompilerContext:
             if node.op == ".":
                 base = self.eval(node.arg1, msg="Cannot find symbol")
                 if isinstance(base, ImportObj):
-                    assert isinstance(node.arg2, xy.Id)
                     if base.is_external:
-                        return ExtSymbolObj(
-                            c_node=c.Id(node.arg2.name),
-                            xy_node=node,
-                        )
+                        if isinstance(node.arg2, xy.Id):
+                            return ExtSymbolObj(
+                                c_node=c.Id(node.arg2.name),
+                                xy_node=node,
+                            )
+                        else:
+                            assert isinstance(node.arg2, xy.StrLiteral)
+                            return ExtSymbolObj(
+                                c_node=c.Id(node.arg2.full_str),
+                                xy_node=node,
+                            )
                     else:
+                        assert isinstance(node.arg2, xy.Id)
                         return base.module_header.ctx.eval(node.arg2, msg)
                 elif isinstance(base, TypeObj):
                     return base.fields[node.arg2.name]
@@ -1522,17 +1533,22 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
             return compile_binop(expr, cast, cfunc, ctx)
         elif expr.op == '.':
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
-            assert isinstance(expr.arg2, xy.Id)
-            field_name = expr.arg2.name
             if isinstance(arg1_obj.infered_type, ImportObj):
                 assert arg1_obj.infered_type.is_external
-                res = c.Id(field_name)
+                if isinstance(expr.arg2, xy.Id):
+                    field_name = expr.arg2.name
+                    res = c.Id(field_name)
+                else:
+                    assert isinstance(expr.arg2, xy.StrLiteral)
+                    res = c.Id(expr.arg2.full_str)
                 return ExprObj(
                     c_node=res,
                     xy_node=expr,
                     infered_type=c_symbol_type
                 )
             else:
+                assert isinstance(expr.arg2, xy.Id)
+                field_name = expr.arg2.name
                 struct_obj = arg1_obj.infered_type
                 if field_name not in struct_obj.fields:
                     raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)

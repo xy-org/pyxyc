@@ -108,7 +108,7 @@ class Builder:
 
     def run_cc(self, files, output):
         cc_proc = subprocess.run(
-            ["clang", "-std=c99", "-Wall", *files, "-o", output],
+            ["clang", "-std=c99", "-D_DEFAULT_SOURCE", "-Wall", *files, "-o", output],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
         if cc_proc.returncode != 0:

@@ -77,6 +77,19 @@ def get(ptr: Ptr, idx: Size) -> ref(ptr) Ptr~[<< ptr..to] {
     # Implemented by the compiler
 }
 
+def set(ptr: Ptr, idx: int, value: pseudo ?) -> void {
+    # Implemented by the compiler
+}
+
+def set(ptr: Ptr, idx: Size, value: pseudo ?) -> void {
+    # Implemented by the compiler
+}
+
+# XXX shouldn't be int
+def cmp(a: Ptr, b: Ptr) -> int {
+    # Implemented by the compiler
+}
+
 ;; The address of any variable or even temporary value
 def addrof(arg: ?) -> Ptr~[<< %arg] {
     # Implemented by the compiler
