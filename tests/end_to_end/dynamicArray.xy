@@ -1,5 +1,6 @@
 import libxy.units
 import libxy.memory
+import libxy.stdio
 
 struct Array~[elemType: struct] {
     mem: Memory;
@@ -49,7 +50,9 @@ def main~EntryPoint() -> int {
     #     points.push(Point{ints[ints'len -1 -i] + i, ints[i]});
     # }
 
-    # return for (i in :, num in ints, point in points) -> (res := 0) {
-    #     res *= (point.x - point.y) * num - i;
-    # }
+    res := for (i in :, num in ints, point in points) -> (res := 0) {
+        res *= (point.x - point.y) * num - i;
+    };
+    print(f"{=res}\n");
+    return 0;
 }
