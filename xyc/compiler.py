@@ -908,11 +908,23 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
     return cast
 
+def validate_name(node: xy.Node, ctx: CompilerContext):
+    name = node.name
+    assert isinstance(name, str)
+    if '_' in name:
+        raise CompilationError("Underscores are not allowed in names. For more info go to RBD", node)
+    if not name[0].isalpha():
+        raise CompilationError("Names should start with a letter", node)
+    for i in range(1, len(name)):
+        if not name[i].isalnum():
+            raise CompilationError("Names should be alphanumeric")
+
 def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
     # 1st pass - compile just the names
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.StructDef):
+                validate_name(node, ctx)
                 type_obj = TypeObj(
                     xy_node = node,
                 )

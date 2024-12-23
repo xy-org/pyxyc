@@ -196,7 +196,7 @@ def test_param_lists(code, err_msg):
         """def func() {
             a := .5.;
         }""",
-        "Unexpected end of expression"
+        "Invalid floating point literal"
     ),
 ])
 def test_invalid_floats(code, err_msg):

@@ -231,18 +231,46 @@ from xyc.tokenizer import split_tokens
         None
     ),
     (
+        "a := 5..tag;",
+        ['a', ':', '=', '5.', '.', 'tag', ';'],
+        None
+    ),
+    (
+        "a := f(...);",
+        ['a', ':', '=', 'f', '(', '...', ')', ';'],
+        None
+    ),
+    (
+        "def func(y:Tag = ^x..elem)",
+        ['def', 'func', '(', 'y', ':', 'Tag', '=', '^', 'x', '..', 'elem', ')'],
+        None
+    ),
+    (
+        "struct 2Struct {}",
+        ['struct', '2Struct', '{', '}'],
+        None
+    ),
+    (
+        "p1.x = 10.0f;",
+        ['p1', '.', 'x', '=', '10.0f', ';'],
+        None
+    )
+])
+def test_split_tokens(code, tokens, token_pos):
+    res = split_tokens(code)
+    assert res[0] == tokens
+    if token_pos is not None:
+        assert res[1] == token_pos
+
+@pytest.mark.parametrize("code, tokens, token_pos", [
+    (
         "a := .5.;", # invalid expression but let's document how it is parsed
-        ['a', ':', '=', '.5', '.', ';'],
+        ['a', ':', '=', '.5.', ';'],
         None
     ),
     (
         "a := .5 . ;", # invalid expression but let's document how it is parsed
         ['a', ':', '=', '.5', '.', ';'],
-        None
-    ),
-    (
-        "a := 5..tag;",
-        ['a', ':', '=', '5.', '.', 'tag', ';'],
         None
     ),
     (
@@ -270,18 +298,9 @@ from xyc.tokenizer import split_tokens
         ['a', ':', '=', '...', '.', ';'],
         None
     ),
-    (
-        "a := f(...);",
-        ['a', ':', '=', 'f', '(', '...', ')', ';'],
-        None
-    ),
-    (
-        "def func(y:Tag = ^x..elem)",
-        ['def', 'func', '(', 'y', ':', 'Tag', '=', '^', 'x', '..', 'elem', ')'],
-        None
-    ),
 ])
-def test_split_tokens(code, tokens, token_pos):
+def test_split_invalid_expressions(code, tokens, token_pos):
+    # this test documents how invalid expressions are tokenized
     res = split_tokens(code)
     assert res[0] == tokens
     if token_pos is not None:

@@ -246,6 +246,27 @@ src.xy:2:16: note: Previous definition
 |         struct Structure {}
                  ^^^^^^^^^
 """),
+    ("""
+        struct My_Structure {}
+     """, """\
+src.xy:2:16: error: Underscores are not allowed in names. For more info go to RBD
+|         struct My_Structure {}
+                 ^^^^^^^^^^^^
+"""),
+    ("""
+        struct 0Struct {}
+     """, """\
+src.xy:2:16: error: Names should start with a letter
+|         struct 0Struct {}
+                 ^^^^^^^
+"""),
+    ("""
+        struct 2Struct {}
+     """, """\
+src.xy:2:16: error: Names should start with a letter
+|         struct 2Struct {}
+                 ^^^^^^^
+"""),
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
