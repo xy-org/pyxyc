@@ -4,7 +4,9 @@ struct A {
     num: int;
 }
 
-def double(a: A) = A{a.num * 2}
+def double(a: A) -> A {
+    return A{a.num * 2};
+}
 
 def doubleInout(a: inout A) {
     a.num *= 2;
@@ -25,15 +27,17 @@ def test() -> int {
 
 # Funcs with default arguments
 
-def defaultArg0(a: A, b : A = A{0}) = A{a.num + b.num}
+def defaultArg0(a: A, b : A = A{0}) -> A {return A{a.num + b.num};}
 
-def defaultArg1(a: A, b := A{0}) = A{a.num + b.num}
+def defaultArg1(a: A, b := A{0}) -> A{ return A{a.num + b.num};}
 
-def defaultArg2(a: A, b := rndA()) = A{a.num * b.num}
+def defaultArg2(a: A, b := rndA()) -> A{ return A{a.num * b.num};}
 
-def defaultArg3(a: A, b := a'defaultArg1) = A{a.num - b.num}
+def defaultArg3(a: A, b := a'defaultArg1) -> A{ return A{a.num - b.num};}
 
-def rndA() = A{5}
+def rndA() -> A {
+    return A{5};
+}
 
 
 def testDefaultArgs() {

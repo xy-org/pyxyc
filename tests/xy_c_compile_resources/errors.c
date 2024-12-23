@@ -17,10 +17,6 @@ struct errors_Error2 {
     int32_t m_b;
 };
 
-bool errors_to(errors_Error err) {
-    return err.m_errorCode != 0;
-}
-
 errors_Error errors_power(int32_t x, int32_t y, int32_t* _res0) {
     if (y < 0) {
         return (errors_Error){1};
@@ -38,7 +34,7 @@ errors_Error errors_power(int32_t x, int32_t y, int32_t* _res0) {
 errors_Error errors_errorPropagation(int32_t x, int32_t y, int32_t* _res0) {
     int32_t tmp_res0 = 0;
     const errors_Error tmp_err1 = errors_power(x, y, &tmp_res0);
-    if (errors_to(tmp_err1)) {
+    if (tmp_err1.m_errorCode != 0) {
         return tmp_err1;
     }
     *_res0 = tmp_res0 - 1;
@@ -48,7 +44,7 @@ errors_Error errors_errorPropagation(int32_t x, int32_t y, int32_t* _res0) {
 errors_Error errors_doWork(int32_t x) {
     int32_t tmp_res0 = 0;
     const errors_Error tmp_err1 = errors_power(x, x, &tmp_res0);
-    if (errors_to(tmp_err1)) {
+    if (tmp_err1.m_errorCode != 0) {
         return tmp_err1;
     }
     const int32_t y = tmp_res0;
@@ -65,12 +61,12 @@ errors_Error errors_doNothing(void) {
 
 errors_Error errors_callReturningErrorButNoResult(int32_t a, int32_t b, int32_t* _res0) {
     const errors_Error tmp_err0 = errors_doWork(a);
-    if (errors_to(tmp_err0)) {
+    if (tmp_err0.m_errorCode != 0) {
         return tmp_err0;
     }
-    const errors_Error tmp_err1 = errors_doWork(b);
-    if (errors_to(tmp_err1)) {
-        return tmp_err1;
+    const errors_Error tmp_err2 = errors_doWork(b);
+    if (tmp_err2.m_errorCode != 0) {
+        return tmp_err2;
     }
     return (errors_Error){0};
 }

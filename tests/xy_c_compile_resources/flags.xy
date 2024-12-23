@@ -16,7 +16,9 @@ struct String {
     size: Size;
 }
 
-def string~[StrCtor{prefix=""}](addr: Ptr, size: Size) = String{addr, size}
+def string~[StrCtor{prefix=""}](addr: Ptr, size: Size) -> String {
+    return String{addr, size};
+}
 
 def open(fn: String, flags:=OpenFlags.readOnly) {
     if (flags.readWrite) {

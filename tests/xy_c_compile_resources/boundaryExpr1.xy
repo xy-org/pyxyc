@@ -1,4 +1,6 @@
-def sumWithTag(x: int, y: int = x..tag) x + y
+def sumWithTag(x: int, y: int = x..tag) -> int {
+    return x + y;
+}
 
 def print(num: int) {
     # omit for brevity

@@ -20,19 +20,25 @@ struct SliceIter {
 }
 
 
-def slice(start: Size, end: Size) = Slice{start, end}
+def slice(start: Size, end: Size) -> Slice{
+    return Slice{start, end};
+}
 
 def iter(arr: Array, slice: Slice) -> ref(arr) SliceIter {
     return SliceIter{slice.n, slice.m};
 }
 
-def valid(arr: Array, iter: SliceIter) = iter.i < arr.len & iter.i < iter.lim
+def valid(arr: Array, iter: SliceIter) -> bool {
+    return iter.i < arr.len & iter.i < iter.lim;
+}
 
 def next(arr: Array, iter: inout SliceIter) {
     iter.i++;
 }
 
-def get(arr: Array, iter: SliceIter) = arr.elems[iter.i]
+def get(arr: Array, iter: SliceIter) -> float {
+    return arr.elems[iter.i];
+}
 
 def set(arr: Array, iter: SliceIter, val: float) {
     arr.elems[iter.i] = val;

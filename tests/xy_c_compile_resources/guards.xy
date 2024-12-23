@@ -22,7 +22,9 @@ struct ErrorCode {
     code: int;
 }
 
-def to(ec: ErrorCode, :bool) = ec.code != 0
+def to(ec: ErrorCode, :bool) -> bool {
+    return ec.code != 0;
+}
 
 def guards4(a: int, b: int) -> (c: int) || ErrorCode
 >> a < b

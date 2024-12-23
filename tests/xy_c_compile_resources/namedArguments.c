@@ -10,10 +10,6 @@ int32_t namedArguments_func__int__int__int__int(int32_t a, int32_t b, int32_t c,
     return a * b * c * d;
 }
 
-double namedArguments_func__double__double(double k, double m) {
-    return k * m;
-}
-
 void namedArguments_testNamedArgs(void) {
     const int32_t a = namedArguments_func__int__int__int(0, 1, 2);
     const int32_t b = namedArguments_func__int__int__int(a, 10, 2);
@@ -24,5 +20,5 @@ void namedArguments_testNamedArgs(void) {
     const int32_t g = namedArguments_func__int__int__int(a, b, c);
     const int32_t h = namedArguments_func__int__int__int(f, b, c);
     const int32_t i = namedArguments_func__int__int__int__int(1, 2, 3, 4);
-    const double j = namedArguments_func__double__double(5.0, 1.0);
+    const double j = 5.0 * 1.0;
 }

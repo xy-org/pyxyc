@@ -2,9 +2,9 @@ def compute(a: int, b: int, c: int) -> int {
     return a + b * c;
 }
 
-def helper1() = 1
-def helper2() = 2
-def helper3() = 3
+def helper1() -> int {return 1;}
+def helper2() -> int {return 2;}
+def helper3() -> int {return 3;}
 
 def test1(cond: bool) -> int {
     return if (cond) compute(helper1(), helper2(), helper3());

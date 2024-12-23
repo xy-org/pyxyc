@@ -17,7 +17,7 @@ float pseudoFields_get(pseudoFields_Point p, pseudoFields_CoordField f) {
 }
 
 void pseudoFields_set(pseudoFields_Point* p, pseudoFields_CoordField f, float val) {
-    return p->m_coords[f.m_i] = val;
+    p->m_coords[f.m_i] = val;
 }
 
 void pseudoFields_test(void) {

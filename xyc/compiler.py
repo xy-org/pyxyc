@@ -127,6 +127,7 @@ class FuncObj(CompiledObj):
     prototype_compiled: bool = False
     has_calltime_tags: bool = False
     decl_visible: bool = False
+    is_macro: bool = False
 
     @property
     def c_name(self):
@@ -1502,14 +1503,12 @@ def compile_func(node, ctx, ast, cast):
     if isinstance(node.body, list):
         compile_body(node.body, cast, cfunc, ctx, is_func_body=True)
     else:
-        # function shorthand notation
-        gen_return = xy.Return(node.body)
-        obj_ret = compile_return(gen_return, cast, cfunc, ctx)
-        cfunc.body.append(obj_ret.c_node)
-        cfunc.rtype = obj_ret.infered_type.c_name
+        # functions is a macro
+        fdesc.is_macro = True
     ctx.current_fobj = None
 
-    cast.funcs.append(cfunc)
+    if not fdesc.is_macro:
+        cast.funcs.append(cfunc)
     fdesc.decl_visible = True
     ctx.pop_ns()
 
@@ -1796,6 +1795,13 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             return maybe_deref(var_obj, deref, cast, cfunc, ctx)
         elif isinstance(var_obj, LazyObj):
             return compile_expr(var_obj.xy_node, cast, cfunc, ctx)
+        elif isinstance(var_obj, InstanceObj):
+            return ExprObj(
+                c_node=var_obj.c_node,
+                xy_node=expr,
+                infered_type=var_obj.type_obj,
+                compiled_obj=var_obj,
+            )
         else:
             raise CompilationError("Invalid expression", expr)
     elif isinstance(expr, xy.FuncCall):
@@ -1936,7 +1942,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_continue(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.AttachTags):
         obj = compile_expr(expr.arg, cast, cfunc, ctx)
-        obj.tags = ctx.eval_tags(expr.tags)
+        obj.infered_type.tags.update(ctx.eval_tags(expr.tags)) # tags are attached to the type
         return obj
     elif isinstance(expr, xy.SliceExpr):
         # rewrite slice
@@ -2208,11 +2214,10 @@ def tag_get(expr, obj, tag_label, ctx):
     
     if tag_label not in obj.tags:
         available_tags = "Available Tags:" + "    \n".join(obj.tags.keys())
+        if len(obj.tags) == 0:
+            available_tags = "Tag list is empty"
         raise CompilationError(
-            f"No tag '{tag_label}'", expr,
-            notes=[
-                (available_tags, None)
-            ]
+            f"No tag '{tag_label}'. {available_tags}", expr,
         )
     tag_obj = obj.tags[tag_label]
     return tag_obj
@@ -3039,7 +3044,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     else:
         callee_ctx = copy(ctx)  # make a shollow copy
         # deep copy only the fields that we need in the new context
-        callee_ctx.namespaces = copy(callee_ctx.namespaces)
+        callee_ctx.namespaces = copy(callee_ctx.namespaces[:2]) # copy only the global and module namespaces. ignore local vars
         callee_ctx.caller_contexts = copy(callee_ctx.caller_contexts) 
     callee_ctx.push_caller_context(caller_ctx)
 
@@ -3155,7 +3160,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         callee_ctx.eval_calltime_exprs = eval_stored_value
         cast_result = True
 
-    if (
+    if func_obj.is_macro:
+        body_expr_obj = compile_expr(func_obj.xy_node.body, cast, cfunc, callee_ctx)
+        res = body_expr_obj.c_node
+        rtype_obj = body_expr_obj.infered_type
+    elif (
         func_obj.xy_node is not None and
         (func_obj.etype_obj is not None or len(func_obj.xy_node.returns) > 1)
     ):

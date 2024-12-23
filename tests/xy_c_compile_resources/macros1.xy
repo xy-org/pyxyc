@@ -1,0 +1,24 @@
+struct Struct~[tag=Tag1] {
+    field: int;
+}
+
+struct Tag1 {}
+struct Tag2 {}
+struct Tag3 {}
+
+def call(a: Struct) impl(a, a..tag)
+
+def impl(s: Struct, :Tag1) -> int {return 0;}
+def impl(s: Struct, :Tag2) -> float {return 3.14;}
+def impl(s: Struct, :Tag3) -> bool {return true;}
+
+def test() {
+    a: Struct~[tag=Tag1];
+    b: Struct~[tag=Tag2];
+    c: Struct;
+
+    x := call(a);
+    y := call(b);
+    z := call(c);
+    w := call(c~[tag=Tag3]);
+}
