@@ -69,11 +69,11 @@ struct Ptr~[to: struct] {
     # Implemented by the compiler
 }
 
-def get(ptr: Ptr, idx: int) -> ref(ptr) Ptr~[<< ptr..to] {
+def get(ptr: Ptr, idx: int) -> ref(ptr) Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
-def get(ptr: Ptr, idx: Size) -> ref(ptr) Ptr~[<< ptr..to] {
+def get(ptr: Ptr, idx: Size) -> ref(ptr) Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
@@ -91,7 +91,7 @@ def cmp(a: Ptr, b: Ptr) -> int {
 }
 
 ;; The address of any variable or even temporary value
-def addrof(arg: ?) -> Ptr~[<< %arg] {
+def addrof(arg: ?) -> Ptr~[%^arg] {
     # Implemented by the compiler
 }
 

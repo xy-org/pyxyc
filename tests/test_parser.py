@@ -467,9 +467,9 @@ def test_parse_simple_func(code, exp_ast):
     [
         """
         def func(x: int) -> Ptr~int {}
-        def func(x: pseudo ?) -> Ptr~[<<(a'typeof)] {}
-        def func(x: pseudo ?) -> Ptr~[<< a'typeof] {}
-        def func(x: pseudo ?) -> Ptr~[<<typeof(a)] {}
+        def func(x: pseudo ?) -> Ptr~[^(a'typeof)] {}
+        def func(x: pseudo ?) -> Ptr~[^a'typeof] {}
+        def func(x: pseudo ?) -> Ptr~[^typeof(a)] {}
         """,
         [
             ast.FuncDef(ast.Id("func"),
@@ -486,7 +486,7 @@ def test_parse_simple_func(code, exp_ast):
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                         args=[
-                            ast.CallTimeExpr(
+                            ast.CallerContextExpr(
                                 ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
                             )
                         ]
@@ -499,9 +499,9 @@ def test_parse_simple_func(code, exp_ast):
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                         args=[
-                            ast.CallTimeExpr(
-                                ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
-                            )
+                            ast.FuncCall(ast.Id("typeof"), args=[
+                                ast.CallerContextExpr(ast.Id("a"))
+                            ]),
                         ]
                     ))),
                 ],
@@ -512,9 +512,10 @@ def test_parse_simple_func(code, exp_ast):
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                         args=[
-                            ast.CallTimeExpr(
-                                ast.FuncCall(ast.Id("typeof"), args=[ast.Id("a")]),
-                            )
+                            ast.FuncCall(
+                                ast.CallerContextExpr(ast.Id("typeof")),
+                                args=[ast.Id("a")]
+                            ),
                         ]
                     ))),
                 ],

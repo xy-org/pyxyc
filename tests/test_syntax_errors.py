@@ -248,6 +248,11 @@ def test_callbacks_and_fselect(code, err_msg):
         }""",
         "Syntax ambiguity"
     ),
+    (
+        """def get(ptr: Ptr, idx: int) -> ref(ptr) Ptr~[<< ptr..to] {
+        }""",
+        "Guards are allowed only on new lines"
+    ),
 ])
 def test_func_def_errors(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):

@@ -13,7 +13,8 @@ class CompiledObj:
 
 @dataclass
 class LazyObj(CompiledObj):
-    pass
+    infered_type: 'TypeObj' = None
+    compiled_obj: CompiledObj | None = None
 
 @dataclass
 class TypeObj(CompiledObj):
@@ -467,7 +468,7 @@ class CompilerContext:
     stdlib_included = False
     compiling_header = False
     func_compilation_stack : dict = field(default_factory=dict)
-    eval_calltime_exprs = False
+    eval_calltime_exprs = True
 
     fsig2obj: dict[str, CompiledObj] = field(default_factory=dict)
 
@@ -617,18 +618,16 @@ class CompilerContext:
             if name in ns:
                 return ns[name]
         return None
-
+    
     def eval(self, node, msg=None):
         if isinstance(node, xy.Id):
             res = self.lookup(node.name)
             if res is None and msg is not None:
                 raise CompilationError(msg, node)
             return res
-        elif isinstance(node, xy.CallTimeExpr):
-            if not self.eval_calltime_exprs:
-                return calltime_expr_obj
-            return self.eval(node.arg)
         elif isinstance(node, xy.CallerContextExpr):
+            if not self.eval_calltime_exprs:
+                raise NoCallerContextError
             assert self.has_caller_context()
             return self.get_caller_context().eval(node.arg, msg=msg)
         elif isinstance(node, xy.Const):
@@ -688,7 +687,10 @@ class CompilerContext:
                 else:
                     raise CompilationError("Cannot evaluate", node)
             elif node.op == "..":
-                base = self.eval(node.arg1)
+                try:
+                    base = self.eval(node.arg1)
+                except NoCallerContextError:
+                    return calltime_expr_obj
                 return tag_get(node, base, node.arg2.name, self)
             assert False
         elif isinstance(node, xy.AttachTags):
@@ -705,7 +707,10 @@ class CompilerContext:
                 raise CompilationError(f"Cannot assign tags to obj of type {obj.__class__.__name__}", node)
             return obj
         else:
-            obj = compile_expr(node, None, None, self)
+            try:
+                obj = compile_expr(node, None, None, self)
+            except NoCallerContextError:
+                return calltime_expr_obj
             if isinstance(obj, TypeObj):
                 return obj
             elif obj.compiled_obj is not None:
@@ -1304,6 +1309,9 @@ def compile_params(params, cast, cfunc, ctx):
     return param_objs, any_default_value_params
 
 def compile_ret_err_types(node, cast, cfunc, ctx):
+    eval_stored_value = ctx.eval_calltime_exprs
+    ctx.eval_calltime_exprs = False
+
     etype_compiled = None
     any_refs = False
     if return_by_param(node):
@@ -1326,6 +1334,9 @@ def compile_ret_err_types(node, cast, cfunc, ctx):
         rtype_compiled = ctx.void_obj
 
     has_calltime_tags = remove_calltime_tags(rtype_compiled)
+
+    ctx.eval_calltime_exprs = eval_stored_value
+
     return rtype_compiled, etype_compiled, any_refs, has_calltime_tags
 
 def fill_param_default_values(fobj, cast, ctx):
@@ -3036,7 +3047,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         # add arguments to a xy function
         for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
             callee_ctx.ns[pobj.xy_node.name] = arg
-            caller_ctx.ns[pobj.xy_node.name] = LazyObj(xy_node=arg.xy_node)
+            caller_ctx.ns[pobj.xy_node.name] = LazyObj(
+                xy_node=arg.xy_node, tags=arg.tags, compiled_obj=arg, infered_type=arg.infered_type
+            )
             if pobj.xy_node.is_callerContext:
                 redact_code(arg, cast, cfunc, ctx)
             if pobj.xy_node.is_pseudo:
@@ -3226,8 +3239,14 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
     return res_obj
 
-def compile_caller_context_expr(expr: xy.CallerContextExpr, cast, cfunc, ctx):
+class NoCallerContextError(Exception):
+    pass
+
+def compile_caller_context_expr(expr: xy.CallerContextExpr, cast, cfunc, ctx: CompilerContext):
     if not ctx.has_caller_context():
+        if not ctx.eval_calltime_exprs:
+            # signal to the caller that this expr cannot be compiled at the moment
+            raise NoCallerContextError
         raise CompilationError("No caller context", expr)
     return compile_expr(expr.arg, cast, cfunc, ctx.get_caller_context())
 

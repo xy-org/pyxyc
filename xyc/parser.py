@@ -902,10 +902,9 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False
             raise ParsingError("Cannot have any arguments after ...", itoken)
         calltime_coords = itoken.peak_coords()
         if itoken.peak() != "...":
-            is_calltime_expr = is_taglist and itoken.check("<<")
+            if itoken.peak() == "<<":
+                raise ParsingError("Guards are allowed only on new lines", itoken)
             expr = parse_expression(itoken, is_toplevel=is_toplevel)
-            if is_calltime_expr:
-                expr = CallTimeExpr(expr, src=itoken.src, coords=calltime_coords)
 
             res.append(expr)
         else:
