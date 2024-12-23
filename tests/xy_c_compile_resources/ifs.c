@@ -31,6 +31,31 @@ int32_t ifs_namedIf(int32_t x, int32_t y) {
     return res;
 }
 
+int32_t ifs_elifs(int32_t x, int32_t y) {
+    int32_t __tmp_res0 = 0;
+    if (x < y) {
+        __tmp_res0 = 0;
+        ifs_namedIf(x, y);
+    } else if (x < y) {
+        __tmp_res0 = 1;
+    } else {
+        __tmp_res0 = 2;
+    }
+    return __tmp_res0;
+}
+
+int32_t ifs_elifs2(int32_t x, int32_t y) {
+    int32_t __tmp_res0 = 0;
+    if (x < y) {
+        __tmp_res0 = 0;
+    } else if (x < y) {
+        __tmp_res0 = 1;
+    } else {
+        __tmp_res0 = 2;
+    }
+    return __tmp_res0;
+}
+
 int32_t ifs_chainedIfs(int32_t x, int32_t y) {
     int32_t __tmp0 = 0;
     if (x > y) {

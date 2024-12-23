@@ -203,16 +203,27 @@ def parse_def(itoken):
         node.tags = parse_tags(itoken)
     node.params = parse_params(itoken)
 
-    block = parse_block(itoken)
-    node.returns = block.returns
-    node.etype = block.etype
-    node.in_guards = block.in_guards
-    node.out_guards = block.out_guards
-    node.body = block.body
+    value = parse_block_or_expr(itoken)
+    if isinstance(value, Block):
+        node.returns = value.returns
+        node.etype = value.etype
+        node.in_guards = value.in_guards
+        node.out_guards = value.out_guards
+        node.body = value.body
+    else:
+        node.body = value
+        itoken.expect(";")
     return node
 
+def parse_block_or_expr(itoken):
+    if itoken.check("=") or itoken.peak() not in {"{", "->"}:
+        expr = parse_expression(itoken)
+        return expr
+    else:
+        return parse_block(itoken)
+
 def parse_block(itoken):
-    block = Block()
+    block = Block(src=itoken.src)
 
     if itoken.check("->"):
         if itoken.check("("):
@@ -245,11 +256,8 @@ def parse_block(itoken):
         itoken.expect(";")
         num_empty = itoken.skip_empty_lines()
 
-    if itoken.check("=") or itoken.peak() != "{":
-        block.body = parse_expression(itoken)
-        itoken.expect(";")
-    else:
-        block.body = parse_body(itoken)
+    block.coords = itoken.peak_coords()
+    block.body = parse_body(itoken)
 
     return block
 
@@ -511,20 +519,13 @@ def parse_if(itoken):
     itoken.expect("(")
     if_expr.cond = parse_expression(itoken)
     itoken.expect(")", msg="Missing closing bracket")
-    if itoken.check("->"):
-        if_expr.type = parse_toplevel_type(itoken)
-    itoken.check("=")
-    if itoken.peak() == "{":
-        if_expr.block = parse_body(itoken)
-    else:
-        if_expr.block = parse_expression(itoken)
+    if_expr.block = parse_block_or_expr(itoken)
+
     if itoken.check("else"):
-        if itoken.peak() == "{":
-            if_expr.else_node = parse_body(itoken)
-        else:
-            if_expr.else_node = parse_expression(itoken)
+        if_expr.else_node = parse_block_or_expr(itoken)
     elif itoken.peak() == "elif":
         if_expr.else_node = parse_if(itoken)
+
     return if_expr
 
 
@@ -712,7 +713,7 @@ def parse_body(itoken):
 def should_have_semicolon_after_expr(node):
     if not isinstance(node, (IfExpr, ForExpr, WhileExpr)):
         return True
-    return not isinstance(node.block, list)
+    return not isinstance(node.block, (Block, list)) # TODO remove list
 
 def parse_tags(itoken):
     res = TagList()

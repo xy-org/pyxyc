@@ -11,12 +11,29 @@ def expressionLike(x : int, y: int) -> int {
 }
 
 def namedIf(x: int, y: int) -> int {
-    res := if res(x < y) -> int {
+    res := if (x < y) -> (res: int) {
         res = x * y * 3;
     } else {
         res = y * 2;
     };
     return res;
+}
+
+def elifs(x: int, y: int) -> int {
+    return if (x < y) -> (res: int) {
+        res = 0;
+        namedIf(x, y);
+    } elif (x < y) {
+        res = 1;
+    } else {
+        res = 2;
+    };
+}
+
+def elifs2(x: int, y: int) -> int {
+    return if (x < y) -> (res: int) {
+        res = 0;
+    } elif (x < y) 1 else 2;
 }
 
 def chainedIfs(x: int, y: int) -> int {

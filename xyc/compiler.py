@@ -739,17 +739,24 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     infered_type = None
     c_res = None
     if_exp_obj = None
-    if ifexpr.type is not None:
-        infered_type = find_type(ifexpr.type, ctx)
-    elif isinstance(ifexpr.block, xy.Node):
+    if not isinstance(ifexpr.block, xy.Block):
         if_exp_obj = compile_expr(ifexpr.block, cast, cfunc, ctx)
         infered_type = if_exp_obj.infered_type
+    elif len(ifexpr.block.returns) > 0:
+        if len(ifexpr.block.returns) > 1:
+            raise CompilationError("Multiple results are NYI", ifexpr)
+        infered_type = find_type(ifexpr.block.returns[0].type, ctx)
     else:
         infered_type = ctx.void_obj
 
     # create tmp var if needed
     if infered_type is not None and infered_type is not ctx.void_obj:
-        name_hint = ctx.eval_to_id(ifexpr.name) if ifexpr.name is not None else ""
+        name_hint = None
+        if isinstance(ifexpr.block, xy.Block):
+            name_hint = ifexpr.block.returns[0].name
+        if name_hint is None:
+            name_hint = ifexpr.name
+            name_hint = ctx.eval_to_id(name_hint) if name_hint is not None else ""
         var_obj = ctx.create_tmp_var(infered_type, name_hint=name_hint)
         cfunc.body.append(var_obj.c_node)
         ctx.id_table[name_hint] = var_obj
@@ -758,7 +765,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     # compile if body
     cfunc.body.append(c_if)
     if if_exp_obj is None:
-        compile_body(ifexpr.block, cast, c_if, ctx)
+        compile_body(ifexpr.block.body, cast, c_if, ctx)
     elif infered_type is not ctx.void_obj:
         res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
         c_if.body.append(res_assign)
@@ -771,8 +778,8 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     while isinstance(next_if, xy.IfExpr):
         gen_if = c.If()
         gen_if.cond = compile_expr(next_if.cond, cast, cfunc, ctx).c_node
-        if isinstance(next_if.block, list):
-            compile_body(next_if.block, cast, gen_if, ctx)
+        if isinstance(next_if.block, xy.Block):
+            compile_body(next_if.block.body, cast, gen_if, ctx)
         elif next_if.block is not None:
             if_exp_obj = compile_expr(next_if.block, cast, cfunc, ctx)
             res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
@@ -784,11 +791,11 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         next_if = next_if.else_node
 
     # finaly the else if any
-    if isinstance(next_if, list):
+    if isinstance(next_if, xy.Block):
         # normal else
         # XXX fix that
         hack_if = c.If()
-        compile_body(next_if, cast, hack_if, ctx)
+        compile_body(next_if.body, cast, hack_if, ctx)
         next_c_if.else_body = hack_if.body
     elif isinstance(next_if, xy.Node) and not isinstance(next_if, xy.IfExpr):
         # else is direct result

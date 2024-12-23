@@ -980,7 +980,7 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.IfExpr(
                     cond=ast.Id("cond"),
-                    block=[ast.Id("expr")],
+                    block=ast.Block(body=[ast.Id("expr")]),
                 )
             ]),
         ]
@@ -998,8 +998,8 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.IfExpr(
                     cond=ast.Id("cond"),
-                    block=[ast.Id("expr1")],
-                    else_node=[ast.Id("expr2")],
+                    block=ast.Block(body=[ast.Id("expr1")]),
+                    else_node=ast.Block(body=[ast.Id("expr2")]),
                 )
             ]),
         ]
@@ -1019,11 +1019,11 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.IfExpr(
                     cond=ast.Id("cond1"),
-                    block=[ast.Id("expr1")],
+                    block=ast.Block(body=[ast.Id("expr1")]),
                     else_node=ast.IfExpr(
                         cond=ast.Id("cond2"),
-                        block=[ast.Id("expr2")],
-                        else_node=[ast.Id("expr3")],
+                        block=ast.Block(body=[ast.Id("expr2")]),
+                        else_node=ast.Block(body=[ast.Id("expr3")]),
                     ),
                 )
             ]),
@@ -1062,20 +1062,20 @@ def test_arrays(code, exp_ast):
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl(name="a", value=ast.IfExpr(
                     cond=ast.Id("cond"),
-                    block=[
+                    block=ast.Block(body=[
                         ast.FuncCall(name=ast.Id("func1")),
                         ast.FuncCall(name=ast.Id("func2")),
-                    ],
-                    else_node=[
+                    ]),
+                    else_node=ast.Block(body=[
                         ast.FuncCall(name=ast.Id("func3")),
-                    ],
+                    ]),
                 ))
             ]),
         ]
     ],
     [
         """def main() -> void {
-            a := if res(cond) -> int {
+            a := if ifname(cond) -> (res: int) {
                 res = func1();
                 func2();
             } else {
@@ -1086,24 +1086,25 @@ def test_arrays(code, exp_ast):
         [
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl(name="a", value=ast.IfExpr(
-                    name=ast.Id("res"),
+                    name=ast.Id("ifname"),
                     cond=ast.Id("cond"),
-                    type=ast.Id("int"),
-                    block=[
+                    block=ast.Block(body=[
                         ast.BinExpr(
                             op="=",
                             arg1=ast.Id("res"),
                             arg2=ast.FuncCall(name=ast.Id("func1")),
                         ),
                         ast.FuncCall(name=ast.Id("func2")),
-                    ],
-                    else_node=[
+                    ], returns=[
+                        ast.VarDecl(name="res", type=ast.Id("int"), varying=True)
+                    ]),
+                    else_node=ast.Block(body=[
                         ast.BinExpr(
                             op="=",
                             arg1=ast.Id("res"),
                             arg2=ast.FuncCall(name=ast.Id("func3")),
                         )
-                    ],
+                    ]),
                 ))
             ]),
         ]
@@ -1252,9 +1253,9 @@ def test_if(code, exp_ast):
                             block=[
                                 ast.IfExpr(
                                     cond=ast.BinExpr(op="<", arg1=ast.Id("c"), arg2=ast.Id("d")),
-                                    block=[
+                                    block=ast.Block(body=[
                                         ast.Break(ast.Id("outer"))
-                                    ]
+                                    ])
                                 )
                             ]
                         )
