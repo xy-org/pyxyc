@@ -358,12 +358,17 @@ def parse_expression(
         arg1 = parse_expression(itoken, is_toplevel=False)
         itoken.expect(")", msg="Missing closing bracket")
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "[":
-        # Array literal
+        # Array literal or comprehension
         coords = itoken.peak_coords()
-        itoken.consume()
+        itoken.consume() # [
+        itoken.skip_empty_lines()
+        maybe_list_comp = itoken.peak() == "for"
         args = parse_expr_list(itoken)
         itoken.expect("]", msg="Missing closing bracket")
-        arg1 = ArrayLit(args, src=itoken.src, coords=coords)
+        if maybe_list_comp and len(args) == 1 and isinstance(args[0], ForExpr):
+            arg1 = ListComprehension(loop=args[0])
+        else:
+            arg1 = ArrayLit(args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "{":
         # announomous struct literal
         itoken.consume()
@@ -499,12 +504,20 @@ def parse_expression(
             decl.value = parse_expression(itoken, precedence+1, op_prec=op_prec)
             arg1 = decl
         elif op == "[":
+            itoken.skip_empty_lines()
+            maybe_list_comp = itoken.peak() == "for"
             args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
             itoken.expect("]")
-            select = Select(
-                arg1, Args(args, kwargs), src=itoken.src, coords=op_coords
-            )
-            arg1 = select
+            if len(args) == 1 and len(kwargs) == 0 and isinstance(args[0], ForExpr):
+                # list comprehension with an explicit type
+                arg1 = ListComprehension(
+                    list_type=arg1,
+                    loop=args[0]
+                )
+            else:
+                arg1 = Select(
+                    arg1, Args(args, kwargs), src=itoken.src, coords=op_coords
+                )
         elif op == "~":
             if isinstance(arg1, AttachTags):
                 # parse right to left

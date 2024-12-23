@@ -1672,6 +1672,87 @@ def test_parse_string_literals(code, exp_ast):
             ),
         ]
     ],
+    [
+        """def comprehension() -> void {
+            a := [0, 1];
+            b := [for (i in a) i*2];
+            c := [for (i in a) -> (res: int) res *= i];
+            d := [
+                for (i in a) -> (res: int) res *= i,
+            ];
+            e := Array[for (i in a) i*2];
+
+            f := [(for (i in a) -> (res: int) res *= i)];
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("comprehension"),
+                returns=ast.SimpleRType("void"),
+                body=[
+                    ast.VarDecl("a", value=ast.ArrayLit(
+                        elems=[ast.Const(0), ast.Const(1)],
+                    )),
+                    ast.VarDecl("b", value=ast.ListComprehension(
+                        loop=ast.ForExpr(
+                            over=[
+                                ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                            ],
+                            block=ast.Block(
+                                body=ast.BinExpr(ast.Id("i"), ast.Const(2), "*"),
+                            )
+                        ),
+                    )),
+                    ast.VarDecl("c", value=ast.ListComprehension(
+                        loop=ast.ForExpr(
+                            over=[
+                                ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                            ],
+                            block=ast.Block(
+                                returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
+                                body=ast.BinExpr(ast.Id("res"), ast.Id("i"), "*="),
+                            )
+                        ),
+                    )),
+                    ast.VarDecl("d", value=ast.ListComprehension(
+                        loop=ast.ForExpr(
+                            over=[
+                                ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                            ],
+                            block=ast.Block(
+                                returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
+                                body=ast.BinExpr(ast.Id("res"), ast.Id("i"), "*="),
+                            )
+                        ),
+                    )),
+                    ast.VarDecl("e", value=ast.ListComprehension(
+                        list_type=ast.Id("Array"),
+                        loop=ast.ForExpr(
+                            over=[
+                                ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                            ],
+                            block=ast.Block(
+                                body=ast.BinExpr(ast.Id("i"), ast.Const(2), "*"),
+                            )
+                        ),
+                    )),
+                    ast.VarDecl("f", value=ast.ArrayLit(
+                        elems=[
+                            ast.ForExpr(
+                                over=[
+                                    ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                                ],
+                                block=ast.Block(
+                                    returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
+                                    body=ast.BinExpr(ast.Id("res"), ast.Id("i"), "*="),
+                                )
+                            ),
+                        ],
+                    )),
+                ]
+            ),
+        ]
+    ],
 ])
 def test_arrays(code, exp_ast):
     act_ast = parse_code(code)

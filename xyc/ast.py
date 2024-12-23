@@ -154,6 +154,11 @@ class ForExpr(Node):
     else_node: Node | list | None = None
 
 @dataclass
+class ListComprehension(Node):
+    list_type : Node | None = None
+    loop: ForExpr | None = None
+
+@dataclass
 class WhileExpr(Node):
     cond: Node | None = None
     name: Node | None = None

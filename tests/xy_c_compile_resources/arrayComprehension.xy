@@ -1,0 +1,9 @@
+#def func(arr := [for(i in [3, 2, 1]) i]) {
+#}
+
+def test() {
+    arr1 := [1, 2, 3];
+    arr2 := [for(i in arr1) i*2];
+    #func(arr2);
+    #furn();
+}
