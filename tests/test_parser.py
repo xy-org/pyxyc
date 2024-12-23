@@ -570,7 +570,7 @@ def test_parse_advanced_funcs(code, exp_ast):
         [
             ast.FuncDef(ast.Id("log"),
                 params=[
-                    ast.param("msg", type=ast.Id("Str"), is_callerContext=True),
+                    ast.param("msg", type=ast.Id("Str"), is_callerContext=True, is_pseudo=True),
                     ast.param("_", value=ast.IfExpr(
                         cond=ast.Id("loggingEnalbed"),
                         block=ast.Block(body=ast.FuncCall(

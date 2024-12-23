@@ -657,7 +657,7 @@ def parse_expression(
         if arg1.start is not None:
             if isinstance(arg1.start, CallerContextExpr):
                 decl.name = arg1.start.arg.name
-                decl.is_callerContext = True
+                decl.is_callerContext = decl.is_pseudo = True
             else:
                 decl.name = arg1.start.name
         decl.type = expr_to_type(arg1.end)

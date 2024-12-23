@@ -50,6 +50,7 @@ from xyc.compiler import CompilationError
     "paramsVsArgs",
     "boundaryExpr1",
     "boundaryExpr2",
+    "boundaryExpr3",
     # TODO "properties",
     "exitWithError",
     "arrayComprehension",

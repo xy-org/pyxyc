@@ -1,0 +1,21 @@
+struct Logger{
+    enabled: bool;
+}
+
+struct Msg {}
+
+def info(log: Logger, ^msg: Msg, logged : bool = if (log.enabled) doLog(log, ^msg) else false) {}
+
+def doLog(log: Logger, msg: Msg) -> bool {
+    # log msg
+    return true;
+}
+
+def longComputation() -> Msg {
+    return Msg{};
+}
+
+def test() {
+    log := Logger{};
+    log \info longComputation();
+}
