@@ -3,7 +3,7 @@
 ;; A type that means no-type
 struct *void {
     # Implemented by the compiler
-    # Should this even be a type?
+    # Should this even be a typeany
     # It is a type in C so it makes sense to be one in xy.
 }
 
@@ -81,11 +81,11 @@ def *get(ptr: Ptr, idx: Size) -> in() Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
-def *set(ptr: Ptr, idx: int, value: pseudo ?) -> void {
+def *set(ptr: Ptr, idx: int, value: pseudo any) -> void {
     # Implemented by the compiler
 }
 
-def *set(ptr: Ptr, idx: Size, value: pseudo ?) -> void {
+def *set(ptr: Ptr, idx: Size, value: pseudo any) -> void {
     # Implemented by the compiler
 }
 
@@ -95,7 +95,7 @@ def *cmp(a: Ptr, b: Ptr) -> int {
 }
 
 ;; The address of any variable or even temporary value
-def *addrof(arg: ?) -> Ptr~[%^arg] {
+def *addrof(arg: any) -> Ptr~[%^arg] {
     # Implemented by the compiler
 }
 
@@ -381,25 +381,25 @@ struct Flags {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-def *get(arr: pseudo ?[], index: int) -> in(arr) Ptr {
+def *get(arr: pseudo any[], index: int) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-def *get(arr: pseudo ?[], index: uint) -> in(arr) Ptr {
+def *get(arr: pseudo any[], index: uint) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-def *get(arr: pseudo ?[], index: Size) -> in(arr) Ptr {
-    # Implemented by the compiler
-}
-
-;; Set element at position {index} of the array {arr}
-def *set(arr: pseudo ?[], index: uint, val: pseudo ?) -> void {
+def *get(arr: pseudo any[], index: Size) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
 ;; Set element at position {index} of the array {arr}
-def *set(arr: pseudo ?[], index: Size, val: pseudo ?) -> void {
+def *set(arr: pseudo any[], index: uint, val: pseudo any) -> void {
+    # Implemented by the compiler
+}
+
+;; Set element at position {index} of the array {arr}
+def *set(arr: pseudo any[], index: Size, val: pseudo any) -> void {
     # Implemented by the compiler
 }
 
@@ -413,19 +413,19 @@ struct EntryPoint {
 
 # Arrays
 
-def *iter(arr: pseudo ?[]) -> in(arr) Size {
+def *iter(arr: pseudo any[]) -> in(arr) Size {
     # Implemented by the compiler
 }
 
-def *valid(arr: pseudo ?[], idx: Size) -> bool {
+def *valid(arr: pseudo any[], idx: Size) -> bool {
     # Implemented by the compiler
 }
 
-def *next(arr: pseudo ?[], idx: mut Size) -> void {
+def *next(arr: pseudo any[], idx: mut Size) -> void {
     # Implemented by the compiler
 }
 
-def *len(arr: pseudo ?[]) -> Size {
+def *len(arr: pseudo any[]) -> Size {
     # Implemented by the compiler
 }
 

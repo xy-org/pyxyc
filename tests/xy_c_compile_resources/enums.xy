@@ -22,7 +22,7 @@ def testEnums(a: int) {
     orderStatus := Status.pending;
     printStatus(orderStatus);
 
-    # Maybe implement this shortcut?
+    # Maybe implement this shortcutany
     # It may be useful because there is no need for the Status to be spelt out.
     # printStatus(.processed);
     printStatus(Status.processed);

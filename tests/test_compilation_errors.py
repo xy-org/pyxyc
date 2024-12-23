@@ -50,9 +50,9 @@ note: Candidates are:
         *get(Ptr) -> Ptr
         *get(Ptr, int) -> Ptr
         *get(Ptr, Size) -> Ptr
-        *get(?[], int) -> Ptr
-        *get(?[], uint) -> Ptr
-        *get(?[], Size) -> Ptr
+        *get(any[], int) -> Ptr
+        *get(any[], uint) -> Ptr
+        *get(any[], Size) -> Ptr
 """),
     ("""
         def func1(x: int) = x*2;
@@ -65,26 +65,26 @@ src.xy:4:19: error: Expression doesn't evaluate to a ref
                     ^^^^^
 """),
 #     ("""
-#         def func(ptr: Ptr~int, arg: pseudo ?) -> Ptr~[arg'typeof] {
+#         def func(ptr: Ptr~int, arg: pseudo any) -> Ptr~[arg'typeof] {
 #             return ptr;
 #         }
 #      """, """
 # """),
 #     ("""
-#         def func(ptr: Ptr~int, arg: pseudo ?) -> Ptr~[arg~[~int]] {
+#         def func(ptr: Ptr~int, arg: pseudo any) -> Ptr~[arg~[~int]] {
 #             return ptr;
 #         }
 #      """, """
 # """),
 #     ("""
-#         def func(ptr: Ptr~int, arg: pseudo ?) -> Ptr~[~arg'typeof] {
+#         def func(ptr: Ptr~int, arg: pseudo any) -> Ptr~[~arg'typeof] {
 #             return ptr;
 #         }
 #      """, """
 # """),
 # """),
 #     ("""
-#         def func(ptr: Ptr~int, arg: pseudo ?) -> Ptr~[int] {
+#         def func(ptr: Ptr~int, arg: pseudo any) -> Ptr~[int] {
 #             return ptr~[~arg];
 #         }
 #      """, """
@@ -95,14 +95,14 @@ src.xy:4:19: error: Expression doesn't evaluate to a ref
 #      """, """
 # """),
 
-# def func3(ptr: Ptr, arg: pseudo ?) -> Ptr~[<< typeof(a)] {
+# def func3(ptr: Ptr, arg: pseudo any) -> Ptr~[<< typeof(a)] {
 #     return ptr;
 # }
 
-# using a ? param in type expression
+# using a any param in type expression
 
 #     ("""
-#         def func(arg: pseudo ?, ptr: Ptr~[arg'typeof]) -> Ptr~[arg'typeof] {
+#         def func(arg: pseudo any, ptr: Ptr~[arg'typeof]) -> Ptr~[arg'typeof] {
 #             return ptr;
 #         }
 #      """, """
@@ -152,12 +152,12 @@ src.xy:2:27: error: Cannot infer type because: Cannot find symbol
         struct Desc {
             size: Size;
         }
-        def parse(args: pseudo ?, desc := @[for(f in args'fieldsof) Desc{f'sizeof}]) -> void {
+        def parse(args: pseudo any, desc := @[for(f in args'fieldsof) Desc{f'sizeof}]) -> void {
         }
      """, """\
-src.xy:6:59: error: Cannot infer type because: Cannot get fields of an unknown type
-|         def parse(args: pseudo ?, desc := @[for(f in args'fieldsof) Desc{f'sizeof}]) -> void {
-                                                            ^^^^^^^^
+src.xy:6:61: error: Cannot infer type because: Cannot get fields of an unknown type
+|         def parse(args: pseudo any, desc := @[for(f in args'fieldsof) Desc{f'sizeof}]) -> void {
+                                                              ^^^^^^^^
 """),
     ("""
         import libc~[CLib{headers=@["string.h", "stdio.h"]}] in c;
@@ -303,6 +303,14 @@ src.xy:6:11: error: No string constructor registered for prefix "f"
 |     print(f"{a}\\n");
             ^^^^^^^^
 """),
+    (
+        "def func(arg: pseudo ?) {}",
+        """\
+src.xy:1:22: error: Names should start with a letter
+| def func(arg: pseudo ?) {}
+                       ^
+"""
+    )
 ])
 def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
@@ -319,7 +327,6 @@ def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
         builder.build()
     err_msg = str(err.value)
     err_msg = err_msg.replace(input_fn[:-len("src.xy")], "")
-    # err_msg = err_msg[err_msg.find("src.xy"):]
     assert err_msg == exp_err_msg, f"Error\n{err_msg}\n"\
            f"Doesnt match pattern:\n {exp_err_msg}"
 

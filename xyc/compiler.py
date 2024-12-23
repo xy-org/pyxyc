@@ -197,8 +197,8 @@ class ExtSymbolObj(CompiledObj):
 class NameAmbiguity:
     modules: list[str] = field(default_factory=list)
     
-any_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
-any_struct_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
+any_type_obj = TypeObj(xy_node=xy.Id("any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
+any_struct_type_obj = TypeObj(xy_node=xy.Id("any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 fieldarray_type_obj = TypeObj(xy_node=xy.Id("FieldArray"), builtin=True, c_node=c.Id("FIELD_TYPE_ARRAY_REPORT_IF_YOU_SEE_ME"))
 fselection_type_obj = TypeObj(xy_node=xy.Id("$*"), builtin=True, c_node=c.Id("FUN_SELECTION_REPORT_IF_YOU_SEE_ME"))
 calltime_expr_obj = TypeObj(builtin=True)
@@ -456,7 +456,7 @@ def func_sig(fobj: FuncObj, include_ret=False):
         if pobj.xy_node is not None and pobj.xy_node.value is not None:
             res += "["
         if pobj.type_desc == any_type_obj:
-            res += "?"
+            res += "any"
         else:
             res += pobj.type_desc.name
         if pobj.xy_node is not None and pobj.xy_node.value is not None:
@@ -983,6 +983,8 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
     return cast
 
+keywords = {"if", "for", "while", "any", "def", "struct", "in", "inout", "outin", "out", "ref", "macro"}
+
 def validate_name(node: xy.Node, ctx: CompilerContext):
     name = node.name
     if isinstance(name, xy.Id):
@@ -994,7 +996,9 @@ def validate_name(node: xy.Node, ctx: CompilerContext):
         raise CompilationError("Names should start with a letter", node)
     for i in range(1, len(name)):
         if not name[i].isalnum():
-            raise CompilationError("Names should be alphanumeric")
+            raise CompilationError("Names should be alphanumeric", node)
+    if name in keywords:
+        raise CompilationError(f"'{name}' is a keyword", node)
 
 def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
     # 1st pass - compile just the names
@@ -4111,7 +4115,7 @@ def find_type(texpr, cast, ctx, required=True):
     if isinstance(texpr, xy.Id) and texpr.name == "struct":
         # Special case for struct
         return any_struct_type_obj
-    elif isinstance(texpr, xy.Id) and texpr.name == "?":
+    elif isinstance(texpr, xy.Id) and texpr.name == "any":
         # Special case for ?
         return any_type_obj
     if isinstance(texpr, xy.ArrayType):
@@ -4141,6 +4145,8 @@ def find_type(texpr, cast, ctx, required=True):
             )
         )
     else:
+        if isinstance(texpr, xy.Id):
+            validate_name(texpr, ctx)
         res = ctx.eval(texpr, msg="Cannot find type")
         return res
 

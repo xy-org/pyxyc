@@ -29,7 +29,7 @@ struct FieldDesc{
 }
 
 def printTypeInfo(
-    s: pseudo ?,
+    s: pseudo any,
     typeName := nameof(%s),
     typeComment := commentof(%s),
     fields: pseudo FieldDesc[] = @[

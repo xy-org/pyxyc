@@ -259,13 +259,13 @@ def test_callbacks_and_fselect(code, err_msg):
         "Caller context parameters cannot have default values"
     ),
     (
-        "def func(x: pseudo ?) -> Ptr~[^%a] {}",
+        "def func(x: pseudo any) -> Ptr~[^%a] {}",
         "Expected operand found operator"
     ),
     (
         "def *get(ptr: Ptr, idx: int) -> ref(ptr) Ptr~[^ptr..to] {}",
         "Blocks must have their body in curly brackets"
-    )
+    ),
 ])
 def test_func_def_errors(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):

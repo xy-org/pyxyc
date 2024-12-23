@@ -1,12 +1,12 @@
-def *sizeof(arg: ?) -> Size {
+def *sizeof(arg: any) -> Size {
     # Implemented by the compiler
 }
 
-def *offsetof(arg: pseudo ?) -> Size {
+def *offsetof(arg: pseudo any) -> Size {
     # Implemented by the compiler
 }
 
-def *alignof(arg: pseudo ?) -> Size {
+def *alignof(arg: pseudo any) -> Size {
     # Implemented by the compiler
 }
 
@@ -14,7 +14,7 @@ struct FieldArray {
     # Compile-time only structure implemented by the compiler
 }
 
-def *fieldsof(arg: pseudo ?) -> FieldArray {
+def *fieldsof(arg: pseudo any) -> FieldArray {
     # Implemented by the compiler
 }
 
@@ -22,16 +22,16 @@ struct StrLit {
     # Implemented by the compiler
 }
 
-def *nameof(arg: pseudo ?) -> StrLit {
+def *nameof(arg: pseudo any) -> StrLit {
     # Implemented by the compiler
 }
 
-def *commentof(arg: pseudo ?) -> StrLit {
+def *commentof(arg: pseudo any) -> StrLit {
     # Implemented by the compiler
 }
 
 ;; Compares two types. Returns true if types are identical including tags.
 ;; TODO should be renamed to cmp or something. Maybe don't use.
-def *typeEqs(a: pseudo ?, b: pseudo ?) -> bool {
+def *typeEqs(a: pseudo any, b: pseudo any) -> bool {
     # Implemented by the compiler
 }

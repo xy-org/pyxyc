@@ -6,13 +6,13 @@ def guards1(a: int, b: int) -> int
     return 0;
 }
 
-def guards2(a: int, b: pseudo ?) -> int
+def guards2(a: int, b: pseudo any) -> int
 >> sizeof(a) > sizeof(b)
 {
     return 0;
 }
 
-def guards3(a: pseudo ?, b: pseudo ?) -> int
+def guards3(a: pseudo any, b: pseudo any) -> int
 >>  %a \typeEqs %b
 {
     return 0;

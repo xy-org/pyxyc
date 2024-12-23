@@ -19,7 +19,7 @@ def print(d: FieldDesc) {
 }
 
 def printFields(
-    s: pseudo ?,
+    s: pseudo any,
     fields: pseudo FieldDesc[] = @[
         for (f in s'fieldsof) FieldDesc{size=sizeof(f)}
     ],

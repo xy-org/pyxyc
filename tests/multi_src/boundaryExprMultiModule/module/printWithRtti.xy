@@ -1,6 +1,6 @@
 struct Rtti {}
 
-def print(x: pseudo ?, rtti: Rtti = ^rtti(x)) {
+def print(x: pseudo any, rtti: Rtti = ^rtti(x)) {
     # omited for brevity
 }
 
