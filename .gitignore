@@ -3,3 +3,8 @@
 __pycache__/
 .xyc_build
 /tests/end_to_end_deps/*
+/bin/
+/build/
+/build_cythonize/
+/dist/
+/xyc.spec

@@ -4324,7 +4324,7 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
         for header_obj in headers.elems:
             # TODO what if header_obj is an expression
             if len(header_obj.prefix) > 0:
-                raise CompilationError("Only unprefixed strings are recognized", header.xy_node)
+                raise CompilationError("Only unprefixed strings are recognized", header_obj.xy_node)
             cast.includes.append(c.Include(header_obj.parts[0].value))
         import_obj.is_external = True
     else:
