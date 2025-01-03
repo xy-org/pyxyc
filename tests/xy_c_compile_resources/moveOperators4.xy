@@ -1,0 +1,37 @@
+# test passing a reference to a list and an item to that list at the same time
+
+struct IntList {
+    # ...
+}
+
+def get(arr: IntList, i: int) -> in(arr) Ptr~int {
+    return Ptr{};
+}
+
+def set(arr: mut IntList, i: int, val: int) -> void {
+    # ...
+}
+
+def func2(a: mut int, b: mut int) {}
+
+def func1(item: mut int, list: mut IntList) {}
+
+def test() {
+    a: IntList;
+    func1(a[0], a);; should give an error. What about injected content
+
+    func(a[0], a[10]);; 0 and 10 can actually be the same item so this should work
+
+    b: int;
+    func(a, b);; should also work as the previous example shows
+
+    c: IntList;
+    func(a, c);; should also work as the previous example shows
+}
+
+def test(a: mut IntList, b: mut IntList) {
+    func(a[0], b);; a and b may alias !!!
+    ;; JUST PROHIBIT ALIASING:
+    func(a[0], a[10]);; not allowed as 0 and 10 may alias! So how to solve this problem!
+    func(a[0], a);; not allowe
+}
