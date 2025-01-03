@@ -28,4 +28,4 @@ chmod u+x build/linuxdeploy-x86_64.AppImage
 ./build/linuxdeploy-x86_64.AppImage --appdir dist/xyc --output appimage
 
 mkdir -p bin
-mv xyc-x86_64.AppImage bin/xyc
+mv xyc-x86_64.AppImage bin/xyc-x86_64

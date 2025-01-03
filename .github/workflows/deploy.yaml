@@ -37,6 +37,6 @@ jobs:
         id: deployment
         uses: softprops/action-gh-release@v2
         with:
-          files: bin/xyc
-          name: continuous
+          files: bin/xyc-x86_64
+          name: Continuous
           tag_name: continuous
