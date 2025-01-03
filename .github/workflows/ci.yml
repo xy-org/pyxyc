@@ -17,6 +17,10 @@ jobs:
         with:
           repository: xy-org/libxy
           path: 'tests/end_to_end_deps/libxy'
+      - name: Install Non-Pip Dependencies
+        uses: ConorMacBride/install-package@v1
+        with:
+          apt: valgrind
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
