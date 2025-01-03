@@ -1,8 +1,7 @@
 name: Build, Package, and Deploy Pyxyc
 
 permissions:
-  contents: read
-  pages: write
+  contents: write
   id-token: write
   deployments: write
 
