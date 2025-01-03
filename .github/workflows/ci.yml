@@ -12,16 +12,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Checkout Libxy (used by some tests)
+        uses: actions/checkout@v4
+        with:
+          repository: xy-org/libxy
+          path: 'tests/end_to_end_deps/libxy'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip' # caching pip dependencies
       - run: pip install -r requirements-dev.txt -e .
       - name: Run Tests
-        run: pytest --html=tests/Reports/Report.html -vv
-      - name: Test Report Generation
-        uses: actions/upload-artifact@v4
-        if: success() || failure()
-        with:
-          name: Pytest Report           # Name of the folder
-          path: tests/Reports           # Path to test results
+        run: pytest -vv
