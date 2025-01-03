@@ -1,8 +1,10 @@
 name: Build, Package, and Deploy Pyxyc
 
 on:
-  push:
-    branches: ["master"]
+  workflow_run:
+    workflows: ["CI"]
+    types: 
+      - completed
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -32,14 +34,4 @@ jobs:
         with:
           files: bin/xyc
           name: continuous
-
-  # Deployment job
-  deploy:
-    environment:
-      name: github-releases
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          tag_name: continuous
