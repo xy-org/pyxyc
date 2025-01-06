@@ -35,7 +35,7 @@ def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     executable = tmp_path / testname
     assert xyc._main([
         str(test_base),
-        "-P", str(resource_dir / "end_to_end_deps/libxy"),
+        "-L", str(resource_dir / "end_to_end_deps/"),
         "-o", str(executable)
     ]) == 0
     assert executable.exists()

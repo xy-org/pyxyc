@@ -320,7 +320,7 @@ def test_compilation_errors(input_src, exp_err_msg, tmp_path, resource_dir):
     with pytest.raises(CompilationError) as err:
         builder = xyc.setup_builder([
             input_fn,
-            "-P", str(resource_dir / "end_to_end_deps/libxy"),
+            "-L", str(resource_dir / "end_to_end_deps/"),
             "-o", str(executable),
             "-c",
         ])
@@ -343,7 +343,7 @@ def test_compilation_errors_multi_src(package, exp_err_msg, tmp_path, resource_d
     with pytest.raises(CompilationError) as err:
         builder = xyc.setup_builder([
             input_dir,
-            "-P", str(resource_dir / "end_to_end_deps/libxy"),
+            "-L", str(resource_dir / "end_to_end_deps/"),
             "-o", str(executable),
             "-c",
         ])
