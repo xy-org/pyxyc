@@ -1,4 +1,5 @@
 import os
+import glob
 from os import path
 import subprocess
 from xyc.ast import Source
@@ -16,13 +17,17 @@ class CompiledModule:
 class Builder:
     def __init__(self, input: str, output: str | None = None,
                  compile_only=False, work_dir=".xyc_build",
-                 package_paths: list[str] = [], builtin_lib_path: str = None):
+                 library_path: list[str] = [], builtin_lib_path: str = None):
         self.input = input
         self.output = output
         self.project_name = path.splitext(path.basename(path.abspath(input)))[0]
         if not output:
             self.output = self.project_name
         self.module_cache = {}
+
+        package_paths = []
+        for lib in library_path:
+            package_paths.extend(glob.iglob(os.path.join(lib, "**")))
 
         if not path.isfile(input):
             current_package_path = path.dirname(path.abspath(input))

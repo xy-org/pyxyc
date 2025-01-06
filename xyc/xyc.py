@@ -25,7 +25,7 @@ def setup_builder(cli_args=None):
     )
     parser.add_argument('path')
     parser.add_argument('-o', '--output', required=False)
-    parser.add_argument('-P', "--package-path", action="append", default=list())
+    parser.add_argument('-L', "--library-path", action="append", default=list())
     parser.add_argument(
         '-c', '--compile-only', action='store_true', default=False,
         help="Run only the xy to c compilation, producing c source files"
@@ -35,7 +35,7 @@ def setup_builder(cli_args=None):
     builder = Builder(
         input=args.path, output=args.output,
         compile_only=args.compile_only,
-        package_paths=args.package_path
+        library_path=args.library_path
     )
     return builder
 
