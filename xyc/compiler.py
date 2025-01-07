@@ -237,7 +237,7 @@ class IdTable(dict):
         super().__init__(*args, **kwargs)
         self.type = None
 
-    def merge(self, other: 'IdTable', ctx: str, other_module_name: str):
+    def merge(self, other: 'IdTable', ctx: 'CompilerContext', other_module_name: str):
         for key, value in other.items():
             current = self.get(key, None)
             if isinstance(value, ImportObj):

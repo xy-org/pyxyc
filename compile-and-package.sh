@@ -9,7 +9,10 @@ set -e
 python cython-setup.py build_ext --inplace
 
 # package with pyinstaller into a directory (no --nofile) which ensure speedy bootstrap
-pyinstaller --hiddenimport difflib --name="xyc" --add-binary="xyc/*.so:xyc/" xyc/xyc.py
+pyinstaller \
+    --hiddenimport glob --hiddenimport difflib \
+    --name="xyc" --add-binary="xyc/*.so:xyc/" --add-data="xyc/libs:xyc/libs" \
+    xyc/xyc.py
 
 # and then for the "coup de grace" package again using AppImage in order to have a single executable file
 ln -s xyc dist/xyc/AppRun
