@@ -1,9 +1,9 @@
 import xy.ctti in ctti;
-import libxy.units;
+import libxy.unit;
 import libxy.memory;
 import libxy.stdio;
-import libxy.strings;
-import libxy.slices;
+import libxy.string;
+import libxy.slice;
 
 struct Array~[elemType: struct, xy_dtor=true] {
     mem: Memory;

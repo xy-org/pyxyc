@@ -1,4 +1,4 @@
-import libxy.strings;
+import libxy.string;
 import libxy.stdio;
 
 def func1() -> int {

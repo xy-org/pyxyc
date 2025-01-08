@@ -1,5 +1,5 @@
 import xy.ctti;
-import libxy.strings;
+import libxy.string;
 import libxy.stdio;
 
 ;; MyStruct comment
