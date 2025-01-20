@@ -3,6 +3,6 @@ def func2(a: int, b: mut int)
 
 def test() {
     a: mut = 0;
-    func1(a++, a =>);
-    func2(a++, a =>);
+    func1(a, a =>);
+    func2(a, a =>);
 }
