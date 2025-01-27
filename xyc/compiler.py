@@ -1718,13 +1718,27 @@ def compile_vardecl(node, cast, cfunc, ctx):
     ctx.ns[node.name] = res_obj
 
     if node.value is not None:
-        cvar.value = value_obj.c_node
-    if node.value is None and isinstance(type_desc, ArrTypeObj):
-        cvar.value = c.InitList()
-    if cvar.value is None:
-        cvar.value = type_desc.init_value
+        if isinstance(type_desc, ArrTypeObj):
+            cvar.value = expand_array_to_init_list(value_obj)
+        else:
+            cvar.value = value_obj.c_node
+    else:
+        if isinstance(type_desc, ArrTypeObj):
+            cvar.value = c.InitList()
+        else:
+            cvar.value = type_desc.init_value
 
     return res_obj
+
+def expand_array_to_init_list(value_obj: ExprObj):
+    if isinstance(value_obj.c_node, c.InitList):
+        # already an init list
+        return value_obj.c_node
+
+    res = c.InitList()
+    for i in range(0, value_obj.infered_type.dims[0]):
+        res.elems.append(c.Index(value_obj.c_node, c.Const(i)))
+    return res
 
 c_symbol_type = TypeInferenceError(
     "The types of c symbols cannot be inferred. Please be explicit and specify the type."
@@ -1829,6 +1843,10 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                     c_node=tag_obj.c_node,
                     infered_type=tag_obj.infered_type,
                 )
+    elif isinstance(expr, xy.UnaryExpr) and expr.op == '=>':
+        lhs_obj = compile_expr(expr.arg, cast, cfunc, ctx)
+        tmp_obj = move_out(lhs_obj, cast, cfunc, ctx)
+        return tmp_obj
     elif isinstance(expr, xy.UnaryExpr) and expr.op == '&':
         arg_obj = compile_expr(expr.arg, cast, cfunc, ctx, deref=False)
         if isinstance(arg_obj, RefObj):
@@ -2067,7 +2085,10 @@ def move_out(obj: ExprObj, cast, cfunc, ctx):
         return obj
 
     tmp_obj = copy_to_temp(obj, cast, cfunc, ctx)
+    reset_obj(obj, cast, cfunc, ctx)
+    return tmp_obj
 
+def reset_obj(obj: ExprObj, cast, cfunc, ctx):
     if isinstance(obj, RefObj):
         def_value_obj = ExprObj(
             xy_node=obj.xy_node,
@@ -2076,11 +2097,25 @@ def move_out(obj: ExprObj, cast, cfunc, ctx):
         )
         obj = ref_set(obj, def_value_obj, cast, cfunc, ctx)
         cfunc.body.append(obj.c_node)
+    elif isinstance(obj.infered_type, ArrTypeObj):
+        cfor = create_loop_over_array(obj, cast, cfunc, ctx)
+        elem_obj = copy(obj)
+        elem_obj.infered_type = obj.infered_type.base_type_obj
+        elem_obj.c_node = c.Index(obj.c_node, index=c.Id(cfor.inits[0].name))
+        reset_obj(elem_obj, cast, cfor, ctx)
+        cfunc.body.append(cfor)
     else:
         c_reset = c.Expr(obj.c_node, obj.infered_type.init_value, op="=")
         cfunc.body.append(c_reset)
 
-    return tmp_obj
+def create_loop_over_array(obj, cast, cfunc, ctx: CompilerContext):
+    tmp_i = ctx.create_tmp_var(ctx.size_obj, "i", obj.xy_node)
+    cfor = c.For(
+        [tmp_i.c_node],
+        c.Expr(c.Id(tmp_i.c_node.name), c.Const(obj.infered_type.dims[0]), op="<"),
+        [c.UnaryExpr(c.Id(tmp_i.c_node.name), op="++", prefix=True)]
+    )
+    return cfor
 
 def is_tmp_expr(obj: ExprObj):
     return (
@@ -2883,7 +2918,10 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
         return get_obj
 
     tmp_obj = ctx.create_tmp_var(expr_obj.infered_type, name_hint="arg", xy_node=expr_obj.xy_node)
-    tmp_obj.c_node.value = expr_obj.c_node
+    if isinstance(expr_obj.infered_type, ArrTypeObj):
+        tmp_obj.c_node.value = expand_array_to_init_list(expr_obj)
+    else:
+        tmp_obj.c_node.value = expr_obj.c_node
     cfunc.body.append(tmp_obj.c_node)
     return ExprObj(
         xy_node=expr_obj.xy_node,

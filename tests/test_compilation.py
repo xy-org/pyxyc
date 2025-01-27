@@ -65,6 +65,7 @@ from xyc.compiler import CompilationError
     "macros1",
     "moveOperators1",
     "moveOperators2",
+    "moveOperators3",
 ])
 def test_c_compilation(resource_dir, filename):
     project = builder.parse_module(

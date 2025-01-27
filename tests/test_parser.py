@@ -1040,6 +1040,32 @@ def test_parse_operator_slices(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def test() {
+            a : mut = 10;
+            f(a =>);
+            f(a, a =>);
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.VarDecl("a", mutable=True, value=ast.Const(10)),
+                ast.FuncCall(
+                    name=ast.Id("f"),
+                    args=[
+                        ast.UnaryExpr(ast.Id("a"), op="=>"),
+                    ]
+                ),
+                ast.FuncCall(
+                    name=ast.Id("f"),
+                    args=[
+                        ast.Id("a"),
+                        ast.UnaryExpr(ast.Id("a"), op="=>"),
+                    ]
+                ),
+            ]),
+        ]
+    ],
 ])
 def test_move_operators(code, exp_ast):
     act_ast = parse_code(code)
