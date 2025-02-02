@@ -1,7 +1,10 @@
 import subprocess
 import re
+import sys
 import pytest
 import xyc.xyc as xyc
+
+valgrind_supported = "linux" in sys.platform
 
 @pytest.mark.parametrize("testname, output, valgrind", [
     ("helloworldSelfContained", "Hello World\n", False),
@@ -40,7 +43,7 @@ def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     ]) == 0
     assert executable.exists()
 
-    if valgrind:
+    if valgrind_supported and valgrind:
         vg_log_file = str(tmp_path / "valgrind.log")
         pr_to_run = [
             "valgrind", "--leak-check=full", "--log-file=" + vg_log_file,
@@ -58,7 +61,7 @@ def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     if re.match("^" + output + "$", proc.stdout) is None:
         assert  proc.stdout == output  # provide nice output
 
-    if valgrind:
+    if valgrind_supported and valgrind:
         vg_log = open(vg_log_file).read()
         assert "definitely lost: " not in vg_log
         assert "ERROR SUMMARY: 0 errors" in vg_log, vg_log
