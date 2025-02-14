@@ -338,8 +338,8 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
     ("structPackageVis/package2", r".*Struct 'Struct' is not visible.*"),
 
     ("memAliasing1.xy",
-     r".*Cannot get a reference to a variable and fields or elements of that" \
-     r"variable at the same time.*"),
+     r".*Cannot get a reference to a variable and an element of that variable"\
+        " at the same time*"),
 ])
 def test_compilation_errors_src(package, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

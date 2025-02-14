@@ -2164,6 +2164,7 @@ def do_ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
                 c_node=c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
                 xy_node=ref_obj.xy_node,
                 infered_type=ref_to_obj,
+                compiled_obj=ref_obj,
             )
         else:
             if ref_obj.container is global_memory:
@@ -2831,6 +2832,8 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         obj = compile_expr_for_arg(pexpr, cast, cfunc, ctx)
         arg_exprs.kwargs[pname] = obj
 
+    check_aliasing_rules(arg_exprs.args, arg_exprs.kwargs, ctx)
+
     arg_infered_types = ArgList(
         args=[arg.infered_type for arg in arg_exprs.args],
         kwargs={key: arg.infered_type for key, arg in arg_exprs.kwargs.items()}
@@ -2903,6 +2906,7 @@ def move_to_temp(expr_obj, cast, cfunc, ctx):
             tmp_obj.c_node.value = get_obj.c_node.arg
             cfunc.body.append(tmp_obj.c_node)
             get_obj.c_node = c.UnaryExpr(arg=c.Id(tmp_obj.c_node.name), op="*", prefix=True)
+            get_obj.compiled_obj = expr_obj
             return get_obj
         
     return copy_to_temp(expr_obj, cast, cfunc, ctx)
@@ -3443,6 +3447,32 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     caller_ctx.pop_ns()
 
     return res_obj
+
+def check_aliasing_rules(arg_exprs, kwarg_exprs, ctx: CompilerContext):
+    toplevel = {}
+    for expr in itertools.chain(arg_exprs, kwarg_exprs.values()):
+        # first get the level
+        expr_level = 0
+        top_expr = expr if isinstance(expr, RefObj) else expr.compiled_obj
+        # print(fmt_err_msg("First", top_expr.xy_node))
+        while isinstance(top_expr, RefObj):
+            expr_level += 1
+            top_expr = top_expr.container
+            # print(fmt_err_msg("Loop", top_expr.xy_node))
+        top_expr = top_expr.compiled_obj if getattr(top_expr, 'compiled_obj', None) is not None else top_expr
+        # if top_expr is not None:
+        #     print(fmt_err_msg("End", top_expr.xy_node))
+
+        prev_expr, prev_level = toplevel.get(id(top_expr), (None, expr_level))
+        if expr_level != prev_level:
+            raise CompilationError(
+                "Cannot get a reference to a variable and an element of that "
+                "variable at the same time.", expr.xy_node,
+                notes=[
+                    ("Previous reference acquired here", prev_expr.xy_node)
+                ]
+            )
+        toplevel[id(top_expr)] = (expr, expr_level)
 
 class NoCallerContextError(Exception):
     pass
