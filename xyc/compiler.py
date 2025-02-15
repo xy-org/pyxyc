@@ -208,6 +208,7 @@ global_memory = ExprObj(
     c_node=c.Id("GLOBAL_MEM"),
     infered_type=global_memory_type,
 )
+param_container = VarObj()
 
 @dataclass
 class ArgList:
@@ -1878,7 +1879,19 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         if isinstance(var_obj, VarObj):
             c_node = c.Id(var_obj.c_node.name) if var_obj.c_node is not None else None
             if var_obj.passed_by_ref:
-                c_node = c.UnaryExpr(c_node, op="*", prefix=True)
+                res = RefObj(
+                    xy_node=expr,
+                    infered_type=var_obj.type_desc,
+                    container=param_container,
+                    c_node=c.UnaryExpr(c_node, op="*", prefix=True),  # references are the only one with a c_node
+                    ref=ExprObj(
+                        xy_node=expr,
+                        c_node=c_node,
+                        infered_type=ptr_type_to(var_obj.type_desc, ctx)
+                    )
+                )
+                return maybe_deref(res, deref, cast, cfunc, ctx)
+
             return ExprObj(
                 xy_node=expr,
                 c_node=c_node,
@@ -2153,29 +2166,30 @@ def ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
         )
 
 def do_ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
+    # ptr's get simply dereferenced
+    if is_ptr_type(ref_obj.ref.infered_type, ctx):
+        ref_to_obj = ref_obj.ref.infered_type.tags.get("to", None)
+        if ref_to_obj is None:
+            raise CompilationError("Cannot deref untagged pointer", ref_obj.ref.xy_node)
+        return ExprObj(
+            c_node=c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
+            xy_node=ref_obj.xy_node,
+            infered_type=ref_to_obj,
+            compiled_obj=ref_obj,
+        )
+
     obj = ref_obj.container
     struct_obj = obj if isinstance(obj, TypeObj) else obj.infered_type
     if not (struct_obj.is_enum or struct_obj.is_flags):
-        if is_ptr_type(ref_obj.ref.infered_type, ctx):
-            ref_to_obj = ref_obj.ref.infered_type.tags.get("to", None)
-            if ref_to_obj is None:
-                raise CompilationError("Cannot deref untagged pointer", ref_obj.ref.xy_node)
-            return ExprObj(
-                c_node=c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
-                xy_node=ref_obj.xy_node,
-                infered_type=ref_to_obj,
-                compiled_obj=ref_obj,
-            )
+        if ref_obj.container is global_memory:
+            args = [ref_obj.ref]
         else:
-            if ref_obj.container is global_memory:
-                args = [ref_obj.ref]
-            else:
-                args = [ref_obj.container, ref_obj.ref]
-            return find_and_call(
-                "get",
-                ArgList(args),
-                cast, cfunc, ctx, ref_obj.xy_node
-            )
+            args = [ref_obj.container, ref_obj.ref]
+        return find_and_call(
+            "get",
+            ArgList(args),
+            cast, cfunc, ctx, ref_obj.xy_node
+        )
     elif struct_obj.is_enum:
         # field of an enum
         if isinstance(ref_obj.container, TypeObj) or isinstance(ref_obj.container, ExprObj) and struct_obj is obj.compiled_obj:
@@ -2204,34 +2218,34 @@ def do_ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     )
 
 def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
+    if is_ptr_type(ref_obj.ref.infered_type, ctx):
+        return ExprObj(
+            c_node=c.Expr(
+                c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
+                val_obj.c_node,
+                op="="
+            ),
+            xy_node=ref_obj.xy_node,
+            infered_type=ref_obj.ref.infered_type.tags["to"]
+        )
+
     if not ref_obj.container.infered_type.is_flags:
-        if is_ptr_type(ref_obj.ref.infered_type, ctx):
-            return ExprObj(
-                c_node=c.Expr(
-                    c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
-                    val_obj.c_node,
-                    op="="
-                ),
-                xy_node=ref_obj.xy_node,
-                infered_type=ref_obj.ref.infered_type.tags["to"]
-            )
-        else:
-            arg_objs = ArgList([
-                ref_obj.container,
-                maybe_move_to_temp(ref_obj.ref, cast, cfunc, ctx),
-                val_obj,
-            ])
-            fobj = find_func_obj("set", arg_objs, cast, cfunc, ctx, ref_obj.xy_node)
+        arg_objs = ArgList([
+            ref_obj.container,
+            maybe_move_to_temp(ref_obj.ref, cast, cfunc, ctx),
+            val_obj,
+        ])
+        fobj = find_func_obj("set", arg_objs, cast, cfunc, ctx, ref_obj.xy_node)
 
-            if fobj.move_args_to_temps:
-                arg_objs.args[-1] = maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx)
+        if fobj.move_args_to_temps:
+            arg_objs.args[-1] = maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx)
 
-            return do_compile_fcall(
-                ref_obj.xy_node,
-                fobj,
-                arg_exprs=arg_objs,
-                cast=cast, cfunc=cfunc, ctx=ctx
-            )
+        return do_compile_fcall(
+            ref_obj.xy_node,
+            fobj,
+            arg_exprs=arg_objs,
+            cast=cast, cfunc=cfunc, ctx=ctx
+        )
     else:
         return ExprObj(
             xy_node=ref_obj.xy_node,
@@ -2801,7 +2815,6 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     for i in range(len(expr.args)):
         obj = compile_expr(expr.args[i], cast, cfunc, ctx, deref=False)
         if isinstance(obj, RefObj):
-            assert obj.c_node is None
             obj = ref_decay_to_ptr_or_val(obj, cast, cfunc, ctx)
 
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
@@ -2902,6 +2915,8 @@ def move_to_temp(expr_obj, cast, cfunc, ctx):
         if isinstance(expr_obj, RefObj):
             # decay to ptr
             get_obj = ref_get(expr_obj, cast, cfunc, ctx)
+            if is_simple_cexpr(get_obj.c_node):
+                return get_obj
             tmp_obj = ctx.create_tmp_var(expr_obj.ref.infered_type, "ref", expr_obj.xy_node)
             tmp_obj.c_node.value = get_obj.c_node.arg
             cfunc.body.append(tmp_obj.c_node)
