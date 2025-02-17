@@ -2166,6 +2166,15 @@ def ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
         )
 
 def do_ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
+    # reference to a field
+    if isinstance(ref_obj.ref, VarObj):
+        return ExprObj(
+            c_node=ref_obj.c_node,
+            xy_node=ref_obj.xy_node,
+            infered_type=ref_obj.ref.type_desc,
+            compiled_obj=ref_obj
+        )
+    
     # ptr's get simply dereferenced
     if is_ptr_type(ref_obj.ref.infered_type, ctx):
         ref_to_obj = ref_obj.ref.infered_type.tags.get("to", None)
@@ -2218,6 +2227,14 @@ def do_ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
     )
 
 def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
+    if isinstance(ref_obj.ref, VarObj):
+        return ExprObj(
+            c_node=c.Expr(ref_obj.c_node, val_obj.c_node, op="="),
+            xy_node=ref_obj.xy_node,
+            infered_type=ref_obj.ref.type_desc,
+            compiled_obj=ref_obj
+        )
+    
     if is_ptr_type(ref_obj.ref.infered_type, ctx):
         return ExprObj(
             c_node=c.Expr(
@@ -2332,11 +2349,18 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
             compiled_obj=field_obj,
         )
         return ref_setup(ref_obj, cast, cfunc, ctx)
-        return ref_get(ref_obj, cast, cfunc, ctx)
 
     if not (struct_obj.is_enum or struct_obj.is_flags):
         # normal field
         res = c_deref(obj.c_node, field=c.Id(field_obj.c_node.name))
+        return RefObj(
+            container=obj,
+            ref=field_obj,
+            xy_node=obj.xy_node,
+            compiled_obj=field_obj,
+            c_node=res,
+            infered_type=field_obj.type_desc
+        )
     elif struct_obj.is_enum:
         # field of an enum
         if isinstance(obj, TypeObj) or isinstance(obj, ExprObj) and struct_obj is obj.compiled_obj:

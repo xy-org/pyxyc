@@ -1,0 +1,11 @@
+struct Struct {
+    a: int;
+    b: int;
+}
+
+def func(v: Struct, a: int) {}
+
+def test() {
+    v: Struct;
+    func(v, v.a);; not safe as v and v.a alias on different levels
+}
