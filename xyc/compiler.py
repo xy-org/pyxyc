@@ -178,9 +178,9 @@ class ConstObj(ExprObj):
     value: int | float | str | None = None
 
 @dataclass
-class RefObj(ExprObj):
+class IdxObj(ExprObj):
     container: CompiledObj = None
-    ref: CompiledObj = None
+    idx: CompiledObj = None
 
 @dataclass
 class FCallObj(ExprObj):
@@ -1679,8 +1679,8 @@ def compile_vardecl(node, cast, cfunc, ctx):
     value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
     if node.is_move:
         value_obj = move_out(value_obj, cast, cfunc, ctx)
-    if isinstance(value_obj, RefObj):
-        value_obj = ref_get(value_obj, cast, None, ctx)
+    if isinstance(value_obj, IdxObj):
+        value_obj = idx_get(value_obj, cast, None, ctx)
     type_desc = find_type(node.type, cast, ctx) if node.type is not None else None
     if type_desc is None:
         if value_obj is None:
@@ -1808,12 +1808,12 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                     container_obj = global_memory
                 assert len(expr.arg1.args.args) == 1
                 assert len(expr.arg1.args.kwargs) == 0
-                ref_obj = compile_expr(expr.arg1.args.args[0], cast, cfunc, ctx, deref=None)
+                idx_obj = compile_expr(expr.arg1.args.args[0], cast, cfunc, ctx, deref=None)
                 value_obj = compile_expr(expr.arg2, cast, cfunc, ctx, deref=False)
                 if expr.op == "=<":
                     value_obj = move_out(value_obj, cast, cfunc, ctx)
                 value_obj = maybe_deref(value_obj, True, cast, cfunc, ctx)
-                return ref_set(RefObj(xy_node=expr, container=container_obj, ref=ref_obj), value_obj, cast, cfunc, ctx)
+                return idx_set(IdxObj(xy_node=expr, container=container_obj, idx=idx_obj), value_obj, cast, cfunc, ctx)
 
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
@@ -1821,8 +1821,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             if expr.op == "=<":
                 arg2_obj = move_out(arg2_obj, cast, cfunc, ctx)
 
-            if isinstance(arg1_obj, RefObj):
-                return ref_set(arg1_obj, arg2_obj, cast, cfunc, ctx)
+            if isinstance(arg1_obj, IdxObj):
+                return idx_set(arg1_obj, arg2_obj, cast, cfunc, ctx)
             else:
                 res = c.Expr(arg1_obj.c_node, arg2_obj.c_node, op="=")
                 return ExprObj(
@@ -1853,12 +1853,12 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return tmp_obj
     elif isinstance(expr, xy.UnaryExpr) and expr.op == '&':
         arg_obj = compile_expr(expr.arg, cast, cfunc, ctx, deref=False)
-        if isinstance(arg_obj, RefObj):
+        if isinstance(arg_obj, IdxObj):
             return ExprObj(
                 expr,
-                c_node=arg_obj.ref.c_node,
-                inferred_type=arg_obj.ref.inferred_type,
-                tags=arg_obj.ref.tags
+                c_node=arg_obj.idx.c_node,
+                inferred_type=arg_obj.idx.inferred_type,
+                tags=arg_obj.idx.tags
             )
         elif isinstance(arg_obj.compiled_obj, VarObj):
             return compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx)
@@ -1882,12 +1882,12 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         if isinstance(var_obj, VarObj):
             c_node = c.Id(var_obj.c_node.name) if var_obj.c_node is not None else None
             if var_obj.passed_by_ref:
-                res = RefObj(
+                res = IdxObj(
                     xy_node=expr,
                     inferred_type=var_obj.type_desc,
                     container=param_container,
                     c_node=c.UnaryExpr(c_node, op="*", prefix=True),  # references are the only one with a c_node
-                    ref=ExprObj(
+                    idx=ExprObj(
                         xy_node=expr,
                         c_node=c_node,
                         inferred_type=ptr_type_to(var_obj.type_desc, ctx)
@@ -2051,8 +2051,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             raise CompilationError("List comprehension is supported only on arrays", container_obj.xy_node)
     elif isinstance(expr, xy.Select):
         # rewritten = rewrite_select(expr, ctx)
-        ref_obj = compile_select(expr, cast, cfunc, ctx)
-        return maybe_deref(ref_obj, deref, cast, cfunc, ctx)
+        idx_obj = compile_select(expr, cast, cfunc, ctx)
+        return maybe_deref(idx_obj, deref, cast, cfunc, ctx)
     elif isinstance(expr, xy.IfExpr):
         return compile_if(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.DoWhileExpr):
@@ -2110,13 +2110,13 @@ def move_out(obj: ExprObj, cast, cfunc, ctx):
     return tmp_obj
 
 def reset_obj(obj: ExprObj, cast, cfunc, ctx):
-    if isinstance(obj, RefObj):
+    if isinstance(obj, IdxObj):
         def_value_obj = ExprObj(
             xy_node=obj.xy_node,
             c_node=obj.inferred_type.init_value,
             inferred_type=obj.inferred_type
         )
-        obj = ref_set(obj, def_value_obj, cast, cfunc, ctx)
+        obj = idx_set(obj, def_value_obj, cast, cfunc, ctx)
         cfunc.body.append(obj.c_node)
     elif isinstance(obj.inferred_type, ArrTypeObj):
         cfor = create_loop_over_array(obj, cast, cfunc, ctx)
@@ -2147,147 +2147,147 @@ def is_tmp_expr(obj: ExprObj):
 def maybe_deref(obj: CompiledObj, deref: bool, cast, cfunc, ctx):
     if not deref:
         return obj
-    if not isinstance(obj, RefObj):
+    if not isinstance(obj, IdxObj):
         return obj
-    return ref_get(obj, cast, cfunc, ctx)
+    return idx_get(obj, cast, cfunc, ctx)
 
-def ref_get(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
-    obj = ref_get_once(ref_obj, cast, cfunc, ctx)
-    while isinstance(obj, RefObj):
-        obj = ref_get_once(obj, cast, cfunc, ctx)
+def idx_get(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
+    obj = idx_get_once(idx_obj, cast, cfunc, ctx)
+    while isinstance(obj, IdxObj):
+        obj = idx_get_once(obj, cast, cfunc, ctx)
     return obj
 
-def ref_decay_to_ptr_or_val(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
-    while isinstance(ref_obj, RefObj) and not is_ptr_type(ref_obj.ref.inferred_type, ctx):
-        ref_obj = ref_get_once(ref_obj, cast, cfunc, ctx)
-    return ref_obj
+def idx_decay_to_ptr_or_val(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
+    while isinstance(idx_obj, IdxObj) and not is_ptr_type(idx_obj.idx.inferred_type, ctx):
+        idx_obj = idx_get_once(idx_obj, cast, cfunc, ctx)
+    return idx_obj
 
-def ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
+def idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
     try:
-        return do_ref_get_once(ref_obj, cast, cfunc, ctx)
+        return do_idx_get_once(idx_obj, cast, cfunc, ctx)
     except CompilationError as e:
         raise CompilationError(
-            f"Cannot decay 'in({ref_obj.container.inferred_type.name}) "
-            f"{ref_obj.ref.inferred_type.name}' "\
+            f"Cannot decay 'in({idx_obj.container.inferred_type.name}) "
+            f"{idx_obj.idx.inferred_type.name}' "\
             f"because: {e.error_message}", e.xy_node,
             notes=e.notes
         )
 
-def do_ref_get_once(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
+def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
     # reference to a field
-    if isinstance(ref_obj.ref, VarObj):
+    if isinstance(idx_obj.idx, VarObj):
         return ExprObj(
-            c_node=ref_obj.c_node,
-            xy_node=ref_obj.xy_node,
-            inferred_type=ref_obj.ref.type_desc,
-            compiled_obj=ref_obj
+            c_node=idx_obj.c_node,
+            xy_node=idx_obj.xy_node,
+            inferred_type=idx_obj.idx.type_desc,
+            compiled_obj=idx_obj
         )
     
     # ptr's get simply dereferenced
-    if is_ptr_type(ref_obj.ref.inferred_type, ctx):
-        ref_to_obj = ref_obj.ref.inferred_type.tags.get("to", None)
-        if ref_to_obj is None:
-            raise CompilationError("Cannot deref untagged pointer", ref_obj.ref.xy_node)
+    if is_ptr_type(idx_obj.idx.inferred_type, ctx):
+        idx_to_obj = idx_obj.idx.inferred_type.tags.get("to", None)
+        if idx_to_obj is None:
+            raise CompilationError("Cannot deref untagged pointer", idx_obj.idx.xy_node)
         return ExprObj(
-            c_node=c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
-            xy_node=ref_obj.xy_node,
-            inferred_type=ref_to_obj,
-            compiled_obj=ref_obj,
+            c_node=c.UnaryExpr(idx_obj.idx.c_node, op='*', prefix=True),
+            xy_node=idx_obj.xy_node,
+            inferred_type=idx_to_obj,
+            compiled_obj=idx_obj,
         )
 
-    obj = ref_obj.container
+    obj = idx_obj.container
     struct_obj = obj if isinstance(obj, TypeObj) else obj.inferred_type
     if not (struct_obj.is_enum or struct_obj.is_flags):
-        if ref_obj.container is global_memory:
-            args = [ref_obj.ref]
+        if idx_obj.container is global_memory:
+            args = [idx_obj.idx]
         else:
-            args = [ref_obj.container, ref_obj.ref]
+            args = [idx_obj.container, idx_obj.idx]
         return find_and_call(
             "get",
             ArgList(args),
-            cast, cfunc, ctx, ref_obj.xy_node
+            cast, cfunc, ctx, idx_obj.xy_node
         )
     elif struct_obj.is_enum:
         # field of an enum
-        if isinstance(ref_obj.container, TypeObj) or isinstance(ref_obj.container, ExprObj) and struct_obj is obj.compiled_obj:
-            res = c.Id(ref_obj.ref.c_node.name)
+        if isinstance(idx_obj.container, TypeObj) or isinstance(idx_obj.container, ExprObj) and struct_obj is obj.compiled_obj:
+            res = c.Id(idx_obj.idx.c_node.name)
         else:
             res = c.Expr(
                 op='==',
                 arg1=obj.c_node,
-                arg2=c.Id(ref_obj.ref.c_node.name)
+                arg2=c.Id(idx_obj.idx.c_node.name)
             )
     else:
         assert struct_obj.is_flags
         if isinstance(obj, TypeObj) or isinstance(obj, ExprObj) and struct_obj is obj.compiled_obj:
-            res = c.Id(ref_obj.ref.c_node.name)
+            res = c.Id(idx_obj.idx.c_node.name)
         else:
             res = c.Expr(
                 op='&',
                 arg1=obj.c_node,
-                arg2=c.Id(ref_obj.ref.c_node.name)
+                arg2=c.Id(idx_obj.idx.c_node.name)
             )
 
     return ExprObj(
         c_node=res,
-        xy_node=ref_obj.xy_node,
+        xy_node=idx_obj.xy_node,
         inferred_type=struct_obj
     )
 
-def ref_set(ref_obj: RefObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
-    if isinstance(ref_obj.ref, VarObj):
+def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
+    if isinstance(idx_obj.idx, VarObj):
         return ExprObj(
-            c_node=c.Expr(ref_obj.c_node, val_obj.c_node, op="="),
-            xy_node=ref_obj.xy_node,
-            inferred_type=ref_obj.ref.type_desc,
-            compiled_obj=ref_obj
+            c_node=c.Expr(idx_obj.c_node, val_obj.c_node, op="="),
+            xy_node=idx_obj.xy_node,
+            inferred_type=idx_obj.idx.type_desc,
+            compiled_obj=idx_obj
         )
     
-    if is_ptr_type(ref_obj.ref.inferred_type, ctx):
+    if is_ptr_type(idx_obj.idx.inferred_type, ctx):
         return ExprObj(
             c_node=c.Expr(
-                c.UnaryExpr(ref_obj.ref.c_node, op='*', prefix=True),
+                c.UnaryExpr(idx_obj.idx.c_node, op='*', prefix=True),
                 val_obj.c_node,
                 op="="
             ),
-            xy_node=ref_obj.xy_node,
-            inferred_type=ref_obj.ref.inferred_type.tags["to"]
+            xy_node=idx_obj.xy_node,
+            inferred_type=idx_obj.idx.inferred_type.tags["to"]
         )
 
-    if not ref_obj.container.inferred_type.is_flags:
+    if not idx_obj.container.inferred_type.is_flags:
         arg_objs = ArgList([
-            ref_obj.container,
-            maybe_move_to_temp(ref_obj.ref, cast, cfunc, ctx),
+            idx_obj.container,
+            maybe_move_to_temp(idx_obj.idx, cast, cfunc, ctx),
             val_obj,
         ])
-        fobj = find_func_obj("set", arg_objs, cast, cfunc, ctx, ref_obj.xy_node)
+        fobj = find_func_obj("set", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
 
         if fobj.move_args_to_temps:
             arg_objs.args[-1] = maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx)
 
         return do_compile_fcall(
-            ref_obj.xy_node,
+            idx_obj.xy_node,
             fobj,
             arg_exprs=arg_objs,
             cast=cast, cfunc=cfunc, ctx=ctx
         )
     else:
         return ExprObj(
-            xy_node=ref_obj.xy_node,
-            inferred_type=ref_obj.container.inferred_type,
+            xy_node=idx_obj.xy_node,
+            inferred_type=idx_obj.container.inferred_type,
             c_node=c.Expr(
-                arg1=ref_obj.container.c_node,
-                arg2=ref_obj.ref.c_node,
+                arg1=idx_obj.container.c_node,
+                arg2=idx_obj.idx.c_node,
                 op="|=",
             )
         )
     
-def ref_setup(ref_obj: RefObj, cast, cfunc, ctx: CompilerContext):
-    if ref_obj.inferred_type is None:
-        ref_obj.container = maybe_move_to_temp(ref_obj.container, cast, cfunc, ctx)
-        deref_obj = ref_get(ref_obj, c.Ast(), c.Block(), ctx)
-        ref_obj.inferred_type = deref_obj.inferred_type
-    return ref_obj
+def idx_setup(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
+    if idx_obj.inferred_type is None:
+        idx_obj.container = maybe_move_to_temp(idx_obj.container, cast, cfunc, ctx)
+        deidx_obj = idx_get(idx_obj, c.Ast(), c.Block(), ctx)
+        idx_obj.inferred_type = deidx_obj.inferred_type
+    return idx_obj
 
 def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ctx: CompilerContext):
     if isinstance(obj, VarObj):
@@ -2297,9 +2297,9 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
             inferred_type=obj.type_desc,
         )
 
-    if isinstance(obj, RefObj):
+    if isinstance(obj, IdxObj):
         # TODO implement chaining
-        obj = ref_get(obj, cast, cfunc, ctx)
+        obj = idx_get(obj, cast, cfunc, ctx)
 
     if not field.is_pseudo:
         val_type = val.inferred_type
@@ -2340,35 +2340,35 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
             c_node=c_res,
         )
     else:
-        ref_obj = RefObj(
+        idx_obj = IdxObj(
             container=obj,
-            ref=field.default_value_obj,
+            idx=field.default_value_obj,
             xy_node=val.xy_node,
         )
-        return ref_set(ref_obj, val, cast, cfunc, ctx)
+        return idx_set(idx_obj, val, cast, cfunc, ctx)
     
 def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerContext):
     struct_obj = obj if isinstance(obj, TypeObj) else obj.inferred_type
     if field_obj.xy_node.is_pseudo:
-        ref_obj = RefObj(
+        idx_obj = IdxObj(
             container=obj,
-            ref=field_obj.default_value_obj,
+            idx=field_obj.default_value_obj,
             xy_node=obj.xy_node,
             compiled_obj=field_obj,
         )
-        return ref_setup(ref_obj, cast, cfunc, ctx)
+        return idx_setup(idx_obj, cast, cfunc, ctx)
 
     if not (struct_obj.is_enum or struct_obj.is_flags):
         # normal field
         # TODO REMOVE THAT, Only refs should have a c_node
         obj_c_node = obj.c_node
-        if isinstance(obj, RefObj):
+        if isinstance(obj, IdxObj):
             # TODO how to we chain fields if obj doesn't decay to a reference
-            obj_c_node = ref_get(obj, cast, cfunc, ctx).c_node
+            obj_c_node = idx_get(obj, cast, cfunc, ctx).c_node
         res = c_deref(obj_c_node, field=c.Id(field_obj.c_node.name))
-        return RefObj(
+        return IdxObj(
             container=obj,
-            ref=field_obj,
+            idx=field_obj,
             xy_node=obj.xy_node,
             compiled_obj=field_obj,
             c_node=res,
@@ -2851,8 +2851,8 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     expr_to_move_idx = None
     for i in range(len(expr.args)):
         obj = compile_expr(expr.args[i], cast, cfunc, ctx, deref=False)
-        if isinstance(obj, RefObj):
-            obj = ref_decay_to_ptr_or_val(obj, cast, cfunc, ctx)
+        if isinstance(obj, IdxObj):
+            obj = idx_decay_to_ptr_or_val(obj, cast, cfunc, ctx)
 
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
             is_builitin_math = (
@@ -2895,8 +2895,8 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     if isinstance(fspace, ExtSymbolObj):
         fspace = ExtSpace(fspace.symbol)
 
-    if isinstance(fspace, RefObj):
-        fspace = ref_get(fspace, cast, cfunc, ctx)
+    if isinstance(fspace, IdxObj):
+        fspace = idx_get(fspace, cast, cfunc, ctx)
 
     if not isinstance(fspace, ExtSpace):
         for arg in arg_exprs.args:
@@ -2926,8 +2926,8 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             arg_exprs[expr_to_move_idx], cast, cfunc, ctx
         )
         expr_to_move_idx = None
-    if expr_to_move_idx is not None and isinstance(arg_exprs[expr_to_move_idx], RefObj):
-        arg_exprs[expr_to_move_idx] = ref_get(
+    if expr_to_move_idx is not None and isinstance(arg_exprs[expr_to_move_idx], IdxObj):
+        arg_exprs[expr_to_move_idx] = idx_get(
             arg_exprs[expr_to_move_idx], cast, cfunc, ctx
         )
         expr_to_move_idx = None
@@ -2939,21 +2939,21 @@ def compile_expr_for_arg(arg: xy.Node, cast, cfunc, ctx: CompilerContext):
     return maybe_move_to_temp(expr_obj, cast, cfunc, ctx)
 
 def maybe_move_to_temp(expr_obj, cast, cfunc, ctx):
-    if isinstance(expr_obj, (ExprObj, RefObj)) and cfunc is not None and not is_simple_cexpr(expr_obj.c_node):
+    if isinstance(expr_obj, (ExprObj, IdxObj)) and cfunc is not None and not is_simple_cexpr(expr_obj.c_node):
         return move_to_temp(expr_obj, cast, cfunc, ctx)
     else:
         return expr_obj
     
 def move_to_temp(expr_obj, cast, cfunc, ctx):
     original_expr_obj = expr_obj
-    if isinstance(expr_obj, RefObj):
-        expr_obj = ref_decay_to_ptr_or_val(expr_obj, cast, cfunc, ctx)
-        if isinstance(expr_obj, RefObj):
+    if isinstance(expr_obj, IdxObj):
+        expr_obj = idx_decay_to_ptr_or_val(expr_obj, cast, cfunc, ctx)
+        if isinstance(expr_obj, IdxObj):
             # decay to ptr
-            get_obj = ref_get(expr_obj, cast, cfunc, ctx)
+            get_obj = idx_get(expr_obj, cast, cfunc, ctx)
             if is_simple_cexpr(get_obj.c_node):
                 return get_obj
-            tmp_obj = ctx.create_tmp_var(expr_obj.ref.inferred_type, "ref", expr_obj.xy_node)
+            tmp_obj = ctx.create_tmp_var(expr_obj.idx.inferred_type, "ref", expr_obj.xy_node)
             tmp_obj.c_node.value = get_obj.c_node.arg
             cfunc.body.append(tmp_obj.c_node)
             get_obj.c_node = c.UnaryExpr(arg=c.Id(tmp_obj.c_node.name), op="*", prefix=True)
@@ -2966,9 +2966,9 @@ def move_to_temp(expr_obj, cast, cfunc, ctx):
     return res
         
 def copy_to_temp(expr_obj, cast, cfunc, ctx):
-    if isinstance(expr_obj, RefObj):
+    if isinstance(expr_obj, IdxObj):
         # TODO not tested
-        get_obj = ref_get(expr_obj, cast, cfunc, ctx)
+        get_obj = idx_get(expr_obj, cast, cfunc, ctx)
         tmp_obj = ctx.create_tmp_var(expr_obj.inferred_type, "ref", expr_obj.xy_node)
         tmp_obj.c_node.value = get_obj.c_node
         cfunc.body.append(tmp_obj.c_node)
@@ -3051,9 +3051,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=arg_exprs[1].inferred_type
         )
     elif is_builtin_func(func_obj, "iter"):
-        return RefObj(
+        return IdxObj(
             container=arg_exprs[0],
-            ref=ExprObj(
+            idx=ExprObj(
                 xy_node=expr,
                 c_node=c.Const(0),
                 inferred_type=func_obj.rtype_obj
@@ -3497,10 +3497,10 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         else:
             base = global_memory
 
-        res_obj = ref_setup(
-            RefObj(
+        res_obj = idx_setup(
+            IdxObj(
                 container=base,
-                ref=raw_fcall_obj,
+                idx=raw_fcall_obj,
                 xy_node=expr,
             ),
             cast, cfunc, ctx
@@ -3519,9 +3519,9 @@ def check_aliasing_rules(arg_exprs, arg_writable, ctx: CompilerContext):
     for i, expr in enumerate(arg_exprs):
         # first get the level
         expr_level = 0
-        top_expr = expr if isinstance(expr, RefObj) else expr.compiled_obj
+        top_expr = expr if isinstance(expr, IdxObj) else expr.compiled_obj
         # print(fmt_err_msg("First", top_expr.xy_node))
-        while isinstance(top_expr, RefObj):
+        while isinstance(top_expr, IdxObj):
             expr_level += 1
             top_expr = top_expr.container
             # print(fmt_err_msg("Loop", top_expr.xy_node))
@@ -3973,13 +3973,13 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                         iter_arg_objs = [collection_obj]
                         ictor_obj = find_and_call("iter", ArgList(iter_arg_objs), cast, cfunc, ctx, collection_node)
 
-                if not isinstance(ictor_obj, RefObj):
+                if not isinstance(ictor_obj, IdxObj):
                     raise CompilationError("Iter Ctors must return refs", ictor_obj.xy_node)
                 original_ref = ictor_obj
                 iter_arg_objs = [ictor_obj.container]
                 if ictor_obj.container is global_memory:
                     iter_arg_objs = []
-                ictor_obj = ictor_obj.ref
+                ictor_obj = ictor_obj.idx
 
                 # init
                 iter_var_decl = ctx.create_tmp_var(ictor_obj.inferred_type, "iter")
@@ -4007,17 +4007,17 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                 cfor.updates.append(next_obj.c_node)
 
                 # deref in for body
-                # deref_obj = find_and_call("get", ArgList([*iter_arg_objs, iter_obj]), cast, cfunc, ctx, collection_node)
+                # deidx_obj = find_and_call("get", ArgList([*iter_arg_objs, iter_obj]), cast, cfunc, ctx, collection_node)
 
-                # val_cdecl = c.VarDecl(iter_name, c.QualType(deref_obj.inferred_type.c_node.name), value=deref_obj.c_node)
-                # val_obj = VarObj(collection_node, val_cdecl, deref_obj.inferred_type)
+                # val_cdecl = c.VarDecl(iter_name, c.QualType(deidx_obj.inferred_type.c_node.name), value=deidx_obj.c_node)
+                # val_obj = VarObj(collection_node, val_cdecl, deidx_obj.inferred_type)
                 # ctx.ns[iter_name] = val_obj
                 # cfor.body.append(val_cdecl)
 
                 new_ref = copy(original_ref)
                 new_ref.c_node = None
-                new_ref.ref = iter_obj
-                ref_setup(new_ref, cast, cfunc, ctx)
+                new_ref.idx = iter_obj
+                idx_setup(new_ref, cast, cfunc, ctx)
                 ctx.ns[iter_name] = new_ref
         else:
             # Bool expression. Continue if false
@@ -4060,8 +4060,8 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
 def is_iter_ctor_call(expr_obj: ExprObj):
     if isinstance(expr_obj, FCallObj):
         return "xyIter" in expr_obj.func_obj.tags
-    if isinstance(expr_obj, RefObj):
-        return is_iter_ctor_call(expr_obj.ref)
+    if isinstance(expr_obj, IdxObj):
+        return is_iter_ctor_call(expr_obj.idx)
     return False
 
 def compile_break(xybreak, cast, cfunc, ctx):
@@ -4447,11 +4447,11 @@ def compile_select(expr: xy.Select, cast, cfunc, ctx):
         container_obj = global_memory
     assert len(expr.args.args) == 1  # TODO
     assert len(expr.args.kwargs) == 0  # TODO
-    ref_obj = compile_expr(expr.args.args[0], cast, cfunc, ctx, deref=False)
+    idx_obj = compile_expr(expr.args.args[0], cast, cfunc, ctx, deref=False)
 
-    ref_obj = RefObj(xy_node=expr, container=container_obj, ref=ref_obj)
-    ref_setup(ref_obj, cast, cfunc, ctx)
-    return ref_obj
+    idx_obj = IdxObj(xy_node=expr, container=container_obj, idx=idx_obj)
+    idx_setup(idx_obj, cast, cfunc, ctx)
+    return idx_obj
 
 def compile_import(imprt, ctx: CompilerContext, ast, cast):
     compiled_tags = ctx.eval_tags(imprt.tags)
