@@ -346,6 +346,9 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
     ("memAliasing3.xy",
      r".*Cannot get a reference to a variable and an element of that variable"\
         " at the same time*"),
+    ("memAliasing4.xy",
+     r".*Cannot get a reference to a variable and an element of that variable"\
+        " at the same time*"),
 ])
 def test_compilation_errors_src(package, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

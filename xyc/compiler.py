@@ -92,11 +92,6 @@ class TypeInferenceError:
     msg: str = ""
 
 @dataclass
-class ConstObj(CompiledObj):
-    value: int | float | str | None = None
-    infered_type: TypeObj = None
-
-@dataclass
 class StrObj(CompiledObj):
     prefix: str = ""
     parts: list[CompiledObj] = field(default_factory=list)
@@ -121,6 +116,10 @@ class InstanceObj(CompiledObj):
     @property
     def infered_type(self):
         return self.type_obj
+    
+    @property
+    def compiled_obj(self):
+        return None
 
 @dataclass
 class FuncObj(CompiledObj):
@@ -173,6 +172,10 @@ class ExprObj(CompiledObj):
     compiled_obj: CompiledObj | None = None
     first_cnode_idx: int = -1
     num_cnodes: int = -1
+
+@dataclass
+class ConstObj(ExprObj):
+    value: int | float | str | None = None
 
 @dataclass
 class RefObj(ExprObj):
@@ -1766,7 +1769,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         if expr.op not in {'.', '=', '.=', '..', '=<'}:
             return compile_binop(expr, cast, cfunc, ctx)
         elif expr.op == '.':
-            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             if isinstance(arg1_obj.infered_type, ImportObj):
                 assert arg1_obj.infered_type.is_external
                 if isinstance(expr.arg2, xy.Id):
@@ -2098,6 +2101,11 @@ def move_out(obj: ExprObj, cast, cfunc, ctx):
         return obj
 
     tmp_obj = copy_to_temp(obj, cast, cfunc, ctx)
+    # break the connection between the temp and the value as once we move out
+    # there is no longer a connection. Note this is different to copying to a tmp
+    # value as argument evaluation order doesn't guarantee lack of incompatable
+    # aliasing. Moving out does b/c we reset the value.
+    tmp_obj.compiled_obj = None
     reset_obj(obj, cast, cfunc, ctx)
     return tmp_obj
 
@@ -2352,7 +2360,12 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
 
     if not (struct_obj.is_enum or struct_obj.is_flags):
         # normal field
-        res = c_deref(obj.c_node, field=c.Id(field_obj.c_node.name))
+        # TODO REMOVE THAT, Only refs should have a c_node
+        obj_c_node = obj.c_node
+        if isinstance(obj, RefObj):
+            # TODO how to we chain fields if obj doesn't decay to a reference
+            obj_c_node = ref_get(obj, cast, cfunc, ctx).c_node
+        res = c_deref(obj_c_node, field=c.Id(field_obj.c_node.name))
         return RefObj(
             container=obj,
             ref=field_obj,
@@ -2424,12 +2437,12 @@ def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
     type_obj = ctx.eval(expr.name, msg="Cannot find type")
     tmp_obj = None
     if not isinstance(type_obj, TypeObj):
-        assert isinstance(type_obj, VarObj)
+        # assert isinstance(type_obj, VarObj)
         var_obj = type_obj
-        type_obj = type_obj.type_desc
+        type_obj = type_obj.infered_type
         if not type_obj.is_flags:
             tmp_obj = ctx.create_tmp_var(type_obj, xy_node=expr)
-            tmp_obj.c_node.value = c.Id(var_obj.c_node.name)
+            tmp_obj.c_node.value = c.Id(var_obj.c_node.name) if isinstance(var_obj, VarObj) else maybe_deref(var_obj, True, cast, cfunc, ctx).c_node
             cfunc.body.append(tmp_obj.c_node)
         else:
             tmp_obj = var_obj
@@ -2869,8 +2882,6 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         obj = compile_expr_for_arg(pexpr, cast, cfunc, ctx)
         arg_exprs.kwargs[pname] = obj
 
-    check_aliasing_rules(arg_exprs.args, arg_exprs.kwargs, ctx)
-
     arg_infered_types = ArgList(
         args=[arg.infered_type for arg in arg_exprs.args],
         kwargs={key: arg.infered_type for key, arg in arg_exprs.kwargs.items()}
@@ -3277,6 +3288,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     callee_ctx.push_ns()
     caller_ctx.push_ns()
 
+    args_list = []  # list of all arguments in order of passing including injected ones
+    args_writable = []
+
     for arg in arg_exprs.args:
         assert arg.c_node is not None
     for arg in arg_exprs.kwargs.values():
@@ -3290,6 +3304,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if func_obj.xy_node is not None:
         # add arguments to a xy function
         for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
+            args_list.append(arg)
+            args_writable.append(False)
             callee_ctx.ns[pobj.xy_node.name] = arg
             caller_ctx.ns[pobj.xy_node.name] = LazyObj(
                 xy_node=arg.xy_node, tags=arg.tags, compiled_obj=arg, infered_type=arg.infered_type
@@ -3299,6 +3315,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:
+                args_writable[-1] = True
                 res.args.append(c_getref(arg))
             else:
                 res.args.append(arg.c_node)
@@ -3346,9 +3363,14 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             else:
                 value_obj = arg_exprs.kwargs[pobj.xy_node.name]
             
+            args_list.append(value_obj)
+            args_writable.append(False)
             if not pobj.xy_node.is_pseudo:
                 res.args.append(value_obj.c_node)
             callee_ctx.ns[pobj.xy_node.name] = value_obj
+
+    # all arguments have been processed let's now check aliasing rules
+    check_aliasing_rules(args_list, args_writable, ctx)
 
     # compile input guards if any
     in_guards = func_obj.xy_node.in_guards if func_obj.xy_node is not None else []
@@ -3487,9 +3509,10 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
     return res_obj
 
-def check_aliasing_rules(arg_exprs, kwarg_exprs, ctx: CompilerContext):
+def check_aliasing_rules(arg_exprs, arg_writable, ctx: CompilerContext):
+    assert len(arg_exprs) == len(arg_writable)
     toplevel = {}
-    for expr in itertools.chain(arg_exprs, kwarg_exprs.values()):
+    for i, expr in enumerate(arg_exprs):
         # first get the level
         expr_level = 0
         top_expr = expr if isinstance(expr, RefObj) else expr.compiled_obj
@@ -3502,16 +3525,21 @@ def check_aliasing_rules(arg_exprs, kwarg_exprs, ctx: CompilerContext):
         # if top_expr is not None:
         #     print(fmt_err_msg("End", top_expr.xy_node))
 
-        prev_expr, prev_level = toplevel.get(id(top_expr), (None, expr_level))
+        prev_expr_i, prev_level = toplevel.get(id(top_expr), (None, expr_level))
+        toplevel[id(top_expr)] = (i, expr_level)
         if expr_level != prev_level:
-            raise CompilationError(
-                "Cannot get a reference to a variable and an element of that "
-                "variable at the same time.", expr.xy_node,
-                notes=[
-                    ("Previous reference acquired here", prev_expr.xy_node)
-                ]
-            )
-        toplevel[id(top_expr)] = (expr, expr_level)
+            if arg_writable[i] or arg_writable[prev_expr_i]:
+                # mut param so error
+                raise CompilationError(
+                    "Cannot get a reference to a variable and an element of that "
+                    "variable at the same time.", expr.xy_node,
+                    notes=[
+                        ("Previous reference acquired here", arg_exprs[prev_expr_i].xy_node)
+                    ]
+                )
+            else:
+                # not writable but if encountered again by a writable param it must be an invalid level
+                toplevel[id(top_expr)] = (i, -1)
 
 class NoCallerContextError(Exception):
     pass

@@ -1,0 +1,21 @@
+struct X {
+    a: int;
+    b: int;
+}
+
+struct Y {
+    c: X;
+    d: X;
+}
+
+struct Z {
+    e: Y;
+    f: Y;
+}
+
+def func(v: mut X, a: int) {}
+
+def test() {
+    s: Z;
+    func(s.e.c, s.e.c.a);
+}

@@ -3,7 +3,7 @@ struct Struct {
     b: int;
 }
 
-def func(v: Struct, a: int) {}
+def func(v: mut Struct, a: int) {}
 
 def test() {
     v: Struct;
