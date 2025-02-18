@@ -2945,6 +2945,7 @@ def maybe_move_to_temp(expr_obj, cast, cfunc, ctx):
         return expr_obj
     
 def move_to_temp(expr_obj, cast, cfunc, ctx):
+    original_expr_obj = expr_obj
     if isinstance(expr_obj, RefObj):
         expr_obj = ref_decay_to_ptr_or_val(expr_obj, cast, cfunc, ctx)
         if isinstance(expr_obj, RefObj):
@@ -2959,7 +2960,10 @@ def move_to_temp(expr_obj, cast, cfunc, ctx):
             get_obj.compiled_obj = expr_obj
             return get_obj
         
-    return copy_to_temp(expr_obj, cast, cfunc, ctx)
+    res = copy_to_temp(expr_obj, cast, cfunc, ctx)
+    # XXX we need a way to preserve the history of that object even if it is the result of moving to a temp of another one
+    res.compiled_obj = original_expr_obj if original_expr_obj.compiled_obj is None else original_expr_obj.compiled_obj
+    return res
         
 def copy_to_temp(expr_obj, cast, cfunc, ctx):
     if isinstance(expr_obj, RefObj):

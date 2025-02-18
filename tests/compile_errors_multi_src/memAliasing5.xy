@@ -1,0 +1,22 @@
+struct Point {
+    x: int;
+    y: int;
+}
+
+struct PointList {
+    # ...
+}
+
+def get(arr: PointList, i: int) -> in(arr) Ptr~Point {
+    return Ptr{};
+}
+
+def set(arr: mut PointList, i: int, val: Point) -> void {
+    # ...
+}
+
+def func(item: int, list: mut Point) {}
+
+def test(a: mut PointList) {
+    func(a[0].y, a[1]);
+}
