@@ -446,15 +446,17 @@ def parse_expression(
                     )
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "@":
         coords = itoken.peak_coords()
-        assert itoken.check('@') # @
-        itoken.expect('{', "Array literals are constructed using the @{elems,...} syntax")
-        itoken.skip_empty_lines()
-        maybe_list_comp = itoken.peak() == "for"
-        ret_args = parse_expr_list(itoken)
-        itoken.expect("}", msg="Missing closing bracket")
-        if maybe_list_comp and len(ret_args) == 1 and isinstance(ret_args[0], ForExpr):
-            arg1 = ListComprehension(loop=ret_args[0], src=itoken.src, coords=coords)
+        assert itoken.check('@')
+        if itoken.peak() == "for":
+            # list comprehension
+            for_expr = parse_for(itoken)
+            arg1 = ListComprehension(loop=for_expr, src=itoken.src, coords=coords)
         else:
+            # array literal
+            itoken.expect('{', "Array literals are constructed using the @{elems,...} syntax")
+            itoken.skip_empty_lines()
+            ret_args = parse_expr_list(itoken)
+            itoken.expect("}", msg="Missing closing bracket")
             arg1 = ArrayLit(ret_args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "[":
         # Indexing without a base i.e. derefing

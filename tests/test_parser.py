@@ -2358,7 +2358,7 @@ def test_parse_string_literals(code, exp_ast):
     [
         """def comprehension() -> void {
             a := @{0, 1};
-            b := @{for (i in a) i*2};
+            b := @for (i in a) i*2;
             #c := @[for (i in a) -> (res: int) {res *= i;}   ];
             #d := @[
             #    for (i in a) -> (res: int) {res *= i;},
