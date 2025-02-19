@@ -1,4 +1,4 @@
-import posix~[CLib{headers=@["unistd.h", "fcntl.h"]}] in c;
+import posix~[CLib{headers=@{"unistd.h", "fcntl.h"}}] in c;
 
 # --- Flags ---
 

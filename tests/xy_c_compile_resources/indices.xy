@@ -12,7 +12,7 @@ def select(p: Point, idx: int) -> in(p) int {
 }
 
 def get(p: Point, idx: int) -> float {
-    return @[p.x, p.y, p.z, p.w][idx];
+    return @{p.x, p.y, p.z, p.w}[idx];
 }
 
 def set(p: mut Point, idx: int, v: float)

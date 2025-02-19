@@ -3,7 +3,7 @@ def mod(num: mut int) {
 }
 
 def test() {
-    arr : mut = @[1, 3, 5, 7, 9, 11];
+    arr : mut = @{1, 3, 5, 7, 9, 11};
     for (i in arr) {
         mod(i);
     }

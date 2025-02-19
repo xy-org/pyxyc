@@ -152,15 +152,15 @@ src.xy:2:27: error: Cannot infer type because: Cannot find symbol
         struct Desc {
             size: Size;
         }
-        def parse(args: pseudo any, desc := @[for(f in args'fieldsof) Desc{f'sizeof}]) -> void {
+        def parse(args: pseudo any, desc := @{for(f in args'fieldsof) Desc{f'sizeof}}) -> void {
         }
      """, """\
 src.xy:6:61: error: Cannot infer type because: Cannot get fields of an unknown type
-|         def parse(args: pseudo any, desc := @[for(f in args'fieldsof) Desc{f'sizeof}]) -> void {
+|         def parse(args: pseudo any, desc := @{for(f in args'fieldsof) Desc{f'sizeof}}) -> void {
                                                               ^^^^^^^^
 """),
     ("""
-        import libc~[CLib{headers=@["string.h", "stdio.h"]}] in c;
+        import libc~[CLib{headers=@{"string.h", "stdio.h"}}] in c;
         def func(a: int) a;
         def test() {
             func(c.external());
@@ -171,7 +171,7 @@ src.xy:5:18: error: Cannot determine type of expression
                    ^^^^^^^^^^
 """),
     ("""
-        import libc~[CLib{headers=@["string.h", "stdio.h"]}] in c;
+        import libc~[CLib{headers=@{"string.h", "stdio.h"}}] in c;
         def func(a: int) a;
         def test() {
             func(c.argc);
@@ -220,11 +220,11 @@ src.xy:4:22: error: Cannot find tag
     ("""
         struct Test~[TagCtor{label="test"}] {}
         def func() {
-            tests := @[for (f in $* ~Test()) f];
+            tests := @{for (f in $* ~Test()) f};
         }
      """, """\
 src.xy:4:20: error: Cannot infer type of empty array
-|             tests := @[for (f in $* ~Test()) f];
+|             tests := @{for (f in $* ~Test()) f};
                      ^
 """),
     ("""

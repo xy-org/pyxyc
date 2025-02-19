@@ -447,11 +447,11 @@ def parse_expression(
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "@":
         coords = itoken.peak_coords()
         assert itoken.check('@') # @
-        itoken.expect('[', "Array literals are constructed using the @[elems,...] syntax")
+        itoken.expect('{', "Array literals are constructed using the @{elems,...} syntax")
         itoken.skip_empty_lines()
         maybe_list_comp = itoken.peak() == "for"
         ret_args = parse_expr_list(itoken)
-        itoken.expect("]", msg="Missing closing bracket")
+        itoken.expect("}", msg="Missing closing bracket")
         if maybe_list_comp and len(ret_args) == 1 and isinstance(ret_args[0], ForExpr):
             arg1 = ListComprehension(loop=ret_args[0], src=itoken.src, coords=coords)
         else:

@@ -23,7 +23,7 @@ code_ast = [
         ],
     ],
     [
-        "import libc~[CLib{headers=@[c\"unistd.h\"]}] in c;",
+        "import libc~[CLib{headers=@{c\"unistd.h\"}}] in c;",
         [
             ast.Import(lib="libc", in_name="c", tags=ast.TagList(
                 args=[ast.StructLiteral(
@@ -2243,10 +2243,10 @@ def test_parse_string_literals(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """def main() -> void {
-            empty := @[];
-            arr := @[2.718, 3.14];
+            empty := @{};
+            arr := @{2.718, 3.14};
             uninitialized : int[10];
-            m: int[2, 2] = @[@[1, 2], @[3, 4]];
+            m: int[2, 2] = @{@{1, 2}, @{3, 4}};
         }
         """,
         [
@@ -2276,8 +2276,8 @@ def test_parse_string_literals(code, exp_ast):
     ],
     [
         """def main() -> Str {
-            m: int[2, 2] = @[@[0, 1], @[2, 3]];
-            letters := @["a", "b", "c", "d"];
+            m: int[2, 2] = @{@{0, 1}, @{2, 3}};
+            letters := @{"a", "b", "c", "d"};
             return letters[m[1, 0]];
         }
         """,
@@ -2335,7 +2335,7 @@ def test_parse_string_literals(code, exp_ast):
     ],
     [
         """def mkArray() -> int[2] {
-            return @[0, 1];
+            return @{0, 1};
         }
         """,
         [
@@ -2357,8 +2357,8 @@ def test_parse_string_literals(code, exp_ast):
     ],
     [
         """def comprehension() -> void {
-            a := @[0, 1];
-            b := @[for (i in a) i*2];
+            a := @{0, 1};
+            b := @{for (i in a) i*2};
             #c := @[for (i in a) -> (res: int) {res *= i;}   ];
             #d := @[
             #    for (i in a) -> (res: int) {res *= i;},
