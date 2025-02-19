@@ -16,7 +16,8 @@ from xyc.compiler import CompilationError
     "stringCtor",
     "entrypoint",
     "entrypoint_priority",
-    "arrays",
+    "arrays/arrays",
+    "arrays/arrayComprehension",
     "cimport",
     "ifs",
     "ifs2",
@@ -55,7 +56,6 @@ from xyc.compiler import CompilationError
     "boundaryExpr3",
     # TODO "properties",
     "exitWithError",
-    "arrayComprehension",
     "fieldsof",
     "injectScopeArgs",
     "callbacks1",
@@ -68,14 +68,15 @@ from xyc.compiler import CompilationError
     "moveOperators3",
 ])
 def test_c_compilation(resource_dir, filename):
+    module_name=os.path.basename(filename)
     project = builder.parse_module(
         str(resource_dir / "xy_c_compile_resources" / f"{filename}.xy"),
-        module_name=filename
+        module_name=module_name
     )
     c_project = builder.compile_project(project)
     assert len(c_project) == 1
-    assert f"{filename}.c" in c_project
-    c_act = stringify(c_project[f"{filename}.c"])
+    assert f"{module_name}.c" in c_project
+    c_act = stringify(c_project[f"{module_name}.c"])
 
     c_exp = open(resource_dir / "xy_c_compile_resources" / f"{filename}.c").read()
     assert c_act == c_exp
