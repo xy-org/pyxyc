@@ -1,0 +1,13 @@
+struct List~[elem: struct, xy_dtor=true] {
+}
+
+def push(l: mut List, num: int) {
+}
+
+def dtor(l: mut List) {}
+
+def test() {
+    list1 := List~int@{1, 2, 3};
+    list2 := list1@{3, 2, 1};
+    # TODO list3 := List~int @for(i in @{1, 2, 3}) i*10;
+}

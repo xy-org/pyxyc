@@ -18,6 +18,7 @@ from xyc.compiler import CompilationError
     "entrypoint_priority",
     "arrays/arrays",
     "arrays/arrayComprehension",
+    "arrays/listLiterals",
     "cimport",
     "ifs",
     "ifs2",

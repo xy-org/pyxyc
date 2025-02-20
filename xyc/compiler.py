@@ -1972,122 +1972,67 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
     elif isinstance(expr, xy.ArrayLit):
         res = c.InitList()
         arr_type = None if expr.base is None else find_type(expr.base, cast, ctx)
+        elem_objs = []
         for elem in expr.elems:
             elem_expr = compile_expr(elem, cast, cfunc, ctx)
+            elem_objs.append(elem_expr)
             res.elems.append(elem_expr.c_node)
             if arr_type is None:
                 arr_type = ArrTypeObj(base_type_obj=elem_expr.inferred_type, dims=[len(expr.elems)])
+
         if arr_type is None:
             arr_type = "Cannot infer type of empty list"
-        elif len(arr_type.dims) == 0:
-            arr_type.dims = [len(expr.elems)]
-        elif arr_type.dims[0] < len(expr.elems):
-            raise CompilationError("Init list longer than array length", expr)
-        elif arr_type.dims[0] > len(expr.elems) and not arr_type.base_type_obj.is_init_value_zeros:
-            for i in range(arr_type.dims[0] - len(expr.elems)):
-                res.elems.append(arr_type.base_type_obj.init_value)
-        if len(res.elems) == 0:
-            res.elems.append(c.Const(0))
+        elif isinstance(arr_type, ArrTypeObj):
+            if len(arr_type.dims) == 0:
+                arr_type.dims = [len(expr.elems)]
+            elif arr_type.dims[0] < len(expr.elems):
+                raise CompilationError("Init list longer than array length", expr)
+            elif arr_type.dims[0] > len(expr.elems) and not arr_type.base_type_obj.is_init_value_zeros:
+                for i in range(arr_type.dims[0] - len(expr.elems)):
+                    res.elems.append(arr_type.base_type_obj.init_value)
+
+            if len(res.elems) == 0:
+                res.elems.append(c.Const(0))
+        else: # array literal with not array type
+            if isinstance(arr_type, TypeObj):
+                tmp = ctx.create_tmp_var(arr_type, "arr_comp", xy_node=expr)
+                tmp.needs_dtor = False
+                cfunc.body.append(tmp.c_node)
+                res = c.Id(tmp.c_node.name)
+            else:
+                arr_obj = arr_type
+                if isinstance(arr_obj, VarObj):
+                    arr_obj = ExprObj(
+                        xy_node=arr_obj.xy_node,
+                        c_node=c.Id(arr_obj.c_node.name),
+                        inferred_type=arr_obj.inferred_type,
+                        compiled_obj=arr_obj,
+                    )
+                    arr_type = arr_obj.inferred_type
+                tmp = copy_to_temp(arr_obj, cast, cfunc, ctx)
+                tmp.compiled_obj.needs_dtor = False
+                res = tmp.c_node
+
+            tmp_expr = ExprObj(
+                xy_node=expr,
+                c_node=res,
+                inferred_type=arr_type
+            )
+
+            for elem_obj in elem_objs:
+                push_call = find_and_call(
+                    "push", ArgList([tmp_expr, elem_obj]),
+                    cast, cfunc, ctx, xy_node=expr,
+                )
+                cfunc.body.append(push_call.c_node)
+
         return ExprObj(
             xy_node=expr,
             c_node=res,
             inferred_type=arr_type
         )
     elif isinstance(expr, xy.ListComprehension):
-        if expr.list_type is not None:
-            raise CompilationError("Comprehension with a custom type is NYI", expr)
-        if len(expr.loop.over) != 1:
-            raise CompilationError("List Comprehension with more than one loop is NYI", expr.loop)
-        if isinstance(expr.loop.block.body, list):
-            raise CompilationError("Array Comprehension expressions must have a single inlined expression as body")
-        # determine len
-        container_node = expr.loop.over[0].arg2
-        iter_var_name = expr.loop.over[0].arg1
-        container_obj = compile_expr(container_node, cast, cfunc, ctx)
-        container_obj = maybe_move_to_temp(container_obj, cast, cfunc, ctx)
-        if isinstance(container_obj.inferred_type, ArrTypeObj):
-            arr_len = container_obj.inferred_type.dims[0]
-
-            c_node = c.InitList()
-            ctx.push_ns()
-            for i in range(arr_len):
-                ctx.ns[iter_var_name.name] = ExprObj(
-                    xy_node=iter_var_name,
-                    c_node=c.Index(expr=container_obj.c_node, index=c.Const(i)),
-                    inferred_type=container_obj.inferred_type.base_type_obj,
-                )
-                elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
-                c_node.elems.append(elem_obj.c_node)
-            ctx.pop_ns()
-
-            return ExprObj(
-                xy_node=expr,
-                c_node=c_node,
-                inferred_type=container_obj.inferred_type
-            )
-        elif container_obj.inferred_type is fieldarray_type_obj:
-            fields = container_obj.compiled_obj.inferred_type.fields
-            arr_len = len(fields)
-            elem_type_obj = None
-
-            c_node = c.InitList()
-            ctx.push_ns()
-            for fname, f in fields.items():
-                f_obj = field_get(container_obj.compiled_obj, f, cast, cfunc, ctx)
-                ctx.ns[iter_var_name.name] = ExprObj(
-                    xy_node=iter_var_name,
-                    c_node=f_obj.c_node,
-                    inferred_type=f.type_desc,
-                    compiled_obj=f_obj.compiled_obj,
-                )
-                elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
-                c_node.elems.append(elem_obj.c_node)
-                elem_type_obj = elem_obj.inferred_type
-            ctx.pop_ns()
-
-            return ExprObj(
-                xy_node=expr,
-                c_node=c_node,
-                inferred_type=ArrTypeObj(
-                    xy_node=expr, c_node=c_node, dims=[arr_len],
-                    base_type_obj=elem_type_obj
-                )
-            )
-        elif container_obj.inferred_type is fselection_type_obj:
-            func_type_objs: list[FuncTypeObj] = container_obj.compiled_obj
-            arr_len = len(func_type_objs)
-
-            c_node = c.InitList()
-            ctx.push_ns()
-            for func_type_obj in func_type_objs:
-                ctx.ns[iter_var_name.name] = ExprObj(
-                    xy_node=iter_var_name,
-                    c_node=c.Id(func_type_obj.func_obj.c_node.name),
-                    inferred_type=func_type_obj,
-                    compiled_obj=func_type_obj.func_obj,
-                )
-                elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
-                c_node.elems.append(elem_obj.c_node)
-                elem_type_obj = elem_obj.inferred_type
-            ctx.pop_ns()
-
-            if arr_len > 0:
-                inferred_type = ArrTypeObj(
-                    xy_node=expr, c_node=c_node, dims=[arr_len],
-                    base_type_obj=elem_type_obj
-                )
-            else:
-                inferred_type = TypeInferenceError(
-                    "Cannot infer type of empty array"
-                )
-
-            return ExprObj(
-                xy_node=expr,
-                c_node=c_node,
-                inferred_type=inferred_type
-            )
-        else:
-            raise CompilationError("List comprehension is supported only on arrays", container_obj.xy_node)
+        return compile_list_comprehension(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.Select):
         # rewritten = rewrite_select(expr, ctx)
         idx_obj = compile_select(expr, cast, cfunc, ctx)
@@ -3551,6 +3496,102 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     caller_ctx.pop_ns()
 
     return res_obj
+
+def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: CompilerContext):
+    if len(expr.loop.over) != 1:
+        raise CompilationError("List Comprehension with more than one loop is NYI", expr.loop)
+    if isinstance(expr.loop.block.body, list):
+        raise CompilationError("Array Comprehension expressions must have a single inlined expression as body")
+    
+    # determine len
+    container_node = expr.loop.over[0].arg2
+    iter_var_name = expr.loop.over[0].arg1
+    container_obj = compile_expr(container_node, cast, cfunc, ctx)
+    container_obj = maybe_move_to_temp(container_obj, cast, cfunc, ctx)
+
+    if isinstance(container_obj.inferred_type, ArrTypeObj):
+        arr_len = container_obj.inferred_type.dims[0]
+
+        c_node = c.InitList()
+        ctx.push_ns()
+        for i in range(arr_len):
+            ctx.ns[iter_var_name.name] = ExprObj(
+                xy_node=iter_var_name,
+                c_node=c.Index(expr=container_obj.c_node, index=c.Const(i)),
+                inferred_type=container_obj.inferred_type.base_type_obj,
+            )
+            elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
+            c_node.elems.append(elem_obj.c_node)
+        ctx.pop_ns()
+
+        return ExprObj(
+            xy_node=expr,
+            c_node=c_node,
+            inferred_type=container_obj.inferred_type
+        )
+    elif container_obj.inferred_type is fieldarray_type_obj:
+        fields = container_obj.compiled_obj.inferred_type.fields
+        arr_len = len(fields)
+        elem_type_obj = None
+
+        c_node = c.InitList()
+        ctx.push_ns()
+        for fname, f in fields.items():
+            f_obj = field_get(container_obj.compiled_obj, f, cast, cfunc, ctx)
+            ctx.ns[iter_var_name.name] = ExprObj(
+                xy_node=iter_var_name,
+                c_node=f_obj.c_node,
+                inferred_type=f.type_desc,
+                compiled_obj=f_obj.compiled_obj,
+            )
+            elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
+            c_node.elems.append(elem_obj.c_node)
+            elem_type_obj = elem_obj.inferred_type
+        ctx.pop_ns()
+
+        return ExprObj(
+            xy_node=expr,
+            c_node=c_node,
+            inferred_type=ArrTypeObj(
+                xy_node=expr, c_node=c_node, dims=[arr_len],
+                base_type_obj=elem_type_obj
+            )
+        )
+    elif container_obj.inferred_type is fselection_type_obj:
+        func_type_objs: list[FuncTypeObj] = container_obj.compiled_obj
+        arr_len = len(func_type_objs)
+
+        c_node = c.InitList()
+        ctx.push_ns()
+        for func_type_obj in func_type_objs:
+            ctx.ns[iter_var_name.name] = ExprObj(
+                xy_node=iter_var_name,
+                c_node=c.Id(func_type_obj.func_obj.c_node.name),
+                inferred_type=func_type_obj,
+                compiled_obj=func_type_obj.func_obj,
+            )
+            elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
+            c_node.elems.append(elem_obj.c_node)
+            elem_type_obj = elem_obj.inferred_type
+        ctx.pop_ns()
+
+        if arr_len > 0:
+            inferred_type = ArrTypeObj(
+                xy_node=expr, c_node=c_node, dims=[arr_len],
+                base_type_obj=elem_type_obj
+            )
+        else:
+            inferred_type = TypeInferenceError(
+                "Cannot infer type of empty array"
+            )
+
+        return ExprObj(
+            xy_node=expr,
+            c_node=c_node,
+            inferred_type=inferred_type
+        )
+    else:
+        raise CompilationError("List comprehension is supported only on arrays", container_obj.xy_node)
 
 def check_aliasing_rules(arg_exprs, arg_writable, ctx: CompilerContext):
     assert len(arg_exprs) == len(arg_writable)
