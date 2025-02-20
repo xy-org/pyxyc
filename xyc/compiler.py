@@ -437,6 +437,32 @@ def cmp_arg_param_types(arg_type, param_type):
     
     return True
 
+def compatible_types(src_type, dst_type):
+    # TODO maybe remove cmp_arg_param_types
+    if src_type is dst_type:
+        return True
+
+    if dst_type is any_type_obj:
+        return True
+
+    if isinstance(src_type, ArrTypeObj):
+        if not isinstance(dst_type, ArrTypeObj):
+            return False
+        return True
+        if len(arg_type.dims) != len(param_type.dims):
+            return False
+        for i in range(len(arg_type.dims)):
+            if arg_type.dims[i] != param_type.dims[i]:
+                return False
+            
+    if isinstance(src_type, FuncTypeObj) and isinstance(dst_type, FuncTypeObj):
+        return True  # XXX
+
+    if src_type.get_base_type() is not dst_type.get_base_type():
+        return False
+    
+    return True
+
 def fcall_sig(name, args_inferred_types, inject_args=False):
     return name + "(" + \
         ", ".join(fmt_type(t) for t in args_inferred_types) + \
@@ -3790,7 +3816,10 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
         inferred_type = update_expr_obj.inferred_type
 
     # create tmp var if needed
-    if inferred_type is not None and inferred_type is not ctx.void_obj and res_c is None:
+    if inferred_type is None:
+        inferred_type = ctx.void_obj
+
+    if inferred_type is not ctx.void_obj and res_c is None:
         name_hint = None
         if isinstance(xywhile.block, xy.Block):
             name_hint = xywhile.block.returns[0].name
@@ -3800,8 +3829,6 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
         ctx.module_ns[name_hint] = tmp_obj
         cfunc.body.append(tmp_obj.c_node)
         res_c = c.Id(tmp_obj.c_node.name)
-    else:
-        inferred_type = ctx.void_obj
 
 
     # compile body
@@ -3847,7 +3874,10 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
         inferred_type = update_expr_obj.inferred_type
 
     # create tmp var if needed
-    if inferred_type is not None and inferred_type is not ctx.void_obj and res_c is None:
+    if inferred_type is None:
+        inferred_type = ctx.void_obj
+
+    if inferred_type is not ctx.void_obj and res_c is None:
         name_hint = None
         if isinstance(xydowhile.block, xy.Block):
             name_hint = xydowhile.block.returns[0].name
@@ -3857,8 +3887,6 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
         ctx.module_ns[name_hint] = tmp_obj
         cfunc.body.append(tmp_obj.c_node)
         res_c = c.Id(tmp_obj.c_node.name)
-    else:
-        inferred_type = ctx.void_obj
 
     # compile cond
     cond_obj = compile_expr(xydowhile.cond, cast, cfunc, ctx)
@@ -4140,6 +4168,9 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
             # restore value of needs_dtor for any other returns
             value_obj.compiled_obj.needs_dtor = needs_dtor
 
+        if value_obj is not None:
+            assert_rtype_match(value_obj, ctx.current_fobj, ctx)
+
         return ExprObj(
             xy_node=xyreturn,
             c_node=ret,
@@ -4157,6 +4188,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
                 arg2=value_obj.c_node,
                 op="="
             ))
+            assert_rtype_match(value_obj, ctx.current_fobj, ctx)
         ret = c.Return()
         if xy_func.etype is not None:
             ret.value = ctx.current_fobj.etype_obj.init_value
@@ -4166,6 +4198,25 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
             c_node=ret,
             inferred_type=None
         )
+    
+def assert_rtype_match(value_obj, fobj, ctx: CompilerContext):
+    c_expr = isinstance(value_obj.inferred_type, TypeInferenceError) or value_obj.inferred_type is None
+    if not c_expr and not compatible_types(value_obj.inferred_type, fobj.rtype_obj):
+        if implicit_zero_conversion(value_obj, fobj.rtype_obj, ctx):
+            return
+        return_type_node = fobj.xy_node.returns[0] if len(fobj.xy_node.returns) else fobj.xy_node
+        raise CompilationError(
+            f"Return type mismatch. Tyring to return '{fmt_type(value_obj.inferred_type)}'", value_obj.xy_node, 
+            notes=[
+                (f"From function returning '{fmt_type(fobj.rtype_obj)}'", return_type_node)
+            ]
+        )
+    
+def implicit_zero_conversion(value_obj, dest_type, ctx: CompilerContext):
+    return (
+        isinstance(value_obj.xy_node, xy.Const) and value_obj.xy_node.value == 0
+        and value_obj.xy_node.type == "int" and ctx.is_prim_int(dest_type)
+    )
 
 
 def compile_error(xyerror, cast, cfunc, ctx: CompilerContext):

@@ -2,7 +2,7 @@ def calcDefaultValue(num: int) -> int {
     return num * 2;
 }
 
-def func(a: int, b: int = calcDefaultValue(a)) {
+def func(a: int, b: int = calcDefaultValue(a)) -> int {
     return a + b;
 }
 

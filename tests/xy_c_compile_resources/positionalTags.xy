@@ -12,7 +12,7 @@ struct Point {
 def sizeof(:int) = 4;
 def sizeof(:Point) = 8;
 
-def test() -> int {
+def test() -> Size {
     ints : Array~int;
     points : Array~Point;
     return ints'len + points'len + ints..elemType'sizeof + points..elemType'sizeof;

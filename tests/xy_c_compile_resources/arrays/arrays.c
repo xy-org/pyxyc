@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-void arrays_constructingArrays(void) {
+int32_t arrays_constructingArrays(void) {
     const int32_t arr[3] = {0, 1, 2};
     const int32_t brr[3] = {3, 4, 5};
     const int32_t crr[3] = {6, 7, 8};

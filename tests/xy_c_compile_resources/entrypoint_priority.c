@@ -5,11 +5,11 @@
 int __xy_sys_argc;
 char** __xy_sys_argv;
 
-void entrypoint_priority_main(void) {
+int32_t entrypoint_priority_main(void) {
     return 0;
 }
 
-void entrypoint_priority_moreImportant(void) {
+int32_t entrypoint_priority_moreImportant(void) {
     return 0;
 }
 

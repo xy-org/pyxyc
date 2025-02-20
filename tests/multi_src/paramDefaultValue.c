@@ -6,7 +6,7 @@ int32_t paramDefaultValue_module1_calcDefaultValue(int32_t num) {
     return num * 2;
 }
 
-void paramDefaultValue_module1_func(int32_t a, int32_t b) {
+int32_t paramDefaultValue_module1_func(int32_t a, int32_t b) {
     return a + b;
 }
 
@@ -19,7 +19,7 @@ int32_t paramDefaultValue_module2_calcDefaultValue(int32_t num) {
     return num * 10;
 }
 
-void paramDefaultValue_module2_myfunc(int32_t a, int32_t b) {
+int32_t paramDefaultValue_module2_myfunc(int32_t a, int32_t b) {
     return a + b;
 }
 

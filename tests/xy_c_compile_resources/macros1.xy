@@ -9,7 +9,7 @@ struct Tag3 {}
 def call(a: Struct) impl(a, a..tag);
 
 def impl(s: Struct, :Tag1) -> int {return 0;}
-def impl(s: Struct, :Tag2) -> float {return 3.14;}
+def impl(s: Struct, :Tag2) -> float {return 3.14f;}
 def impl(s: Struct, :Tag3) -> bool {return true;}
 
 def test() {

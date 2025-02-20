@@ -1,7 +1,7 @@
-def main~EntryPoint() {
+def main~EntryPoint() -> int {
     return 0;
 }
 
-def moreImportant~[EntryPoint{priority=10}]() {
+def moreImportant~[EntryPoint{priority=10}]() -> int {
     return 0;
 }

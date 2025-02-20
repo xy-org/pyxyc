@@ -509,14 +509,24 @@ def parse_expression(
                 val = float(token)
             except:
                 raise ParsingError("Invalid floating point literal", itoken)
-            arg1 = Const(val, value_str, type)
+            arg1 = Const(val, value_str, type, src=itoken.src, coords=tk_coords)
         elif token[0] >= '0' and token[0] <= '9':
+            suffix = None
+            if token[-1] < '0' or token[-1] > '9':
+                suffix = token[-1]
+                token = token[:-1]
             if token.startswith("0x"):
                 arg1 = Const(int(token[2:], base=16), token, "int",
                              src=itoken.src, coords=tk_coords)
             else:
                 arg1 = Const(int(token), token, "int",
                              src=itoken.src, coords=tk_coords)
+            if suffix == "l":
+                arg1.type = "long"
+            elif suffix == "f":
+                arg1.type = "float"
+            elif suffix is not None:
+                raise ParsingError("Unknown number suffix", itoken)
         elif token == '"':
             arg1 = parse_str_literal("", tk_coords[0], itoken)
         elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:

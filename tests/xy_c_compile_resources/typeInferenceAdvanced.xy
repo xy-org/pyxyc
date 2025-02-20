@@ -9,7 +9,7 @@ def rng() -> int {
 }
 
 def myadd(a: int, b: int) -> long {
-    return 0;
+    return 0l;
 }
 
 def ctorPair() -> Pair {
@@ -17,7 +17,7 @@ def ctorPair() -> Pair {
 }
 
 def transform(num : long) -> float{
-    return 0;
+    return 0f;
 }
 
 def func() -> void {

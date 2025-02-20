@@ -27,7 +27,7 @@ int32_t macros1_impl__Struct__Tag1(macros1_Struct s) {
 }
 
 float macros1_impl__Struct__Tag2(macros1_Struct s) {
-    return 3.14;
+    return 3.14f;
 }
 
 bool macros1_impl__Struct__Tag3(macros1_Struct s) {
