@@ -157,7 +157,7 @@ int32_t dtors1_test4(int32_t rng, dtors1_Array* _res0) {
 }
 
 dtors1_Array dtors1_test5(int32_t rng) {
-    dtors1_Array arrs[10] = {};
+    dtors1_Array arrs[10] = {0};
     dtors1_Array tmp_res0 = arrs[rng];
     for (size_t _i = 0; _i < 10; ++_i) {
         dtors1_dtor(arrs[_i], true);

@@ -1732,7 +1732,7 @@ def compile_vardecl(node, cast, cfunc, ctx):
             cvar.value = value_obj.c_node
     else:
         if isinstance(type_desc, ArrTypeObj):
-            cvar.value = c.InitList()
+            cvar.value = c.InitList(elems=[c.Const(0)])
         else:
             cvar.value = type_desc.init_value
 

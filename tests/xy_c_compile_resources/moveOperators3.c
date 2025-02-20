@@ -25,7 +25,7 @@ void moveOperators3_arrFunc2(int32_t* a, int32_t* b) {
 }
 
 void moveOperators3_arrTest(void) {
-    int32_t arr[10] = {};
+    int32_t arr[10] = {0};
     int32_t tmp_arg0[10] = {arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7], arr[8], arr[9]};
     for (size_t tmp_i1 = 0; tmp_i1 < 10; ++tmp_i1) {
         arr[tmp_i1] = 0;
