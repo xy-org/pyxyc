@@ -3,5 +3,7 @@ def constructingArrays() -> void {
     brr: int[3] = @{3, 4, 5};
     crr: int[3] = @{6, 7, 8};
     drr: int[3];
-    return arr[0] + brr[1] + crr[2] + drr[0];
+    err := int[4]@{1, 2, 3};; the last element is filled with a zero
+    frr := int[]@{1, 2, 3};; the length is deduced from the init list
+    return arr[0] + brr[1] + crr[2] + drr[0] + err[1] + frr[2];
 }

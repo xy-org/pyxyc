@@ -123,6 +123,7 @@ def SimpleRType(name):
 @dataclass
 class ArrayLit(Node):
     elems: list[Node] = field(default_factory=list)
+    base: Node | None = None
 
 @dataclass
 class ArrayType(Node):

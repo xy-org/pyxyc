@@ -367,7 +367,7 @@ var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo", "ref"}
 
 operator_precedence = {
     "^": 12, "unary[": 12, "unary'": 12,
-    "~": 11, "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11,
+    "~": 11, "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11, "@": 11,
     "unary+": 10, "unary-": 10, "!": 10, "&": 10, '%': 10,
     "\\": 9,
     "*": 8, "/": 8,
@@ -590,6 +590,18 @@ def parse_expression(
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             fcall.args.append(arg2)
             arg1 = fcall
+        elif op == "@":
+            if itoken.peak() == "for":
+                # list comprehension
+                for_expr = parse_for(itoken)
+                arg1 = ListComprehension(list_type=arg1, loop=for_expr, src=itoken.src, coords=op_coords)
+            else:
+                # array literal
+                itoken.expect('{', "Array literals are constructed using the @{elems,...} syntax")
+                itoken.skip_empty_lines()
+                ret_args = parse_expr_list(itoken)
+                itoken.expect("}", msg="Missing closing bracket")
+                arg1 = ArrayLit(ret_args, base=expr_to_type(arg1), src=itoken.src, coords=op_coords)
         elif op[-1] == ":":
             if op == ":" and itoken.peak() in var_qualifiers:
                 # it's a var decl
@@ -1035,7 +1047,6 @@ def parse_stmt_list(itoken: TokenIter):
                 if fuzzy_cmp(itoken.tokens[first_expr_token_idx], "struct") > .8:
                     notes=[("Did you mean 'struct'?", first_expr_token_idx)]
                 if not any(c.isalnum() for c in itoken.peak()) and itoken.peak() not in {"}", ")", "]"}:
-                    import pdb; pdb.set_trace()
                     raise ParsingError(
                         "Malformed expression. Looks like invalid operator.",
                         itoken, notes=notes

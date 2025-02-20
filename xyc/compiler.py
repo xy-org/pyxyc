@@ -733,7 +733,11 @@ class CompilerContext:
                 obj.kwargs[name] = ct_value
             return obj
         elif isinstance(node, xy.ArrayLit):
-            return ArrayObj(elems=[self.eval(elem) for elem in node.elems], xy_node=node)
+            return ArrayObj(
+                # TODO inferred_type=
+                elems=[self.eval(elem) for elem in node.elems],
+                xy_node=node
+            )
         elif isinstance(node, xy.BinExpr):
             if node.op == ".":
                 base = self.eval(node.arg1, msg="Cannot find symbol")
@@ -1941,18 +1945,27 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_strlit(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.ArrayLit):
         res = c.InitList()
-        arr_type = None
+        arr_type = None if expr.base is None else find_type(expr.base, cast, ctx)
         for elem in expr.elems:
             elem_expr = compile_expr(elem, cast, cfunc, ctx)
             res.elems.append(elem_expr.c_node)
             if arr_type is None:
-                arr_type = elem_expr.inferred_type
+                arr_type = ArrTypeObj(base_type_obj=elem_expr.inferred_type, dims=[len(expr.elems)])
         if arr_type is None:
             arr_type = "Cannot infer type of empty list"
+        elif len(arr_type.dims) == 0:
+            arr_type.dims = [len(expr.elems)]
+        elif arr_type.dims[0] < len(expr.elems):
+            raise CompilationError("Init list longer than array length", expr)
+        elif arr_type.dims[0] > len(expr.elems) and not arr_type.base_type_obj.is_init_value_zeros:
+            for i in range(arr_type.dims[0] - len(expr.elems)):
+                res.elems.append(arr_type.base_type_obj.init_value)
+        if len(res.elems) == 0:
+            res.elems.append(c.Const(0))
         return ExprObj(
             xy_node=expr,
             c_node=res,
-            inferred_type=ArrTypeObj(base_type_obj=arr_type, dims=[len(expr.elems)])
+            inferred_type=arr_type
         )
     elif isinstance(expr, xy.ListComprehension):
         if expr.list_type is not None:

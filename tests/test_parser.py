@@ -2356,6 +2356,49 @@ def test_parse_string_literals(code, exp_ast):
         ]
     ],
     [
+        """def arrayLiterals() {
+            a := @{0, 1};
+            b := int[2]@{0, 1};
+            c := int[]@{0, 1};
+            d := List~int@{0, 1};
+            e := list@{0, 1};
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("arrayLiterals"),
+                body=[
+                    ast.VarDecl("a", value=ast.ArrayLit(
+                        elems=[ast.Const(0), ast.Const(1)],
+                    )),
+                    ast.VarDecl("b", value=ast.ArrayLit(
+                        elems=[ast.Const(0), ast.Const(1)],
+                        base=ast.ArrayType(
+                            ast.Id("int"), dims=[ast.Const(2)]
+                        )
+                    )),
+                    ast.VarDecl("c", value=ast.ArrayLit(
+                        elems=[ast.Const(0), ast.Const(1)],
+                        base=ast.ArrayType(
+                            ast.Id("int"), dims=[]
+                        )
+                    )),
+                    ast.VarDecl("d", value=ast.ArrayLit(
+                        elems=[ast.Const(0), ast.Const(1)],
+                        base=ast.AttachTags(
+                            arg=ast.Id("List"),
+                            tags=ast.TagList(args=[ast.Id("int")]),
+                        )
+                    )),
+                    ast.VarDecl("e", value=ast.ArrayLit(
+                        elems=[ast.Const(0), ast.Const(1)],
+                        base=ast.Id("list"),
+                    )),
+                ]
+            ),
+        ]
+    ],
+    [
         """def comprehension() -> void {
             a := @{0, 1};
             b := @for (i in a) i*2;
