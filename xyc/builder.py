@@ -163,7 +163,7 @@ def parse_module(input, module_name):
         }
     else:
         asts = []
-        for entry in os.scandir(input):
+        for entry in sorted(os.scandir(input), key=lambda e: e.name):
             if entry.name.endswith(".xy") and entry.is_file():
                 asts.append(parse_file(entry.path))
         return {
