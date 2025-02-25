@@ -25,5 +25,5 @@ def runTests(x: pseudo ()->()[], tPtr := x'addrof, tLen : Size = x'len) {
 }
 
 def runSpecial(x: ()->void) {
-    x();
+    [x]();
 }

@@ -579,9 +579,9 @@ def parse_expression(
             arg1 = fcall
         elif op == "'":
             f_coords = itoken.peak_coords()
-            fname = itoken.consume()
+            fname_node = parse_expression(itoken, precedence+1, op_prec=op_prec)
             fcall = FuncCall(
-                Id(fname, src=itoken.src, coords=f_coords),
+                fname_node,
                 [arg1], src=itoken.src, coords=f_coords)
             if itoken.check("("):
                 ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)

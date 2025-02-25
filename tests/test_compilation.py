@@ -67,6 +67,7 @@ from xyc.compiler import CompilationError
     "moveOperators1",
     "moveOperators2",
     "moveOperators3",
+    "splitNamespaces",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)

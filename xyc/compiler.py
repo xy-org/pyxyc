@@ -82,7 +82,7 @@ class FuncTypeObj(TypeObj):
         for i, p in enumerate(self.func_obj.param_objs):
             if i > 0:
                 res += ", "
-            res += p.xy_node.name
+            res += p.xy_node.type.name
         res += ")"
         res += "->" + self.func_obj.rtype_obj.name
         return res
@@ -507,7 +507,8 @@ def func_sig(fobj: FuncObj, include_ret=False):
 
 @dataclass
 class ModuleHeader:
-    namespace: IdTable
+    data_namespace: IdTable
+    func_namespace: IdTable
     module_name: str = None
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
     ctx: 'CompilerContext' = None
@@ -534,8 +535,12 @@ class TmpNames:
 class CompilerContext:
     builder: any
     module_name: str  # TODO maybe module_name should be a list of the module names
-    module_ns: IdTable = field(default_factory=IdTable)
-    global_ns: IdTable = field(default_factory=IdTable)
+
+    data_ns: IdTable = field(default_factory=IdTable)
+    func_ns: IdTable = field(default_factory=IdTable)
+    global_data_ns: IdTable = field(default_factory=IdTable)
+    global_func_ns: IdTable = field(default_factory=IdTable)
+
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
     added_alignof_macro: bool = False
     defined_c_symbols: set[str] = field(default_factory=set)
@@ -562,7 +567,8 @@ class CompilerContext:
     caller_contexts: list['CompilerContext'] = field(default_factory=list)
 
     def __post_init__(self):
-        self.namespaces = [self.global_ns, self.module_ns]
+        self.data_namespaces = [self.global_data_ns, self.data_ns]
+        self.func_namespaces = [self.global_func_ns, self.func_ns]
 
     def is_prim_int(self, type_obj):
         return type_obj in self.prim_int_objs
@@ -571,24 +577,24 @@ class CompilerContext:
         table = IdTable()
         if ns_type is not None:
             table.type = ns_type
-        self.namespaces.append(table)
+        self.data_namespaces.append(table)
 
     @property
     def ns(self):
-        return self.namespaces[-1]
+        return self.data_namespaces[-1]
 
     def pop_ns(self):
-        self.namespaces.pop()
+        self.data_namespaces.pop()
 
     def ensure_func_space(self, name: xy.Id):
-        if name.name not in self.module_ns:
+        if name.name not in self.func_ns:
             fspace = FuncSpace()
-            self.module_ns[name.name] = fspace
-            parent_space = self.global_ns.get(name.name, None)
+            self.func_ns[name.name] = fspace
+            parent_space = self.global_func_ns.get(name.name, None)
             if isinstance(parent_space, FuncSpace):
                 fspace.parent_space = parent_space
             return fspace
-        candidate = self.module_ns[name.name]
+        candidate = self.func_ns[name.name]
         if isinstance(candidate, FuncSpace):
             return candidate
         # something else already defined with the same name
@@ -600,7 +606,7 @@ class CompilerContext:
         )
     
     def eval_to_fspace(self, name: xy.Node, msg=None):
-        space = self.eval(name, msg)
+        space = self.eval(name, is_func=True, msg=msg)
         if space is None:
             if msg is not None:
                 raise CompilationError(msg, name)
@@ -633,8 +639,12 @@ class CompilerContext:
         return obj
     
     def eval_to_id(self, name: xy.Node):
+        if isinstance(name, xy.CallerContextExpr):
+            name = name.arg
         if isinstance(name, xy.Id):
             return name.name
+        if isinstance(name, xy.BinExpr):
+            return self.eval_to_id(name.arg1) + name.op + self.eval_to_id(name.arg2)
         raise CompilationError("Cannot determine identifier", name)
 
     def get_compiled_type(self, name: xy.Id | str):
@@ -702,14 +712,15 @@ class CompilerContext:
             res[label] = tag_obj
         return res
 
-    def lookup(self, name: str):
-        for ns in reversed(self.namespaces):
+    def lookup(self, name: str, is_func: bool):
+        namespaces = self.data_namespaces if not is_func else self.func_namespaces
+        for ns in reversed(namespaces):
             if name in ns:
                 return ns[name]
         return None
     
-    def eval(self, node, msg=None):
-        res = self.do_eval(node, msg=msg)
+    def eval(self, node, msg=None, is_func=False):
+        res = self.do_eval(node, msg=msg, is_func=is_func)
         if isinstance(res, NameAmbiguity):
             modules_str = '\n    '.join(res.modules)
             raise CompilationError(
@@ -720,9 +731,9 @@ class CompilerContext:
             )
         return res
 
-    def do_eval(self, node, msg=None):
+    def do_eval(self, node, msg=None, is_func=False):
         if isinstance(node, xy.Id):
-            res = self.lookup(node.name)
+            res = self.lookup(node.name, is_func=is_func)
             if res is None and msg is not None:
                 raise CompilationError(msg, node)
             return res
@@ -730,7 +741,7 @@ class CompilerContext:
             if not self.eval_calltime_exprs:
                 raise NoCallerContextError
             assert self.has_caller_context()
-            return self.get_caller_context().eval(node.arg, msg=msg)
+            return self.get_caller_context().eval(node.arg, msg=msg, is_func=is_func)
         elif isinstance(node, xy.Const):
             const_type_obj = None
             if node.type is not None:
@@ -782,7 +793,7 @@ class CompilerContext:
                             )
                     else:
                         assert isinstance(node.arg2, xy.Id)
-                        return base.module_header.ctx.eval(node.arg2, msg)
+                        return base.module_header.ctx.eval(node.arg2, msg, is_func=is_func)
                 elif isinstance(base, TypeObj):
                     return base.fields[node.arg2.name]
                 elif isinstance(base, VarObj):
@@ -793,7 +804,7 @@ class CompilerContext:
                     raise CompilationError("Cannot evaluate", node)
             elif node.op == "..":
                 try:
-                    base = self.eval(node.arg1)
+                    base = self.eval(node.arg1, is_func=is_func)
                 except NoCallerContextError:
                     return calltime_expr_obj
                 return tag_get(node, base, node.arg2.name, self)
@@ -813,13 +824,16 @@ class CompilerContext:
             return obj
         else:
             try:
-                obj = compile_expr(node, None, None, self)
+                obj = compile_expr(node, None, None, self, deref=False)
             except NoCallerContextError:
                 return calltime_expr_obj
             if isinstance(obj, TypeObj):
                 return obj
             elif obj.compiled_obj is not None:
                 return obj.compiled_obj
+            elif isinstance(obj, IdxObj) and obj.container is global_memory and isinstance(obj.idx.inferred_type, FuncTypeObj):
+                # calling a callback
+                return obj.idx
             raise CompilationError(
                 "Cannot evaluate at compile time.",
                 node)
@@ -839,6 +853,7 @@ class CompilerContext:
             c_tmp.value = type_obj.init_value
 
         dummy_xy_node = xy.VarDecl(
+            name="dummy_xy_node",
             src=xy_node.src if xy_node is not None else None,
             coords=xy_node.coords if xy_node is not None else (-1, -1),
         )
@@ -896,29 +911,29 @@ def compile_module(builder, module_name, asts):
     res = c.Ast()
 
     if module_name == "xy.builtins":
-        ctx.global_ns["c"] = ImportObj(is_external=True)
+        ctx.global_data_ns["c"] = ImportObj(is_external=True)
     else:
         compile_import(xy.Import(lib="xy.builtins"), ctx, asts, res)
-        ctx.void_obj = ctx.global_ns["void"]
-        ctx.bool_obj = ctx.global_ns["bool"]
-        ctx.ptr_obj = ctx.global_ns["Ptr"]
-        ctx.size_obj = ctx.global_ns["Size"]
-        ctx.tagctor_obj = ctx.global_ns["TagCtor"]
-        ctx.uint_obj = ctx.global_ns["uint"]
-        ctx.int_obj = ctx.global_ns["int"]
+        ctx.void_obj = ctx.global_data_ns["void"]
+        ctx.bool_obj = ctx.global_data_ns["bool"]
+        ctx.ptr_obj = ctx.global_data_ns["Ptr"]
+        ctx.size_obj = ctx.global_data_ns["Size"]
+        ctx.tagctor_obj = ctx.global_data_ns["TagCtor"]
+        ctx.uint_obj = ctx.global_data_ns["uint"]
+        ctx.int_obj = ctx.global_data_ns["int"]
         ctx.prim_int_objs = (
-            ctx.global_ns["byte"],
-            ctx.global_ns["ubyte"],
-            ctx.global_ns["short"],
-            ctx.global_ns["ushort"],
-            ctx.global_ns["int"],
-            ctx.global_ns["uint"],
-            ctx.global_ns["long"],
-            ctx.global_ns["ulong"],
-            ctx.global_ns["Size"],
+            ctx.global_data_ns["byte"],
+            ctx.global_data_ns["ubyte"],
+            ctx.global_data_ns["short"],
+            ctx.global_data_ns["ushort"],
+            ctx.global_data_ns["int"],
+            ctx.global_data_ns["uint"],
+            ctx.global_data_ns["long"],
+            ctx.global_data_ns["ulong"],
+            ctx.global_data_ns["Size"],
         )
-        ctx.enum_obj = ctx.global_ns["Enum"]
-        ctx.flags_obj = ctx.global_ns["Flags"]
+        ctx.enum_obj = ctx.global_data_ns["Enum"]
+        ctx.flags_obj = ctx.global_data_ns["Flags"]
 
     ctx.compiling_header = True
     compile_header(ctx, asts, res)
@@ -931,10 +946,11 @@ def compile_module(builder, module_name, asts):
 
     mh = ModuleHeader(
         module_name=module_name,
-        namespace=ctx.module_ns, str_prefix_reg=ctx.str_prefix_reg, ctx=ctx
+        data_namespace=ctx.data_ns, func_namespace=ctx.func_ns,
+        str_prefix_reg=ctx.str_prefix_reg, ctx=ctx
     )
 
-    for obj in ctx.module_ns.values():
+    for obj in itertools.chain(ctx.data_ns.values(), ctx.func_ns.values()):
         if isinstance(obj, FuncSpace):
             for func_obj in obj._funcs:
                 func_obj.module_header = mh
@@ -943,7 +959,7 @@ def compile_module(builder, module_name, asts):
 
     # TODO should that really be here
     if module_name.startswith("xy."):
-        for obj in ctx.module_ns.values():
+        for obj in itertools.chain(ctx.data_ns.values(), ctx.func_ns.values()):
             obj.builtin = True
 
             if isinstance(obj, FuncSpace):
@@ -971,7 +987,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 cdef = c.Define(
                     name=mangle_define(node.name, ctx.module_name),
                 )
-                ctx.module_ns[node.name] = VarObj(
+                ctx.data_ns[node.name] = VarObj(
                     xy_node=node,
                     c_node=cdef,
                 )
@@ -985,8 +1001,8 @@ def compile_header(ctx: CompilerContext, asts, cast):
             if isinstance(node, xy.VarDecl):
                 _ = ctx.eval(node.value)
                 value_obj = compile_expr(node.value, cast, None, ctx)
-                ctx.module_ns[node.name].c_node.value = value_obj.c_node
-                ctx.module_ns[node.name].type_desc = value_obj.inferred_type
+                ctx.data_ns[node.name].c_node.value = value_obj.c_node
+                ctx.data_ns[node.name].type_desc = value_obj.inferred_type
 
     fobjs = []
     for ast in asts:
@@ -1046,18 +1062,18 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
                 type_obj = TypeObj(
                     xy_node = node,
                 )
-                if node.name in ctx.module_ns:
+                if node.name in ctx.data_ns:
                     raise CompilationError(
                         "Struct with same name already defined in module", node,
-                        notes=[("Previous definition", ctx.module_ns[node.name].xy_node)]
+                        notes=[("Previous definition", ctx.data_ns[node.name].xy_node)]
                     )
-                ctx.module_ns[node.name] = type_obj
+                ctx.data_ns[node.name] = type_obj
 
     # 2nd pass - compile fields
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.StructDef):
-                type_obj = ctx.module_ns[node.name]
+                type_obj = ctx.data_ns[node.name]
                 fully_compile_type(type_obj, cast, ast, ctx)
 
 def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
@@ -1534,7 +1550,7 @@ def compile_builtins(builder, module_name, asts):
     cast.includes.append(c.Include("stddef.h"))
     cast.includes.append(c.Include("stdbool.h"))
 
-    for obj in mh.ctx.module_ns.values():
+    for obj in itertools.chain(mh.ctx.data_ns.values(), mh.ctx.func_ns.values()):
         obj.builtin = True
 
         if isinstance(obj, FuncSpace):
@@ -1575,7 +1591,7 @@ def compile_builtins(builder, module_name, asts):
                     kwargs={
                         "label": StrObj(parts=[ConstObj(value=label)])
                     },
-                    type_obj=mh.ctx.module_ns["TagCtor"]
+                    type_obj=mh.ctx.data_ns["TagCtor"]
                 )
 
     return mh, cast
@@ -1584,7 +1600,7 @@ def compile_ctti(builder, module_name, asts):
     mh, _ = compile_module(builder, module_name, asts)
     cast = c.Ast()
 
-    for obj in mh.ctx.module_ns.values():
+    for obj in itertools.chain(mh.ctx.data_ns.values(), mh.ctx.func_ns.values()):
         obj.builtin = True
 
         if isinstance(obj, FuncSpace):
@@ -1685,12 +1701,12 @@ def call_dtors(ns, cast, cfunc, ctx):
 
 def call_all_dtors(cast, cfunc, ctx):
     # first 2 are global and local namespaces
-    for ns in reversed(ctx.namespaces[2:]):
+    for ns in reversed(ctx.data_namespaces[2:]):
         call_dtors(ns, cast, cfunc, ctx)
 
 def any_dtors(ctx):
     # TODO optimize that function
-    for ns in ctx.namespaces[2:]:
+    for ns in ctx.data_namespaces[2:]:
         for _, obj in ns.items():
             if isinstance(obj, VarObj) and obj.needs_dtor:
                 return True
@@ -2267,7 +2283,12 @@ def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
         )
     
 def idx_setup(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
-    if idx_obj.inferred_type is None:
+    if idx_obj.inferred_type is not None:
+        return idx_obj
+    if isinstance(idx_obj.idx.inferred_type, FuncTypeObj):
+        # calling a callback is easy to know the return type
+        idx_obj.inferred_type = idx_obj.idx.inferred_type.func_obj.rtype_obj
+    else:
         idx_obj.container = maybe_move_to_temp(idx_obj.container, cast, cfunc, ctx)
         deidx_obj = idx_get(idx_obj, c.Ast(), c.Block(), ctx)
         idx_obj.inferred_type = deidx_obj.inferred_type
@@ -2605,7 +2626,8 @@ def do_infer_type(expr, cast, ctx):
     if isinstance(expr, xy.StructLiteral):
         return ctx.get_compiled_type(expr.name)
     try:
-        return compile_expr(expr, cast, None, ctx).inferred_type
+        throw_away = c.Func("throw_away")
+        return compile_expr(expr, cast, throw_away, ctx).inferred_type
     except CompilationError as e:
         raise CompilationError(
             f"Cannot infer type because: {e.error_message}", e.xy_node,
@@ -2825,7 +2847,7 @@ def compatible_tags(base_tags, required_tags):
 
 def fselect_unnamed(expr, arg_types: ArgList, ctx, partial_matches=True):
     res = []
-    for obj in itertools.chain(ctx.module_ns.values(), ctx.global_ns.values()):
+    for obj in itertools.chain(ctx.data_ns.values(), ctx.func_ns.values()):
         if isinstance(obj, FuncSpace):
             res.extend(obj.findAll(expr, arg_types, ctx, partial_matches))
     return res
@@ -2871,7 +2893,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         kwargs={key: arg.inferred_type for key, arg in arg_exprs.kwargs.items()}
     )
     # select the corrent function
-    fspace = ctx.eval(expr.name)
+    fspace = ctx.eval(expr.name, is_func=True)
     if fspace is None:
         call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_inferred_types, expr.inject_args)
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
@@ -3042,7 +3064,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 c_node=c.Const(0),
                 inferred_type=func_obj.rtype_obj
             ),
-            inferred_type=ctx.int_obj,
+            inferred_type=arg_exprs[0].inferred_type.base_type_obj,
             xy_node=expr,
         )
     elif is_builtin_func(func_obj, "valid"):
@@ -3263,7 +3285,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     else:
         callee_ctx = copy(ctx)  # make a shollow copy
         # deep copy only the fields that we need in the new context
-        callee_ctx.namespaces = copy(callee_ctx.namespaces[:2]) # copy only the global and module namespaces. ignore local vars
+        callee_ctx.data_namespaces = copy(callee_ctx.data_namespaces[:2]) # copy only the global and module namespaces. ignore local vars
+        callee_ctx.func_namespaces = copy(callee_ctx.func_namespaces[:2])
         callee_ctx.caller_contexts = copy(callee_ctx.caller_contexts) 
     callee_ctx.push_caller_context(caller_ctx)
 
@@ -3315,7 +3338,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     value_obj = None
                     if getattr(expr, 'inject_args', False):
                         # TODO maybe call compile_id
-                        var_decl = ctx.lookup(pobj.xy_node.name)
+                        var_decl = ctx.lookup(pobj.xy_node.name, is_func=False)
                         if var_decl is not None and not isinstance(var_decl, VarObj):
                             raise CompilationError("'{pobj.xy_node.name}' is not a var", pobj.xy_node)
                         elif var_decl is not None:
@@ -3867,7 +3890,7 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
         if name_hint is None:
             name_hint = ctx.eval_to_id(xywhile.name)
         tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
-        ctx.module_ns[name_hint] = tmp_obj
+        ctx.data_ns[name_hint] = tmp_obj
         cfunc.body.append(tmp_obj.c_node)
         res_c = c.Id(tmp_obj.c_node.name)
 
@@ -3904,7 +3927,7 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
             inferred_type = type_desc if type_desc is not None else value_obj.inferred_type
             name_hint = loop_vardecl.name
             tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
-            ctx.module_ns[name_hint] = tmp_obj
+            ctx.data_ns[name_hint] = tmp_obj
             if value_obj is not None:
                 tmp_obj.c_node.value = value_obj.c_node
             cfunc.body.append(tmp_obj.c_node)
@@ -3925,7 +3948,7 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
         if name_hint is None:
             name_hint = ctx.eval_to_id(xydowhile.name)
         tmp_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
-        ctx.module_ns[name_hint] = tmp_obj
+        ctx.data_ns[name_hint] = tmp_obj
         cfunc.body.append(tmp_obj.c_node)
         res_c = c.Id(tmp_obj.c_node.name)
 
@@ -4150,7 +4173,7 @@ def compile_break(xybreak, cast, cfunc, ctx):
     if xybreak.loop_name is not None:
         raise CompilationError("Breaking the outer loop is NYI", xybreak)
 
-    for ns in reversed(ctx.namespaces):
+    for ns in reversed(ctx.data_namespaces):
         call_dtors(ns, cast, cfunc, ctx)
         if ns.type is NamespaceType.Loop:
             break
@@ -4165,7 +4188,7 @@ def compile_continue(xycont, cast, cfunc, ctx):
     if xycont.loop_name is not None:
         raise CompilationError("Continuing the outer loop is NYI", xycont)
 
-    for ns in reversed(ctx.namespaces):
+    for ns in reversed(ctx.data_namespaces):
         call_dtors(ns, cast, cfunc, ctx)
         if ns.type is NamespaceType.Loop:
             break
@@ -4406,12 +4429,6 @@ def fmt_err_msg(msg, node):
         fmt_msg += "  " + (" " * (loc-line_loc)) + ("^" * loc_len) + "\n"
     return fmt_msg
 
-def register_func(fdef, ctx):
-    fspace = ctx.ensure_func_space(fdef)
-    res = FuncObj(fdef)
-    fspace.append(res)
-    return res
-
 def find_type(texpr, cast, ctx, required=True):
     if isinstance(texpr, xy.Id) and texpr.name == "struct":
         # Special case for struct
@@ -4577,14 +4594,15 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
             raise CompilationError(f"Cannot find module '{imprt.lib}'", imprt)
         import_obj.module_header = module_header
         if imprt.in_name is None:
-            ctx.global_ns.merge(module_header.namespace, ctx, module_header.module_name)
+            ctx.global_data_ns.merge(module_header.data_namespace, ctx, module_header.module_name)
+            ctx.global_func_ns.merge(module_header.func_namespace, ctx, module_header.module_name)
             for str_prefix, ctor_obj in module_header.str_prefix_reg.items():
                 # str ctors are not sticky
                 if ctor_obj.module_header.module_name == module_header.module_name:
                     ctx.str_prefix_reg[str_prefix] = ctor_obj
     
     if imprt.in_name:
-        ctx.module_ns[imprt.in_name] = import_obj
+        ctx.data_ns[imprt.in_name] = import_obj
 
 def assert_has_type(obj: ExprObj):
     if obj.inferred_type is None:

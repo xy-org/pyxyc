@@ -1,0 +1,9 @@
+def abs(a: int) -> int {
+    return if (a >= 0) a else -a;
+}
+
+def test() {
+    x := 1;
+    abs := abs(x);
+    y := abs(abs) + x;
+}
