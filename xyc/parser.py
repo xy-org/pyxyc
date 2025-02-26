@@ -780,17 +780,23 @@ def is_end_of_expr(itoken):
 
 def parse_if(itoken):
     if_coords = itoken.peak_coords()
-    itoken.consume()  # "if"/"elif" token
+    token_name = itoken.consume()  # "if"/"elif" token
     if_expr = IfExpr(src=itoken.src, coords=if_coords)
     if itoken.peak() != "(":
         name_coords = itoken.peak_coords()
         if_expr.name = Id(
             itoken.consume(), src=itoken.src, coords=name_coords
         )
-    itoken.expect("(")
+    itoken.expect("(", msg=f"Missing conditional expression for '{token_name}'")
     if_expr.cond = parse_expression(itoken)
     itoken.expect(")", msg="Missing closing bracket")
     if_expr.block = parse_block(itoken)
+
+    if isinstance(if_expr.block.body, list) and itoken.peak() == "if":
+        raise ParsingError(
+            "Cannot put an if on the same line as another if. Did you mean `elif`?",
+            itoken
+        )
 
     itoken.skip_empty_lines()
     if itoken.check("else"):

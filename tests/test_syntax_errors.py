@@ -302,3 +302,27 @@ def test_func_def_errors(code, err_msg):
 def test_struct_errors(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def test() {
+            if(false) {
+            }
+            elif;
+        }
+        """,
+        "Missing conditional expression"
+    ),
+    (
+        """def test() {
+            if (cond1) {
+            } if (cond2) {
+            }
+        }
+        """,
+        "Cannot put an if on the same line as another if. Did you mean `elif`?"
+    ),
+])
+def test_if_errors(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)
