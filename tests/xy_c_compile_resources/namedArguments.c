@@ -20,5 +20,5 @@ void namedArguments_testNamedArgs(void) {
     const int32_t g = namedArguments_func__Int__Int__Int(a, b, c);
     const int32_t h = namedArguments_func__Int__Int__Int(f, b, c);
     const int32_t i = namedArguments_func__Int__Int__Int__Int(1, 2, 3, 4);
-    const double j = 5.0 * 1.0;
+    const float j = 5.0f * 1.0f;
 }

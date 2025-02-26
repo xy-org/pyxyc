@@ -3,11 +3,11 @@ def func(a: Int) -> Int {
 }
 
 def func(b: Double) -> Double {
-    return 1.0;
+    return 1.0d;
 }
 
 def main() -> Int {
     a := func(0);
-    b := func(0.0);
+    b := func(0.0d);
     return 0;
 }

@@ -151,7 +151,8 @@ class Const(Node):
             elif isinstance(value, int):
                 type = "Int"
             elif isinstance(value, float):
-                type = "Double"
+                type = "Float"
+                self.value_str += 'f'
         if self.value_str == "True":
             import pdb; pdb.set_trace()
         self.type = type

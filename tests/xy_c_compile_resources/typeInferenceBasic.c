@@ -12,9 +12,12 @@ struct typeInferenceBasic_Pair {
 void typeInferenceBasic_func(void) {
     const int32_t a = 0;
     const int32_t b = 0x10;
-    const double c = 5.5;
+    const float c = 5.5f;
     const float d = 3.14f;
     const float e = .333f;
+    const double w = 2.1718;
+    const double x = 0;
+    const double y = .0;
     const bool t = true;
     const bool f = false;
     const typeInferenceBasic_Pair p = (typeInferenceBasic_Pair){a, b};

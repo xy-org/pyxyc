@@ -26,7 +26,7 @@ src.xy:2:13: note: Previous definition is here
             func(0.0);
         }
      """, """\
-src.xy:7:13: error: Cannot find function 'func(Double)'
+src.xy:7:13: error: Cannot find function 'func(Float)'
 |             func(0.0);
               ^^^^
 note: Candidates are:

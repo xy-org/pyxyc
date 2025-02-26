@@ -14,13 +14,13 @@ def next(arr: pseudo Array, idx: mut Size) {
     idx++;
 }
 
-def get(arr: Array, idx: Size) -> in(arr) Ptr~Float
+def get(arr: mut Array, idx: Size) -> in(arr) Ptr~Float
 >> valid(arr, idx)
 {
     return arr.elems[idx]'addrof;
 }
 
-def set(arr: mut Array, idx: Size, elem: Int) 
+def set(arr: mut Array, idx: Size, elem: Float) 
 # >> valid(arr, idx)
 {
     arr.elems[idx] = elem;

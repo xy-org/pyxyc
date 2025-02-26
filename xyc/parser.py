@@ -500,11 +500,15 @@ def parse_expression(
         if token in {"true", "false"}:
             arg1 = Const(token == "true", token, "Bool")
         elif "." in token:
-            type = "Double"
-            value_str = token
+            type = "Float"
+            value_str = token + 'f'
             if token[-1] == 'f':
+                value_str = token
                 token = token[:-1]
-                type = "Float"
+            elif token[-1] == 'd':
+                token = token[:-1]
+                value_str = token
+                type = "Double"
             try:
                 val = float(token)
             except:
@@ -525,6 +529,8 @@ def parse_expression(
                 arg1.type = "Long"
             elif suffix == "f":
                 arg1.type = "Float"
+            elif suffix == "d":
+                arg1.type = "Double"
             elif suffix is not None:
                 raise ParsingError("Unknown number suffix", itoken)
         elif token == '"':

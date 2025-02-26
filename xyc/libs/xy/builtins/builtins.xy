@@ -240,7 +240,7 @@ def *mul(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *mul(a: Float, b: Float) -> Int {
+def *mul(a: Float, b: Float) -> Float {
     # Implemented by the compiler
 }
 
@@ -330,6 +330,10 @@ def *cmp(a: Double, b: Int) -> Double {
 }
 
 def *cmp(a: Double, b: Double) -> Double {
+    # Implemented by the compiler
+}
+
+def *cmp(a: Float, b: Float) -> Float {
     # Implemented by the compiler
 }
 

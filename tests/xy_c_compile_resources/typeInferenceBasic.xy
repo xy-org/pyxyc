@@ -9,6 +9,12 @@ def func() -> void {
     c := 5.5;
     d := 3.14f;
     e := .333f;
+    w := 2.1718d;
+    x := 0d;
+    y := .0d;
+    # l := 1ul;
+    # s := 10s;
+    # z := 1024z;
     t := true;
     f := false;
     p := Pair{a, b};

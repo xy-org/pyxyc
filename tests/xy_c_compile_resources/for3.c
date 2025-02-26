@@ -18,11 +18,11 @@ void for3_next(size_t* idx) {
     (*idx)++;
 }
 
-float* for3_get(for3_Array arr, size_t idx) {
-    return &arr.m_elems[idx];
+float* for3_get(for3_Array* arr, size_t idx) {
+    return &arr->m_elems[idx];
 }
 
-void for3_set(for3_Array* arr, size_t idx, int32_t elem) {
+void for3_set(for3_Array* arr, size_t idx, float elem) {
     arr->m_elems[idx] = elem;
 }
 
@@ -32,7 +32,7 @@ float for3_sum(for3_Array arr) {
         if (!(tmp_iter0 < arr.m_len)) {
             abort();
         }
-        res += *for3_get(arr, tmp_iter0);
+        res += *for3_get(&arr, tmp_iter0);
     }
     return res;
 }
@@ -50,7 +50,7 @@ float for3_mix(for3_Array arr1, for3_Array arr2) {
             if (!(tmp_iter1 < arr2.m_len)) {
                 abort();
             }
-            res += i * *for3_get(arr1, tmp_iter0) * *for3_get(arr2, tmp_iter1);
+            res += i * *for3_get(&arr1, tmp_iter0) * *for3_get(&arr2, tmp_iter1);
         }
     }
     return res;
@@ -61,19 +61,19 @@ void for3_double(for3_Array* arr1) {
         if (!(tmp_iter0 < arr1->m_len)) {
             abort();
         }
-        if (*for3_get(*arr1, tmp_iter0) > 0) {
+        if (*for3_get(arr1, tmp_iter0) > 0) {
             if (!(tmp_iter0 < arr1->m_len)) {
                 abort();
             }
-            for3_set(arr1, tmp_iter0, 2.0f * *for3_get(*arr1, tmp_iter0));
+            for3_set(arr1, tmp_iter0, 2.0f * *for3_get(arr1, tmp_iter0));
             if (!(tmp_iter0 < arr1->m_len)) {
                 abort();
             }
             if (!(tmp_iter0 < arr1->m_len)) {
                 abort();
             }
-            float* tmp_ref0 = for3_get(*arr1, tmp_iter0);
-            *tmp_ref0 += *for3_get(*arr1, tmp_iter0);
+            float* tmp_ref0 = for3_get(arr1, tmp_iter0);
+            *tmp_ref0 += *for3_get(arr1, tmp_iter0);
         }
     }
 }
@@ -89,10 +89,10 @@ void for3_iterAndChange(for3_Array* arr1) {
         if (!(tmp_iter0 < arr1->m_len)) {
             abort();
         }
-        for3_doSomething(*for3_get(*arr1, tmp_iter0));
+        for3_doSomething(*for3_get(arr1, tmp_iter0));
         if (!(tmp_iter0 < arr1->m_len)) {
             abort();
         }
-        for3_changeSomehow(for3_get(*arr1, tmp_iter0));
+        for3_changeSomehow(for3_get(arr1, tmp_iter0));
     }
 }
