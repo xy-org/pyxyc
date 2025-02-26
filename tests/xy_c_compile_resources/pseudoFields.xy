@@ -3,17 +3,17 @@ struct Point {
     y : pseudo = CoordField{1};
     z : pseudo = CoordField{2};
 
-    coords: float[3];
+    coords: Float[3];
 }
 
 struct CoordField{
-    i: uint;
+    i: Uint;
 }
 
-def get(p: Point, f: CoordField) -> float {
+def get(p: Point, f: CoordField) -> Float {
     return p.coords[f.i];
 }
-def set(p: mut Point, f: CoordField, val: float) -> void {
+def set(p: mut Point, f: CoordField, val: Float) -> void {
     p.coords[f.i] = val;
 }
 

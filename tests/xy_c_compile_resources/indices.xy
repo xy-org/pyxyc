@@ -1,21 +1,21 @@
 import xy.ctti;
 
 struct Point {
-    x: float;
-    y: float;
-    z: float;
-    w: float = 1.0f;
+    x: Float;
+    y: Float;
+    z: Float;
+    w: Float = 1.0f;
 }
 
-def select(p: Point, idx: int) -> in(p) int {
+def select(p: Point, idx: Int) -> in(p) Int {
     return idx;
 }
 
-def get(p: Point, idx: int) -> float {
+def get(p: Point, idx: Int) -> Float {
     return @{p.x, p.y, p.z, p.w}[idx];
 }
 
-def set(p: mut Point, idx: int, v: float)
+def set(p: mut Point, idx: Int, v: Float)
 >> idx <= 3
 {
     if (idx == 0) {
@@ -29,8 +29,8 @@ def set(p: mut Point, idx: int, v: float)
     }
 }
 
-def testPoint(i: int) -> float {
-    p1: mut = Point{w=i'to(float)};
+def testPoint(i: Int) -> Float {
+    p1: mut = Point{w=i'to(Float)};
     p2: Point;
     p1.x = p1[i];
     p2.z = p1[4-i];
@@ -51,15 +51,15 @@ def append(pc: mut PointCloud, p: Point) {
     # rest omitted for brievity
 }
 
-def select(pc: PointCloud, i: int) -> in(pc) int {
+def select(pc: PointCloud, i: Int) -> in(pc) Int {
     return i;
 }
 
-def get(pc: PointCloud, i: int) -> in(pc) Ptr~Point {
+def get(pc: PointCloud, i: Int) -> in(pc) Ptr~Point {
     return pc.mem + i * sizeof(Point);
 }
  
-def set(pc: mut PointCloud, i: int, p: Point) {
+def set(pc: mut PointCloud, i: Int, p: Point) {
     # not implemented for brievity
 }
 

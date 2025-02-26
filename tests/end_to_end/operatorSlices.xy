@@ -1,24 +1,24 @@
 import libxy.stdio;
 import libxy.string;
 
-def compute() -> int {
+def compute() -> Int {
     print("In compute\n");
     return 42;
 }
 
-def len() -> int {
+def len() -> Int {
     print("In len\n");
     return 10;
 }
 
 struct Slice {
-    start: int;
-    end: int;
+    start: Int;
+    end: Int;
 }
 
-def slice(start: int, end: int) = Slice{start, end};
+def slice(start: Int, end: Int) = Slice{start, end};
 
-def main~EntryPoint() -> int {
+def main~EntryPoint() -> Int {
     s0 := compute() +: len();
     print(f"Slice {s0.start} {s0.end}\n");
     s1 := s0.end +: 10;

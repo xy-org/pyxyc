@@ -23,7 +23,7 @@ def append(builder: mut StrBuilder, str: Str) {
     # left empty for brevity of test
 }
 
-def append(builder: mut StrBuilder, f: float, precision:=6) {
+def append(builder: mut StrBuilder, f: Float, precision:=6) {
     # left empty for brevity of test
 }
 

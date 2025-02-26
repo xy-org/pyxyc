@@ -7,52 +7,52 @@ struct *void {
     # It is a type in C so it makes sense to be one in xy.
 }
 
-# Primitive bool tyes
+# Primitive bool type
 
 ;; 8-bit true/false type
-struct *bool {
+struct *Bool {
     # Implemented by the compiler
 }
 
 # Primitive numeric types.
 
 ;; 8-bit signed integer type
-struct *byte {
+struct *Byte {
     # Implemented by the compiler
 }
 
 ;; 16-bit signed integer type
-struct *short {
+struct *Short {
     # Implemented by the compiler
 }
 
 ;; 32-bit signed integer type
-struct *int {
+struct *Int {
     # Implemented by the compiler
 }
 
 ;; 64-bit signed integer type
-struct *long {
+struct *Long {
     # Implemented by the compiler
 }
 
 ;; 8-bit unsigned integer type
-struct *ubyte {
+struct *Ubyte {
     # Implemented by the compiler
 }
 
 ;; 16-bit unsigned integer type
-struct *ushort {
+struct *Ushort {
     # Implemented by the compiler
 }
 
 ;; 32-bit unsigned integer type
-struct *uint {
+struct *Uint {
     # Implemented by the compiler
 }
 
 ;; 64-bit unsigned integer type
-struct *ulong {
+struct *Ulong {
     # Implemented by the compiler
 }
 
@@ -73,7 +73,7 @@ def *get(ptr: Ptr) -> in() Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
-def *get(ptr: Ptr, idx: int) -> in() Ptr~[^ptr..to] {
+def *get(ptr: Ptr, idx: Int) -> in() Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
@@ -81,7 +81,7 @@ def *get(ptr: Ptr, idx: Size) -> in() Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
-def *set(ptr: Ptr, idx: int, value: pseudo any) -> void {
+def *set(ptr: Ptr, idx: Int, value: pseudo any) -> void {
     # Implemented by the compiler
 }
 
@@ -89,8 +89,8 @@ def *set(ptr: Ptr, idx: Size, value: pseudo any) -> void {
     # Implemented by the compiler
 }
 
-# XXX shouldn't be int
-def *cmp(a: Ptr, b: Ptr) -> int {
+# XXX shouldn't be Int
+def *cmp(a: Ptr, b: Ptr) -> Int {
     # Implemented by the compiler
 }
 
@@ -100,18 +100,18 @@ def *addrof(arg: any) -> Ptr~[%^arg] {
 }
 
 ;; 32-bit IEEE 754 floating point number
-struct *float {
+struct *Float {
     # Implemented by the compiler
 }
 
 ;; 64-bit IEEE 754 floating point number
-struct *double {
+struct *Double {
     # Implemented by the compiler
 }
 
 # Limits
 
-def *max(:int) -> int {
+def *max(:Int) -> Int {
     return c.INT32_MAX;
 }
 
@@ -121,23 +121,23 @@ def *max(:Size) -> Size {
 
 # Arithmatic operations
 
-def *add(a: int, b: int) -> int {
+def *add(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *add(a: int, b: double) -> double {
+def *add(a: Int, b: Double) -> Double {
     # Implemented by the compiler
 }
 
-def *add(a: int, b: float) -> float {
+def *add(a: Int, b: Float) -> Float {
     # Implemented by the compiler
 }
 
-def *add(a: double, b: float) -> double {
+def *add(a: Double, b: Float) -> Double {
     # Implemented by the compiler
 }
 
-def *add(a: double, b: double) -> double {
+def *add(a: Double, b: Double) -> Double {
     # Implemented by the compiler
 }
 
@@ -145,19 +145,19 @@ def *add(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *add(a: Size, b: int) -> Size {
+def *add(a: Size, b: Int) -> Size {
     # Implemented by the compiler
 }
 
-def *add(a: long, b: int) -> double {
+def *add(a: Long, b: Int) -> Double {
     # Implemented by the compiler
 }
 
-def *add(a: double, b: int) -> double {
+def *add(a: Double, b: Int) -> Double {
     # Implemented by the compiler
 }
 
-def *add(a: Ptr, b: int) -> Ptr {
+def *add(a: Ptr, b: Int) -> Ptr {
     # Implemented by the compiler
 }
 
@@ -165,24 +165,24 @@ def *add(a: Ptr, b: Size) -> Ptr {
     # Implemented by the compiler
 }
 
-def *add(a: float, b: float) -> float {
+def *add(a: Float, b: Float) -> Float {
     # Implemented by the compiler
 }
 
 ;; Add and accumulate
-def *addEqual(a: int, b: int) -> void {
+def *addEqual(a: Int, b: Int) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: float, b: float) -> void {
+def *addEqual(a: Float, b: Float) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: float, b: int) -> void {
+def *addEqual(a: Float, b: Int) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: mut int, b: Size) -> void {
+def *addEqual(a: mut Int, b: Size) -> void {
     # Implemented by the compiler
 }
 
@@ -190,20 +190,20 @@ def *addEqual(a: mut Size, b: Size) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: mut Size, b: int) -> void {
+def *addEqual(a: mut Size, b: Int) -> void {
     # Implemented by the compiler
 }
 
 ;; Subtraction
-def *sub(a: int, b: int) -> int {
+def *sub(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *sub(a: int, b: uint) -> int {
+def *sub(a: Int, b: Uint) -> Int {
     # Implemented by the compiler
 }
 
-def *sub(a: Size, b: int) -> Size {
+def *sub(a: Size, b: Int) -> Size {
     # Implemented by the compiler
 }
 
@@ -211,23 +211,23 @@ def *sub(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *neg(a: int) -> int {
+def *neg(a: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *neg(a: Size) -> int {
+def *neg(a: Size) -> Int {
     # Implemented by the compiler
 }
 
-def *inc(a: mut int) -> void {
+def *inc(a: mut Int) -> void {
     # Implemented by the compiler
 }
 
-def *inc(a: mut uint) -> void {
+def *inc(a: mut Uint) -> void {
     # Implemented by the compiler
 }
 
-def *dec(a: mut int) -> void {
+def *dec(a: mut Int) -> void {
     # Implemented by the compiler
 }
 
@@ -236,23 +236,23 @@ def *inc(a: mut Size) -> void {
 }
 
 ;; Multiplies {a} and {b} together
-def *mul(a: int, b: int) -> int {
+def *mul(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *mul(a: float, b: float) -> int {
+def *mul(a: Float, b: Float) -> Int {
     # Implemented by the compiler
 }
 
-def *mul(a: double, b: double) -> double {
+def *mul(a: Double, b: Double) -> Double {
     # Implemented by the compiler
 }
 
-def *mul(a: float, b: int) -> float {
+def *mul(a: Float, b: Int) -> Float {
     # Implemented by the compiler
 }
 
-def *mul(a: int, b: Size) -> Size {
+def *mul(a: Int, b: Size) -> Size {
     # Implemented by the compiler
 }
 
@@ -260,60 +260,60 @@ def *mul(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *mul(a: Size, b: int) -> Size {
+def *mul(a: Size, b: Int) -> Size {
     # Implemented by the compiler
 }
 
-def *mul(a: uint, b: float) -> float {
+def *mul(a: Uint, b: Float) -> Float {
     # Implemented by the compiler
 }
 
 ;; Multiplication with accumulate
-def *mulEqual(a: double, b: double) -> int {
+def *mulEqual(a: Double, b: Double) -> Int {
     # Implemented by the compiler
 }
 
-def *mulEqual(a: int, b: int) -> int {
+def *mulEqual(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
 ;; Division
 
-def *div(a: int, b: int) -> int {
+def *div(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
 # Conversion between types
 
-;; Convert {a} to uint
-def *to(a: int, :uint) -> uint {
+;; Convert {a} to Uint
+def *to(a: Int, :Uint) -> Uint {
     # Implemented by the compiler
 }
 
-def *to(a: int, b: float) -> float {
+def *to(a: Int, b: Float) -> Float {
     # Implemented by the compiler
 }
 
-def *to(a: Size, b: float) -> float {
+def *to(a: Size, b: Float) -> Float {
     # Implemented by the compiler
 }
 
-def *to(a: int, b: double) -> double {
+def *to(a: Int, b: Double) -> Double {
     # Implemented by the compiler
 }
 
-def *to(a: int, :bool) -> bool {
+def *to(a: Int, :Bool) -> Bool {
     # Implemented by the compiler
 }
 
 # Logical operations
 
 ;; Compares {a} to {b}.
-def *cmp(a: int, b: int) -> int {
+def *cmp(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *cmp(a: uint, b: int) -> int {
+def *cmp(a: Uint, b: Int) -> Int {
     # Implemented by the compiler
 }
 
@@ -321,35 +321,35 @@ def *cmp(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *cmp(a: Size, b: int) -> Size {
+def *cmp(a: Size, b: Int) -> Size {
     # Implemented by the compiler
 }
 
-def *cmp(a: double, b: int) -> double {
+def *cmp(a: Double, b: Int) -> Double {
     # Implemented by the compiler
 }
 
-def *cmp(a: double, b: double) -> double {
+def *cmp(a: Double, b: Double) -> Double {
     # Implemented by the compiler
 }
 
-def *cmp(a: int, b: Size) -> Size {
+def *cmp(a: Int, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *cmp(a: float, b: int) -> Size {
+def *cmp(a: Float, b: Int) -> Size {
     # Implemented by the compiler
 }
 
-def *and(a: bool, b: bool) -> bool {
+def *and(a: Bool, b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
-def *or(a: bool, b: bool) -> bool {
+def *or(a: Bool, b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
-def *xor(a: bool, b: bool) -> bool {
+def *xor(a: Bool, b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
@@ -381,11 +381,11 @@ struct Flags {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-def *get(arr: pseudo any[], index: int) -> in(arr) Ptr {
+def *get(arr: pseudo any[], index: Int) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-def *get(arr: pseudo any[], index: uint) -> in(arr) Ptr {
+def *get(arr: pseudo any[], index: Uint) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
@@ -394,7 +394,7 @@ def *get(arr: pseudo any[], index: Size) -> in(arr) Ptr {
 }
 
 ;; Set element at position {index} of the array {arr}
-def *set(arr: pseudo any[], index: uint, val: pseudo any) -> void {
+def *set(arr: pseudo any[], index: Uint, val: pseudo any) -> void {
     # Implemented by the compiler
 }
 
@@ -408,7 +408,7 @@ def *set(arr: pseudo any[], index: Size, val: pseudo any) -> void {
 ;; the one with the highest priority is used. If there are more than one
 ;; function with the highest priority then a compilation error is reported.
 struct EntryPoint {
-    priority: int;
+    priority: Int;
 }
 
 # Arrays
@@ -417,7 +417,7 @@ def *iter(arr: pseudo any[]) -> in(arr) Size {
     # Implemented by the compiler
 }
 
-def *valid(arr: pseudo any[], idx: Size) -> bool {
+def *valid(arr: pseudo any[], idx: Size) -> Bool {
     # Implemented by the compiler
 }
 

@@ -8,17 +8,17 @@ def busywait2() {
     for (_ in :10000) {}
 }
 
-def sumUpTo(start: int, end: int) -> int {
-    return for (i in start:end) -> (res: int) { res += i; };
+def sumUpTo(start: Int, end: Int) -> Int {
+    return for (i in start:end) -> (res: Int) { res += i; };
 }
 
-def multUpTo(start: int, end: int, step: int) -> int {
+def multUpTo(start: Int, end: Int, step: Int) -> Int {
     res : mut = 0;
     for (i in start:end:step) res *= sumUpTo(start, i);
     return res;
 }
 
-def doubleLoop(limX: int, limY: int) -> int {
+def doubleLoop(limX: Int, limY: Int) -> Int {
     return for (i in :limX) -> (res := 1) {
         for (j in :limY) {
             res *= i + j;
@@ -26,6 +26,6 @@ def doubleLoop(limX: int, limY: int) -> int {
     };
 }
 
-def zipLoop(limX: int, limY: int) -> int {
+def zipLoop(limX: Int, limY: Int) -> Int {
     return for (i in :limX, j in :limY) -> (res := 1) { res *= i + j; };
 }

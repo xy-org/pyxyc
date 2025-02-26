@@ -22,7 +22,7 @@ stringInterpolation_Str stringInterpolation_str(void* addr, size_t size) {
 void stringInterpolation_append__StrBuilder__Str(stringInterpolation_StrBuilder* builder, stringInterpolation_Str str) {
 }
 
-void stringInterpolation_append__StrBuilder__float__int(stringInterpolation_StrBuilder* builder, float f, int32_t precision) {
+void stringInterpolation_append__StrBuilder__Float__Int(stringInterpolation_StrBuilder* builder, float f, int32_t precision) {
 }
 
 void stringInterpolation_append__StrBuilder__Ptr__Size(stringInterpolation_StrBuilder* builder, void* addr, size_t size) {
@@ -51,20 +51,20 @@ void stringInterpolation_createStrings(void) {
     stringInterpolation_append__StrBuilder__Str(&tmp_fstr2, str1);
     const stringInterpolation_Str str3 = stringInterpolation_to(&tmp_fstr2);
     stringInterpolation_StrBuilder tmp_fstr3 = stringInterpolation_fstr("{pi}", 4);
-    stringInterpolation_append__StrBuilder__float__int(&tmp_fstr3, pi, 6);
+    stringInterpolation_append__StrBuilder__Float__Int(&tmp_fstr3, pi, 6);
     const stringInterpolation_Str str4 = stringInterpolation_to(&tmp_fstr3);
     stringInterpolation_StrBuilder tmp_fstr4 = stringInterpolation_fstr("{pi * 2}", 8);
-    stringInterpolation_append__StrBuilder__float__int(&tmp_fstr4, pi * 2, 6);
+    stringInterpolation_append__StrBuilder__Float__Int(&tmp_fstr4, pi * 2, 6);
     const stringInterpolation_Str str5 = stringInterpolation_to(&tmp_fstr4);
     stringInterpolation_StrBuilder tmp_fstr5 = stringInterpolation_fstr("{pi, 2}", 7);
-    stringInterpolation_append__StrBuilder__float__int(&tmp_fstr5, pi, 2);
+    stringInterpolation_append__StrBuilder__Float__Int(&tmp_fstr5, pi, 2);
     const stringInterpolation_Str str6 = stringInterpolation_to(&tmp_fstr5);
     stringInterpolation_StrBuilder tmp_fstr6 = stringInterpolation_fstr("{pi, precision=2}", 17);
-    stringInterpolation_append__StrBuilder__float__int(&tmp_fstr6, pi, 2);
+    stringInterpolation_append__StrBuilder__Float__Int(&tmp_fstr6, pi, 2);
     const stringInterpolation_Str str7 = stringInterpolation_to(&tmp_fstr6);
     stringInterpolation_StrBuilder tmp_fstr7 = stringInterpolation_fstr("{=pi, precision=2}", 18);
     stringInterpolation_append__StrBuilder__Ptr__Size(&tmp_fstr7, "pi=", 3);
-    stringInterpolation_append__StrBuilder__float__int(&tmp_fstr7, pi, 2);
+    stringInterpolation_append__StrBuilder__Float__Int(&tmp_fstr7, pi, 2);
     const stringInterpolation_Str str8 = stringInterpolation_to(&tmp_fstr7);
     stringInterpolation_StrBuilder tmp_fstr8 = stringInterpolation_fstr("Test{f};\n", 9);
     stringInterpolation_append__StrBuilder__Ptr__Size(&tmp_fstr8, "Test{f};\n", 9);

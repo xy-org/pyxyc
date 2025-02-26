@@ -1,6 +1,6 @@
 struct X {
-    a: int;
-    b: int;
+    a: Int;
+    b: Int;
 }
 
 struct Y {
@@ -13,7 +13,7 @@ struct Z {
     f: Y;
 }
 
-def func(v: mut X, a: int) {}
+def func(v: mut X, a: Int) {}
 
 def test() {
     s: Z;

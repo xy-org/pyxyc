@@ -1,6 +1,6 @@
 def test() {
-    a: int;
-    b: int;
+    a: Int;
+    b: Int;
     a.bits[0] = 1;
     b.bits[1] = 1;
     b.bits[2] = true;

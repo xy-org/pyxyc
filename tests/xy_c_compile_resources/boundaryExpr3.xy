@@ -1,12 +1,12 @@
 struct Logger{
-    enabled: bool;
+    enabled: Bool;
 }
 
 struct Msg {}
 
-def info(log: Logger, ^msg: Msg, logged : bool = if (log.enabled) doLog(log, ^msg) else false) {}
+def info(log: Logger, ^msg: Msg, logged : Bool = if (log.enabled) doLog(log, ^msg) else false) {}
 
-def doLog(log: Logger, msg: Msg) -> bool {
+def doLog(log: Logger, msg: Msg) -> Bool {
     # log msg
     return true;
 }

@@ -1,3 +1,3 @@
-def callme() -> int {
+def callme() -> Int {
     return 0;
 }

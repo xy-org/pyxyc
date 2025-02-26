@@ -1,4 +1,4 @@
-def swap(a: mut int, b: mut int) {
+def swap(a: mut Int, b: mut Int) {
     tmp := a;
     a = b;
     b = a;
@@ -8,13 +8,13 @@ struct Array~[elemType : struct] {
     # omitted for brevity
 }
 
-def get(arr: Array, idx: int) -> ref(arr) Ptr~[<< arr..elemType] {
+def get(arr: Array, idx: Int) -> ref(arr) Ptr~[<< arr..elemType] {
     # omitted for brevity
 }
 
 def test() {
-    a : Array~int;
-    b : Array~int;
+    a : Array~Int;
+    b : Array~Int;
     swap(a[0], b[0]);
 
     # should produce an error because the analyzer cannot look past indexing

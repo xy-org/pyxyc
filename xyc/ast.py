@@ -146,12 +146,12 @@ class Const(Node):
         self.value_str = value_str if value_str is not None else str(value)
         if type is None:
             if isinstance(value, bool):
-                type = "bool"
+                type = "Bool"
                 self.value_str = self.value_str.lower()
             elif isinstance(value, int):
-                type = "int"
+                type = "Int"
             elif isinstance(value, float):
-                type = "double"
+                type = "Double"
         if self.value_str == "True":
             import pdb; pdb.set_trace()
         self.type = type

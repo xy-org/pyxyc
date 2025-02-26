@@ -1,21 +1,21 @@
 struct Point {
-    x: int;
-    y: int;
+    x: Int;
+    y: Int;
 }
 
 struct PointList {
     # ...
 }
 
-def get(arr: PointList, i: int) -> in(arr) Ptr~Point {
+def get(arr: PointList, i: Int) -> in(arr) Ptr~Point {
     return Ptr{};
 }
 
-def set(arr: mut PointList, i: int, val: Point) -> void {
+def set(arr: mut PointList, i: Int, val: Point) -> void {
     # ...
 }
 
-def func(item: int, list: mut Point) {}
+def func(item: Int, list: mut Point) {}
 
 def test(a: mut PointList) {
     func(a[0].y, a[1]);

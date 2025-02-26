@@ -23,10 +23,10 @@ struct MyStruct {
     name: Str; # size=\d+ offset=\d+ alignof=\d+
     ;; Some number
     num: Size; # size=\d offset=\d+ alignof=\d+
-    integer: int; # size=4 offset=\d+ alignof=\d+
+    integer: Int; # size=4 offset=\d+ alignof=\d+
     ;; Array of
 floats
-    arr: float\[10\]; # size=40 offset=\d+ alignof=\d+
+    arr: Float\[10\]; # size=40 offset=\d+ alignof=\d+
     next: Ptr; # size=\d offset=\d+ alignof=\d+
 }\n""", False),
 ])

@@ -1,11 +1,11 @@
 struct Data {
 }
 
-def get(d: Data, i: int) -> float {
-    return (i*2)'to(float);
+def get(d: Data, i: Int) -> Float {
+    return (i*2)'to(Float);
 }
 
-def func1(d: Data, i: int) -> in(d) int {
+def func1(d: Data, i: Int) -> in(d) Int {
     return i; 
 }
 

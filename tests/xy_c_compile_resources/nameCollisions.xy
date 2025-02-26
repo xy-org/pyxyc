@@ -4,5 +4,5 @@
 import posix~[CLib{headers=@{"errno.h"}}];
 
 struct ErrnoError {
-    errno: int;
+    errno: Int;
 }

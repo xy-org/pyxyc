@@ -1,12 +1,12 @@
-def func(a: int) -> int {
+def func(a: Int) -> Int {
     return 0;
 }
 
-def func(b: double) -> double {
+def func(b: Double) -> Double {
     return 1.0;
 }
 
-def main() -> int {
+def main() -> Int {
     a := func(0);
     b := func(0.0);
     return 0;

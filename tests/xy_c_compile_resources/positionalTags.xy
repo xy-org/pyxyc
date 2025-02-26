@@ -5,15 +5,15 @@ struct Array~[elemType: struct] {
 def len(arr: Array) = arr.len;
 
 struct Point {
-    x: float;
-    y: float;
+    x: Float;
+    y: Float;
 }
 
-def sizeof(:int) = 4;
+def sizeof(:Int) = 4;
 def sizeof(:Point) = 8;
 
 def test() -> Size {
-    ints : Array~int;
+    ints : Array~Int;
     points : Array~Point;
     return ints'len + points'len + ints..elemType'sizeof + points..elemType'sizeof;
 }

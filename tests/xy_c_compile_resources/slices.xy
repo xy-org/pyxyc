@@ -6,18 +6,18 @@ struct AllSlice {
 def slice() = AllSlice{};
 
 struct IntSlice {
-    start: int;
-    end: int;
-    step: int;
+    start: Int;
+    end: Int;
+    step: Int;
 }
 
-def max(:int) -> int {
+def max(:Int) -> Int {
     return c.INT32_MAX;
 }
 
-def slice(start: int, end := int'max, step := 1) = IntSlice{start, end, step};
-def slice(end : int, step := 1) = IntSlice{0, end, step};
-def slice(step : int) = IntSlice{0, max(int), step};
+def slice(start: Int, end := Int'max, step := 1) = IntSlice{start, end, step};
+def slice(end : Int, step := 1) = IntSlice{0, end, step};
+def slice(step : Int) = IntSlice{0, max(Int), step};
 
 def testIntSlices() {
     a := :;
@@ -35,7 +35,7 @@ def testIntSlices() {
 }
 
 struct Date {
-    unixtime: long;
+    unixtime: Long;
 }
 
 struct DateSlice {
@@ -44,10 +44,10 @@ struct DateSlice {
     step: Date;
 }
 
-def max(:long) -> long {
+def max(:Long) -> Long {
     return c.INT64_MAX;
 }
-def max(:Date) = Date{max(long)};
+def max(:Date) = Date{max(Long)};
 
 def slice(start: Date, end := Date'max, step := Date{1}) = DateSlice{start, end, step};
 def slice(end: Date, step := Date{1}) = DateSlice{Date{0}, end, step};

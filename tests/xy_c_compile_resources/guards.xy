@@ -1,39 +1,39 @@
 import xy.ctti;
 
-def guards1(a: int, b: int) -> int
+def guards1(a: Int, b: Int) -> Int
 >> a > b
 {
     return 0;
 }
 
-def guards2(a: int, b: pseudo any) -> int
+def guards2(a: Int, b: pseudo any) -> Int
 >> sizeof(a) > sizeof(b)
 {
     return 0;
 }
 
-def guards3(a: pseudo any, b: pseudo any) -> int
+def guards3(a: pseudo any, b: pseudo any) -> Int
 >>  %a \typeEqs %b
 {
     return 0;
 }
 
 struct ErrorCode {
-    code: int;
+    code: Int;
 }
 
-def to(ec: ErrorCode, :bool) -> bool {
+def to(ec: ErrorCode, :Bool) -> Bool {
     return ec.code != 0;
 }
 
-def guards4(a: int, b: int) -> (c: int) || ErrorCode
+def guards4(a: Int, b: Int) -> (c: Int) || ErrorCode
 >> a < b
 << b > c
 {
     return 0;
 }
 
-def test(a: int, b: int) -> int {
+def test(a: Int, b: Int) -> Int {
     res : mut = 0;
     res += guards1(a, b);
     res += guards2(a, b);

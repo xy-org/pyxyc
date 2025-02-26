@@ -1,9 +1,9 @@
 import paramDefaultValue.module1;
 
-def calcDefaultValue(num: int) -> int {
+def calcDefaultValue(num: Int) -> Int {
     return num * 10;
 }
 
-def myfunc(a: int, b: int = calcDefaultValue(a)) -> int {
+def myfunc(a: Int, b: Int = calcDefaultValue(a)) -> Int {
     return a + b;
 }

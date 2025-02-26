@@ -1,14 +1,14 @@
 struct Pair {
-    a : int;
-    b : int;
+    a : Int;
+    b : Int;
 }
 
 
-def rng() -> int {
+def rng() -> Int {
     return 0;
 }
 
-def myadd(a: int, b: int) -> long {
+def myadd(a: Int, b: Int) -> Long {
     return 0l;
 }
 
@@ -16,7 +16,7 @@ def ctorPair() -> Pair {
     return Pair{0, 1};
 }
 
-def transform(num : long) -> float{
+def transform(num : Long) -> Float{
     return 0f;
 }
 

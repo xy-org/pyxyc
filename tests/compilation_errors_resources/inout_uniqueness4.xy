@@ -1,4 +1,4 @@
-def swap(a: mut int, b: mut int) {
+def swap(a: mut Int, b: mut Int) {
     tmp := a;
     a = b;
     b = a;
@@ -6,14 +6,14 @@ def swap(a: mut int, b: mut int) {
 
 struct State {
     subState: SubState;
-    x: float;
-    y: float;
+    x: Float;
+    y: Float;
 }
 
 struct SubState {
-    a: int;
-    b: int;
-    c: int;
+    a: Int;
+    b: Int;
+    c: Int;
 }
 
 def test() {

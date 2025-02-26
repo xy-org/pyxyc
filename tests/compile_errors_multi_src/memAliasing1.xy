@@ -4,7 +4,7 @@ struct List~[type: struct] {
     # ...
 }
 
-def get(arr: List, i: int) -> in(arr) Ptr~[^arr..type] {
+def get(arr: List, i: Int) -> in(arr) Ptr~[^arr..type] {
     return Ptr{};
 }
 
@@ -12,9 +12,9 @@ def set(arr: mut List, i: Size, val: pseudo any) -> void {
     # ...
 }
 
-def func(item: mut int, list: mut List~int) {}
+def func(item: mut Int, list: mut List~Int) {}
 
 def test() {
-    a: List~int;
+    a: List~Int;
     func(a[0], a);; should give an error.
 }

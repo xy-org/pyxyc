@@ -9,7 +9,7 @@
 ;; domain. So I plopped them here.
 
 ;; Return number of command line arguments
-def *argc() -> int {
+def *argc() -> Int {
     # Implemented by the compiler
 }
 

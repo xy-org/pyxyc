@@ -1,6 +1,6 @@
 ;; An array of up to 100 floats
 struct Array {
-    elems: float[100];
+    elems: Float[100];
     len: Size;
 }
 
@@ -14,28 +14,28 @@ def next(arr: pseudo Array, idx: mut Size) {
     idx++;
 }
 
-def get(arr: Array, idx: Size) -> in(arr) Ptr~float
+def get(arr: Array, idx: Size) -> in(arr) Ptr~Float
 >> valid(arr, idx)
 {
     return arr.elems[idx]'addrof;
 }
 
-def set(arr: mut Array, idx: Size, elem: int) 
+def set(arr: mut Array, idx: Size, elem: Int) 
 # >> valid(arr, idx)
 {
     arr.elems[idx] = elem;
 }
 
-def sum(arr: Array) -> float {
-    return for(elem in arr) -> (res: float) {
+def sum(arr: Array) -> Float {
+    return for(elem in arr) -> (res: Float) {
         res += elem;
     };
 }
 
-def mix(arr1: Array, arr2: Array) -> float
+def mix(arr1: Array, arr2: Array) -> Float
 >> arr1'len == arr2'len
 {
-    return for(i in :, e1 in arr1, e2 in arr2) -> (res: float) {
+    return for(i in :, e1 in arr1, e2 in arr2) -> (res: Float) {
         res += i * e1 * e2;
     };
 }
@@ -49,10 +49,10 @@ def double(arr1: mut Array) {
     }
 }
 
-def doSomething(f: float) {
+def doSomething(f: Float) {
 }
 
-def changeSomehow(f: mut float) {
+def changeSomehow(f: mut Float) {
 }
 
 def iterAndChange(arr1: mut Array) {

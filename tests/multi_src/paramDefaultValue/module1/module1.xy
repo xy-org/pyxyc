@@ -1,8 +1,8 @@
-def calcDefaultValue(num: int) -> int {
+def calcDefaultValue(num: Int) -> Int {
     return num * 2;
 }
 
-def func(a: int, b: int = calcDefaultValue(a)) -> int {
+def func(a: Int, b: Int = calcDefaultValue(a)) -> Int {
     return a + b;
 }
 

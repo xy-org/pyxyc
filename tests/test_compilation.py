@@ -86,10 +86,10 @@ def test_c_compilation(resource_dir, filename):
 
 code_ast = [
     ("""def main() -> void {
-        arr: int[];
+        arr: Int[];
     }""",
     "Only pseudo params are allowed to have a length not known at compile time"),
-    ("""def func(nums: int[]) -> void {
+    ("""def func(nums: Int[]) -> void {
     }""",
     "Only pseudo params are allowed to have a length not known at compile time"),
 ]
@@ -107,14 +107,14 @@ code_ast = [
     }""",
     "Cannot find type"),
     ("""
-    def func(x: int, y: int) -> int {
+    def func(x: Int, y: Int) -> Int {
         return x + y;
     }
      
 
     def main() -> void {
-        x : long = 0;
-        y : int = 0;
+        x : Long = 0;
+        y : Int = 0;
         func(x, y);
     }
     """,
@@ -122,7 +122,7 @@ code_ast = [
     ("""
     import posix~[CLib{headers=@{"errno.h"}}] in c;
 
-    def main() -> int {
+    def main() -> Int {
         x := c.errno;
         return x;
     }

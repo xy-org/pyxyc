@@ -1,6 +1,6 @@
 struct Pair {
-    a : int;
-    b : int;
+    a : Int;
+    b : Int;
 }
 
 def func() -> void {

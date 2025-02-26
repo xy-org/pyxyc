@@ -866,7 +866,7 @@ def test_parse_func_call(code, exp_ast):
                     )
                 ),
                 ast.VarDecl("d", type=None, value=ast.Const(10), mutable=True),
-                ast.VarDecl("pi", type=None, value=ast.Const(3.14, "3.14f", "float")),
+                ast.VarDecl("pi", type=None, value=ast.Const(3.14, "3.14f", "Float")),
                 ast.VarDecl(
                     "ptr",
                     type=ast.AttachTags(
@@ -1209,7 +1209,7 @@ def test_move_operators(code, exp_ast):
                             op='&',
                             arg1=ast.UnaryExpr(op='!', arg=ast.Id("a")),
                             arg2=ast.UnaryExpr(
-                                op='!', arg=ast.Const(True, "true", "bool")
+                                op='!', arg=ast.Const(True, "true", "Bool")
                             ),
                         ),
                         arg2=ast.UnaryExpr(op='!', arg=ast.Id("b")),
@@ -2886,7 +2886,7 @@ def test_do_while(code, exp_ast):
     ],
     [
         """def main() -> void {
-            for (e in arr) -> (or: bool = true) {or |= e;};
+            for (e in arr) -> (or: Bool = true) {or |= e;};
         }
         """,
         [
@@ -2903,8 +2903,8 @@ def test_do_while(code, exp_ast):
                         op="|=", arg1=ast.Id("or"), arg2=ast.Id("e")
                     )],
                     returns=[
-                        ast.VarDecl("or", ast.Id("bool"), mutable=True,
-                                    value=ast.Const(True, "true", "bool"))
+                        ast.VarDecl("or", ast.Id("Bool"), mutable=True,
+                                    value=ast.Const(True, "true", "Bool"))
                     ]),
                 )
             ]),

@@ -1,6 +1,6 @@
 def test() {
     a : mut = 10;
-    b : int;
+    b : Int;
     b =< a;
     c :=< b;
     assert(a == 0);
@@ -8,6 +8,6 @@ def test() {
     assert(c == 10);
 }
 
-def assert(cond: bool) {
+def assert(cond: Bool) {
     # ...
 }

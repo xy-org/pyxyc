@@ -1,8 +1,8 @@
 struct MyInt {
-    num: int;
+    num: Int;
 }
 
-def cmp(a: MyInt, b: MyInt) -> int {
+def cmp(a: MyInt, b: MyInt) -> Int {
     return (a - b).num;
 }
 
@@ -22,7 +22,7 @@ def div(a: MyInt, b: MyInt) -> MyInt {
     return MyInt{a.num / b.num};
 }
 
-def cmpMyInts() -> int {
+def cmpMyInts() -> Int {
     a := MyInt{0};
     b := MyInt{1};
 
@@ -47,7 +47,7 @@ struct Pair {
     b: MyInt;
 }
 
-def cmp(p1: MyInt, n: int) -> int {
+def cmp(p1: MyInt, n: Int) -> Int {
     return p1.num - n;
 }
 
@@ -55,7 +55,7 @@ def cmp(p1: Pair, p2: Pair) -> MyInt {
     return p1.a - p2.a;
 }
 
-def cmpPairs() -> int {
+def cmpPairs() -> Int {
     p1 := Pair{0, 1};
     p2 := Pair{2, 3};
     if (p1 > p2) {

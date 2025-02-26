@@ -1,8 +1,8 @@
 import xy.ctti;
 
 struct MyStruct {
-    a: int;
-    b: float;
+    a: Int;
+    b: Float;
     c: SubStruct;
 }
 

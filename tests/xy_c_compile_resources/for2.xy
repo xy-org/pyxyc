@@ -19,6 +19,6 @@ def next(fib: mut Fib) {
 def get(fib: Fib) = fib.a;
 
 ;; Multiplies the first {lim} fibonacci numbers
-def mulFibs(lim: int) -> int {
+def mulFibs(lim: Int) -> Int {
     return for (_ in :lim, fib in fibonacci()) -> (res := 1) { res *= fib; };
 }

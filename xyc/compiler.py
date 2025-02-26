@@ -915,21 +915,21 @@ def compile_module(builder, module_name, asts):
     else:
         compile_import(xy.Import(lib="xy.builtins"), ctx, asts, res)
         ctx.void_obj = ctx.global_data_ns["void"]
-        ctx.bool_obj = ctx.global_data_ns["bool"]
+        ctx.bool_obj = ctx.global_data_ns["Bool"]
         ctx.ptr_obj = ctx.global_data_ns["Ptr"]
         ctx.size_obj = ctx.global_data_ns["Size"]
         ctx.tagctor_obj = ctx.global_data_ns["TagCtor"]
-        ctx.uint_obj = ctx.global_data_ns["uint"]
-        ctx.int_obj = ctx.global_data_ns["int"]
+        ctx.uint_obj = ctx.global_data_ns["Uint"]
+        ctx.int_obj = ctx.global_data_ns["Int"]
         ctx.prim_int_objs = (
-            ctx.global_data_ns["byte"],
-            ctx.global_data_ns["ubyte"],
-            ctx.global_data_ns["short"],
-            ctx.global_data_ns["ushort"],
-            ctx.global_data_ns["int"],
-            ctx.global_data_ns["uint"],
-            ctx.global_data_ns["long"],
-            ctx.global_data_ns["ulong"],
+            ctx.global_data_ns["Byte"],
+            ctx.global_data_ns["Ubyte"],
+            ctx.global_data_ns["Short"],
+            ctx.global_data_ns["Ushort"],
+            ctx.global_data_ns["Int"],
+            ctx.global_data_ns["Uint"],
+            ctx.global_data_ns["Long"],
+            ctx.global_data_ns["Ulong"],
             ctx.global_data_ns["Size"],
         )
         ctx.enum_obj = ctx.global_data_ns["Enum"]
@@ -1559,13 +1559,13 @@ def compile_builtins(builder, module_name, asts):
 
         if isinstance(obj, TypeObj):
             ctype_map = {
-                "byte": "int8_t", "ubyte": "uint8_t",
-                "short": "int16_t", "ushort": "uint16_t",
-                "int": "int32_t", "uint": "uint32_t",
-                "long": "int64_t", "ulong": "uint64_t",
+                "Byte": "int8_t", "Ubyte": "uint8_t",
+                "Short": "int16_t", "Ushort": "uint16_t",
+                "Int": "int32_t", "Uint": "uint32_t",
+                "Long": "int64_t", "Ulong": "uint64_t",
                 "Size": "size_t",
-                "float": "float", "double": "double",
-                "bool": "bool", "void": "void",
+                "Float": "float", "Double": "double",
+                "Bool": "bool", "void": "void",
                 "Ptr": "void*"
             }
             if obj.xy_node.name in ctype_map:
@@ -3224,14 +3224,14 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         )
     elif is_builtin_func(func_obj, "max"):
         name_to_lim = {
-            "byte": "INT8_MAX",
-            "ubyte": "UINT8_MAX",
-            "short": "INT16_MAX",
-            "ushort": "UINT16_MAX",
-            "int": "INT32_MAX",
-            "uint": "UINT32_MAX",
-            "long": "INT64_MAX",
-            "ulong": "UINT64_MAX",
+            "Byte": "INT8_MAX",
+            "Ubyte": "UINT8_MAX",
+            "Short": "INT16_MAX",
+            "Ushort": "UINT16_MAX",
+            "Int": "INT32_MAX",
+            "Uint": "UINT32_MAX",
+            "Long": "INT64_MAX",
+            "Ulong": "UINT64_MAX",
             "Size": "SIZE_MAX",
         }
         if lim := name_to_lim.get(func_obj.rtype_obj.xy_node.name, False):
@@ -4279,7 +4279,7 @@ def assert_rtype_match(value_obj, fobj, ctx: CompilerContext):
 def implicit_zero_conversion(value_obj, dest_type, ctx: CompilerContext):
     return (
         isinstance(value_obj.xy_node, xy.Const) and value_obj.xy_node.value == 0
-        and value_obj.xy_node.type == "int" and ctx.is_prim_int(dest_type)
+        and value_obj.xy_node.type == "Int" and ctx.is_prim_int(dest_type)
     )
 
 

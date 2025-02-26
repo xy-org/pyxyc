@@ -1,4 +1,4 @@
-def abs(a: int) -> int {
+def abs(a: Int) -> Int {
     return if (a >= 0) a else -a;
 }
 

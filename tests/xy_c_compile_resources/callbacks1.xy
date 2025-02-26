@@ -1,22 +1,22 @@
 struct Callback~[TagCtor{label="cbLabel"}] {}
 
-def test() -> int {
-    cb1 := $ abs(int);
-    cb2 := $~Callback(int);
-    cb3 : (:int, :double)->int;
-    cb3 = $ (int, double);
+def test() -> Int {
+    cb1 := $ abs(Int);
+    cb2 := $~Callback(Int);
+    cb3 : (:Int, :Double)->Int;
+    cb3 = $ (Int, Double);
     cb4 := cb3;
     return [cb1]([cb3](-5, 5.6)'[cb2]);
 }
 
-def abs(a: int) -> int {
+def abs(a: Int) -> Int {
     return if (a < 0) -a else a;
 }
 
-def cb~Callback(a: int) -> int {
+def cb~Callback(a: Int) -> Int {
     return a;
 }
 
-def funnyFun(a:int, b: double) -> int {
+def funnyFun(a:Int, b: Double) -> Int {
     return if (b < 2*a) a else -a;
 }

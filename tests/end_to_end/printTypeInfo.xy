@@ -10,11 +10,11 @@ struct MyStruct {
     ;; Some number
     num: Size;
 
-    integer: int = -1;
+    integer: Int = -1;
 
     ;; Array of
     ;; floats
-    arr: float[10];
+    arr: Float[10];
 
     next: Ptr~MyStruct;
 }

@@ -1,10 +1,10 @@
 struct MyStruct {
-    a: int;
-    b: int;
-    c: float;
+    a: Int;
+    b: Int;
+    c: Float;
 }
 
-def func(a: int, b: float, c: MyStruct) -> void {
+def func(a: Int, b: Float, c: MyStruct) -> void {
 
 }
 
@@ -15,15 +15,15 @@ def test1() {
     func(...);
 }
 
-def test2(a: int, b: float, c: MyStruct) {
+def test2(a: Int, b: Float, c: MyStruct) {
     func(...);
 }
 
-def test3(b: float, c: MyStruct, a: int) {
+def test3(b: Float, c: MyStruct, a: Int) {
     func(...);
 }
 
-def test5(d:double, c: MyStruct) {
+def test5(d:Double, c: MyStruct) {
     a := c.a;
     b := c.b;
     func(...);

@@ -3,12 +3,12 @@ import posix~[CLib{headers=@{"unistd.h", "fcntl.h"}}] in c;
 # --- Flags ---
 
 struct OpenFlags~Flags {
-    value : int;
+    value : Int;
 
-    readOnly : pseudo int = c.O_RDONLY;
-    writeOnly : pseudo int = c.O_WRONLY;
-    readWrite : pseudo int = c.O_RDWR;
-    append : pseudo int = c.O_APPEND;
+    readOnly : pseudo Int = c.O_RDONLY;
+    writeOnly : pseudo Int = c.O_WRONLY;
+    readWrite : pseudo Int = c.O_RDWR;
+    append : pseudo Int = c.O_APPEND;
 } ;; the Flags tag will generatte the | operator
 
 struct String {

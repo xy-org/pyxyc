@@ -1,9 +1,9 @@
 struct Person {
     firstName: String;
     lastName: String;
-    age: int;
-    height: double;
-    married: bool;
+    age: Int;
+    height: Double;
+    married: Bool;
     favoriteColorClothes: Color;
 }
 
@@ -17,9 +17,9 @@ def string~[StrCtor{prefix=""}](addr: Ptr, size: Size) -> String {
 }
 
 struct Color {
-    r: ubyte;
-    g: ubyte;
-    b: ubyte;
+    r: Ubyte;
+    g: Ubyte;
+    b: Ubyte;
 }
 
 def test() {

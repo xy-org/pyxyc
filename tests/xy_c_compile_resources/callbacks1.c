@@ -3,8 +3,8 @@
 #include <stdbool.h>
 
 typedef struct callbacks1_Callback callbacks1_Callback;
-typedef int32_t (*xy_fp__int__int)(int32_t) ;
-typedef int32_t (*xy_fp__int__double__int)(int32_t, double) ;
+typedef int32_t (*xy_fp__Int__Int)(int32_t) ;
+typedef int32_t (*xy_fp__Int__Double__Int)(int32_t, double) ;
 
 int32_t callbacks1_abs(int32_t a);
 int32_t callbacks1_cb(int32_t a);
@@ -15,11 +15,11 @@ struct callbacks1_Callback {
 };
 
 int32_t callbacks1_test(void) {
-    const xy_fp__int__int cb1 = callbacks1_abs;
-    const xy_fp__int__int cb2 = callbacks1_cb;
-    xy_fp__int__double__int cb3;
+    const xy_fp__Int__Int cb1 = callbacks1_abs;
+    const xy_fp__Int__Int cb2 = callbacks1_cb;
+    xy_fp__Int__Double__Int cb3;
     cb3 = callbacks1_funnyFun;
-    const xy_fp__int__double__int cb4 = cb3;
+    const xy_fp__Int__Double__Int cb4 = cb3;
     return cb1(cb2(cb3(-5, 5.6)));
 }
 

@@ -1,7 +1,7 @@
 struct Point {
-    x: int;
-    y: int;
-    w: int = 1;
+    x: Int;
+    y: Int;
+    w: Int = 1;
 }
 
 def testMovingOutInout(p: mut Point) -> Point {

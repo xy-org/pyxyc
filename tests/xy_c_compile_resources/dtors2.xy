@@ -9,8 +9,8 @@ def dtor(arr: mut Array) {
 
 def test() {
     arr1: Array;
-    arr2: Array~int;
-    arr3: Array~[float, myTag=10];
+    arr2: Array~Int;
+    arr3: Array~[Float, myTag=10];
     arr4: Array~[myTag=10];
-    arr5 := Array~int{0, 10};
+    arr5 := Array~Int{0, 10};
 }

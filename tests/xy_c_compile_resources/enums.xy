@@ -5,7 +5,7 @@ struct Status~Enum {
     canceled : pseudo;
     processed : pseudo;
 
-    value: int;
+    value: Int;
 }
 
 def printStatus(st: Status) {
@@ -18,7 +18,7 @@ def printStatus(st: Status) {
     }
 }
 
-def testEnums(a: int) {
+def testEnums(a: Int) {
     orderStatus := Status.pending;
     printStatus(orderStatus);
 
@@ -37,9 +37,9 @@ def testEnums(a: int) {
 # ---- Value Enumerations ----
 
 # struct Color {
-#     r: float;
-#     g: float;
-#     b: float;
+#     r: Float;
+#     g: Float;
+#     b: Float;
 # }
 # 
 # def printColor(c: Color) {

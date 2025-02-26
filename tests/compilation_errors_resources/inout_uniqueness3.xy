@@ -1,12 +1,12 @@
 struct State {
-    a: int;
-    b: int;
-    c: int;
-    x: float;
-    y: float;
+    a: Int;
+    b: Int;
+    c: Int;
+    x: Float;
+    y: Float;
 }
 
-def fillAndReset(st: mut State, val: mut int) {
+def fillAndReset(st: mut State, val: mut Int) {
     st.a = val;
     st.b = val;
     st.c = val;

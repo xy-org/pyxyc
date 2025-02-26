@@ -4,7 +4,7 @@
 
 ;; An array of up to 100 floats
 struct Array {
-    elems: float[100];
+    elems: Float[100];
     len: Size;
 }
 
@@ -28,7 +28,7 @@ def iter(arr: Array, slice: Slice) -> in(arr) SliceIter {
     return SliceIter{slice.n, slice.m};
 }
 
-def valid(arr: Array, iter: SliceIter) -> bool {
+def valid(arr: Array, iter: SliceIter) -> Bool {
     return iter.i < arr.len & iter.i < iter.lim;
 }
 
@@ -36,11 +36,11 @@ def next(arr: Array, iter: mut SliceIter) {
     iter.i++;
 }
 
-def get(arr: Array, iter: SliceIter) -> float {
+def get(arr: Array, iter: SliceIter) -> Float {
     return arr.elems[iter.i];
 }
 
-def set(arr: Array, iter: SliceIter, val: float) {
+def set(arr: Array, iter: SliceIter, val: Float) {
     arr.elems[iter.i] = val;
 }
 

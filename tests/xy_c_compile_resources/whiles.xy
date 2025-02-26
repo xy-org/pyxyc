@@ -1,4 +1,4 @@
-def func1(x: int, y: int) -> int {
+def func1(x: Int, y: Int) -> Int {
     i : mut = 0;
     while (x < y) {
         x += 10;
@@ -7,14 +7,14 @@ def func1(x: int, y: int) -> int {
     return i;
 }
 
-def func2(x: int, y: int) -> int {
-    return while (x < y) -> (i: int) {
+def func2(x: Int, y: Int) -> Int {
+    return while (x < y) -> (i: Int) {
         x += 10;
         i++;
     };
 }
 
-def func3(x: int, y: int) -> int {
+def func3(x: Int, y: Int) -> Int {
     i : mut = 0;
     while (x < y) {
         x += 10;
@@ -24,14 +24,14 @@ def func3(x: int, y: int) -> int {
     return i;
 }
 
-def cond() -> bool {
+def cond() -> Bool {
     return true;
 }
 
-def update() -> int {
+def update() -> Int {
     return 1;
 }
 
-def func4(x: int, y: int) -> int {
-    return while(cond()) -> (res: int) { res += update(); };
+def func4(x: Int, y: Int) -> Int {
+    return while(cond()) -> (res: Int) { res += update(); };
 }

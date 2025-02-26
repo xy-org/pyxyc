@@ -1,4 +1,4 @@
-def test(argc: int) {
+def test(argc: Int) {
     for (i in :argc) {
         if (i == 0) {
             continue;

@@ -5,34 +5,34 @@ from xyc.compiler import CompilationError
 
 @pytest.mark.parametrize("input_src, exp_err_msg", [
     ("""
-        def func(a: int) {
+        def func(a: Int) {
         }
-        def func(a: int) {
+        def func(a: Int) {
         }
      """, """\
-src.xy:4:13: error: Function with the same signature already exists: func(int)
-|         def func(a: int) {
+src.xy:4:13: error: Function with the same signature already exists: func(Int)
+|         def func(a: Int) {
               ^^^^
 src.xy:2:13: note: Previous definition is here
-|         def func(a: int) {
+|         def func(a: Int) {
               ^^^^
 """),
     ("""
-        def func(a: int) {
+        def func(a: Int) {
         }
-        def func(a: ubyte) -> int {
+        def func(a: Ubyte) -> Int {
         }
         def main() {
             func(0.0);
         }
      """, """\
-src.xy:7:13: error: Cannot find function 'func(double)'
+src.xy:7:13: error: Cannot find function 'func(Double)'
 |             func(0.0);
               ^^^^
 note: Candidates are:
     in module src
-        func(int) -> void
-        func(ubyte) -> int
+        func(Int) -> void
+        func(Ubyte) -> Int
 """),
     ("""
         struct Array {
@@ -42,20 +42,20 @@ note: Candidates are:
             a := arr[0];
         }
      """, """\
-src.xy:6:21: error: Cannot decay 'in(Array) int' because: Cannot find function 'get(Array, int)'
+src.xy:6:21: error: Cannot decay 'in(Array) Int' because: Cannot find function 'get(Array, Int)'
 |             a := arr[0];
                       ^
 note: Candidates are:
     in module xy.builtins
         *get(Ptr) -> Ptr
-        *get(Ptr, int) -> Ptr
+        *get(Ptr, Int) -> Ptr
         *get(Ptr, Size) -> Ptr
-        *get(any[], int) -> Ptr
-        *get(any[], uint) -> Ptr
+        *get(any[], Int) -> Ptr
+        *get(any[], Uint) -> Ptr
         *get(any[], Size) -> Ptr
 """),
     ("""
-        def func1(x: int) = x*2;
+        def func1(x: Int) = x*2;
         def test() {
             a := &func1(10);
         }
@@ -161,7 +161,7 @@ src.xy:6:60: error: Cannot infer type because: Cannot get fields of an unknown t
 """),
     ("""
         import libc~[CLib{headers=@{"string.h", "stdio.h"}}] in c;
-        def func(a: int) a;
+        def func(a: Int) a;
         def test() {
             func(c.external());
         }
@@ -172,7 +172,7 @@ src.xy:5:18: error: Cannot determine type of expression
 """),
     ("""
         import libc~[CLib{headers=@{"string.h", "stdio.h"}}] in c;
-        def func(a: int) a;
+        def func(a: Int) a;
         def test() {
             func(c.argc);
         }
@@ -192,20 +192,20 @@ src.xy:4:22: error: Cannot find tag
                        ^^^^^^^
 """),
     ("""
-        def fun(a: int, b:long = 0) a;
-        def fun(a: int, b:short = 0) b;
-        def fun(a: double) a;
+        def fun(a: Int, b:Long = 0) a;
+        def fun(a: Int, b:Short = 0) b;
+        def fun(a: Double) a;
      
         def main() {
             fun(0);
         }
      """, """\
-src.xy:7:13: error: Multiple function matches for 'fun(int)'
+src.xy:7:13: error: Multiple function matches for 'fun(Int)'
 |             fun(0);
               ^^^
 note: Candidates are:
-    fun(int, [long]) -> int
-    fun(int, [short]) -> short
+    fun(Int, [Long]) -> Int
+    fun(Int, [Short]) -> Short
 """),
     ("""
         struct Str {}
@@ -285,10 +285,10 @@ src.xy:2:26: error: Underscores are not allowed in names. For more info go to TB
                            ^
 """),
     ("""
-        def func(_:int=0) {}
+        def func(_:Int=0) {}
      """, """\
 src.xy:2:23: error: Underscores are not allowed in names. For more info go to TBD
-|         def func(_:int=0) {}
+|         def func(_:Int=0) {}
                         ^
 """),
     ("""

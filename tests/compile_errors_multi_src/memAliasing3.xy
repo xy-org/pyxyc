@@ -1,9 +1,9 @@
 struct Struct {
-    a: int;
-    b: int;
+    a: Int;
+    b: Int;
 }
 
-def func(v: mut Struct, a: int) {}
+def func(v: mut Struct, a: Int) {}
 
 def test() {
     v: Struct;

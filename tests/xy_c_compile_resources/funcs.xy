@@ -1,7 +1,7 @@
 # Funcs having in and mut params
 
 struct A {
-    num: int;
+    num: Int;
 }
 
 def double(a: A) -> A {
@@ -18,7 +18,7 @@ def callDoubles(a: mut A) -> A {
     return a;
 }
 
-def test() -> int {
+def test() -> Int {
     a : mut = A{5};
     double(a);
     doubleInout(a);

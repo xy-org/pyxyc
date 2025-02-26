@@ -2,7 +2,7 @@ import posix~[CLib{headers=@{"unistd.h", "errno.h"}}] in c;
 
 ;; Struct representing a file handle.
 struct File {
-    fd: int = -1;
+    fd: Int = -1;
 }
 
 struct Str {
@@ -17,10 +17,10 @@ def str~[StrCtor{prefix="", interpolation=false}] (
 }
 
 struct ErrnoError {
-    code: int;
+    code: Int;
 }
 
-def to(err: ErrnoError, :bool) -> bool {
+def to(err: ErrnoError, :Bool) -> Bool {
 	return err.code!= 0;
 }
 
@@ -43,7 +43,7 @@ def print(msg: Str) -> void {
     stdout'write(msg);
 }
 
-def main~EntryPoint() -> int {
+def main~EntryPoint() -> Int {
     print("Hello World\n");
     return 0;
 }

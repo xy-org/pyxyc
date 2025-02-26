@@ -1,8 +1,8 @@
-def func(a: int, b := 1, c := 2) -> int{
+def func(a: Int, b := 1, c := 2) -> Int{
     return a + b + c;
 }
 
-def func(a: int, b: int, c: int, d:int) -> int {
+def func(a: Int, b: Int, c: Int, d:Int) -> Int {
     return a*b*c*d;
 }
 

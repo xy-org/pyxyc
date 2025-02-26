@@ -1,4 +1,4 @@
-def statementLike(x : int, y: int) -> int {
+def statementLike(x : Int, y: Int) -> Int {
     if (x < y) {
         return x * y * 3;
     } else {
@@ -6,12 +6,12 @@ def statementLike(x : int, y: int) -> int {
     }
 }
 
-def expressionLike(x : int, y: int) -> int {
+def expressionLike(x : Int, y: Int) -> Int {
     return if (x < y) x * y * 3 else y * 2;
 }
 
-def namedIf(x: int, y: int) -> int {
-    res := if (x < y) -> (res: int) {
+def namedIf(x: Int, y: Int) -> Int {
+    res := if (x < y) -> (res: Int) {
         res = x * y * 3;
     } else {
         res = y * 2;
@@ -19,8 +19,8 @@ def namedIf(x: int, y: int) -> int {
     return res;
 }
 
-def elifs(x: int, y: int) -> int {
-    return if (x < y) -> (res: int) {
+def elifs(x: Int, y: Int) -> Int {
+    return if (x < y) -> (res: Int) {
         res = 0;
         namedIf(x, y);
     } elif (x < y) {
@@ -30,13 +30,13 @@ def elifs(x: int, y: int) -> int {
     };
 }
 
-def elifs2(x: int, y: int) -> int {
-    return if (x < y) -> (res: int) {
+def elifs2(x: Int, y: Int) -> Int {
+    return if (x < y) -> (res: Int) {
         res = 0;
     } elif (x < y) 1 else 2;
 }
 
-def chainedIfs(x: int, y: int) -> int {
+def chainedIfs(x: Int, y: Int) -> Int {
     a := if (x > y) 1 elif (x < y) -1 else 0;
     return a;
 }

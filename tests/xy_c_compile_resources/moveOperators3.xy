@@ -1,5 +1,5 @@
-def func1(a: mut int, b: int) {}
-def func2(a: int, b: mut int) {}
+def func1(a: mut Int, b: Int) {}
+def func2(a: Int, b: mut Int) {}
 
 def test() {
     a: mut = 0;
@@ -7,11 +7,11 @@ def test() {
     func2(a, a =>);
 }
 
-def arrFunc1(a: int[10], b: int[10]) {}
-def arrFunc2(a: int[10], b: int[10]) {}
+def arrFunc1(a: Int[10], b: Int[10]) {}
+def arrFunc2(a: Int[10], b: Int[10]) {}
 
 def arrTest() {
-    arr: int[10];
+    arr: Int[10];
     arrFunc1(arr, arr =>);
     arrFunc2(arr, arr =>);
 }

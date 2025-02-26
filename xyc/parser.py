@@ -498,13 +498,13 @@ def parse_expression(
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
         if token in {"true", "false"}:
-            arg1 = Const(token == "true", token, "bool")
+            arg1 = Const(token == "true", token, "Bool")
         elif "." in token:
-            type = "double"
+            type = "Double"
             value_str = token
             if token[-1] == 'f':
                 token = token[:-1]
-                type = "float"
+                type = "Float"
             try:
                 val = float(token)
             except:
@@ -516,15 +516,15 @@ def parse_expression(
                 suffix = token[-1]
                 token = token[:-1]
             if token.startswith("0x"):
-                arg1 = Const(int(token[2:], base=16), token, "int",
+                arg1 = Const(int(token[2:], base=16), token, "Int",
                              src=itoken.src, coords=tk_coords)
             else:
-                arg1 = Const(int(token), token, "int",
+                arg1 = Const(int(token), token, "Int",
                              src=itoken.src, coords=tk_coords)
             if suffix == "l":
-                arg1.type = "long"
+                arg1.type = "Long"
             elif suffix == "f":
-                arg1.type = "float"
+                arg1.type = "Float"
             elif suffix is not None:
                 raise ParsingError("Unknown number suffix", itoken)
         elif token == '"':

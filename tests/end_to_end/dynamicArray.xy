@@ -53,7 +53,7 @@ def get(
 }
 
 def get(
-    arr: Array, i: int,
+    arr: Array, i: Int,
     elemSize : Size = ctti.sizeof(arr..elemType)
 ) -> in(arr) Ptr~[^arr..elemType] {
     return arr.mem.addr + i * elemSize;
@@ -80,12 +80,12 @@ def get(arr: Array, iter: ArrayIter, elemSize : Size = ctti.sizeof(arr..elemType
 # ----------------- test code -----------------
 
 struct Point {
-    x: int;
-    y: int;
+    x: Int;
+    y: Int;
 }
 
-def main~EntryPoint() -> int {
-    ints: Array~int;
+def main~EntryPoint() -> Int {
+    ints: Array~Int;
     points: Array~Point;
     for (i in :100) {
         ints'push(i);
@@ -94,7 +94,7 @@ def main~EntryPoint() -> int {
 
     print(f"len={ints'len}\n");
 
-    res : int;
+    res : Int;
     for (i in :100) {
         res += (points[i].x - points[i].y) * ints[i] - i;
         res += (points[i].x - points[i].y);

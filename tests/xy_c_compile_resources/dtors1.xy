@@ -6,11 +6,11 @@ def free(mem: Ptr) {
     # ...
 }
 
-def push(arr: mut Array, val: int) {
+def push(arr: mut Array, val: Int) {
     # ...
 }
 
-def dtor(p: Array, managed: bool = p..managed) {
+def dtor(p: Array, managed: Bool = p..managed) {
     if (managed) {
         p.mem'free();
     }
@@ -20,11 +20,11 @@ def update(arr: mut Array) {
     # ...
 }
 
-def errorProne(arr: Array) -> void || int {
+def errorProne(arr: Array) -> void || Int {
     # ...
 }
 
-def funcReturningAnObjectWithDtor(num: int) -> Array {
+def funcReturningAnObjectWithDtor(num: Int) -> Array {
     arr: mut Array;
     for (i in :num) {
         arr'push(i);
@@ -46,7 +46,7 @@ def test1() {
     errorProne(funcReturningAnObjectWithDtor(10));
 }
 
-def test2(rng: int) -> void || int {
+def test2(rng: Int) -> void || Int {
     arr1: mut Array;
     errorProne(arr1);
 
@@ -56,7 +56,7 @@ def test2(rng: int) -> void || int {
     arr3: mut Array;
 }
 
-def test3(rng: int) -> Array || int {
+def test3(rng: Int) -> Array || Int {
     arr1: mut Array;
     errorProne(arr1);
 
@@ -68,7 +68,7 @@ def test3(rng: int) -> Array || int {
     return if (rng == 0) arr1 elif (rng == 1) arr2 else arr3;
 }
 
-def test4(rng: int) -> Array || int {
+def test4(rng: Int) -> Array || Int {
     arr1: mut Array;
     errorProne(arr1);
 
@@ -97,7 +97,7 @@ def test4(rng: int) -> Array || int {
     return Array{};
 }
 
-def test5(rng: int) -> Array {
+def test5(rng: Int) -> Array {
     arrs : Array[10];
     return arrs[rng]; # temporary value so move out or copy
 }

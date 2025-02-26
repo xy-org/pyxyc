@@ -4,13 +4,13 @@ import funcDiscovery.sub1.sub11;
 import funcDiscovery.mark;
 
 def test() {
-    a: int;
-    funcs := def* ~MyMark(inout int, int)->void;
+    a: Int;
+    funcs := def* ~MyMark(inout Int, Int)->void;
     for (f in funcs) {
         f(a, 5);
     }
 }
 
-def funcToCall~MyMark(a: mut int, b: int) -> void {
+def funcToCall~MyMark(a: mut Int, b: Int) -> void {
     a += b;
 }

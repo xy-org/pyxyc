@@ -8,7 +8,7 @@ typedef struct slices_IntSlice slices_IntSlice;
 typedef struct slices_Date slices_Date;
 typedef struct slices_DateSlice slices_DateSlice;
 
-int32_t slices_max__int(void);
+int32_t slices_max__Int(void);
 slices_Date slices_max__Date(void);
 
 struct slices_AllSlice {
@@ -28,28 +28,28 @@ struct slices_DateSlice {
     slices_Date m_step;
 };
 
-int32_t slices_max__int(void) {
+int32_t slices_max__Int(void) {
     return INT32_MAX;
 }
 
 void slices_testIntSlices(void) {
     const slices_AllSlice a = (slices_AllSlice){0};
-    int32_t tmp_arg0 = slices_max__int();
+    int32_t tmp_arg0 = slices_max__Int();
     const slices_IntSlice b = (slices_IntSlice){1, tmp_arg0, 1};
     const int32_t x = 10;
     const int32_t y = 1000;
     const slices_IntSlice c = (slices_IntSlice){0, x, 1};
     const slices_IntSlice d = (slices_IntSlice){1, x, y};
-    const slices_IntSlice e = (slices_IntSlice){0, slices_max__int(), -1};
+    const slices_IntSlice e = (slices_IntSlice){0, slices_max__Int(), -1};
     const slices_IntSlice f = (slices_IntSlice){0, x, 1};
     const slices_IntSlice g = (slices_IntSlice){0, x, y};
-    int32_t tmp_arg1 = slices_max__int();
+    int32_t tmp_arg1 = slices_max__Int();
     const slices_IntSlice i = (slices_IntSlice){x, tmp_arg1, y};
     const slices_IntSlice j = (slices_IntSlice){x, y, 1};
     const slices_IntSlice k = (slices_IntSlice){x, y, 1};
 }
 
-int64_t slices_max__long(void) {
+int64_t slices_max__Long(void) {
     return INT64_MAX;
 }
 
