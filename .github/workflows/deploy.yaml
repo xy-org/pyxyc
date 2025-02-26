@@ -22,7 +22,8 @@ concurrency:
 jobs:
   # Build job
   build:
-    runs-on: ubuntu-20.04
+    # run on oldest possible version in order to guarantee maximum libc compatibility
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
