@@ -18,6 +18,9 @@ void typeInferenceBasic_func(void) {
     const double w = 2.1718;
     const double x = 0;
     const double y = .0;
+    const uint64_t l = 1;
+    const int16_t s = 10;
+    const size_t z = 1024;
     const bool t = true;
     const bool f = false;
     const typeInferenceBasic_Pair p = (typeInferenceBasic_Pair){a, b};

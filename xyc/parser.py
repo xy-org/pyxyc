@@ -499,40 +499,8 @@ def parse_expression(
         token = itoken.consume()
         if token in {"true", "false"}:
             arg1 = Const(token == "true", token, "Bool")
-        elif "." in token:
-            type = "Float"
-            value_str = token + 'f'
-            if token[-1] == 'f':
-                value_str = token
-                token = token[:-1]
-            elif token[-1] == 'd':
-                token = token[:-1]
-                value_str = token
-                type = "Double"
-            try:
-                val = float(token)
-            except:
-                raise ParsingError("Invalid floating point literal", itoken)
-            arg1 = Const(val, value_str, type, src=itoken.src, coords=tk_coords)
-        elif token[0] >= '0' and token[0] <= '9':
-            suffix = None
-            if token[-1] < '0' or token[-1] > '9':
-                suffix = token[-1]
-                token = token[:-1]
-            if token.startswith("0x"):
-                arg1 = Const(int(token[2:], base=16), token, "Int",
-                             src=itoken.src, coords=tk_coords)
-            else:
-                arg1 = Const(int(token), token, "Int",
-                             src=itoken.src, coords=tk_coords)
-            if suffix == "l":
-                arg1.type = "Long"
-            elif suffix == "f":
-                arg1.type = "Float"
-            elif suffix == "d":
-                arg1.type = "Double"
-            elif suffix is not None:
-                raise ParsingError("Unknown number suffix", itoken)
+        elif "." in token or (token[0] >= '0' and token[0] <= '9'):
+            arg1 = parse_num_const(token, tk_coords, itoken)
         elif token == '"':
             arg1 = parse_str_literal("", tk_coords[0], itoken)
         elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:
@@ -742,6 +710,45 @@ def parse_expression(
         arg1 = decl
 
     return arg1
+
+def parse_num_const(token, tk_coords, itoken):
+    suffix = ""
+    while token[-1].isalpha():
+        suffix = token[-1] + suffix
+        token = token[:-1]
+
+    suffix_map = {
+        "f": "Float", "d": "Double", 
+        "l": "Long", "ul": "Ulong", "i": "Int", "u": "Uint", "ui": "Uint",
+        "s": "Short", "us": "UShort", "b": "Byte", "ub": "Ubyte", "z": "Size"
+    }
+
+    if "." in token:
+        type = "Float"
+        value_str = token + 'f'
+        if suffix == 'd':
+            value_str = token
+            type = "Double"
+        elif suffix not in {'', 'f'}:
+            raise ParsingError(f"Invalid suffix for floating point num '{suffix}'", itoken)
+        try:
+            val = float(token)
+        except:
+            raise ParsingError("Invalid floating point literal", itoken)
+        res = Const(val, value_str, type, src=itoken.src, coords=tk_coords)
+    else:
+        if token.startswith("0x"):
+            res = Const(int(token[2:], base=16), token, "Int",
+                            src=itoken.src, coords=tk_coords)
+        else:
+            res = Const(int(token), token, "Int",
+                            src=itoken.src, coords=tk_coords)
+        if suffix in suffix_map:
+            res.type = suffix_map[suffix]
+        elif suffix != "":
+            raise ParsingError("Unknown number suffix", itoken)
+        
+    return res
 
 def parse_var_decl(itoken, name_token, precedence, op_prec):
     decl = VarDecl(src=itoken.src, coords=name_token.coords)
