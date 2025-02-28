@@ -623,7 +623,7 @@ class CompilerContext:
         var_obj = self.eval(name)
         if var_obj is None:
             var_name = f" '{name.name}'" if isinstance(name, xy.Id) else ""
-            raise CompilationError(f"Cannot find variable{var_name}", name)
+            raise CompilationError(f"Cannot find variable {var_name}", name)
         if not isinstance(var_obj, VarObj):
             raise CompilationError(f"Not a variable.", name)
         return var_obj
@@ -730,6 +730,14 @@ class CompilerContext:
                 )
             )
         return res
+    
+    def print_data_namespaces(self):
+        self.print_namespaces(self.data_namespaces)
+
+    def print_namespaces(ctx, namespaces):
+        print(f"module: {ctx.module_name}")
+        for ns in namespaces:
+            print(ns.keys())
 
     def do_eval(self, node, msg=None, is_func=False):
         if isinstance(node, xy.Id):
@@ -1924,7 +1932,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         fcall = rewrite_unaryop(expr, ctx)
         return compile_expr(fcall, cast, cfunc, ctx)
     elif isinstance(expr, xy.Id):
-        var_obj = ctx.eval(expr, "Cannot find variable")
+        var_obj = ctx.eval(expr, f"Cannot find variable '{expr.name}'")
         if isinstance(var_obj, VarObj):
             c_node = c.Id(var_obj.c_node.name) if var_obj.c_node is not None else None
             if var_obj.passed_by_ref:
@@ -3283,11 +3291,12 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if func_obj.module_header is not None:
         callee_ctx = func_obj.module_header.ctx
     else:
-        callee_ctx = copy(ctx)  # make a shollow copy
-        # deep copy only the fields that we need in the new context
-        callee_ctx.data_namespaces = copy(callee_ctx.data_namespaces[:2]) # copy only the global and module namespaces. ignore local vars
-        callee_ctx.func_namespaces = copy(callee_ctx.func_namespaces[:2])
-        callee_ctx.caller_contexts = copy(callee_ctx.caller_contexts) 
+        callee_ctx = ctx
+    callee_ctx = copy(callee_ctx)  # make a shollow copy
+    # deep copy only the fields that we need in the new context
+    callee_ctx.data_namespaces = copy(callee_ctx.data_namespaces[:2]) # copy only the global and module namespaces. ignore local vars
+    callee_ctx.func_namespaces = copy(callee_ctx.func_namespaces[:2])
+    callee_ctx.caller_contexts = copy(callee_ctx.caller_contexts)
     callee_ctx.push_caller_context(caller_ctx)
 
     # XXX
@@ -3414,7 +3423,13 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         cast_result = True
 
     if func_obj.is_macro:
-        body_expr_obj = compile_expr(func_obj.xy_node.body, cast, cfunc, callee_ctx)
+        try:
+            body_expr_obj = compile_expr(func_obj.xy_node.body, cast, cfunc, callee_ctx)
+        except CompilationError as e:
+            raise CompilationError(
+                f"Failed to call macro '{ctx.eval_to_id(func_obj.xy_node.name)}'", expr,
+                notes=[(e.error_message, e.xy_node), *(e.notes if e.notes else [])]
+            )
         res = body_expr_obj.c_node
         rtype_obj = body_expr_obj.inferred_type
     elif (
@@ -4567,7 +4582,9 @@ def compile_select(expr: xy.Select, cast, cfunc, ctx):
         container_obj = compile_expr(expr.base, cast, cfunc, ctx, deref=False)
     else:
         container_obj = global_memory
-    assert len(expr.args.args) == 1  # TODO
+    if len(expr.args.args) != 1:
+        # TODO
+        raise CompilationError("More than one arg in a [] expr is NYI", expr)
     assert len(expr.args.kwargs) == 0  # TODO
     idx_obj = compile_expr(expr.args.args[0], cast, cfunc, ctx, deref=False)
 

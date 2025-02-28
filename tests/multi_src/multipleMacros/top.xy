@@ -1,0 +1,6 @@
+import multipleMacros.module1;
+
+def test() -> Bool {
+    my: Struct;
+    return macro3(my);
+}

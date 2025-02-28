@@ -148,6 +148,7 @@ def test_common_errors(code, err_msg, tmp_path):
     "visibility/package2",
     "visibility/package3",
     "structVisibility/package2",
+    "multipleMacros",
 ])
 def test_module_compilation(resource_dir, module, tmp_path):
     base_dir = resource_dir / "multi_src"
