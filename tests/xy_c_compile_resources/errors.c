@@ -22,12 +22,12 @@ errors_Error errors_power(int32_t x, int32_t y, int32_t* _res0) {
         return (errors_Error){1};
     }
     int32_t i = 0;
-    int32_t tmp_res0 = 1;
+    int32_t tmp_res1 = 1;
     while (i <= y) {
-        tmp_res0 *= x;
+        tmp_res1 *= x;
         i++;
     }
-    *_res0 = tmp_res0;
+    *_res0 = tmp_res1;
     return (errors_Error){0};
 }
 

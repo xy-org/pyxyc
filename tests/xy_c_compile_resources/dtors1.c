@@ -118,20 +118,20 @@ int32_t dtors1_test4(int32_t rng, dtors1_Array* _res0) {
     int32_t num = 10;
     while (rng < num) {
         dtors1_Array arr2 = (dtors1_Array){0};
-        const int32_t tmp_err0 = dtors1_errorProne(arr2);
-        if ((bool)tmp_err0) {
+        const int32_t tmp_err1 = dtors1_errorProne(arr2);
+        if ((bool)tmp_err1) {
             dtors1_dtor(arr2, true);
             dtors1_dtor(arr1, true);
-            return tmp_err0;
+            return tmp_err1;
         }
         for (int32_t i = 0; i < num; ++i) {
             dtors1_Array arr3 = (dtors1_Array){0};
-            const int32_t tmp_err0 = dtors1_errorProne(arr3);
-            if ((bool)tmp_err0) {
+            const int32_t tmp_err2 = dtors1_errorProne(arr3);
+            if ((bool)tmp_err2) {
                 dtors1_dtor(arr3, true);
                 dtors1_dtor(arr2, true);
                 dtors1_dtor(arr1, true);
-                return tmp_err0;
+                return tmp_err2;
             }
             if (i == rng * 2) {
                 dtors1_Array arr4 = (dtors1_Array){0};

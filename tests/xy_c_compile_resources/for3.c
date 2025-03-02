@@ -72,8 +72,8 @@ void for3_double(for3_Array* arr1) {
             if (!(tmp_iter0 < arr1->m_len)) {
                 abort();
             }
-            float* tmp_ref0 = for3_get(arr1, tmp_iter0);
-            *tmp_ref0 += *for3_get(arr1, tmp_iter0);
+            float* tmp_ref2 = for3_get(arr1, tmp_iter0);
+            *tmp_ref2 += *for3_get(arr1, tmp_iter0);
         }
     }
 }

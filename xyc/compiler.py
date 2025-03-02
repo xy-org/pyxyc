@@ -524,11 +524,12 @@ class TmpNames:
         return tmp_var_name
     
     def enter_block(self):
-        # TODO implement
+        pass
+
+    def enter_func(self):
         self.tmp_var_i = 0
 
     def exit_block(self):
-        # TODO implement
         pass
 
 @dataclass(repr=False)
@@ -884,6 +885,9 @@ class CompilerContext:
     
     def enter_block(self):
         self.tmp_names.enter_block()
+
+    def enter_func(self):
+        self.tmp_names.enter_func()
 
     def exit_block(self):
         self.tmp_names.exit_block()
@@ -1638,6 +1642,7 @@ def compile_func(node, ctx, ast, cast):
 
     ctx.current_fobj = fdesc
     if isinstance(node.body, list):
+        ctx.enter_func()
         compile_body(node.body, cast, cfunc, ctx, is_func_body=True)
     else:
         # functions is a macro
