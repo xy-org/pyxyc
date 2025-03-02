@@ -3799,16 +3799,19 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         inferred_type = ctx.void_obj
 
     # create tmp var if needed
+    if_result_name = None
+    result_var = None
     if inferred_type is not None and inferred_type is not ctx.void_obj:
-        name_hint = None
+        if_result_name = None
         if not ifexpr.block.is_embedded:
-            name_hint = ifexpr.block.returns[0].name
-        if name_hint is None:
-            name_hint = ifexpr.name
-            name_hint = ctx.eval_to_id(name_hint) if name_hint is not None else ""
-        var_obj = ctx.create_tmp_var(inferred_type, name_hint=name_hint)
+            if_result_name = ifexpr.block.returns[0].name
+        if if_result_name is None:
+            if_result_name = ifexpr.name
+            if_result_name = ctx.eval_to_id(if_result_name) if if_result_name is not None else ""
+        var_obj = ctx.create_tmp_var(inferred_type, name_hint=if_result_name)
         cfunc.body.append(var_obj.c_node)
-        ctx.ns[name_hint] = var_obj
+        ctx.ns[if_result_name] = var_obj
+        result_var = var_obj
         c_res = c.Id(var_obj.c_node.name)
 
     # compile if body
@@ -3844,9 +3847,13 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         next_c_if = gen_if
         next_if = next_if.else_node
 
+    ctx.pop_ns()
+
     # finaly the else if any
     assert isinstance(next_if, xy.Block) or next_if is None
     ctx.push_ns()
+    if if_result_name:
+        ctx.ns[if_result_name] = result_var
     if next_if is not None and not next_if.is_embedded:
         # normal else
         # XXX fix that
@@ -3860,8 +3867,6 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         res_assign = c.Expr(c_res, else_exp_obj.c_node, op='=')
         # TODO compare types
         next_c_if.else_body.body.append(res_assign)
-    ctx.pop_ns()
-
     ctx.pop_ns()
 
     return ExprObj(

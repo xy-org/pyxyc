@@ -310,7 +310,21 @@ src.xy:1:22: error: Names should start with a letter
 | def func(arg: pseudo ?) {}
                        ^
 """
-    )
+    ),
+    (
+        """def func(x: Int) {
+            if (x > 10) {
+                a := 10;
+            } else {
+                func(a);
+            }
+        }""",
+        """\
+src.xy:5:22: error: Cannot find variable 'a'
+|                 func(a);
+                       ^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
