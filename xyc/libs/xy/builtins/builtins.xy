@@ -313,6 +313,10 @@ def *cmp(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
+def *cmp(a: Long, b: Int) -> Long {
+    # Implemented by the compiler
+}
+
 def *cmp(a: Uint, b: Int) -> Int {
     # Implemented by the compiler
 }

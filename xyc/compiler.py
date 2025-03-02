@@ -3846,6 +3846,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
 
     # finaly the else if any
     assert isinstance(next_if, xy.Block) or next_if is None
+    ctx.push_ns()
     if next_if is not None and not next_if.is_embedded:
         # normal else
         # XXX fix that
@@ -3859,6 +3860,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         res_assign = c.Expr(c_res, else_exp_obj.c_node, op='=')
         # TODO compare types
         next_c_if.else_body.body.append(res_assign)
+    ctx.pop_ns()
 
     ctx.pop_ns()
 

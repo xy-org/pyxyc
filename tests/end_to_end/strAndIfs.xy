@@ -1,0 +1,15 @@
+import libxy.string;
+import libxy.stdio;
+
+def test~EntryPoint() -> Int {
+    str : Str;
+    a := 0;
+    b := 10;
+    if (a > b) {
+        str = f"{a}{b}";
+    } else {
+        str = f"{b}{a}";
+    }
+    print(str);
+    return 0;
+}
