@@ -4265,7 +4265,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         return ExprObj(
             xy_node=xyreturn,
             c_node=ret,
-            inferred_type=value_obj.inferred_type
+            inferred_type=value_obj.inferred_type if value_obj is not None else ctx.void_obj
         )
     else:
         # return by param(s)

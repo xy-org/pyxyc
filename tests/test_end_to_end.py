@@ -31,6 +31,7 @@ floats
 }\n""", False),
     ("uniqueTmpVarNames", "", False),
     ("strAndIfs", "100", False),
+    ("earlyReturn", "", False),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     test_base = resource_dir / "end_to_end" / testname
