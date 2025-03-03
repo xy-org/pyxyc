@@ -2858,9 +2858,10 @@ def compatible_tags(base_tags, required_tags):
 
     return True
 
-def fselect_unnamed(expr, arg_types: ArgList, ctx, partial_matches=True):
+def fselect_unnamed(expr, arg_types: ArgList, ctx: CompilerContext, partial_matches=True):
     res = []
-    for obj in itertools.chain(ctx.data_ns.values(), ctx.func_ns.values()):
+    namespaces_vals = [ns.values() for ns in ctx.func_namespaces[::-1]]
+    for obj in itertools.chain(*namespaces_vals):
         if isinstance(obj, FuncSpace):
             res.extend(obj.findAll(expr, arg_types, ctx, partial_matches))
     return res

@@ -1,0 +1,5 @@
+import crossModuleSelect.tag;
+
+def testSomething~Test() {
+    # ...
+}

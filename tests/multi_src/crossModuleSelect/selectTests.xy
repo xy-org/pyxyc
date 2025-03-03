@@ -1,0 +1,9 @@
+import crossModuleSelect.tag;
+import crossModuleSelect.module2;
+
+def main() {
+    tests := @for (f in $*~Test()) f;
+    for (t in tests) {
+        [t]();
+    }
+}
