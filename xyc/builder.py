@@ -143,6 +143,7 @@ class Builder:
             print("If you are calling any c functions directly please review "
                   "your code. If you think it is a problem with the Xy compiler"
                   "please report it at TBD.")
+            raise ValueError(f"C compilation failed")
 
     def write_output(self, modules: list[CompiledModule], output):
         # merge all into one big .c file
