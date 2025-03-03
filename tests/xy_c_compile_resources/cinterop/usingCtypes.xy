@@ -1,0 +1,13 @@
+import libc~[CLib{headers=@{"time.h"}}] in c;
+
+
+def timeFunc() -> c.clock_t {
+    start: c.clock_t = c.clock();
+    func();
+    finish: c.clock_t = c.clock();
+    return c."(finish - start) / c.CLOCKS_PER_SEC";
+}
+
+def func() {
+    # ...
+}

@@ -196,6 +196,14 @@ class ExtSymbolObj(CompiledObj):
     def c_name(self):
         return self.c_node.name
     
+def ext_symbol_to_type(ext_obj):
+    return TypeObj(
+        xy_node=ext_obj.xy_node,
+        c_node=ext_obj.c_node,
+        builtin=False,
+        fully_compiled=True,
+    )
+    
 @dataclass
 class NameAmbiguity:
     modules: list[str] = field(default_factory=list)
@@ -633,6 +641,8 @@ class CompilerContext:
         obj = self.eval(name, msg=msg)
         if obj is None:
             raise CompilationError(f"Cannot find type", name)
+        if isinstance(obj, ExtSymbolObj):
+            return ext_symbol_to_type(obj)
         if not isinstance(obj, TypeObj):
             raise CompilationError("Not a type", name)
         if not is_obj_visible(obj, self):
@@ -792,7 +802,7 @@ class CompilerContext:
                         if isinstance(node.arg2, xy.Id):
                             return ExtSymbolObj(
                                 c_node=c.Id(node.arg2.name),
-                                xy_node=node,
+                                xy_node=node.arg2,
                             )
                         else:
                             assert isinstance(node.arg2, xy.StrLiteral)
@@ -4494,6 +4504,8 @@ def find_type(texpr, cast, ctx, required=True):
         if isinstance(texpr, xy.Id):
             validate_name(texpr, ctx)
         res = ctx.eval(texpr, msg="Cannot find type")
+        if isinstance(res, ExtSymbolObj):
+            res = ext_symbol_to_type(res)
         return res
 
 def ct_eval(expr, ctx):

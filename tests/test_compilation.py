@@ -19,7 +19,7 @@ from xyc.compiler import CompilationError
     "arrays/arrays",
     "arrays/arrayComprehension",
     "arrays/listLiterals",
-    "cimport",
+    "cinterop/cimport",
     "ifs/ifs",
     "ifs/ifs2",
     "ifs/ifs3",
@@ -68,6 +68,7 @@ from xyc.compiler import CompilationError
     "move/moveOperators2",
     "move/moveOperators3",
     "splitNamespaces",
+    "cinterop/usingCtypes",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
