@@ -9,7 +9,7 @@ typedef struct slices_Date slices_Date;
 typedef struct slices_DateSlice slices_DateSlice;
 
 int32_t slices_max__Int(void);
-slices_Date slices_max__Date(void);
+int64_t slices_max__Long(void);
 
 struct slices_AllSlice {
     char __empty_structs_are_not_allowed_in_c__;

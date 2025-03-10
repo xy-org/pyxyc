@@ -212,6 +212,7 @@ any_type_obj = TypeObj(xy_node=xy.Id("any"), builtin=True, c_node=c.Id("ANY_TYPE
 any_struct_type_obj = TypeObj(xy_node=xy.Id("any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 fieldarray_type_obj = TypeObj(xy_node=xy.Id("FieldArray"), builtin=True, c_node=c.Id("FIELD_TYPE_ARRAY_REPORT_IF_YOU_SEE_ME"))
 fselection_type_obj = TypeObj(xy_node=xy.Id("$*"), builtin=True, c_node=c.Id("FUN_SELECTION_REPORT_IF_YOU_SEE_ME"))
+macro_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("MACRO_TYPE_REPORT_IF_YOU_SEE_ME"))
 calltime_expr_obj = TypeObj(builtin=True)
 global_memory_type = TypeObj(xy_node=xy.Id("GLOBAL_MEM_REPORT_IF_YOU_SEE_ME"), builtin=True)
 global_memory = ExprObj(
@@ -1369,6 +1370,9 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
         raise CompilationError("Recursive dependancy", fobj.xy_node, notes=notes)
     ctx.func_compilation_stack[id(fobj)] = fobj
 
+    if not isinstance(fobj.xy_node.body, list):
+        fobj.is_macro = True
+
     node: xy.FuncDef = fobj.xy_node
 
     cfunc = c.Func(None)
@@ -1391,9 +1395,10 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     move_args_to_temps = move_args_to_temps or any_refs
     fobj.has_calltime_tags = has_calltime_tags
 
-    if not isinstance(node.body, list) and len(node.returns) == 0:
-        # shorthand notation
-        rtype_compiled = do_infer_type(node.body, cast, ctx)
+    if fobj.is_macro:
+        # We don't really need a type for macros but it can be useful
+        # for debuggin
+        rtype_compiled = guess_macro_rtype(node.body, cast, ctx)
 
     ctx.pop_ns()
 
@@ -1604,7 +1609,9 @@ def compile_builtins(builder, module_name, asts):
                 }
                 if obj.xy_node.name.startswith("Bits"):
                     obj.fields = {
-                        "value": VarObj(type_desc=mh.ctx.data_ns[bits_to_numeric_map[obj.xy_node.name]], xy_node=xy.VarDecl())
+                        "value": VarObj(
+                            type_desc=mh.ctx.data_ns[bits_to_numeric_map[obj.xy_node.name]], xy_node=xy.VarDecl(),
+                        )
                     }
 
 
@@ -1664,9 +1671,7 @@ def compile_func(node, ctx, ast, cast):
     if isinstance(node.body, list):
         ctx.enter_func()
         compile_body(node.body, cast, cfunc, ctx, is_func_body=True)
-    else:
-        # functions is a macro
-        fdesc.is_macro = True
+ 
     ctx.current_fobj = None
 
     if not fdesc.is_macro:
@@ -2673,6 +2678,12 @@ def do_infer_type(expr, cast, ctx):
             f"Cannot infer type because: {e.error_message}", e.xy_node,
             notes=e.notes
         )
+    
+def guess_macro_rtype(expr, cast, ctx):
+    try:
+        return do_infer_type(expr, cast, ctx)
+    except:
+        return macro_type_obj
 
 def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
     if expr.prefix not in ctx.str_prefix_reg:
@@ -3726,7 +3737,8 @@ def ensure_func_decl(func_obj: FuncObj, cast, cfunc, ctx):
     if func_obj.decl_visible:
         return
     func_obj.decl_visible = True
-    cast.func_decls.append(func_obj.c_node)
+    if not func_obj.is_macro:
+        cast.func_decls.append(func_obj.c_node)
 
 
 def redact_code(obj: ExprObj, cast, cfunc, ctx):

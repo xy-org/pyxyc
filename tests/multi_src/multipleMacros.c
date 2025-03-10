@@ -4,9 +4,6 @@
 
 typedef struct multipleMacros_module1_Struct multipleMacros_module1_Struct;
 
-int32_t multipleMacros_module1_macro1(multipleMacros_module1_Struct s);
-bool multipleMacros_module1_macro2(multipleMacros_module1_Struct s1, multipleMacros_module1_Struct s2);
-
 struct multipleMacros_module1_Struct {
     int32_t m_a;
     float m_b;
