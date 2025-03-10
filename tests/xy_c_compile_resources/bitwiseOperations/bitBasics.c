@@ -8,5 +8,7 @@ uint32_t bitBasics_test(void) {
     const uint32_t c = a | b;
     const uint32_t d = a & b;
     const uint32_t e = a ^ b;
-    return e;
+    const uint32_t f = d << 4 ^ e >> 5;
+    const uint32_t g = ~(c | f & e);
+    return g;
 }

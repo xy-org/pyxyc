@@ -8,8 +8,10 @@ def test() -> Uint {
     d := a & b;
     e := a - b;
 
-    # f := !(c | d & e);
+    f := (d \shiftl 4) - (e \shiftr 5);
 
-    return e.value;
+    g := !(c | f & e);
+
+    return g.value;
 }
 

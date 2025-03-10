@@ -45,8 +45,6 @@ class TypeObj(CompiledObj):
             and self.tags["to"] is not calltime_expr_obj:
             to_obj = self.tags["to"]
             return to_obj.c_name + "*"
-        if self.builtin and self.xy_node.name.startswith("Bits"):
-            return f"uint{self.xy_node.name[4:]}_t"
         if self.c_node is not None:
             return self.c_node.name
         return None
@@ -1590,7 +1588,13 @@ def compile_builtins(builder, module_name, asts):
                 "Size": "size_t",
                 "Float": "float", "Double": "double",
                 "Bool": "bool", "void": "void",
-                "Ptr": "void*"
+                "Ptr": "void*",
+                "Bits8": "uint8_t", "Bits16": "uint16_t",
+                "Bits32": "uint32_t", "Bits64": "uint64_t",
+            }
+            bits_to_numeric_map = {
+                "Bits8": "Ubyte", "Bits16": "Ushort",
+                "Bits32": "Uint", "Bits64": "Ulong",
             }
             if obj.xy_node.name in ctype_map:
                 obj.c_node.name = ctype_map[obj.xy_node.name]
@@ -1598,6 +1602,10 @@ def compile_builtins(builder, module_name, asts):
                 obj.fields = {
                     "": VarObj(type_desc=obj, xy_node=xy.VarDecl())
                 }
+                if obj.xy_node.name.startswith("Bits"):
+                    obj.fields = {
+                        "value": VarObj(type_desc=mh.ctx.data_ns[bits_to_numeric_map[obj.xy_node.name]], xy_node=xy.VarDecl())
+                    }
 
 
             default_tag_label_map = {
@@ -3121,7 +3129,10 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=ctx.void_obj,
         )
     elif is_builtin_func(func_obj, "cmp"):
-        res = c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op="-")
+        c_op="-"
+        if arg_exprs[0].inferred_type.xy_node.name.startswith("Bits"):
+            c_op = "^"
+        res = c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op=c_op)
         return ExprObj(
             c_node=res,
             xy_node=expr,
@@ -3142,7 +3153,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             "and": "&&",
             "andEqual": "&&=",
             "bor": "|",
-            "band": "&"
+            "band": "&",
+            "shiftl": "<<",
+            "shiftr": ">>",
         }
         c_arg1 = arg_exprs[0].c_node
         if func_obj.rtype_obj is ctx.ptr_obj:
@@ -3153,7 +3166,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         if arg_exprs[0].inferred_type.xy_node.name.startswith("Bits"):
             if c_op == '-':
                 c_op = '^'
-            else:
+            elif c_op not in {">>", "<<"}:
                 c_op = c_op[1:]
         res = c.Expr(
             c_arg1, arg_exprs[1].c_node,
@@ -4543,6 +4556,15 @@ def compile_binop(binexpr, cast, cfunc, ctx):
                 op=binexpr.op
             )
             return ExprObj(binexpr, c_res, inferred_type=ctx.bool_obj)
+        if isinstance(arg1_eobj.c_node, c.Expr) and arg1_eobj.c_node.op == "^":
+            c_res = c.UnaryExpr(
+                arg=arg1_eobj.c_node,
+                op="~",
+                prefix=True,
+            )
+            if isinstance(arg1_eobj.c_node.arg2, c.Const) and arg1_eobj.c_node.arg2.value == 0:
+                c_res.arg = arg1_eobj.c_node.arg1
+            return ExprObj(binexpr, c_res, inferred_type=arg1_eobj.inferred_type)
         else:
             tmp_obj = ctx.create_tmp_var(arg1_eobj.inferred_type)
             ctx.ns[tmp_obj.c_node.name] = arg1_eobj
@@ -4588,13 +4610,23 @@ def rewrite_op(binexpr, ctx):
     else:
         raise CompilationError(f"Unrecognized operator '{binexpr.op}'", binexpr)
 
-def rewrite_unaryop(expr, ctx):
+def rewrite_unaryop(expr: xy.UnaryExpr, ctx):
     if expr.op == "++":
         fname = "inc"
     elif expr.op == "--":
         fname = "dec"
     elif expr.op == "-":
         fname = "neg"
+    elif expr.op == "!":
+        return xy.BinExpr(
+            arg1=expr.arg,
+            arg2=xy.StructLiteral(
+                name=xy.UnaryExpr(expr.arg, op="%", src=expr.src, coords=expr.coords),
+                src=expr.src, coords=expr.coords
+            ),
+            op="==",
+            src=expr.src, coords=expr.coords
+        )
     else:
         raise CompilationError(f"Unrecognized operator '{expr.op}'", expr)
     return xy.FuncCall(
