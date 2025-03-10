@@ -711,19 +711,19 @@ def parse_expression(
 
     return arg1
 
-def parse_num_const(token, tk_coords, itoken):
-    suffix = ""
-    while token[-1].isalpha():
-        suffix = token[-1] + suffix
-        token = token[:-1]
-
+def parse_num_const(token: str, tk_coords, itoken):
     suffix_map = {
         "f": "Float", "d": "Double", 
         "l": "Long", "ul": "Ulong", "i": "Int", "u": "Uint", "ui": "Uint",
-        "s": "Short", "us": "UShort", "b": "Byte", "ub": "Ubyte", "z": "Size"
+        "s": "Short", "us": "Ushort", "b": "Byte", "ub": "Ubyte", "z": "Size"
     }
 
     if "." in token:
+        suffix = ""
+        while token[-1].isalpha():
+            suffix = token[-1] + suffix
+            token = token[:-1]
+
         type = "Float"
         value_str = token + 'f'
         if suffix == 'd':
@@ -737,12 +737,48 @@ def parse_num_const(token, tk_coords, itoken):
             raise ParsingError("Invalid floating point literal", itoken)
         res = Const(val, value_str, type, src=itoken.src, coords=tk_coords)
     else:
-        if token.startswith("0x"):
-            res = Const(int(token[2:], base=16), token, "Int",
-                            src=itoken.src, coords=tk_coords)
+        base = 10
+        num_str = ""
+        suffix = ""
+        explicit_base = False
+        if token.startswith("0"):
+            bracket_idx = token.find('(')
+            if bracket_idx > 0:
+                explicit_base = True
+                num_str = token[1:bracket_idx]
+                closing_idx = token.find(')', bracket_idx)
+                if closing_idx < 0:
+                    raise ParsingError("Ill-formatted number literal", itoken)
+                base = int(token[bracket_idx+1:closing_idx])
+                suffix = token[closing_idx+1:]
+            else:
+                base = 16 if token.startswith("0x") else 8
+                for i_suffix in suffix_map.keys():
+                    if token.lower().endswith(i_suffix):
+                        suffix = i_suffix if len(suffix) < len(i_suffix) else suffix
+                prefix_len = 2 if token.startswith("0x") else 1
+                num_str = token[prefix_len:len(token)-len(suffix)]
+                if len(num_str) == 0:
+                    num_str = "0"
+                    base = 10
         else:
-            res = Const(int(token), token, "Int",
-                            src=itoken.src, coords=tk_coords)
+            base = 10
+            for i_suffix in suffix_map.keys():
+                if token.lower().endswith(i_suffix):
+                    suffix = i_suffix if len(suffix) < len(i_suffix) else suffix
+            num_str = token[:len(token)-len(suffix)]
+
+        res = Const(int(num_str, base=base), token[:len(token)-len(suffix)], "Int",
+                    src=itoken.src, coords=tk_coords)
+        if base not in {10, 16, 8}:
+            res.value_str = str(res.value)
+        elif explicit_base:
+            if base == 16: res.value_str = "0x" + num_str
+            elif base == 8: res.value_str = "0" + num_str
+            else: res.value_str = num_str
+        if res.value not in {0, 1}:
+            if suffix == "l": res.value_str += "ll"
+            if suffix == "ul": res.value_str += "ull"
         if suffix in suffix_map:
             res.type = suffix_map[suffix]
         elif suffix != "":

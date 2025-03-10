@@ -777,7 +777,7 @@ class CompilerContext:
         elif isinstance(node, xy.StructLiteral):
             instance_type = self.eval(node.name)
             if instance_type is None:
-                raise CompilationError("Cannot find name", node)
+                raise CompilationError(f"Cannot find name '{self.eval_to_id(node.name)}'", node.name)
             obj = InstanceObj(type_obj=instance_type, xy_node=node)
             if len(node.args) > 0:
                 for (fname, fobj), xy_arg in zip(instance_type.fields.items(), node.args):

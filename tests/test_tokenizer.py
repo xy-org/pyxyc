@@ -59,8 +59,8 @@ from xyc.tokenizer import split_tokens
         None
     ),
     (
-        "0 0xFFA 0b00111 0766 0AnyStringYouLike(36)",
-        ["0", "0xFFA", "0b00111", "0766", "0AnyStringYouLike(36)"],
+        "0 0xFFA 0b00111 0766 0AnyStringYouLike(36) 0Cafe(16)us",
+        ["0", "0xFFA", "0b00111", "0766", "0AnyStringYouLike(36)", "0Cafe(16)us"],
         None
     ),
     (

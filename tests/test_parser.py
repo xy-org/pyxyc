@@ -164,6 +164,40 @@ def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def test() {
+            a := 1.5;
+            b := 0xCAFE;
+            c := 0xCafeUS;
+            d := 0644;
+            e := 0Coffee(36);
+            f := 0ILikeTea(36)ul;
+            g := 0Cafe(16)s;
+            h := 0d;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl("a", value=ast.Const(1.5, type="Float", value_str="1.5f")),
+                    ast.VarDecl("b", value=ast.Const(0xCAFE, type="Int", value_str="0xCAFE")),
+                    ast.VarDecl("c", value=ast.Const(0xCAFE, type="Ushort", value_str="0xCafe")),
+                    ast.VarDecl("d", value=ast.Const(420, type="Int", value_str="0644")),
+                    ast.VarDecl("e", value=ast.Const(766624694, type="Int", value_str="766624694")),
+                    ast.VarDecl("f", value=ast.Const(1457390057554, type="Ulong", value_str="1457390057554ull")),
+                    ast.VarDecl("g", value=ast.Const(0xCAFE, type="Short", value_str="0xCafe")),
+                    ast.VarDecl("h", value=ast.Const(0, type="Double", value_str="0")),
+                ]
+            )
+        ]
+    ],
+])
+def test_parse_num_literals(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
