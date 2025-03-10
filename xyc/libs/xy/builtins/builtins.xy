@@ -458,3 +458,41 @@ struct FuncSelection {
 }
 
 # Miscellaneous
+
+# Bitwise Operations
+
+struct *Bits8 {
+    value: Ubyte;
+}
+
+struct *Bits16 {
+    value: Ushort;
+}
+
+struct *Bits32 {
+    value: Uint;
+}
+
+struct *Bits64 {
+    value: Ulong;
+}
+
+;; Bitwise and
+def *and(a: Bits32, b: Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+;; Bitwise or
+def *or(a: Bits32, b: Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+ 
+;; Bitwise xor.
+def *sub(a: Bits32, b: Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+;; Bitwise not
+def *cmp(a: Bits32, b: Bits32) -> Bits32 {
+    # implemented by the compiler
+}

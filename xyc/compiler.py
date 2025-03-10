@@ -45,6 +45,8 @@ class TypeObj(CompiledObj):
             and self.tags["to"] is not calltime_expr_obj:
             to_obj = self.tags["to"]
             return to_obj.c_name + "*"
+        if self.builtin and self.xy_node.name.startswith("Bits"):
+            return f"uint{self.xy_node.name[4:]}_t"
         if self.c_node is not None:
             return self.c_node.name
         return None
@@ -640,7 +642,7 @@ class CompilerContext:
     def eval_to_type(self, name: xy.Node, msg = None):
         obj = self.eval(name, msg=msg)
         if obj is None:
-            raise CompilationError(f"Cannot find type", name)
+            raise CompilationError(f"Cannot find type '{self.eval_to_id(name)}'", name)
         if isinstance(obj, ExtSymbolObj):
             return ext_symbol_to_type(obj)
         if not isinstance(obj, TypeObj):
@@ -1858,6 +1860,13 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 struct_obj = arg1_obj.inferred_type
                 if field_name not in struct_obj.fields:
                     raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
+                # XXX hack for Bit fields
+                if arg1_obj.inferred_type.builtin and arg1_obj.inferred_type.xy_node.name.startswith("Bits") and expr.arg2.name == "value":
+                        return ExprObj(
+                            xy_node=arg1_obj.xy_node,
+                            c_node=arg1_obj.c_node,
+                            inferred_type=struct_obj.fields[field_name].type_desc
+                        )
                 fget_obj = field_get(arg1_obj, struct_obj.fields[field_name], cast, cfunc, ctx)
                 return maybe_deref(fget_obj, deref, cast, cfunc, ctx)
         elif expr.op == '.=':
@@ -3111,7 +3120,14 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             ),
             inferred_type=ctx.void_obj,
         )
-    elif func_obj.builtin and len(arg_exprs) == 2 and func_obj.xy_node.name.name != "cmp":
+    elif is_builtin_func(func_obj, "cmp"):
+        res = c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op="-")
+        return ExprObj(
+            c_node=res,
+            xy_node=expr,
+            inferred_type=func_obj.rtype_obj
+        )
+    elif func_obj.builtin and len(arg_exprs) == 2:
         func_to_op_map = {
             "add": '+',
             "sub": '-',
@@ -3133,20 +3149,19 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             # TODO what if function returns multiple values if len(func_obj.xy_node.returns) == 1
             # TODO what if Ptr has an attached type
             c_arg1 = c.Cast(c_arg1, to="int8_t*")
+        c_op = func_to_op_map[func_obj.xy_node.name.name]
+        if arg_exprs[0].inferred_type.xy_node.name.startswith("Bits"):
+            if c_op == '-':
+                c_op = '^'
+            else:
+                c_op = c_op[1:]
         res = c.Expr(
             c_arg1, arg_exprs[1].c_node,
-            op=func_to_op_map[func_obj.xy_node.name.name]
+            op=c_op,
         )
         return ExprObj(
             xy_node=expr,
             c_node=res,
-            inferred_type=func_obj.rtype_obj
-        )
-    elif is_builtin_func(func_obj, "cmp"):
-        res = c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op="-")
-        return ExprObj(
-            c_node=res,
-            xy_node=expr,
             inferred_type=func_obj.rtype_obj
         )
     elif is_builtin_func(func_obj, "len"):

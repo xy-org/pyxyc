@@ -1,0 +1,22 @@
+def test() {
+    ;; Let's try to blend coffee and tea
+
+    a: mut Int = 0Coffee(36);
+    b: mut Int = 0Tea(36);
+
+    # a'bits[0] = 1;
+    # b'bits[1] = 1;
+    # b'bits[2] = true;
+    # a'bits[10] = false;
+    # a'bits[11] = !a'bits[11];
+
+    c := a'bits;
+    #c := (a'bits | b'bits)'to(Int);
+    # d := (a'bits & b'bits)'to(Int);
+    # e := (a'bits != b'bits)'to(Int);
+
+    # f := (c'bits \shiftl 3)'to(Int);
+    # g := (d'bits \shiftr 5)'to(Int);
+    # h := (e'bits \rotl 5)'to(Int);
+}
+

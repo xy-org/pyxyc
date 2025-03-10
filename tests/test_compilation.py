@@ -69,6 +69,7 @@ from xyc.compiler import CompilationError
     "move/moveOperators3",
     "splitNamespaces",
     "cinterop/usingCtypes",
+    "bitwiseOperations/bitBasics"
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
