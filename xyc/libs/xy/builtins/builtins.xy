@@ -290,6 +290,10 @@ def *to(a: Int, :Uint) -> Uint {
     # Implemented by the compiler
 }
 
+def *to(a: Int, :Ulong) -> Ulong {
+    # Implemented by the compiler
+}
+
 def *to(a: Int, b: Float) -> Float {
     # Implemented by the compiler
 }
@@ -306,6 +310,10 @@ def *to(a: Int, :Bool) -> Bool {
     # Implemented by the compiler
 }
 
+def *to(a: Bool, :Ulong) -> Bool {
+    # Implemented by the compiler
+}
+
 # Logical operations
 
 ;; Compares {a} to {b}.
@@ -314,6 +322,10 @@ def *cmp(a: Int, b: Int) -> Int {
 }
 
 def *cmp(a: Long, b: Int) -> Long {
+    # Implemented by the compiler
+}
+
+def *cmp(a: Ulong, b: Int) -> Long {
     # Implemented by the compiler
 }
 
@@ -482,8 +494,16 @@ def *and(a: Bits32, b: Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
+def *and(a: Bits64, b: Bits64) -> Bits64 {
+    # implemented by the compiler
+}
+
 ;; Bitwise or
 def *or(a: Bits32, b: Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+def *or(a: Bits64, b: Bits64) -> Bits64 {
     # implemented by the compiler
 }
  
@@ -494,5 +514,25 @@ def *sub(a: Bits32, b: Bits32) -> Bits32 {
 
 ;; Bitwise not
 def *cmp(a: Bits32, b: Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+def *cmp(a: Bits32, num: Int) -> Bits32 {
+    # implemented by the compiler
+}
+
+def *shiftl(a: Bits32, times: Int) -> Bits32 {
+    # implemented by the compiler
+}
+
+def *shiftr(a: Bits32, times: Int) -> Bits32 {
+    # implemented by the compiler
+}
+
+def *shiftl(a: Bits64, times: Int) -> Bits64 {
+    # implemented by the compiler
+}
+
+def *shiftr(a: Bits64, times: Int) -> Bits64 {
     # implemented by the compiler
 }

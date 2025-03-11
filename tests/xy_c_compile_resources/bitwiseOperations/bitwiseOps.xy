@@ -1,8 +1,29 @@
-def test() {
+def oneBit(b: pseudo any) (%b){1'to(%b.value)};
+
+#def any(b: Bits64) b.value != 0;
+
+def get(b: Bits64, i: Int) -> Bool {
+    return (b & (b'oneBit \shiftl i)).value != 0;
+}
+
+def set(b: mut Bits64, i: Int, val: Bool) -> in(b) Int {
+    b = b | ((%b){val'to(%b.value)} \shiftl i);
+    return i;
+}
+
+def testBitGetSet(i: Int) -> Bits64 {
+    b: Bits64;
+    b[0] = true;
+    b[1] = b[i];
+    b[10] = b[0] | b[12];
+    return b;
+}
+
+def testMixing() {
     ;; Let's try to blend coffee and tea
 
-    a: mut Int = 0Coffee(36);
-    b: mut Int = 0Tea(36);
+    a: mut = 0Coffee(36)l;
+    b: mut = 0Tea(36)l;
 
     # a'bits[0] = 1;
     # b'bits[1] = 1;
@@ -10,7 +31,7 @@ def test() {
     # a'bits[10] = false;
     # a'bits[11] = !a'bits[11];
 
-    c := a'bits;
+    # c := a'bits;
     #c := (a'bits | b'bits)'to(Int);
     # d := (a'bits & b'bits)'to(Int);
     # e := (a'bits != b'bits)'to(Int);

@@ -1400,6 +1400,10 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
         # for debuggin
         rtype_compiled = guess_macro_rtype(node.body, cast, ctx)
 
+        # Let's do an early check about returning a type
+        if isinstance(fobj.xy_node.body, xy.UnaryExpr) and fobj.xy_node.body.op == "%":
+            raise CompilationError("Functions cannot return a type", fobj.xy_node.body)
+
     ctx.pop_ns()
 
     if isinstance(rtype_compiled, TypeInferenceError):
@@ -1604,16 +1608,10 @@ def compile_builtins(builder, module_name, asts):
             if obj.xy_node.name in ctype_map:
                 obj.c_node.name = ctype_map[obj.xy_node.name]
                 obj.init_value = c.Const(0)
-                obj.fields = {
-                    "": VarObj(type_desc=obj, xy_node=xy.VarDecl())
-                }
-                if obj.xy_node.name.startswith("Bits"):
+                if not obj.xy_node.name.startswith("Bits"):
                     obj.fields = {
-                        "value": VarObj(
-                            type_desc=mh.ctx.data_ns[bits_to_numeric_map[obj.xy_node.name]], xy_node=xy.VarDecl(),
-                        )
+                        "": VarObj(type_desc=obj, xy_node=xy.VarDecl())
                     }
-
 
             default_tag_label_map = {
                 "TagCtor": "xyTag",
@@ -1695,7 +1693,17 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
             vardecl_obj = compile_vardecl(node, cast, cfunc, ctx)
             cfunc.body.append(vardecl_obj.c_node)
         else:
-            expr_obj = compile_expr(node, cast, cfunc, ctx)
+            expr_obj = compile_expr(node, cast, cfunc, ctx, deref=False)
+            if isinstance(expr_obj, IdxObj):
+                # a dangling index. No point in decaying it completely as the
+                # result will be discarded. But the base and index parts do need
+                # to be computed
+                base_obj = maybe_deref(expr_obj.container, True, cast, cfunc, ctx)
+                if base_obj.c_node is not None and not is_simple_cexpr(base_obj.c_node):
+                    cfunc.body.append(base_obj.c_node)
+                idx_obj = maybe_deref(expr_obj.idx, True, cast, cfunc, ctx)
+                if idx_obj.c_node is not None and not is_simple_cexpr(idx_obj.c_node):
+                    cfunc.body.append(idx_obj.c_node)
             if expr_obj.c_node is not None:
                 cfunc.body.append(expr_obj.c_node)
 
@@ -2600,6 +2608,13 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         else:
             res = tmp_obj.c_node
 
+    # optimize the resulting expression
+    if type_obj.builtin and isinstance(res, c.CompoundLiteral) and len(res.args) == 1:
+        val = res.args[0]
+        if isinstance(val, c.Cast) and val.to == res.name:
+            res = val
+        else:
+            res = c.Cast(val, res.name)
     
     return ExprObj(
         xy_node=expr,
@@ -3485,6 +3500,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 f"Failed to call macro '{ctx.eval_to_id(func_obj.xy_node.name)}'", expr,
                 notes=[(e.error_message, e.xy_node), *(e.notes if e.notes else [])]
             )
+        if isinstance(body_expr_obj, TypeObj):
+            raise CompilationError("Functions cannot return a type", expr)
         res = body_expr_obj.c_node
         rtype_obj = body_expr_obj.inferred_type
     elif (

@@ -325,6 +325,14 @@ src.xy:5:22: error: Cannot find variable 'a'
                        ^
 """
     ),
+    (
+        """def fun(x: any) %x;""",
+        """\
+src.xy:1:17: error: Functions cannot return a type
+| def fun(x: any) %x;
+                  ^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

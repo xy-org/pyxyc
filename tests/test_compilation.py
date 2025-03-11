@@ -70,7 +70,7 @@ from xyc.compiler import CompilationError
     "splitNamespaces",
     "cinterop/usingCtypes",
     "bitwiseOperations/bitBasics",
-    # "bitwiseOperations/bitwiseOps",
+    "bitwiseOperations/bitwiseOps",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
