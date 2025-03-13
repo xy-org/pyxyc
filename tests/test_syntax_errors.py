@@ -172,6 +172,13 @@ def test_invalid_slices(code, err_msg):
         }""",
         "Malformed expression"
     ),
+    (
+        """def main() -> void {
+            a'bits := 0;
+        }
+        """,
+        "Variable name must be an identifier"
+    ),
 ])
 def test_invalid_expression(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):

@@ -306,6 +306,14 @@ def *to(a: Int, b: Double) -> Double {
     # Implemented by the compiler
 }
 
+def *to(a: Long, b: Ulong) -> Double {
+    # Implemented by the compiler
+}
+
+def *to(a: Ulong, b: Long) -> Double {
+    # Implemented by the compiler
+}
+
 def *to(a: Int, :Bool) -> Bool {
     # Implemented by the compiler
 }
@@ -318,6 +326,10 @@ def *to(a: Bool, :Ulong) -> Bool {
 
 ;; Compares {a} to {b}.
 def *cmp(a: Int, b: Int) -> Int {
+    # Implemented by the compiler
+}
+
+def *cmp(a: Bool, b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
@@ -512,8 +524,16 @@ def *sub(a: Bits32, b: Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
+def *sub(a: Bits64, b: Bits64) -> Bits64 {
+    # implemented by the compiler
+}
+
 ;; Bitwise not
 def *cmp(a: Bits32, b: Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+def *cmp(a: Bits64, b: Bits64) -> Bits64 {
     # implemented by the compiler
 }
 

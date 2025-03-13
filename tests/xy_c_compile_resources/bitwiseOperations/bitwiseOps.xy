@@ -19,25 +19,43 @@ def testBitGetSet(i: Int) -> Bits64 {
     return b;
 }
 
+# --------------------------------------
+
+struct Bits {}
+
+def bits(a: Long) -> in(a) Bits {
+    return Bits{};
+}
+
+def get(a: Long, b: pseudo Bits) -> Bits64 {
+    return Bits64{a'to(Ulong)};
+}
+
+def set(num: mut Long, :Bits, i: Int, val: Bool) {
+    bits : mut = num'bits;
+    bits[i] = val;
+    num = bits.value'to(Long);
+}
+
+def set(num: mut Long, :Bits, bits: Bits64) num = bits.value'to(Long);
+
 def testMixing() {
     ;; Let's try to blend coffee and tea
 
     a: mut = 0Coffee(36)l;
     b: mut = 0Tea(36)l;
 
-    # a'bits[0] = 1;
-    # b'bits[1] = 1;
-    # b'bits[2] = true;
-    # a'bits[10] = false;
-    # a'bits[11] = !a'bits[11];
+    a'bits[60] = true;
+    b'bits[1] = true;
+    b'bits[2] = true;
+    a'bits[10] = b'bits[10];
+    a'bits[11] = !a'bits[11];
 
-    # c := a'bits;
-    #c := (a'bits | b'bits)'to(Int);
-    # d := (a'bits & b'bits)'to(Int);
-    # e := (a'bits != b'bits)'to(Int);
+    c := (a'bits | b'bits);
+    d := (a'bits & b'bits).value;
+    #e := (a'bits != b'bits).value;
+    f := (a'bits - b'bits).value;
 
-    # f := (c'bits \shiftl 3)'to(Int);
-    # g := (d'bits \shiftr 5)'to(Int);
-    # h := (e'bits \rotl 5)'to(Int);
+    g := (d'to(Long)'bits \shiftr 5).value;
 }
 

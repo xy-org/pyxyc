@@ -327,19 +327,21 @@ class FuncSpace:
             notes=[(f"Candidates are:\n{candidates}", None)]
         )
     
-    def find(self, node, args_inferred_types, ctx, partial_matches=False):
+    def find(self, node, args_inferred_types, ctx, partial_matches=False, return_no_matches=False):
         candidate_fobjs = self.findAll(node, args_inferred_types, ctx, partial_matches)
         if len(candidate_fobjs) > 1:
             self.report_multiple_matches(candidate_fobjs, node, args_inferred_types, ctx)
         elif len(candidate_fobjs) == 1:
                 return candidate_fobjs[0]
-        else:
+        elif not return_no_matches:
             candidate_fobjs = []
             space = self
             while space is not None:
                 candidate_fobjs.extend(space._funcs)
                 space = space.parent_space
             self.report_no_matches(candidate_fobjs, node, args_inferred_types, ctx)
+        else:
+            return None
 
     def findAll(self, node, args_inferred_types, ctx, partial_matches=False):
         space = self
@@ -2251,15 +2253,33 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
     obj = idx_obj.container
     struct_obj = obj if isinstance(obj, TypeObj) else obj.inferred_type
     if not (struct_obj.is_enum or struct_obj.is_flags):
-        if idx_obj.container is global_memory:
-            args = [idx_obj.idx]
+        idx_chain = idx_flatten_chain(idx_obj, cast, cfunc, ctx)
+        arg_objs = ArgList(idx_chain)
+        get_fobj = maybe_find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
+        if get_fobj is None:
+            # import pdb; pdb.set_trace()
+            shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
+            if shortened_idx is None:
+                # call find_func_obj just to generate a nice error message
+                find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
+                raise CompilationError("Should not be reached", idx_obj.xy_node)
+            return idx_get(shortened_idx, cast, cfunc, ctx)
         else:
-            args = [idx_obj.container, idx_obj.idx]
-        return find_and_call(
-            "get",
-            ArgList(args),
-            cast, cfunc, ctx, idx_obj.xy_node
-        )
+            # import pdb; pdb.set_trace()
+            args_prepared = ArgList([
+                maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
+            ])
+            #if get_fobj.move_args_to_temps:
+            #    args_prepared.args.append(maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx))
+            #else:
+            #    args_prepared.args.append(arg_objs.args[-1])
+            args_prepared.args.append(arg_objs.args[-1])
+            return do_compile_fcall(
+                idx_obj.xy_node,
+                get_fobj,
+                arg_exprs=args_prepared,
+                cast=cast, cfunc=cfunc, ctx=ctx
+            )
     elif struct_obj.is_enum:
         # field of an enum
         if isinstance(idx_obj.container, TypeObj) or isinstance(idx_obj.container, ExprObj) and struct_obj is obj.compiled_obj:
@@ -2308,22 +2328,32 @@ def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
         )
 
     if not idx_obj.container.inferred_type.is_flags:
-        arg_objs = ArgList([
-            idx_obj.container,
-            maybe_move_to_temp(idx_obj.idx, cast, cfunc, ctx),
-            val_obj,
-        ])
-        fobj = find_func_obj("set", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
-
-        if fobj.move_args_to_temps:
-            arg_objs.args[-1] = maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx)
-
-        return do_compile_fcall(
-            idx_obj.xy_node,
-            fobj,
-            arg_exprs=arg_objs,
-            cast=cast, cfunc=cfunc, ctx=ctx
-        )
+        idx_chain = idx_flatten_chain(idx_obj, cast, cfunc, ctx)
+        idx_chain.append(val_obj)
+        arg_objs = ArgList(idx_chain)
+        set_fobj = maybe_find_func_obj("set", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
+        if set_fobj is None:
+            # import pdb; pdb.set_trace()
+            shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
+            if shortened_idx is None:
+                import pdb; pdb.set_trace()
+                raise CompilationError("Cannot set index", idx_obj.xy_node)
+            return idx_set(shortened_idx, val_obj, cast, cfunc, ctx)
+        else:
+            # import pdb; pdb.set_trace()
+            args_prepared = ArgList([
+                maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
+            ])
+            if set_fobj.move_args_to_temps:
+                args_prepared.args.append(maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx))
+            else:
+                args_prepared.args.append(arg_objs.args[-1])
+            return do_compile_fcall(
+                idx_obj.xy_node,
+                set_fobj,
+                arg_exprs=args_prepared,
+                cast=cast, cfunc=cfunc, ctx=ctx
+            )
     else:
         return ExprObj(
             xy_node=idx_obj.xy_node,
@@ -2335,6 +2365,55 @@ def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
             )
         )
     
+def idx_flatten_chain(idx_obj: IdxObj, cast, cfunc, ctx):
+    if is_ptr_type(idx_obj.idx.inferred_type, ctx):
+        return [idx_obj]
+    res = [idx_obj.idx]
+    idx_obj = idx_obj.container
+    while isinstance(idx_obj, IdxObj) and not is_ptr_type(idx_obj.idx.inferred_type, ctx):
+        res.append(idx_obj.idx)
+        idx_obj = idx_obj.container
+    if isinstance(idx_obj, IdxObj) and is_ptr_type(idx_obj.idx.inferred_type, ctx):
+        res.append(idx_obj)
+    if not isinstance(idx_obj, IdxObj) and idx_obj is not global_memory and idx_obj is not param_container:
+        res.append(idx_obj)
+    return res[::-1]
+
+def idx_iter(idx_obj: IdxObj):
+    while (idx_obj, IdxObj):
+        yield idx_obj
+        idx_obj = idx_obj.container
+
+def idx_find_widest_get(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
+    # XXX This entire function is hot garbage
+    chain = idx_flatten_chain(idx_obj, cast, cfunc, ctx)
+    prev_chain = []
+    for i, chain_idx in zip(range(len(chain)-1), idx_iter(idx_obj)):
+        arg_objs = ArgList(chain[:len(chain)-i])
+        if isinstance(arg_objs.args[-1], VarObj):
+            res = ExprObj(
+                c_node=chain_idx.c_node,
+                xy_node=chain_idx.xy_node,
+                inferred_type=arg_objs.args[-1].type_desc,
+                compiled_obj=chain_idx
+            )
+        else:
+            get_fobj = maybe_find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
+            if get_fobj is None:
+                prev_chain.append(chain_idx)
+                continue
+            res = idx_get(chain_idx, cast, cfunc, ctx)
+        for j, prev_idx in zip(range(i, 0, -1), prev_chain[::-1]):
+            res = IdxObj(
+                xy_node=idx_obj.xy_node,
+                container=res,
+                idx=chain[len(chain)-j],
+                inferred_type=prev_idx.inferred_type
+            )
+            #res = idx_setup(res, cast, cfunc, ctx)
+        return res
+    return None
+
 def idx_setup(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
     if idx_obj.inferred_type is not None:
         return idx_obj
@@ -2343,8 +2422,13 @@ def idx_setup(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
         idx_obj.inferred_type = idx_obj.idx.inferred_type.func_obj.rtype_obj
     else:
         idx_obj.container = maybe_move_to_temp(idx_obj.container, cast, cfunc, ctx)
+
+        tmp_names = ctx.tmp_names
+        ctx.tmp_names = TmpNames()
         deidx_obj = idx_get(idx_obj, c.Ast(), c.Block(), ctx)
         idx_obj.inferred_type = deidx_obj.inferred_type
+        ctx.tmp_names = tmp_names
+
     return idx_obj
 
 def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ctx: CompilerContext):
@@ -3086,6 +3170,20 @@ def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
         fobj,
         arg_exprs=arg_objs,
         cast=cast, cfunc=cfunc, ctx=ctx
+    )
+
+def maybe_find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
+    fspace = ctx.eval_to_fspace(
+        xy.Id(name, src=xy_node.src, coords=xy_node.coords),
+    )
+    if fspace is None:
+        return None
+
+    return fspace.find(
+        xy.FuncCall(xy.Id(name), src=xy_node.src, coords=xy_node.coords),
+        ArgList([obj.inferred_type for obj in arg_objs]),
+        ctx,
+        return_no_matches=True,
     )
 
 def find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
@@ -4584,6 +4682,12 @@ def compile_binop(binexpr, cast, cfunc, ctx):
                 arg2=arg1_eobj.c_node.arg2,
                 op=binexpr.op
             )
+            if arg1_eobj.inferred_type is ctx.bool_obj and isinstance(c_res.arg2, c.Const) and c_res.arg2.value == 0:
+                c_res = c.UnaryExpr(
+                    arg=arg1_eobj.c_node.arg1,
+                    op={"==": "!", "!=": "", ">": "", "<": "ERR", "<=": "ERR", ">=": "ERR"}[binexpr.op],
+                    prefix=True
+                )
             return ExprObj(binexpr, c_res, inferred_type=ctx.bool_obj)
         if isinstance(arg1_eobj.c_node, c.Expr) and arg1_eobj.c_node.op == "^":
             c_res = c.UnaryExpr(
