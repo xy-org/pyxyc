@@ -2,26 +2,26 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef int32_t enums_Status;
+typedef struct enums_Status enums_Status;
 
-#define enums_Status__pending 0
-#define enums_Status__canceled 1
-#define enums_Status__processed 2
+struct enums_Status {
+    int32_t m_value;
+};
 
 void enums_printStatus(enums_Status st) {
-    if (st == enums_Status__pending) {
-    } else if (st == enums_Status__canceled) {
-    } else if (st == enums_Status__processed) {
+    if (st.m_value == (enums_Status){1}.m_value) {
+    } else if (st.m_value == (enums_Status){2}.m_value) {
+    } else if (st.m_value == (enums_Status){4}.m_value) {
     }
 }
 
 void enums_testEnums(int32_t a) {
-    const enums_Status orderStatus = enums_Status__pending;
+    const enums_Status orderStatus = (enums_Status){1};
     enums_printStatus(orderStatus);
-    enums_printStatus(enums_Status__processed);
-    enums_Status st = enums_Status__canceled;
+    enums_printStatus((enums_Status){4});
+    enums_Status st = (enums_Status){2};
     if (a > 0) {
-        st = enums_Status__processed;
+        st = (enums_Status){4};
     }
     enums_printStatus(st);
 }

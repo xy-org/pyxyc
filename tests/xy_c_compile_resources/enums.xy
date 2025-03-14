@@ -1,12 +1,16 @@
 # --- Type Enums ---
 
-struct Status~Enum {
-    pending : pseudo;
-    canceled : pseudo;
-    processed : pseudo;
-
+struct Status {
     value: Int;
+
+    pending : pseudo = Status{1};
+    canceled : pseudo = Status{2};
+    processed : pseudo = Status{4};
 }
+
+def get(st: Status, test: Status) st.value == test.value;
+def set(st: mut Status, val: Status) st.value = test.value;
+def cmp(l: Status, r: Status) cmp(l.value, r.value);
 
 def printStatus(st: Status) {
     if (st.pending) {
@@ -22,9 +26,6 @@ def testEnums(a: Int) {
     orderStatus := Status.pending;
     printStatus(orderStatus);
 
-    # Maybe implement this shortcutany
-    # It may be useful because there is no need for the Status to be spelt out.
-    # printStatus(.processed);
     printStatus(Status.processed);
 
     st : mut = Status.canceled;

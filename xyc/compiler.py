@@ -221,6 +221,7 @@ global_memory = ExprObj(
     inferred_type=global_memory_type,
 )
 param_container = VarObj()
+recursive_pseudo_field_type_obj = TypeObj(c_node=c.Type("PLACEHOLDER"), xy_node=field)
 
 @dataclass
 class ArgList:
@@ -1177,7 +1178,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             if field.value is None:
                 raise CompilationError("All pseudo fields must have an explicit value")
             default_value_obj = None
-            field_type_obj = TypeObj(c_node=c.Type("PLACEHOLDER"), xy_node=field)
+            field_type_obj = recursive_pseudo_field_type_obj
         elif field.value is not None:
             default_value_obj = ctx.eval(field.value)
             if field_type_obj is None:
@@ -2660,7 +2661,10 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
     for i, arg in enumerate(expr_args):
         val_obj = compile_expr(arg, cast, cfunc, ctx)
         named_objs[field_objs[i].xy_node.name] = val_obj
-        if field_objs[i].xy_node.is_pseudo:
+        field_obj = field_objs[i]
+        if field_obj.type_desc is recursive_pseudo_field_type_obj:
+            raise CompilationError(f"Cannot set value for pseudo field `{field_objs[i].xy_node.name}`. Pseudo fields cannot initialize other pseudo fields.", expr)
+        if field_obj.xy_node.is_pseudo:
             any_pseudos = True
         if not any_pseudos:
             pos_objs[i] = val_obj
@@ -2671,7 +2675,10 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         if name in named_objs:
             raise CompilationError(f"Field {name} already set", arg)
         named_objs[name] = compile_expr(arg, cast, cfunc, ctx)
-        if type_obj.fields[name].xy_node.is_pseudo:
+        field_obj = type_obj.fields[name]
+        if field_obj.type_desc is recursive_pseudo_field_type_obj:
+            raise CompilationError(f"Cannot set value for pseudo field `{name}`. Pseudo fields cannot initialize other pseudo fields.", expr)
+        if field_obj.xy_node.is_pseudo:
             any_pseudos = True
         if not any_pseudos:
             i = name_to_pos[name]

@@ -37,7 +37,6 @@ from xyc.compiler import CompilationError
     "errors",
     "nameCollisions",
     "opOverloading",
-    "enums",
     "globalConstants",
     "funcs",
     "stringInterpolation",
@@ -70,6 +69,7 @@ from xyc.compiler import CompilationError
     "cinterop/usingCtypes",
     "bitwiseOperations/bitBasics",
     "bitwiseOperations/bitwiseOps",
+    "enums",
     "flags",
 ])
 def test_c_compilation(resource_dir, filename):
