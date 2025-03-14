@@ -46,7 +46,7 @@ from xyc.compiler import CompilationError
     "indices/pseudoFields",
     "guards",
     "indices/indices",
-    "refValue",
+    "indices/refValue",
     "dtors1",
     "dtors2",
     "paramsVsArgs",
