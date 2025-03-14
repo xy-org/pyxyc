@@ -1252,85 +1252,6 @@ def compile_pseudo_fields(type_obj, ast, cast, ctx):
             fieldof_obj=type_obj,
         )
 
-def compile_enumflags_fields(type_obj, ast, cast, ctx):
-    node = type_obj.xy_node
-
-    base_field = None
-
-    # first we need to find the one non pseudo field:
-    for field in node.fields:
-        if not field.is_pseudo:
-            if base_field is None:
-                base_field = field
-            else:
-                raise CompilationError("Enums can have only 1 non pseudo field", field)
-
-    base_type_obj = None
-    if base_field.type is not None:
-        base_type_obj = find_type(base_field.type, cast, ctx)
-        fully_compile_type(base_type_obj, cast, ast, ctx)
-    else:
-        raise CompilationError("An explicit type must be specified", field)
-
-    if base_field.value is not None:
-        raise CompilationError(
-            "The default value for the enum is the value associated "
-            "with the first flag", field)
-
-    type_obj.c_node.typename = base_type_obj.c_name
-
-    # go though the pseudo fields
-    fields = {}
-    next_num = 0
-    init_value = None
-
-    for field in node.fields:
-        if not field.is_pseudo:
-            # this is the base field
-            fields[field.name] = VarObj(
-                xy_node=field,
-                c_node=type_obj.c_node,
-                type_desc=base_type_obj,
-            )
-            continue
-
-        if field.type is not None:
-            field_type = find_type(field.type, cast, ctx)
-            if field_type is not base_type_obj:
-                raise CompilationError("Type mismatch", field)
-
-        c_value = c.Const(next_num)
-        if field.value is not None:
-            state_obj = ctx.eval(field.value)
-            c_value = state_obj.c_node
-            if isinstance(c_value, c.Const) and isinstance(c_value.value, (float, int)):
-                next_num = c_value.value
-        if init_value is None:
-            init_value = c_value
-
-        cfield = c.Define(
-            f"{type_obj.c_node.name}__{field.name}",
-            value=c_value,
-        )
-        fields[field.name] = VarObj(
-            xy_node=field,
-            c_node=cfield,
-            type_desc=type_obj,
-            default_value_obj=ExprObj(
-                xy_node=field,
-                c_node=c.Id(cfield.name),
-                inferred_type=type_obj,
-            )
-        )
-        cast.consts.append(cfield)
-
-        next_num += 1
-    type_obj.fields = fields
-
-    if init_value is None:
-        init_value = base_type_obj.init_value
-    type_obj.init_value = init_value
-
 def compile_func_prototype(fobj: FuncObj, cast, ctx):
     if fobj.params_compiled or fobj.prototype_compiled:
         return fobj
@@ -2608,50 +2529,6 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         else:
             res = c.Cast(val, res.name)
     
-    return ExprObj(
-        xy_node=expr,
-        c_node=res,
-        inferred_type=type_obj
-    )
-
-def do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: CompilerContext):
-    res = None if tmp_obj is None else c.Id(tmp_obj.c_node.name)
-    field_objs = list(type_obj.fields.values())
-    for i, arg in enumerate(expr.args):
-        if field_objs[i].xy_node.is_pseudo:
-            val_obj = field_get(type_obj, field_objs[i], cast, cfunc, ctx)
-            val_obj = maybe_deref(val_obj, True, cast, cfunc, ctx)
-            if res is not None:
-                res = c.Expr(
-                    res,
-                    val_obj.c_node,
-                    op="|"
-                )
-            else:
-                res = val_obj.c_node
-        else:
-            res = compile_expr(arg, cast, cfunc, ctx).c_node
-
-    for fname, arg in expr.kwargs.items():
-        if fname not in type_obj.fields:
-            raise CompilationError(f"No field '{fname}'", arg)
-        if type_obj.fields[fname].xy_node.is_pseudo:
-            val_obj = field_get(type_obj, type_obj.fields[fname], cast, cfunc, ctx)
-            val_obj = maybe_deref(val_obj, True, cast, cfunc, ctx)
-            if res is not None:
-                res = c.Expr(
-                    res,
-                    val_obj.c_node,
-                    op="|"
-                )
-            else:
-                res = val_obj.c_node
-        else:
-            res = compile_expr(arg, cast, cfunc, ctx).c_node
-
-    if res is None:
-        res = c.Const(0)
-
     return ExprObj(
         xy_node=expr,
         c_node=res,

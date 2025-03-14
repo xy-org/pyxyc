@@ -1197,10 +1197,6 @@ def parse_struct(itoken: TokenIter):
         if itoken.check(";;"):
             comment = parse_ml_comment(itoken).comment
         field = parse_expression(itoken, is_struct=True)
-        if isinstance(field, Id):
-            # Id's are VarDecls in the context of enums and flags
-            field = VarDecl(field.name, tags=field.tags, 
-                            src=field.src, coords=field.coords)
         if not isinstance(field, VarDecl):
             raise ParsingError("Unexpected expression in struct definition. Only variable declarations are valid.", itoken)
         node.fields.append(field)

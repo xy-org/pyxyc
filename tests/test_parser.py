@@ -3060,9 +3060,9 @@ def test_global_constants(code, exp_ast):
     [
         """
         struct TaskStatus~Enum {
-            start;
-            pending;
-            end;
+            start := 0;
+            pending := 1;
+            end := 2;
         }
 
         def test() {
@@ -3082,9 +3082,9 @@ def test_global_constants(code, exp_ast):
                     ]
                 ),
                 fields=[
-                    ast.VarDecl("start"),
-                    ast.VarDecl("pending"),
-                    ast.VarDecl("end"),
+                    ast.VarDecl("start", value=ast.Const(0)),
+                    ast.VarDecl("pending", value=ast.Const(1)),
+                    ast.VarDecl("end", value=ast.Const(2)),
                 ]
             ),
             ast.FuncDef(
