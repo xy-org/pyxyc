@@ -498,7 +498,7 @@ def parse_expression(
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
         if token in {"true", "false"}:
-            arg1 = Const(token == "true", token, "Bool")
+            arg1 = Const(token == "true", token, "Bool", src=itoken.src, coords=tk_coords)
         elif "." in token or (token[0] >= '0' and token[0] <= '9'):
             arg1 = parse_num_const(token, tk_coords, itoken)
         elif token == '"':
@@ -995,7 +995,7 @@ def parse_str_literal(prefix, prefix_start, itoken):
 
     if part_start < part_end:
         lit = itoken.src.code[part_start:part_end]
-        res.parts.append(Const(lit))
+        res.parts.append(Const(lit, src=itoken.src, coords=itoken.peak_coords()))
     
     res.coords = (prefix_start, part_end+1)
     res.full_str = itoken.src.code[prefix_start+len(prefix)+1:part_end]

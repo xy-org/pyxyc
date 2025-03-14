@@ -1113,6 +1113,7 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     type_obj.is_flags = type_obj.tags.get("xy_flags", -1) is ctx.flags_obj
 
     target_cast = None
+    compile_pseudo = False
     if isinstance(type_obj, ArrTypeObj):
         fully_compile_type(type_obj.base_type_obj, cast, ast, ctx)
         type_obj.c_node = c.Type(
@@ -1148,6 +1149,7 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     elif isinstance(type_obj, FuncTypeObj):
         type_obj.init_value = c.Const(0)
     elif not (type_obj.is_enum or type_obj.is_flags):
+        compile_pseudo = True
         compile_struct_fields(type_obj, ast, cast, ctx)
     else:
         compile_enumflags_fields(type_obj, ast, cast, ctx)
@@ -1156,6 +1158,9 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     type_obj.fully_compiled = True
     if target_cast is not None:
         target_cast.append(type_obj.c_node)
+
+    if compile_pseudo:
+        compile_pseudo_fields(type_obj, ast, cast, ctx)
 
 def compile_struct_fields(type_obj, ast, cast, ctx):
     node = type_obj.xy_node
@@ -1171,12 +1176,8 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
         if field.is_pseudo:
             if field.value is None:
                 raise CompilationError("All pseudo fields must have an explicit value")
-            default_value_obj = ctx.eval(field.value)
-            default_value_obj.c_node = compile_expr(field.value, cast, None, ctx).c_node
-            if field_type_obj is None:
-                field_type_obj = default_value_obj.inferred_type
-            elif field_type_obj is not default_value_obj.inferred_type:
-                raise CompilationError("Explicit and inferred types differ", field)
+            default_value_obj = None
+            field_type_obj = TypeObj(c_node=c.Type("PLACEHOLDER"), xy_node=field)
         elif field.value is not None:
             default_value_obj = ctx.eval(field.value)
             if field_type_obj is None:
@@ -1198,6 +1199,8 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             name=mangle_field(field),
             qtype=c.QualType(field_ctype)
         )
+        if field.name in fields:
+            raise CompilationError("Field already defined", field)
         fields[field.name] = VarObj(
             xy_node=field,
             c_node=cfield,
@@ -1224,6 +1227,38 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
         args=c_init_args
     )
     type_obj.is_init_value_zeros = all_zeros
+
+def compile_pseudo_fields(type_obj, ast, cast, ctx):
+    fields = type_obj.fields
+    for field in type_obj.xy_node.fields:
+        if not field.is_pseudo:
+            continue
+        field_type_obj = None
+        if field.type is not None:
+            field_type_obj = find_type(field.type, cast, ctx)
+
+        if field.value is None:
+            raise CompilationError("All pseudo fields must have an explicit value")
+        default_value_obj = ctx.eval(field.value)
+        default_value_obj.c_node = compile_expr(field.value, cast, None, ctx).c_node
+        if field_type_obj is None:
+            field_type_obj = default_value_obj.inferred_type
+        elif field_type_obj is not default_value_obj.inferred_type:
+            raise CompilationError("Explicit and inferred types differ", field)
+
+        field_ctype = field_type_obj.c_node if isinstance(field_type_obj.c_node, c.Type) else field_type_obj.c_name
+        cfield = c.VarDecl(
+            name=mangle_field(field),
+            qtype=c.QualType(field_ctype)
+        )
+        fields[field.name] = VarObj(
+            xy_node=field,
+            c_node=cfield,
+            type_desc=field_type_obj,
+            is_pseudo=field.is_pseudo,
+            default_value_obj=default_value_obj,
+            fieldof_obj=type_obj,
+        )
 
 def compile_enumflags_fields(type_obj, ast, cast, ctx):
     node = type_obj.xy_node
@@ -1890,8 +1925,15 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                             c_node=arg1_obj.c_node,
                             inferred_type=struct_obj.fields[field_name].type_desc
                         )
-                fget_obj = field_get(arg1_obj, struct_obj.fields[field_name], cast, cfunc, ctx)
-                return maybe_deref(fget_obj, deref, cast, cfunc, ctx)
+                is_field_of_type = isinstance(arg1_obj.compiled_obj, TypeObj)
+                if not is_field_of_type:
+                    # normal get of an object
+                    fget_obj = field_get(arg1_obj, struct_obj.fields[field_name], cast, cfunc, ctx)
+                    return maybe_deref(fget_obj, deref, cast, cfunc, ctx)
+                else:
+                    # getting a field of a type
+                    field_obj = struct_obj.fields[field_name]
+                    return field_obj.default_value_obj
         elif expr.op == '.=':
             if not (isinstance(expr.arg2, xy.StructLiteral) and expr.arg2.name is None):
                 raise CompilationError("The right hand side of the '.=' operator must be an anonymous struct literal")
@@ -2335,6 +2377,8 @@ def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
         if set_fobj is None:
             # import pdb; pdb.set_trace()
             shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
+            if not isinstance(shortened_idx, IdxObj):
+                raise CompilationError("Cannot set index", idx_obj.xy_node)
             if shortened_idx is None:
                 import pdb; pdb.set_trace()
                 raise CompilationError("Cannot set index", idx_obj.xy_node)

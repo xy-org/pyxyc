@@ -290,6 +290,10 @@ def *to(a: Int, :Uint) -> Uint {
     # Implemented by the compiler
 }
 
+def *to(a: Bool, :Int) -> Int {
+    # Implemented by the compiler
+}
+
 def *to(a: Int, :Ulong) -> Ulong {
     # Implemented by the compiler
 }
@@ -499,6 +503,16 @@ struct *Bits32 {
 
 struct *Bits64 {
     value: Ulong;
+}
+
+;; Conversion
+
+def *to(a: Int, :Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+def *to(a: Bits32, :Int) -> Int {
+    # implemented by the compiler
 }
 
 ;; Bitwise and

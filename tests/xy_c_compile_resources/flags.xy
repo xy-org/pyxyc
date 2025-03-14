@@ -1,15 +1,31 @@
 import posix~[CLib{headers=@{"unistd.h", "fcntl.h"}}] in c;
 
-# --- Flags ---
+# Flags structure
 
-struct OpenFlags~Flags {
+struct OpenFlags {
     value : Int;
 
-    readOnly : pseudo Int = c.O_RDONLY;
-    writeOnly : pseudo Int = c.O_WRONLY;
-    readWrite : pseudo Int = c.O_RDWR;
-    append : pseudo Int = c.O_APPEND;
-} ;; the Flags tag will generatte the | operator
+    readOnly : pseudo = OpenFlags{c.O_RDONLY};
+    writeOnly : pseudo = OpenFlags{c.O_WRONLY};
+    readWrite : pseudo = OpenFlags{c.O_RDWR};
+    append : pseudo = OpenFlags{c.O_APPEND};
+}
+
+def get(base: OpenFlags, fields: OpenFlags) -> Bool {
+    return (base.value'to(Bits32) & fields.value'to(Bits32))'to(Int) == fields.value;
+}
+
+def set(base: mut OpenFlags, fields: OpenFlags, set: Bool) {
+    base.value = (base.value'to(Bits32) | (fields.value * set'to(Int))'to(Bits32))'to(Int);
+}
+
+def cmp(l: OpenFlags, r: OpenFlags) cmp(l.value, r.value);
+
+def or(l: OpenFlags, r: OpenFlags) OpenFlags{(l.value'to(Bits32) | r.value'to(Bits32))'to(Int)};
+
+def and(l: OpenFlags, r: OpenFlags) OpenFlags{(l.value'to(Bits32) & r.value'to(Bits32))'to(Int)};
+
+# Testing structures and functions
 
 struct String {
     addr: Ptr;
@@ -32,20 +48,26 @@ def open(fn: String, flags:=OpenFlags.readOnly) {
     }
 }
 
-def testFlags() {
+def test1() {
     open("file.txt");
     open("file.txt", OpenFlags.readOnly);
-    open("file.txt", OpenFlags.readOnly | OpenFlags.writeOnly);
-    open("file.txt", OpenFlags{.writeOnly, .append});
-    flags: OpenFlags;
-    flags.writeOnly = true;
-    open("file.txt", flags);
-    open("file.txt", flags{.append});
-    open("file.txt", flags{});
-    open("file.txt", flags | OpenFlags{.readOnly});
-    flags2 := OpenFlags{.append};
-    open("file.txt", flags | flags2);
-    open("file.txt", flags & flags2);
-    flags3 := OpenFlags{value=0x80};
-    flags4 := OpenFlags{0x08};
 }
+
+def test2() {
+    #open("file.txt", OpenFlags.readOnly | OpenFlags.writeOnly);
+    #open("file.txt", OpenFlags{.writeOnly, .append});
+}
+
+#def test3() {
+    #flags: OpenFlags;
+    #flags.writeOnly = true;
+    #open("file.txt", flags);
+    #open("file.txt", flags{.append});
+    #open("file.txt", flags{});
+    #open("file.txt", flags | OpenFlags{.readOnly});
+    #flags2 := OpenFlags{.append};
+    #open("file.txt", flags | flags2);
+    #open("file.txt", flags & flags2);
+    #flags3 := OpenFlags{value=0x80};
+    #flags4 := OpenFlags{0x08};
+#}

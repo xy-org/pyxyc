@@ -5,11 +5,11 @@
 typedef struct pseudoFields_Point pseudoFields_Point;
 typedef struct pseudoFields_CoordField pseudoFields_CoordField;
 
-struct pseudoFields_CoordField {
-    uint32_t m_i;
-};
 struct pseudoFields_Point {
     float m_coords[3];
+};
+struct pseudoFields_CoordField {
+    uint32_t m_i;
 };
 
 float pseudoFields_get(pseudoFields_Point p, pseudoFields_CoordField f) {
