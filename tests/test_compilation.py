@@ -43,9 +43,9 @@ from xyc.compiler import CompilationError
     "namedArguments",
     "namedFields",
     "positionalTags",
-    "pseudoFields",
+    "indices/pseudoFields",
     "guards",
-    "indices",
+    "indices/indices",
     "refValue",
     "dtors1",
     "dtors2",
@@ -69,8 +69,8 @@ from xyc.compiler import CompilationError
     "cinterop/usingCtypes",
     "bitwiseOperations/bitBasics",
     "bitwiseOperations/bitwiseOps",
-    "enums",
-    "flags",
+    "indices/enums/enums",
+    "indices/flags/flags",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
