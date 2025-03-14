@@ -70,6 +70,7 @@ from xyc.compiler import CompilationError
     "bitwiseOperations/bitBasics",
     "bitwiseOperations/bitwiseOps",
     "indices/enums/enums",
+    "indices/enums/enums2",
     "indices/flags/flags",
 ])
 def test_c_compilation(resource_dir, filename):

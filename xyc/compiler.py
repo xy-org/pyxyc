@@ -1105,6 +1105,7 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
 def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     if type_obj.fully_compiled:
         return
+    type_obj.fully_compiled = True
     
     tag_specs, tag_objs = ctx.split_and_eval_tags(type_obj.xy_node.tags, cast, ast)
     type_obj.tags.update(tag_objs)
@@ -1156,7 +1157,6 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
         compile_enumflags_fields(type_obj, ast, cast, ctx)
         autogenerate_ops(type_obj, ast, cast, ctx)
 
-    type_obj.fully_compiled = True
     if target_cast is not None:
         target_cast.append(type_obj.c_node)
 
@@ -1173,6 +1173,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
         field_type_obj = None
         if field.type is not None:
             field_type_obj = find_type(field.type, cast, ctx)
+            fully_compile_type(field_type_obj, cast, ast, ctx)
 
         if field.is_pseudo:
             if field.value is None:
@@ -1181,6 +1182,9 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             field_type_obj = recursive_pseudo_field_type_obj
         elif field.value is not None:
             default_value_obj = ctx.eval(field.value)
+            if isinstance(default_value_obj, InstanceObj):
+                # I don't like that. Why not just call compile_expr
+                default_value_obj.c_node = compile_expr(field.value, cast, None, ctx).c_node
             if field_type_obj is None:
                 field_type_obj = default_value_obj.inferred_type
             elif field_type_obj is not default_value_obj.inferred_type:

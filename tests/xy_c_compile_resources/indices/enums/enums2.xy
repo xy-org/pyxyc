@@ -1,0 +1,26 @@
+struct Color {
+    r: Float;
+    g: Float;
+    b: Float;
+}
+
+def printColor(c: Color) {
+    # ...
+}
+
+struct PaletteType {
+    red    := Color{1f, 0f, 0f};
+    green  := Color{0f, 2f, 0f};
+    blue   := Color{0f, 0f, 1f};
+    orange := Color{1f, 0.647f, 0f};
+    white  := Color{1f, 1f, 1f};
+}
+
+Palette := PaletteType{};
+
+def test() {
+    c1 := Color{.2f, .2f, 1f};
+    c2 := Palette.blue;
+    printColor(c1);
+    printColor(c2);
+}
