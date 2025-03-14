@@ -353,6 +353,18 @@ src.xy:2:13: error: Recursive structs are not possible
               ^^^^^
 """
     ),
+    (
+        """struct MyStruct {
+            field : pseudo = MyStruct{0};
+
+            value: Int;
+        }""",
+        """\
+src.xy:2:39: error: Cannot set value for pseudo field `field`. Pseudo fields cannot initialize other pseudo fields.
+|             field : pseudo = MyStruct{0};
+                                        ^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
