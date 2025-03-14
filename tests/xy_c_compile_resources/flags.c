@@ -16,16 +16,11 @@ struct flags_String {
 };
 
 bool flags_get(flags_OpenFlags base, flags_OpenFlags fields) {
-    uint32_t tmp_arg0 = (uint32_t)base.m_value;
-    uint32_t tmp_arg1 = tmp_arg0 & (uint32_t)fields.m_value;
-    return (int32_t)tmp_arg1 == fields.m_value;
+    return (int32_t)((uint32_t)base.m_value & (uint32_t)fields.m_value) == fields.m_value;
 }
 
 void flags_set(flags_OpenFlags* base, flags_OpenFlags fields, bool set) {
-    int32_t tmp_arg0 = fields.m_value * (int32_t)set;
-    uint32_t tmp_arg1 = (uint32_t)base->m_value;
-    uint32_t tmp_arg2 = tmp_arg1 | (uint32_t)tmp_arg0;
-    base->m_value = (int32_t)tmp_arg2;
+    base->m_value = (int32_t)((uint32_t)base->m_value | (uint32_t)(fields.m_value * (int32_t)set));
 }
 
 flags_String flags_string(void* addr, size_t size) {
@@ -53,4 +48,39 @@ void flags_test1(void) {
 }
 
 void flags_test2(void) {
+    flags_String tmp_arg0 = flags_string("file.txt", 8);
+    flags_open(tmp_arg0, (flags_OpenFlags){(int32_t)((uint32_t)(flags_OpenFlags){O_RDONLY}.m_value | (uint32_t)(flags_OpenFlags){O_WRONLY}.m_value)});
+    flags_OpenFlags tmp1 = (flags_OpenFlags){0};
+    flags_set(&tmp1, (flags_OpenFlags){O_WRONLY}, true);
+    flags_set(&tmp1, (flags_OpenFlags){O_APPEND}, true);
+    flags_String tmp_arg2 = flags_string("file.txt", 8);
+    flags_open(tmp_arg2, tmp1);
+}
+
+void flags_test3(void) {
+    flags_OpenFlags flags = (flags_OpenFlags){0};
+    flags_set(&flags, (flags_OpenFlags){O_WRONLY}, true);
+    flags_String tmp_arg0 = flags_string("file.txt", 8);
+    flags_open(tmp_arg0, flags);
+    flags_OpenFlags tmp1 = flags;
+    flags_set(&tmp1, (flags_OpenFlags){O_APPEND}, true);
+    flags_String tmp_arg2 = flags_string("file.txt", 8);
+    flags_open(tmp_arg2, tmp1);
+    flags_OpenFlags tmp3 = flags;
+    flags_String tmp_arg4 = flags_string("file.txt", 8);
+    flags_open(tmp_arg4, tmp3);
+    flags_OpenFlags tmp5 = (flags_OpenFlags){0};
+    flags_set(&tmp5, (flags_OpenFlags){O_RDONLY}, true);
+    flags_String tmp_arg6 = flags_string("file.txt", 8);
+    flags_open(tmp_arg6, (flags_OpenFlags){(int32_t)((uint32_t)flags.m_value | (uint32_t)tmp5.m_value)});
+}
+
+void flags_test4(flags_OpenFlags flags) {
+    flags_OpenFlags tmp0 = (flags_OpenFlags){0};
+    flags_set(&tmp0, (flags_OpenFlags){O_APPEND}, true);
+    const flags_OpenFlags flags2 = tmp0;
+    flags_String tmp_arg1 = flags_string("file.txt", 8);
+    flags_open(tmp_arg1, (flags_OpenFlags){(int32_t)((uint32_t)flags.m_value | (uint32_t)flags2.m_value)});
+    flags_String tmp_arg2 = flags_string("file.txt", 8);
+    flags_open(tmp_arg2, (flags_OpenFlags){(int32_t)((uint32_t)flags.m_value & (uint32_t)flags2.m_value)});
 }

@@ -54,20 +54,21 @@ def test1() {
 }
 
 def test2() {
-    #open("file.txt", OpenFlags.readOnly | OpenFlags.writeOnly);
-    #open("file.txt", OpenFlags{.writeOnly, .append});
+    open("file.txt", OpenFlags.readOnly | OpenFlags.writeOnly);
+    open("file.txt", OpenFlags{.writeOnly, .append});
 }
 
-#def test3() {
-    #flags: OpenFlags;
-    #flags.writeOnly = true;
-    #open("file.txt", flags);
-    #open("file.txt", flags{.append});
-    #open("file.txt", flags{});
-    #open("file.txt", flags | OpenFlags{.readOnly});
-    #flags2 := OpenFlags{.append};
-    #open("file.txt", flags | flags2);
-    #open("file.txt", flags & flags2);
-    #flags3 := OpenFlags{value=0x80};
-    #flags4 := OpenFlags{0x08};
-#}
+def test3() {
+    flags: OpenFlags;
+    flags.writeOnly = true;
+    open("file.txt", flags);
+    open("file.txt", flags{.append});
+    open("file.txt", flags{});
+    open("file.txt", flags | OpenFlags{.readOnly});
+}
+
+def test4(flags: OpenFlags) {
+    flags2 := OpenFlags{.append};
+    open("file.txt", flags | flags2);
+    open("file.txt", flags & flags2);
+}

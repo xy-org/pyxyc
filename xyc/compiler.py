@@ -2663,7 +2663,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         if field_objs[i].xy_node.is_pseudo:
             any_pseudos = True
         if not any_pseudos:
-            pos_objs[i] = compile_expr(arg, cast, cfunc, ctx)
+            pos_objs[i] = val_obj
 
     for name, arg in expr_kwargs.items():
         if name not in type_obj.fields:
@@ -3203,6 +3203,8 @@ def is_simple_cexpr(expr):
         return all(is_simple_cexpr(e) for e in expr.args)
     if isinstance(expr, c.Index):
         return is_simple_cexpr(expr.expr) and is_simple_cexpr(expr.index)
+    if isinstance(expr, c.Cast):
+       return is_simple_cexpr(expr.what)
     return False 
     
 
