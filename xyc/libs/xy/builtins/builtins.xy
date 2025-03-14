@@ -404,16 +404,6 @@ struct StrCtor {
     # Implemented by the compiler
 }
 
-# Enums and Flags
-
-# TODO
-struct Enum {
-}
-
-# TODO
-struct Flags {
-}
-
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}

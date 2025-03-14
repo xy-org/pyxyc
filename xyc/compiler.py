@@ -24,8 +24,6 @@ class TypeObj(CompiledObj):
     init_value: any = None
     is_init_value_zeros: bool = True
     base_type_obj: 'TypeObj' = None
-    is_enum: bool = False
-    is_flags: bool = False
     fully_compiled: bool = False
     module_header: 'ModuleHeader' = None  # None means current module
 
@@ -567,8 +565,6 @@ class CompilerContext:
     bool_obj: any = None
     ptr_obj: any = None
     size_obj: any = None
-    enum_obj: any = None
-    flags_obj: any = None
 
     stdlib_included = False
     compiling_header = False
@@ -958,8 +954,6 @@ def compile_module(builder, module_name, asts):
             ctx.global_data_ns["Ulong"],
             ctx.global_data_ns["Size"],
         )
-        ctx.enum_obj = ctx.global_data_ns["Enum"]
-        ctx.flags_obj = ctx.global_data_ns["Flags"]
 
     ctx.compiling_header = True
     compile_header(ctx, asts, res)
@@ -1111,9 +1105,6 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     type_obj.tags.update(tag_objs)
     type_obj.tag_specs = tag_specs
 
-    type_obj.is_enum = type_obj.tags.get("xy_enum", -1) is ctx.enum_obj
-    type_obj.is_flags = type_obj.tags.get("xy_flags", -1) is ctx.flags_obj
-
     target_cast = None
     compile_pseudo = False
     if isinstance(type_obj, ArrTypeObj):
@@ -1125,16 +1116,11 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     elif isinstance(type_obj, FuncTypeObj):
         pass
         # assert type_obj.c_node is not None
-    elif not (type_obj.is_enum or type_obj.is_flags):
+    else:
         cstruct = c.Struct(name=mangle_struct(type_obj.xy_node, ctx))
         type_obj.c_node = cstruct
         cast.type_decls.append(c.Typedef("struct " + cstruct.name, cstruct.name))
         target_cast = cast.structs
-    else:
-        # use typedef and fill actual type latter
-        cenum = c.Typedef(None, mangle_struct(type_obj.xy_node, ctx))
-        type_obj.c_node = cenum
-        target_cast = cast.type_decls
 
     # finaly compile fields
     if isinstance(type_obj, ArrTypeObj):
@@ -1150,12 +1136,9 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
         )
     elif isinstance(type_obj, FuncTypeObj):
         type_obj.init_value = c.Const(0)
-    elif not (type_obj.is_enum or type_obj.is_flags):
+    else:
         compile_pseudo = True
         compile_struct_fields(type_obj, ast, cast, ctx)
-    else:
-        compile_enumflags_fields(type_obj, ast, cast, ctx)
-        autogenerate_ops(type_obj, ast, cast, ctx)
 
     if target_cast is not None:
         target_cast.append(type_obj.c_node)
@@ -1296,8 +1279,6 @@ def compile_enumflags_fields(type_obj, ast, cast, ctx):
     fields = {}
     next_num = 0
     init_value = None
-    if type_obj.is_flags:
-        init_value = base_type_obj.init_value
 
     for field in node.fields:
         if not field.is_pseudo:
@@ -1345,61 +1326,6 @@ def compile_enumflags_fields(type_obj, ast, cast, ctx):
     if init_value is None:
         init_value = base_type_obj.init_value
     type_obj.init_value = init_value
-
-def autogenerate_ops(type_obj: TypeObj, ast, cast, ctx):
-    assert type_obj.is_enum or type_obj.is_flags
-
-    base_field = None
-    # first we need to find the one non pseudo field:
-    for field in type_obj.fields.values():
-        if not field.xy_node.is_pseudo:
-            base_field = field
-            break
-    base_type = base_field.type_desc
-
-    xy_node = type_obj.xy_node
-    cmp_obj = ctx.eval_to_fspace(
-        xy.Id("cmp", src=xy_node.src, coords=xy_node.coords),
-        msg=f"Cannot find any functions cmp",
-    ).find(
-        xy.FuncCall(xy.Id("cmp"), src=xy_node.src, coords=xy_node.coords),
-        ArgList([base_type, base_type]),
-        ctx
-    )
-    if cmp_obj is None:
-        raise CompilationError("Enum base fields need to be comparable", base_field.xy_node)
-    
-    gen_cmp_obj = copy(cmp_obj)
-    # gen_cmp_obj.xy_node = type_obj.xy_node
-    gen_cmp_obj.param_objs = [copy(param) for param in cmp_obj.param_objs]
-    for param in gen_cmp_obj.param_objs:
-        param.type_desc = type_obj
-    ctx.ensure_func_space(xy.Id("cmp")).append(gen_cmp_obj)
-
-    # autogen | and &
-    gen_or_obj = FuncObj(
-        xy_node=xy.FuncDef(
-            name=xy.Id("bor"),
-            src=xy_node.src, coords=xy_node.coords,
-        ),
-        rtype_obj=type_obj,
-        etype_obj=None,
-        param_objs=[VarObj(type_desc=type_obj), VarObj(type_desc=type_obj)],
-        builtin=True,
-    )
-    ctx.ensure_func_space(xy.Id("or")).append(gen_or_obj)
-
-    gen_or_obj = FuncObj(
-        xy_node=xy.FuncDef(
-            name=xy.Id("band"),
-            src=xy_node.src, coords=xy_node.coords,
-        ),
-        rtype_obj=type_obj,
-        etype_obj=None,
-        param_objs=[VarObj(type_desc=type_obj), VarObj(type_desc=type_obj)],
-        builtin=True,
-    )
-    ctx.ensure_func_space(xy.Id("and")).append(gen_or_obj)
 
 def compile_func_prototype(fobj: FuncObj, cast, ctx):
     if fobj.params_compiled or fobj.prototype_compiled:
@@ -1661,8 +1587,6 @@ def compile_builtins(builder, module_name, asts):
                 "EntryPoint": "xy.entrypoint",
                 "IterCtor": "xyIter",
                 "CLib": "xyc.lib",
-                "Enum": "xy_enum",
-                "Flags": "xy_flags"
             }
             if obj.xy_node.name in default_tag_label_map:
                 label = default_tag_label_map[obj.xy_node.name]
@@ -2297,62 +2221,33 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
             compiled_obj=idx_obj,
         )
 
-    obj = idx_obj.container
-    struct_obj = obj if isinstance(obj, TypeObj) else obj.inferred_type
-    if not (struct_obj.is_enum or struct_obj.is_flags):
-        idx_chain = idx_flatten_chain(idx_obj, cast, cfunc, ctx)
-        arg_objs = ArgList(idx_chain)
-        get_fobj = maybe_find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
-        if get_fobj is None:
-            # import pdb; pdb.set_trace()
-            shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
-            if shortened_idx is None:
-                # call find_func_obj just to generate a nice error message
-                find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
-                raise CompilationError("Should not be reached", idx_obj.xy_node)
-            return idx_get(shortened_idx, cast, cfunc, ctx)
-        else:
-            # import pdb; pdb.set_trace()
-            args_prepared = ArgList([
-                maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
-            ])
-            #if get_fobj.move_args_to_temps:
-            #    args_prepared.args.append(maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx))
-            #else:
-            #    args_prepared.args.append(arg_objs.args[-1])
-            args_prepared.args.append(arg_objs.args[-1])
-            return do_compile_fcall(
-                idx_obj.xy_node,
-                get_fobj,
-                arg_exprs=args_prepared,
-                cast=cast, cfunc=cfunc, ctx=ctx
-            )
-    elif struct_obj.is_enum:
-        # field of an enum
-        if isinstance(idx_obj.container, TypeObj) or isinstance(idx_obj.container, ExprObj) and struct_obj is obj.compiled_obj:
-            res = c.Id(idx_obj.idx.c_node.name)
-        else:
-            res = c.Expr(
-                op='==',
-                arg1=obj.c_node,
-                arg2=c.Id(idx_obj.idx.c_node.name)
-            )
+    idx_chain = idx_flatten_chain(idx_obj, cast, cfunc, ctx)
+    arg_objs = ArgList(idx_chain)
+    get_fobj = maybe_find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
+    if get_fobj is None:
+        # import pdb; pdb.set_trace()
+        shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
+        if shortened_idx is None:
+            # call find_func_obj just to generate a nice error message
+            find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
+            raise CompilationError("Should not be reached", idx_obj.xy_node)
+        return idx_get(shortened_idx, cast, cfunc, ctx)
     else:
-        assert struct_obj.is_flags
-        if isinstance(obj, TypeObj) or isinstance(obj, ExprObj) and struct_obj is obj.compiled_obj:
-            res = c.Id(idx_obj.idx.c_node.name)
-        else:
-            res = c.Expr(
-                op='&',
-                arg1=obj.c_node,
-                arg2=c.Id(idx_obj.idx.c_node.name)
-            )
-
-    return ExprObj(
-        c_node=res,
-        xy_node=idx_obj.xy_node,
-        inferred_type=struct_obj
-    )
+        # import pdb; pdb.set_trace()
+        args_prepared = ArgList([
+            maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
+        ])
+        #if get_fobj.move_args_to_temps:
+        #    args_prepared.args.append(maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx))
+        #else:
+        #    args_prepared.args.append(arg_objs.args[-1])
+        args_prepared.args.append(arg_objs.args[-1])
+        return do_compile_fcall(
+            idx_obj.xy_node,
+            get_fobj,
+            arg_exprs=args_prepared,
+            cast=cast, cfunc=cfunc, ctx=ctx
+        )
 
 def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
     if isinstance(idx_obj.idx, VarObj):
@@ -2374,46 +2269,35 @@ def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
             inferred_type=idx_obj.idx.inferred_type.tags["to"]
         )
 
-    if not idx_obj.container.inferred_type.is_flags:
-        idx_chain = idx_flatten_chain(idx_obj, cast, cfunc, ctx)
-        idx_chain.append(val_obj)
-        arg_objs = ArgList(idx_chain)
-        set_fobj = maybe_find_func_obj("set", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
-        if set_fobj is None:
-            # import pdb; pdb.set_trace()
-            shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
-            if not isinstance(shortened_idx, IdxObj):
-                raise CompilationError("Cannot set index", idx_obj.xy_node)
-            if shortened_idx is None:
-                import pdb; pdb.set_trace()
-                raise CompilationError("Cannot set index", idx_obj.xy_node)
-            return idx_set(shortened_idx, val_obj, cast, cfunc, ctx)
-        else:
-            # import pdb; pdb.set_trace()
-            args_prepared = ArgList([
-                maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
-            ])
-            if set_fobj.move_args_to_temps:
-                args_prepared.args.append(maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx))
-            else:
-                args_prepared.args.append(arg_objs.args[-1])
-            return do_compile_fcall(
-                idx_obj.xy_node,
-                set_fobj,
-                arg_exprs=args_prepared,
-                cast=cast, cfunc=cfunc, ctx=ctx
-            )
+    idx_chain = idx_flatten_chain(idx_obj, cast, cfunc, ctx)
+    idx_chain.append(val_obj)
+    arg_objs = ArgList(idx_chain)
+    set_fobj = maybe_find_func_obj("set", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
+    if set_fobj is None:
+        # import pdb; pdb.set_trace()
+        shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
+        if not isinstance(shortened_idx, IdxObj):
+            raise CompilationError("Cannot set index", idx_obj.xy_node)
+        if shortened_idx is None:
+            import pdb; pdb.set_trace()
+            raise CompilationError("Cannot set index", idx_obj.xy_node)
+        return idx_set(shortened_idx, val_obj, cast, cfunc, ctx)
     else:
-        return ExprObj(
-            xy_node=idx_obj.xy_node,
-            inferred_type=idx_obj.container.inferred_type,
-            c_node=c.Expr(
-                arg1=idx_obj.container.c_node,
-                arg2=idx_obj.idx.c_node,
-                op="|=",
-            )
+        # import pdb; pdb.set_trace()
+        args_prepared = ArgList([
+            maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
+        ])
+        if set_fobj.move_args_to_temps:
+            args_prepared.args.append(maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx))
+        else:
+            args_prepared.args.append(arg_objs.args[-1])
+        return do_compile_fcall(
+            idx_obj.xy_node,
+            set_fobj,
+            arg_exprs=args_prepared,
+            cast=cast, cfunc=cfunc, ctx=ctx
         )
-    
+
 def idx_flatten_chain(idx_obj: IdxObj, cast, cfunc, ctx):
     if is_ptr_type(idx_obj.idx.inferred_type, ctx):
         return [idx_obj]
@@ -2539,7 +2423,6 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
         return idx_set(idx_obj, val, cast, cfunc, ctx)
     
 def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerContext):
-    struct_obj = obj if isinstance(obj, TypeObj) else obj.inferred_type
     if field_obj.xy_node.is_pseudo:
         idx_obj = IdxObj(
             container=obj,
@@ -2549,48 +2432,19 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
         )
         return idx_setup(idx_obj, cast, cfunc, ctx)
 
-    if not (struct_obj.is_enum or struct_obj.is_flags):
-        # normal field
-        # TODO REMOVE THAT, Only refs should have a c_node
-        obj_c_node = obj.c_node
-        if isinstance(obj, IdxObj):
-            # TODO how to we chain fields if obj doesn't decay to a reference
-            obj_c_node = idx_get(obj, cast, cfunc, ctx).c_node
-        res = c_deref(obj_c_node, field=c.Id(field_obj.c_node.name))
-        return IdxObj(
-            container=obj,
-            idx=field_obj,
-            xy_node=obj.xy_node,
-            compiled_obj=field_obj,
-            c_node=res,
-            inferred_type=field_obj.type_desc
-        )
-    elif struct_obj.is_enum:
-        # field of an enum
-        if isinstance(obj, TypeObj) or isinstance(obj, ExprObj) and struct_obj is obj.compiled_obj:
-            res = c.Id(field_obj.c_node.name)
-        else:
-            res = c.Expr(
-                op='==',
-                arg1=obj.c_node,
-                arg2=c.Id(field_obj.c_node.name)
-        )
-    else:
-        assert struct_obj.is_flags
-        if isinstance(obj, TypeObj) or isinstance(obj, ExprObj) and struct_obj is obj.compiled_obj:
-            res = c.Id(field_obj.c_node.name)
-        else:
-            res = c.Expr(
-                op='&',
-                arg1=obj.c_node,
-                arg2=c.Id(field_obj.c_node.name)
-            )
-
-    return ExprObj(
-        c_node=res,
+    # TODO REMOVE THAT, Only refs should have a c_node
+    obj_c_node = obj.c_node
+    if isinstance(obj, IdxObj):
+        # TODO how to we chain fields if obj doesn't decay to a reference
+        obj_c_node = idx_get(obj, cast, cfunc, ctx).c_node
+    res = c_deref(obj_c_node, field=c.Id(field_obj.c_node.name))
+    return IdxObj(
+        container=obj,
+        idx=field_obj,
         xy_node=obj.xy_node,
-        inferred_type=field_obj.type_desc,
         compiled_obj=field_obj,
+        c_node=res,
+        inferred_type=field_obj.type_desc
     )
 
 def is_ptr_type(type_obj, ctx):
@@ -2631,12 +2485,9 @@ def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
         # assert isinstance(type_obj, VarObj)
         var_obj = type_obj
         type_obj = type_obj.inferred_type
-        if not type_obj.is_flags:
-            tmp_obj = ctx.create_tmp_var(type_obj, xy_node=expr)
-            tmp_obj.c_node.value = c.Id(var_obj.c_node.name) if isinstance(var_obj, VarObj) else maybe_deref(var_obj, True, cast, cfunc, ctx).c_node
-            cfunc.body.append(tmp_obj.c_node)
-        else:
-            tmp_obj = var_obj
+        tmp_obj = ctx.create_tmp_var(type_obj, xy_node=expr)
+        tmp_obj.c_node.value = c.Id(var_obj.c_node.name) if isinstance(var_obj, VarObj) else maybe_deref(var_obj, True, cast, cfunc, ctx).c_node
+        cfunc.body.append(tmp_obj.c_node)
     elif not is_obj_visible(type_obj, ctx):
             raise CompilationError(f"Struct '{type_obj.name}' is not visible", expr.name)
 
@@ -2644,8 +2495,6 @@ def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
 
 def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: CompilerContext):
     fully_compile_type(type_obj, cast, None, ctx)
-    if type_obj.is_flags:
-        return do_compile_flags_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx)
 
     expr_args = expr.args
     expr_kwargs = copy(expr.kwargs)
