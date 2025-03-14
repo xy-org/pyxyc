@@ -1156,6 +1156,8 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
         field_type_obj = None
         if field.type is not None:
             field_type_obj = find_type(field.type, cast, ctx)
+            if field_type_obj is type_obj:
+                raise CompilationError("Recursive structs are not possible", field)
             fully_compile_type(field_type_obj, cast, ast, ctx)
 
         if field.is_pseudo:
@@ -1165,6 +1167,8 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             field_type_obj = recursive_pseudo_field_type_obj
         elif field.value is not None:
             default_value_obj = ctx.eval(field.value)
+            if default_value_obj.inferred_type is type_obj:
+                raise CompilationError("Recursive structs are not possible", field)
             if isinstance(default_value_obj, InstanceObj):
                 # I don't like that. Why not just call compile_expr
                 default_value_obj.c_node = compile_expr(field.value, cast, None, ctx).c_node

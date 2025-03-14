@@ -625,7 +625,7 @@ def parse_expression(
         elif op in {"=", "=<"} and isinstance(arg1, SliceExpr):
             if isinstance(arg1.start, CallerContextExpr):
                 raise ParsingError("Caller context parameters cannot have default values", itoken)
-            decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=op_coords, is_move=(op=="=<"))
+            decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=arg1.coords, is_move=(op=="=<"))
             if not isinstance(arg1.start, Id):
                 raise ParsingError("Variable name must be an identifier", itoken)
             decl.type = expr_to_type(arg1.end)

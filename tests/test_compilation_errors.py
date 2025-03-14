@@ -223,9 +223,9 @@ src.xy:4:22: error: Cannot find tag
             tests := @for (f in $* ~Test()) f;
         }
      """, """\
-src.xy:4:20: error: Cannot infer type of empty array
+src.xy:4:13: error: Cannot infer type of empty array
 |             tests := @for (f in $* ~Test()) f;
-                     ^
+              ^^^^^
 """),
     ("""
         def main1~EntryPoint() {}
@@ -280,16 +280,16 @@ src.xy:2:13: error: Underscores are not allowed in names. For more info go to TB
     ("""
         def func() {a_b := 10;}
      """, """\
-src.xy:2:26: error: Underscores are not allowed in names. For more info go to TBD
+src.xy:2:21: error: Underscores are not allowed in names. For more info go to TBD
 |         def func() {a_b := 10;}
-                           ^
+                      ^^^
 """),
     ("""
         def func(_:Int=0) {}
      """, """\
-src.xy:2:23: error: Underscores are not allowed in names. For more info go to TBD
+src.xy:2:18: error: Underscores are not allowed in names. For more info go to TBD
 |         def func(_:Int=0) {}
-                        ^
+                   ^
 """),
     ("""
 import libxy.stdio;
@@ -331,6 +331,26 @@ src.xy:5:22: error: Cannot find variable 'a'
 src.xy:1:17: error: Functions cannot return a type
 | def fun(x: any) %x;
                   ^
+"""
+    ),
+    (
+        """struct MyStruct {
+            field: MyStruct;
+        }""",
+        """\
+src.xy:2:13: error: Recursive structs are not possible
+|             field: MyStruct;
+              ^^^^^
+"""
+    ),
+    (
+        """struct MyStruct {
+            field := MyStruct{};
+        }""",
+        """\
+src.xy:2:13: error: Recursive structs are not possible
+|             field := MyStruct{};
+              ^^^^^
 """
     ),
 ])
