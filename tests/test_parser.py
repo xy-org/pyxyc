@@ -1861,9 +1861,9 @@ def test_func_def_with_tags(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        def -func() -> void {}
-        def +func() -> void {}
-        def *func() -> void {}
+        -def func() -> void {}
+        +def func() -> void {}
+        *def func() -> void {}
         """,
         [
             ast.FuncDef(
@@ -1882,9 +1882,9 @@ def test_func_def_with_tags(code, exp_ast):
     ],
     [
         """
-        struct -Struct {}
-        struct +Struct {}
-        struct *Struct {}
+        -struct Struct {}
+        +struct Struct {}
+        *struct Struct {}
         """,
         [
             ast.StructDef(

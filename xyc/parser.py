@@ -206,6 +206,9 @@ def parse_def(itoken: TokenIter):
     visibility = PackageVisibility
     if itoken.peak() in {"-", "+", "*"}:
         visibility = visibilityMap[itoken.consume()]
+    itoken.expect("def")
+    if itoken.peak() in {"-", "+", "*"}:
+        raise ParsingError("Visibility marker goes before 'def'", itoken)
     name_coords = itoken.peak_coords()
     name = itoken.consume()
     node = FuncDef(
@@ -1070,9 +1073,19 @@ def parse_stmt_list(itoken: TokenIter):
             node = parse_sl_comment(itoken)
         elif itoken.check(";;"):
             node = parse_ml_comment(itoken)
-        elif itoken.check("def"):
+        elif itoken.peak() == "def":
             node = parse_def(itoken)
-        elif itoken.check("struct"):
+        elif itoken.peak() in visibilityMap:
+            next_token = itoken.peakn(2)[1]
+            if next_token == "def":
+                node = parse_def(itoken)
+            elif next_token == "struct":
+                node = parse_struct(itoken)
+            elif next_token == "\n":
+                raise ParsingError("Visibility marker must be on the same line as the def or struct", itoken)
+            else:
+                raise ParsingError("Only defs and structs can have visibility", itoken)
+        elif itoken.peak() == "struct":
             node = parse_struct(itoken)
         elif itoken.check("from"):
             raise ParsingError(
@@ -1184,6 +1197,9 @@ def parse_struct(itoken: TokenIter):
     visibility = PackageVisibility
     if itoken.peak() in visibilityMap:
         visibility = visibilityMap[itoken.consume()]
+    itoken.expect("struct")
+    if itoken.peak() in {"-", "+", "*"}:
+        raise ParsingError("Visibility marker goes before 'struct'", itoken)
     coords = itoken.peak_coords()
     name = itoken.consume()
     node = StructDef(name=name, src=itoken.src, coords=coords, visibility=visibility)

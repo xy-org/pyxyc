@@ -282,8 +282,20 @@ def test_callbacks_and_fselect(code, err_msg):
         "Expected operand found operator"
     ),
     (
-        "def *get(ptr: Ptr, idx: int) -> ref(ptr) Ptr~[^ptr..to] {}",
+        "def get(ptr: Ptr, idx: int) -> in(ptr) Ptr~[^ptr..to] ptr",
         "Blocks must have their body in curly brackets"
+    ),
+    (
+        "def *func() {}",
+        "Visibility marker goes before 'def'"
+    ),
+    (
+        "*\ndef func() {}",
+        "Visibility marker must be on the same line as the def or struct"
+    ),
+    (
+        "struct *Struct() {}",
+        "Visibility marker goes before 'struct'"
     ),
 ])
 def test_func_def_errors(code, err_msg):

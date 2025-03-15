@@ -1,7 +1,7 @@
 # Header files "stdint.h", "stddef.h", "stdbool.h" are auto imported in symbol c
 
 ;; A type that means no-type
-struct *void {
+*struct void {
     # Implemented by the compiler
     # Should this even be a typeany
     # It is a type in C so it makes sense to be one in xy.
@@ -10,49 +10,49 @@ struct *void {
 # Primitive bool type
 
 ;; 8-bit true/false type
-struct *Bool {
+*struct Bool {
     # Implemented by the compiler
 }
 
 # Primitive numeric types.
 
 ;; 8-bit signed integer type
-struct *Byte {
+*struct Byte {
     # Implemented by the compiler
 }
 
 ;; 16-bit signed integer type
-struct *Short {
+*struct Short {
     # Implemented by the compiler
 }
 
 ;; 32-bit signed integer type
-struct *Int {
+*struct Int {
     # Implemented by the compiler
 }
 
 ;; 64-bit signed integer type
-struct *Long {
+*struct Long {
     # Implemented by the compiler
 }
 
 ;; 8-bit unsigned integer type
-struct *Ubyte {
+*struct Ubyte {
     # Implemented by the compiler
 }
 
 ;; 16-bit unsigned integer type
-struct *Ushort {
+*struct Ushort {
     # Implemented by the compiler
 }
 
 ;; 32-bit unsigned integer type
-struct *Uint {
+*struct Uint {
     # Implemented by the compiler
 }
 
 ;; 64-bit unsigned integer type
-struct *Ulong {
+*struct Ulong {
     # Implemented by the compiler
 }
 
@@ -60,332 +60,332 @@ struct *Ulong {
 ;; architecture. This type is (by definition) platform dependant. It is
 ;; provided for interfacing with native libraries and for building libraries. 
 ;; Size is always unsigned. For error handling use xy error-handling mechanisms.
-struct *Size {
+*struct Size {
     # Implemented by the compiler
 }
 
 ;; A good old pointer. Use with caution.
-struct *Ptr~[to: struct] {
+*struct Ptr~[to: struct] {
     # Implemented by the compiler
 }
 
-def *get(ptr: Ptr) -> in() Ptr~[^ptr..to] {
+*def get(ptr: Ptr) -> in() Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
-def *get(ptr: Ptr, idx: Int) -> in() Ptr~[^ptr..to] {
+*def get(ptr: Ptr, idx: Int) -> in() Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
-def *get(ptr: Ptr, idx: Size) -> in() Ptr~[^ptr..to] {
+*def get(ptr: Ptr, idx: Size) -> in() Ptr~[^ptr..to] {
     # Implemented by the compiler
 }
 
-def *set(ptr: Ptr, idx: Int, value: pseudo any) -> void {
+*def set(ptr: Ptr, idx: Int, value: pseudo any) -> void {
     # Implemented by the compiler
 }
 
-def *set(ptr: Ptr, idx: Size, value: pseudo any) -> void {
+*def set(ptr: Ptr, idx: Size, value: pseudo any) -> void {
     # Implemented by the compiler
 }
 
 # XXX shouldn't be Int
-def *cmp(a: Ptr, b: Ptr) -> Int {
+*def cmp(a: Ptr, b: Ptr) -> Int {
     # Implemented by the compiler
 }
 
 ;; The address of any variable or even temporary value
-def *addrof(arg: any) -> Ptr~[%^arg] {
+*def addrof(arg: any) -> Ptr~[%^arg] {
     # Implemented by the compiler
 }
 
 ;; 32-bit IEEE 754 floating point number
-struct *Float {
+*struct Float {
     # Implemented by the compiler
 }
 
 ;; 64-bit IEEE 754 floating point number
-struct *Double {
+*struct Double {
     # Implemented by the compiler
 }
 
 # Limits
 
-def *max(:Int) -> Int {
+*def max(:Int) -> Int {
     return c.INT32_MAX;
 }
 
-def *max(:Size) -> Size {
+*def max(:Size) -> Size {
     return c.SIZE_MAX;
 }
 
 # Arithmatic operations
 
-def *add(a: Int, b: Int) -> Int {
+*def add(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *add(a: Int, b: Double) -> Double {
+*def add(a: Int, b: Double) -> Double {
     # Implemented by the compiler
 }
 
-def *add(a: Int, b: Float) -> Float {
+*def add(a: Int, b: Float) -> Float {
     # Implemented by the compiler
 }
 
-def *add(a: Double, b: Float) -> Double {
+*def add(a: Double, b: Float) -> Double {
     # Implemented by the compiler
 }
 
-def *add(a: Double, b: Double) -> Double {
+*def add(a: Double, b: Double) -> Double {
     # Implemented by the compiler
 }
 
-def *add(a: Size, b: Size) -> Size {
+*def add(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *add(a: Size, b: Int) -> Size {
+*def add(a: Size, b: Int) -> Size {
     # Implemented by the compiler
 }
 
-def *add(a: Long, b: Int) -> Double {
+*def add(a: Long, b: Int) -> Double {
     # Implemented by the compiler
 }
 
-def *add(a: Double, b: Int) -> Double {
+*def add(a: Double, b: Int) -> Double {
     # Implemented by the compiler
 }
 
-def *add(a: Ptr, b: Int) -> Ptr {
+*def add(a: Ptr, b: Int) -> Ptr {
     # Implemented by the compiler
 }
 
-def *add(a: Ptr, b: Size) -> Ptr {
+*def add(a: Ptr, b: Size) -> Ptr {
     # Implemented by the compiler
 }
 
-def *add(a: Float, b: Float) -> Float {
+*def add(a: Float, b: Float) -> Float {
     # Implemented by the compiler
 }
 
 ;; Add and accumulate
-def *addEqual(a: Int, b: Int) -> void {
+*def addEqual(a: Int, b: Int) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: Float, b: Float) -> void {
+*def addEqual(a: Float, b: Float) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: Float, b: Int) -> void {
+*def addEqual(a: Float, b: Int) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: mut Int, b: Size) -> void {
+*def addEqual(a: mut Int, b: Size) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: mut Size, b: Size) -> void {
+*def addEqual(a: mut Size, b: Size) -> void {
     # Implemented by the compiler
 }
 
-def *addEqual(a: mut Size, b: Int) -> void {
+*def addEqual(a: mut Size, b: Int) -> void {
     # Implemented by the compiler
 }
 
 ;; Subtraction
-def *sub(a: Int, b: Int) -> Int {
+*def sub(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *sub(a: Int, b: Uint) -> Int {
+*def sub(a: Int, b: Uint) -> Int {
     # Implemented by the compiler
 }
 
-def *sub(a: Size, b: Int) -> Size {
+*def sub(a: Size, b: Int) -> Size {
     # Implemented by the compiler
 }
 
-def *sub(a: Size, b: Size) -> Size {
+*def sub(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *neg(a: Int) -> Int {
+*def neg(a: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *neg(a: Size) -> Int {
+*def neg(a: Size) -> Int {
     # Implemented by the compiler
 }
 
-def *inc(a: mut Int) -> void {
+*def inc(a: mut Int) -> void {
     # Implemented by the compiler
 }
 
-def *inc(a: mut Uint) -> void {
+*def inc(a: mut Uint) -> void {
     # Implemented by the compiler
 }
 
-def *dec(a: mut Int) -> void {
+*def dec(a: mut Int) -> void {
     # Implemented by the compiler
 }
 
-def *inc(a: mut Size) -> void {
+*def inc(a: mut Size) -> void {
     # Implemented by the compiler
 }
 
 ;; Multiplies {a} and {b} together
-def *mul(a: Int, b: Int) -> Int {
+*def mul(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *mul(a: Float, b: Float) -> Float {
+*def mul(a: Float, b: Float) -> Float {
     # Implemented by the compiler
 }
 
-def *mul(a: Double, b: Double) -> Double {
+*def mul(a: Double, b: Double) -> Double {
     # Implemented by the compiler
 }
 
-def *mul(a: Float, b: Int) -> Float {
+*def mul(a: Float, b: Int) -> Float {
     # Implemented by the compiler
 }
 
-def *mul(a: Int, b: Size) -> Size {
+*def mul(a: Int, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *mul(a: Size, b: Size) -> Size {
+*def mul(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *mul(a: Size, b: Int) -> Size {
+*def mul(a: Size, b: Int) -> Size {
     # Implemented by the compiler
 }
 
-def *mul(a: Uint, b: Float) -> Float {
+*def mul(a: Uint, b: Float) -> Float {
     # Implemented by the compiler
 }
 
 ;; Multiplication with accumulate
-def *mulEqual(a: Double, b: Double) -> Int {
+*def mulEqual(a: Double, b: Double) -> Int {
     # Implemented by the compiler
 }
 
-def *mulEqual(a: Int, b: Int) -> Int {
+*def mulEqual(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
 ;; Division
 
-def *div(a: Int, b: Int) -> Int {
+*def div(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
 # Conversion between types
 
 ;; Convert {a} to Uint
-def *to(a: Int, :Uint) -> Uint {
+*def to(a: Int, :Uint) -> Uint {
     # Implemented by the compiler
 }
 
-def *to(a: Bool, :Int) -> Int {
+*def to(a: Bool, :Int) -> Int {
     # Implemented by the compiler
 }
 
-def *to(a: Int, :Ulong) -> Ulong {
+*def to(a: Int, :Ulong) -> Ulong {
     # Implemented by the compiler
 }
 
-def *to(a: Int, b: Float) -> Float {
+*def to(a: Int, b: Float) -> Float {
     # Implemented by the compiler
 }
 
-def *to(a: Size, b: Float) -> Float {
+*def to(a: Size, b: Float) -> Float {
     # Implemented by the compiler
 }
 
-def *to(a: Int, b: Double) -> Double {
+*def to(a: Int, b: Double) -> Double {
     # Implemented by the compiler
 }
 
-def *to(a: Long, b: Ulong) -> Double {
+*def to(a: Long, b: Ulong) -> Double {
     # Implemented by the compiler
 }
 
-def *to(a: Ulong, b: Long) -> Double {
+*def to(a: Ulong, b: Long) -> Double {
     # Implemented by the compiler
 }
 
-def *to(a: Int, :Bool) -> Bool {
+*def to(a: Int, :Bool) -> Bool {
     # Implemented by the compiler
 }
 
-def *to(a: Bool, :Ulong) -> Bool {
+*def to(a: Bool, :Ulong) -> Bool {
     # Implemented by the compiler
 }
 
 # Logical operations
 
 ;; Compares {a} to {b}.
-def *cmp(a: Int, b: Int) -> Int {
+*def cmp(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *cmp(a: Bool, b: Bool) -> Bool {
+*def cmp(a: Bool, b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
-def *cmp(a: Long, b: Int) -> Long {
+*def cmp(a: Long, b: Int) -> Long {
     # Implemented by the compiler
 }
 
-def *cmp(a: Ulong, b: Int) -> Long {
+*def cmp(a: Ulong, b: Int) -> Long {
     # Implemented by the compiler
 }
 
-def *cmp(a: Uint, b: Int) -> Int {
+*def cmp(a: Uint, b: Int) -> Int {
     # Implemented by the compiler
 }
 
-def *cmp(a: Size, b: Size) -> Size {
+*def cmp(a: Size, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *cmp(a: Size, b: Int) -> Size {
+*def cmp(a: Size, b: Int) -> Size {
     # Implemented by the compiler
 }
 
-def *cmp(a: Double, b: Int) -> Double {
+*def cmp(a: Double, b: Int) -> Double {
     # Implemented by the compiler
 }
 
-def *cmp(a: Double, b: Double) -> Double {
+*def cmp(a: Double, b: Double) -> Double {
     # Implemented by the compiler
 }
 
-def *cmp(a: Float, b: Float) -> Float {
+*def cmp(a: Float, b: Float) -> Float {
     # Implemented by the compiler
 }
 
-def *cmp(a: Int, b: Size) -> Size {
+*def cmp(a: Int, b: Size) -> Size {
     # Implemented by the compiler
 }
 
-def *cmp(a: Float, b: Int) -> Size {
+*def cmp(a: Float, b: Int) -> Size {
     # Implemented by the compiler
 }
 
-def *and(a: Bool, b: Bool) -> Bool {
+*def and(a: Bool, b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
-def *or(a: Bool, b: Bool) -> Bool {
+*def or(a: Bool, b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
-def *xor(a: Bool, b: Bool) -> Bool {
+*def xor(a: Bool, b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
@@ -407,25 +407,25 @@ struct StrCtor {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-def *get(arr: pseudo any[], index: Int) -> in(arr) Ptr {
+*def get(arr: pseudo any[], index: Int) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-def *get(arr: pseudo any[], index: Uint) -> in(arr) Ptr {
+*def get(arr: pseudo any[], index: Uint) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-def *get(arr: pseudo any[], index: Size) -> in(arr) Ptr {
-    # Implemented by the compiler
-}
-
-;; Set element at position {index} of the array {arr}
-def *set(arr: pseudo any[], index: Uint, val: pseudo any) -> void {
+*def get(arr: pseudo any[], index: Size) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
 ;; Set element at position {index} of the array {arr}
-def *set(arr: pseudo any[], index: Size, val: pseudo any) -> void {
+*def set(arr: pseudo any[], index: Uint, val: pseudo any) -> void {
+    # Implemented by the compiler
+}
+
+;; Set element at position {index} of the array {arr}
+*def set(arr: pseudo any[], index: Size, val: pseudo any) -> void {
     # Implemented by the compiler
 }
 
@@ -439,19 +439,19 @@ struct EntryPoint {
 
 # Arrays
 
-def *iter(arr: pseudo any[]) -> in(arr) Size {
+*def iter(arr: pseudo any[]) -> in(arr) Size {
     # Implemented by the compiler
 }
 
-def *valid(arr: pseudo any[], idx: Size) -> Bool {
+*def valid(arr: pseudo any[], idx: Size) -> Bool {
     # Implemented by the compiler
 }
 
-def *next(arr: pseudo any[], idx: mut Size) -> void {
+*def next(arr: pseudo any[], idx: mut Size) -> void {
     # Implemented by the compiler
 }
 
-def *len(arr: pseudo any[]) -> Size {
+*def len(arr: pseudo any[]) -> Size {
     # Implemented by the compiler
 }
 
@@ -479,84 +479,84 @@ struct FuncSelection {
 
 # Bitwise Operations
 
-struct *Bits8 {
+*struct Bits8 {
     value: Ubyte;
 }
 
-struct *Bits16 {
+*struct Bits16 {
     value: Ushort;
 }
 
-struct *Bits32 {
+*struct Bits32 {
     value: Uint;
 }
 
-struct *Bits64 {
+*struct Bits64 {
     value: Ulong;
 }
 
 ;; Conversion
 
-def *to(a: Int, :Bits32) -> Bits32 {
+*def to(a: Int, :Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
-def *to(a: Bits32, :Int) -> Int {
+*def to(a: Bits32, :Int) -> Int {
     # implemented by the compiler
 }
 
 ;; Bitwise and
-def *and(a: Bits32, b: Bits32) -> Bits32 {
+*def and(a: Bits32, b: Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
-def *and(a: Bits64, b: Bits64) -> Bits64 {
+*def and(a: Bits64, b: Bits64) -> Bits64 {
     # implemented by the compiler
 }
 
 ;; Bitwise or
-def *or(a: Bits32, b: Bits32) -> Bits32 {
+*def or(a: Bits32, b: Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
-def *or(a: Bits64, b: Bits64) -> Bits64 {
+*def or(a: Bits64, b: Bits64) -> Bits64 {
     # implemented by the compiler
 }
  
 ;; Bitwise xor.
-def *sub(a: Bits32, b: Bits32) -> Bits32 {
+*def sub(a: Bits32, b: Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
-def *sub(a: Bits64, b: Bits64) -> Bits64 {
+*def sub(a: Bits64, b: Bits64) -> Bits64 {
     # implemented by the compiler
 }
 
 ;; Bitwise not
-def *cmp(a: Bits32, b: Bits32) -> Bits32 {
+*def cmp(a: Bits32, b: Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
-def *cmp(a: Bits64, b: Bits64) -> Bits64 {
+*def cmp(a: Bits64, b: Bits64) -> Bits64 {
     # implemented by the compiler
 }
 
-def *cmp(a: Bits32, num: Int) -> Bits32 {
+*def cmp(a: Bits32, num: Int) -> Bits32 {
     # implemented by the compiler
 }
 
-def *shiftl(a: Bits32, times: Int) -> Bits32 {
+*def shiftl(a: Bits32, times: Int) -> Bits32 {
     # implemented by the compiler
 }
 
-def *shiftr(a: Bits32, times: Int) -> Bits32 {
+*def shiftr(a: Bits32, times: Int) -> Bits32 {
     # implemented by the compiler
 }
 
-def *shiftl(a: Bits64, times: Int) -> Bits64 {
+*def shiftl(a: Bits64, times: Int) -> Bits64 {
     # implemented by the compiler
 }
 
-def *shiftr(a: Bits64, times: Int) -> Bits64 {
+*def shiftr(a: Bits64, times: Int) -> Bits64 {
     # implemented by the compiler
 }
