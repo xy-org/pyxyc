@@ -8,7 +8,7 @@ def get(arr: List, i: Int) -> in(arr) Ptr~[^arr..type] {
     return Ptr{};
 }
 
-def set(arr: mut List, i: Size, val: pseudo any) -> void {
+def set(arr: mut List, i: Size, val: pseudo Any) -> void {
     # ...
 }
 

@@ -1,6 +1,6 @@
-def oneBit(b: pseudo any) (%b){1'to(%b.value)};
+def oneBit(b: pseudo Any) (%b){1'to(%b.value)};
 
-#def any(b: Bits64) b.value != 0;
+#def Any(b: Bits64) b.value != 0;
 
 def get(b: Bits64, i: Int) -> Bool {
     return (b & (b'oneBit \shiftl i)).value != 0;

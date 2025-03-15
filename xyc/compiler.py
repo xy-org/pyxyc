@@ -206,8 +206,8 @@ def ext_symbol_to_type(ext_obj):
 class NameAmbiguity:
     modules: list[str] = field(default_factory=list)
     
-any_type_obj = TypeObj(xy_node=xy.Id("any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
-any_struct_type_obj = TypeObj(xy_node=xy.Id("any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
+any_type_obj = TypeObj(xy_node=xy.Id("Any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
+any_struct_type_obj = TypeObj(xy_node=xy.Id("Any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 fieldarray_type_obj = TypeObj(xy_node=xy.Id("FieldArray"), builtin=True, c_node=c.Id("FIELD_TYPE_ARRAY_REPORT_IF_YOU_SEE_ME"))
 fselection_type_obj = TypeObj(xy_node=xy.Id("$*"), builtin=True, c_node=c.Id("FUN_SELECTION_REPORT_IF_YOU_SEE_ME"))
 macro_type_obj = TypeObj(xy_node=xy.Id("?"), builtin=True, c_node=c.Id("MACRO_TYPE_REPORT_IF_YOU_SEE_ME"))
@@ -496,7 +496,7 @@ def func_sig(fobj: FuncObj, include_ret=False):
         if pobj.xy_node is not None and pobj.xy_node.value is not None:
             res += "["
         if pobj.type_desc == any_type_obj:
-            res += "any"
+            res += "Any"
         else:
             res += pobj.type_desc.name
         if pobj.xy_node is not None and pobj.xy_node.value is not None:
@@ -1054,7 +1054,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
     return cast
 
 keywords = {
-    "if", "for", "while", "any", "def", "struct", "in", "inout", "outin", "out",
+    "if", "for", "while", "Any", "def", "struct", "in", "inout", "outin", "out",
     "ref", "macro", "yield"
 }
 
@@ -4413,7 +4413,7 @@ def find_type(texpr, cast, ctx, required=True):
     if isinstance(texpr, xy.Id) and texpr.name == "struct":
         # Special case for struct
         return any_struct_type_obj
-    elif isinstance(texpr, xy.Id) and texpr.name == "any":
+    elif isinstance(texpr, xy.Id) and texpr.name == "Any":
         # Special case for ?
         return any_type_obj
     if isinstance(texpr, xy.ArrayType):

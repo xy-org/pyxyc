@@ -572,11 +572,11 @@ def test_parse_implied_context_expr(code, exp_ast):
     [
         """
         def func(x: int) -> Ptr~int {}
-        def func(x: pseudo any) -> Ptr~[^(a'typeof)] {}
-        def func(x: pseudo any) -> Ptr~[^a'typeof] {}
-        def func(x: pseudo any) -> Ptr~[^typeof(a)] {}
-        def func(x: pseudo any) -> Ptr~[^(%a)] {}
-        def func(x: pseudo any) -> Ptr~[%^a] {}
+        def func(x: pseudo Any) -> Ptr~[^(a'typeof)] {}
+        def func(x: pseudo Any) -> Ptr~[^a'typeof] {}
+        def func(x: pseudo Any) -> Ptr~[^typeof(a)] {}
+        def func(x: pseudo Any) -> Ptr~[^(%a)] {}
+        def func(x: pseudo Any) -> Ptr~[%^a] {}
         """,
         [
             ast.FuncDef(ast.Id("func"),
@@ -589,7 +589,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 body=[]
             ),
             ast.FuncDef(ast.Id("func"),
-                params=[ast.param("x", type=ast.Id("any"), is_pseudo=True)],
+                params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                         args=[
@@ -602,7 +602,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 body=[]
             ),
             ast.FuncDef(ast.Id("func"),
-                params=[ast.param("x", type=ast.Id("any"), is_pseudo=True)],
+                params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                         args=[
@@ -615,7 +615,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 body=[]
             ),
             ast.FuncDef(ast.Id("func"),
-                params=[ast.param("x", type=ast.Id("any"), is_pseudo=True)],
+                params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                         args=[
@@ -629,7 +629,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 body=[]
             ),
             ast.FuncDef(ast.Id("func"),
-                params=[ast.param("x", type=ast.Id("any"), is_pseudo=True)],
+                params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                         args=[
@@ -642,7 +642,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 body=[]
             ),
             ast.FuncDef(ast.Id("func"),
-                params=[ast.param("x", type=ast.Id("any"), is_pseudo=True)],
+                params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
                         args=[
@@ -665,12 +665,12 @@ def test_parse_advanced_funcs(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        def func(x: pseudo any, y : Metadata = ^metadata(x)) {}
+        def func(x: pseudo Any, y : Metadata = ^metadata(x)) {}
         """,
         [
             ast.FuncDef(ast.Id("func"),
                 params=[
-                    ast.param("x", type=ast.Id("any"), is_pseudo=True),
+                    ast.param("x", type=ast.Id("Any"), is_pseudo=True),
                     ast.param("y", type=ast.Id("Metadata"), value=ast.FuncCall(
                         ast.CallerContextExpr(ast.Id("metadata")),
                         args=[ast.Id("x")],
@@ -720,12 +720,12 @@ def test_parse_advanced_funcs(code, exp_ast):
     ],
     [
         """
-        def func(x: pseudo any, val: int = ^(x+1)) {}
+        def func(x: pseudo Any, val: int = ^(x+1)) {}
         """,
         [
             ast.FuncDef(ast.Id("func"),
                 params=[
-                    ast.param("x", type=ast.Id("any"), is_pseudo=True),
+                    ast.param("x", type=ast.Id("Any"), is_pseudo=True),
                     ast.param("val", type=ast.Id("int"), value=ast.CallerContextExpr(
                         arg=ast.BinExpr(
                             ast.Id("x"),

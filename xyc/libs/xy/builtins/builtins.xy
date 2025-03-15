@@ -81,11 +81,11 @@
     # Implemented by the compiler
 }
 
-*def set(ptr: Ptr, idx: Int, value: pseudo any) -> void {
+*def set(ptr: Ptr, idx: Int, value: pseudo Any) -> void {
     # Implemented by the compiler
 }
 
-*def set(ptr: Ptr, idx: Size, value: pseudo any) -> void {
+*def set(ptr: Ptr, idx: Size, value: pseudo Any) -> void {
     # Implemented by the compiler
 }
 
@@ -94,8 +94,8 @@
     # Implemented by the compiler
 }
 
-;; The address of any variable or even temporary value
-*def addrof(arg: any) -> Ptr~[%^arg] {
+;; The address of Any variable or even temporary value
+*def addrof(arg: Any) -> Ptr~[%^arg] {
     # Implemented by the compiler
 }
 
@@ -407,25 +407,25 @@ struct StrCtor {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-*def get(arr: pseudo any[], index: Int) -> in(arr) Ptr {
+*def get(arr: pseudo Any[], index: Int) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-*def get(arr: pseudo any[], index: Uint) -> in(arr) Ptr {
+*def get(arr: pseudo Any[], index: Uint) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-*def get(arr: pseudo any[], index: Size) -> in(arr) Ptr {
-    # Implemented by the compiler
-}
-
-;; Set element at position {index} of the array {arr}
-*def set(arr: pseudo any[], index: Uint, val: pseudo any) -> void {
+*def get(arr: pseudo Any[], index: Size) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
 ;; Set element at position {index} of the array {arr}
-*def set(arr: pseudo any[], index: Size, val: pseudo any) -> void {
+*def set(arr: pseudo Any[], index: Uint, val: pseudo Any) -> void {
+    # Implemented by the compiler
+}
+
+;; Set element at position {index} of the array {arr}
+*def set(arr: pseudo Any[], index: Size, val: pseudo Any) -> void {
     # Implemented by the compiler
 }
 
@@ -439,19 +439,19 @@ struct EntryPoint {
 
 # Arrays
 
-*def iter(arr: pseudo any[]) -> in(arr) Size {
+*def iter(arr: pseudo Any[]) -> in(arr) Size {
     # Implemented by the compiler
 }
 
-*def valid(arr: pseudo any[], idx: Size) -> Bool {
+*def valid(arr: pseudo Any[], idx: Size) -> Bool {
     # Implemented by the compiler
 }
 
-*def next(arr: pseudo any[], idx: mut Size) -> void {
+*def next(arr: pseudo Any[], idx: mut Size) -> void {
     # Implemented by the compiler
 }
 
-*def len(arr: pseudo any[]) -> Size {
+*def len(arr: pseudo Any[]) -> Size {
     # Implemented by the compiler
 }
 

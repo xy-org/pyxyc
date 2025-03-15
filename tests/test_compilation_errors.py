@@ -50,9 +50,9 @@ note: Candidates are:
         *get(Ptr) -> Ptr
         *get(Ptr, Int) -> Ptr
         *get(Ptr, Size) -> Ptr
-        *get(any[], Int) -> Ptr
-        *get(any[], Uint) -> Ptr
-        *get(any[], Size) -> Ptr
+        *get(Any[], Int) -> Ptr
+        *get(Any[], Uint) -> Ptr
+        *get(Any[], Size) -> Ptr
 """),
     ("""
         def func1(x: Int) = x*2;
@@ -65,26 +65,26 @@ src.xy:4:19: error: Expression doesn't evaluate to a ref
                     ^^^^^
 """),
 #     ("""
-#         def func(ptr: Ptr~int, arg: pseudo any) -> Ptr~[arg'typeof] {
+#         def func(ptr: Ptr~int, arg: pseudo Any) -> Ptr~[arg'typeof] {
 #             return ptr;
 #         }
 #      """, """
 # """),
 #     ("""
-#         def func(ptr: Ptr~int, arg: pseudo any) -> Ptr~[arg~[~int]] {
+#         def func(ptr: Ptr~int, arg: pseudo Any) -> Ptr~[arg~[~int]] {
 #             return ptr;
 #         }
 #      """, """
 # """),
 #     ("""
-#         def func(ptr: Ptr~int, arg: pseudo any) -> Ptr~[~arg'typeof] {
+#         def func(ptr: Ptr~int, arg: pseudo Any) -> Ptr~[~arg'typeof] {
 #             return ptr;
 #         }
 #      """, """
 # """),
 # """),
 #     ("""
-#         def func(ptr: Ptr~int, arg: pseudo any) -> Ptr~[int] {
+#         def func(ptr: Ptr~int, arg: pseudo Any) -> Ptr~[int] {
 #             return ptr~[~arg];
 #         }
 #      """, """
@@ -95,14 +95,14 @@ src.xy:4:19: error: Expression doesn't evaluate to a ref
 #      """, """
 # """),
 
-# def func3(ptr: Ptr, arg: pseudo any) -> Ptr~[<< typeof(a)] {
+# def func3(ptr: Ptr, arg: pseudo Any) -> Ptr~[<< typeof(a)] {
 #     return ptr;
 # }
 
-# using a any param in type expression
+# using a Any param in type expression
 
 #     ("""
-#         def func(arg: pseudo any, ptr: Ptr~[arg'typeof]) -> Ptr~[arg'typeof] {
+#         def func(arg: pseudo Any, ptr: Ptr~[arg'typeof]) -> Ptr~[arg'typeof] {
 #             return ptr;
 #         }
 #      """, """
@@ -152,11 +152,11 @@ src.xy:2:27: error: Cannot infer type because: Cannot find symbol
         struct Desc {
             size: Size;
         }
-        def parse(args: pseudo any, desc := @for(f in args'fieldsof) Desc{f'sizeof}) -> void {
+        def parse(args: pseudo Any, desc := @for(f in args'fieldsof) Desc{f'sizeof}) -> void {
         }
      """, """\
 src.xy:6:60: error: Cannot infer type because: Cannot get fields of an unknown type
-|         def parse(args: pseudo any, desc := @for(f in args'fieldsof) Desc{f'sizeof}) -> void {
+|         def parse(args: pseudo Any, desc := @for(f in args'fieldsof) Desc{f'sizeof}) -> void {
                                                              ^^^^^^^^
 """),
     ("""
@@ -326,10 +326,10 @@ src.xy:5:22: error: Cannot find variable 'a'
 """
     ),
     (
-        """def fun(x: any) %x;""",
+        """def fun(x: Any) %x;""",
         """\
 src.xy:1:17: error: Functions cannot return a type
-| def fun(x: any) %x;
+| def fun(x: Any) %x;
                   ^
 """
     ),
