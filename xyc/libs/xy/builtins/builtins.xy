@@ -294,6 +294,10 @@
     # Implemented by the compiler
 }
 
+*def to(a: Bool, :Long) -> Long {
+    # Implemented by the compiler
+}
+
 *def to(a: Int, :Ulong) -> Ulong {
     # Implemented by the compiler
 }
@@ -480,19 +484,19 @@ struct FuncSelection {
 # Bitwise Operations
 
 *struct Bits8 {
-    value: Ubyte;
+    # Opaque to the programmer
 }
 
 *struct Bits16 {
-    value: Ushort;
+    # Opaque to the programmer
 }
 
 *struct Bits32 {
-    value: Uint;
+    # Opaque to the programmer
 }
 
 *struct Bits64 {
-    value: Ulong;
+    # Opaque to the programmer
 }
 
 ;; Conversion
@@ -501,7 +505,31 @@ struct FuncSelection {
     # implemented by the compiler
 }
 
+*def to(a: Uint, :Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+*def to(a: Long, :Bits64) -> Bits64 {
+    # implemented by the compiler
+}
+
+*def to(a: Ulong, :Bits64) -> Bits64 {
+    # implemented by the compiler
+}
+
 *def to(a: Bits32, :Int) -> Int {
+    # implemented by the compiler
+}
+
+*def to(a: Bits32, :Uint) -> Uint {
+    # implemented by the compiler
+}
+
+*def to(a: Bits64, :Long) -> Long {
+    # implemented by the compiler
+}
+
+*def to(a: Bits64, :Ulong) -> Ulong {
     # implemented by the compiler
 }
 

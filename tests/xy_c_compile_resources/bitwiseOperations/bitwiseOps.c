@@ -9,7 +9,7 @@ struct bitwiseOps_Bits {
 };
 
 bool bitwiseOps_get__Bits64__Int(uint64_t b, int32_t i) {
-    return (b & (uint64_t)1 << i) != 0;
+    return (int64_t)(b & (uint64_t)1 << i) != 0;
 }
 
 int32_t bitwiseOps_set__Bits64__Int__Bool(uint64_t* b, int32_t i, bool val) {
@@ -53,14 +53,16 @@ void bitwiseOps_testMixing(void) {
     bitwiseOps_set__Long__Bits__Int__Bool(&b, 2, true);
     uint64_t tmp_arg3 = bitwiseOps_get__Long__Bits(b);
     bitwiseOps_Bits tmp_arg4 = bitwiseOps_bits(a);
-    bitwiseOps_set__Long__Bits__Int__Bool(&a, 10, bitwiseOps_get__Bits64__Int(tmp_arg3, 10));
-    uint64_t tmp_arg5 = bitwiseOps_get__Long__Bits(a);
-    bitwiseOps_Bits tmp_arg6 = bitwiseOps_bits(a);
-    bitwiseOps_set__Long__Bits__Int__Bool(&a, 11, !bitwiseOps_get__Bits64__Int(tmp_arg5, 11));
-    uint64_t tmp_arg7 = bitwiseOps_get__Long__Bits(a);
-    const uint64_t c = tmp_arg7 | bitwiseOps_get__Long__Bits(b);
-    uint64_t tmp_arg8 = bitwiseOps_get__Long__Bits(a);
-    const uint64_t d = tmp_arg8 & bitwiseOps_get__Long__Bits(b);
-    const uint64_t f = bitwiseOps_get__Long__Bits(a) ^ bitwiseOps_get__Long__Bits(b);
-    const uint64_t g = bitwiseOps_get__Long__Bits((int64_t)d) >> 5;
+    bool tmp_arg5 = bitwiseOps_get__Bits64__Int(tmp_arg3, 10);
+    bitwiseOps_set__Long__Bits__Int__Bool(&a, 10, tmp_arg5);
+    uint64_t tmp_arg6 = bitwiseOps_get__Long__Bits(a);
+    bitwiseOps_Bits tmp_arg7 = bitwiseOps_bits(a);
+    bool tmp_arg8 = !bitwiseOps_get__Bits64__Int(tmp_arg6, 11);
+    bitwiseOps_set__Long__Bits__Int__Bool(&a, 11, tmp_arg8);
+    uint64_t tmp_arg9 = bitwiseOps_get__Long__Bits(a);
+    const uint64_t c = tmp_arg9 | bitwiseOps_get__Long__Bits(b);
+    uint64_t tmp_arg10 = bitwiseOps_get__Long__Bits(a);
+    const int64_t d = (int64_t)(tmp_arg10 & bitwiseOps_get__Long__Bits(b));
+    const int64_t f = (int64_t)(bitwiseOps_get__Long__Bits(a) ^ bitwiseOps_get__Long__Bits(b));
+    const int64_t g = (int64_t)(bitwiseOps_get__Long__Bits(d) >> 5);
 }

@@ -1,13 +1,13 @@
-def oneBit(b: pseudo Any) (%b){1'to(%b.value)};
+def oneBit(:Bits64) 1l'to(Bits64);
 
-#def Any(b: Bits64) b.value != 0;
+#def Any(b: Bits64) b'to(Long) != 0;
 
 def get(b: Bits64, i: Int) -> Bool {
-    return (b & (b'oneBit \shiftl i)).value != 0;
+    return (b & (b'oneBit \shiftl i))'to(Long) != 0;
 }
 
 def set(b: mut Bits64, i: Int, val: Bool) -> in(b) Int {
-    b = b | ((%b){val'to(%b.value)} \shiftl i);
+    b = b | (val'to(Ulong)'to(Bits64) \shiftl i);
     return i;
 }
 
@@ -28,16 +28,16 @@ def bits(a: Long) -> in(a) Bits {
 }
 
 def get(a: Long, b: pseudo Bits) -> Bits64 {
-    return Bits64{a'to(Ulong)};
+    return a'to(Bits64);
 }
 
 def set(num: mut Long, :Bits, i: Int, val: Bool) {
     bits : mut = num'bits;
     bits[i] = val;
-    num = bits.value'to(Long);
+    num = bits'to(Long);
 }
 
-def set(num: mut Long, :Bits, bits: Bits64) num = bits.value'to(Long);
+def set(num: mut Long, :Bits, bits: Bits64) num = bits'to(Long);
 
 def testMixing() {
     ;; Let's try to blend coffee and tea
@@ -52,10 +52,10 @@ def testMixing() {
     a'bits[11] = !a'bits[11];
 
     c := (a'bits | b'bits);
-    d := (a'bits & b'bits).value;
-    #e := (a'bits != b'bits).value;
-    f := (a'bits - b'bits).value;
+    d := (a'bits & b'bits)'to(Long);
+    #e := (a'bits != b'bits)'to(Long);
+    f := (a'bits - b'bits)'to(Long);
 
-    g := (d'to(Long)'bits \shiftr 5).value;
+    g := (d'bits \shiftr 5)'to(Long);
 }
 

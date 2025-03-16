@@ -11,7 +11,9 @@ valgrind_supported = "linux" in sys.platform
     ("helloworldSelfContained2", "Hello World\n", False),
     ("helloworld", "Hello World\n", False),
     ("globalConstants", "Speed of Light = 299792458 m/s\nPi = 3.14\n", False),
-    ("argEval", "In Func 1\nIn Func 2\nIn Func 1\nIn Func 2\nIn Take2\nIn Func 1\nIn Func 2\nIn Ignore Second\n", False),
+    ("argEval", "In Func 1\nIn Func 2\nIn Func 1\nIn Func 2\nIn Take2\nIn Func 1\nIn Func 2\n"
+                "In Ignore First\nIn Func 1\nIn Func 2\nIn Ignore Second\n"
+                "In Func 1\nIn Func 2\nIn Ignore Both\nIn Func 1\nIn Ignore First\nIn Func 2\nIn Ignore Second\n", False),
     ("operatorSlices", "In compute\nIn len\nSlice 42 52\nSlice 52 62\n", False),
     ("dynamicArray", "len=100\nres=-9900\n", True),
     ("printCliArgs", "--arg1\n2\n3.14\n", False),

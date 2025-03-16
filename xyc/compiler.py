@@ -1274,8 +1274,7 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     move_args_to_temps = len(node.in_guards) > 0 or len(node.out_guards) > 0
     param_objs, any_default_values = compile_params(node.params, cast, cfunc, ctx)
     move_args_to_temps = move_args_to_temps or any_default_values
-    if len(node.params) > 0 and not move_args_to_temps:
-        move_args_to_temps = node.params[-1].is_pseudo
+    move_args_to_temps = move_args_to_temps or any(p.is_pseudo for p in node.params)
 
     func_space = ctx.ensure_func_space(node.name)
     expand_name = len(func_space) > 1
@@ -2863,7 +2862,8 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             raise CompilationError("Not a function or callback", expr)
         
 
-    if expr_to_move_idx is not None and func_obj.move_args_to_temps:
+    if expr_to_move_idx is not None and func_obj.move_args_to_temps and not is_builtin_func(func_obj, "to"):
+        # the not is_builtin_func(func_obj, "to") is simply an optimization to produce slighly better code
         arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
             arg_exprs[expr_to_move_idx], cast, cfunc, ctx
         )
@@ -3003,9 +3003,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     elif is_builtin_func(func_obj, "typeEqs"):
         return typeEqs(expr, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "to"):
+        what = arg_exprs[0].c_node
+        to = arg_exprs[1].c_node.name
+        if isinstance(what, c.Cast) and what.to == to:
+            res = what  # eliminate double cast to the same time in rare cases
+        else:
+            res = c.Cast(what=what, to=to)
         return ExprObj(
             xy_node=expr,
-            c_node=c.Cast(what=arg_exprs[0].c_node, to=arg_exprs[1].c_node.name),
+            c_node=res,
             inferred_type=arg_exprs[1].inferred_type
         )
     elif is_builtin_func(func_obj, "iter"):

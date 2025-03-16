@@ -16,14 +16,26 @@ def take2(a: Int, b:Int) -> Int {
     return a + b;
 }
 
+def ignoreFirst(a: pseudo Int, b: Int) {
+    print("In Ignore First\n");
+}
+
 def ignoreSecond(a: Int, b: pseudo Int) {
     print("In Ignore Second\n");
+}
+
+def ignoreBoth(a: pseudo Int, b: pseudo Int) {
+    print("In Ignore Both\n");
 }
 
 def main~EntryPoint() -> Int {
     func1();
     func2();
     take2(func1(), func2());
+    ignoreFirst(func1(), func2());
     ignoreSecond(func1(), func2());
+    ignoreBoth(func1(), func2());
+    ignoreFirst(func1(), 0);
+    ignoreSecond(0, func2());
     return 0;
 }

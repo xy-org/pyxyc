@@ -1,8 +1,8 @@
 def test() -> Uint {
     ;; Let's try to blend letters and numbers
 
-    a: mut = Bits32{0xABCDu};
-    b: mut = Bits32{0x1234u};
+    a: mut = 0xABCDu'to(Bits32);
+    b: mut = 0x1234u'to(Bits32);
 
     c := a | b;
     d := a & b;
@@ -12,6 +12,6 @@ def test() -> Uint {
 
     g := !(c | f & e);
 
-    return g.value;
+    return g'to(Uint);
 }
 
