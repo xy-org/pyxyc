@@ -53,7 +53,7 @@ def testMixing() {
 
     c := (a'bits | b'bits);
     d := (a'bits & b'bits)'to(Long);
-    #e := (a'bits != b'bits)'to(Long);
+    e := (a'bits != b'bits)'to(Long);
     f := (a'bits - b'bits)'to(Long);
 
     g := (d'bits \shiftr 5)'to(Long);

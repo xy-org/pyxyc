@@ -4483,11 +4483,15 @@ def compile_binop(binexpr, cast, cfunc, ctx):
                 )
             return ExprObj(binexpr, c_res, inferred_type=ctx.bool_obj)
         if isinstance(arg1_eobj.c_node, c.Expr) and arg1_eobj.c_node.op == "^":
-            c_res = c.UnaryExpr(
-                arg=arg1_eobj.c_node,
-                op="~",
-                prefix=True,
-            )
+            # working with bits
+            if binexpr.op == "==":
+                c_res = c.UnaryExpr(arg=arg1_eobj.c_node, op="~", prefix=True)
+            elif binexpr.op in {"!=", ">"}:
+                c_res = arg1_eobj.c_node
+            elif binexpr.op == ">=":
+                c_res = c.Expr(arg1_eobj.c_node, c.UnaryExpr(c.Const(0), op="~"), op="|")
+            elif binexpr.op in {"<", "<="}:
+                c_res = c.Expr(arg1_eobj.c_node, c.Const(0), op="&")
             if isinstance(arg1_eobj.c_node.arg2, c.Const) and arg1_eobj.c_node.arg2.value == 0:
                 c_res.arg = arg1_eobj.c_node.arg1
             return ExprObj(binexpr, c_res, inferred_type=arg1_eobj.inferred_type)
