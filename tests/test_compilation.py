@@ -72,6 +72,9 @@ from xyc.compiler import CompilationError
     "indices/enums/enums",
     "indices/enums/enums2",
     "indices/flags/flags",
+    "logicCmp/cmpBools",
+    "logicCmp/cmpBits",
+    # "logicCmp/shortcircuit"
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
