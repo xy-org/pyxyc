@@ -1214,6 +1214,7 @@ def test_move_operators(code, exp_ast):
             addneg := a + -5;
             negadd := -b + a*-c;
             notOp := !a & !true & !b | !(c & d);
+            doubleNeg := !!b;
             doubleMinus := -b - -c;
             a := b~Tag-c;
         }""",
@@ -1253,6 +1254,12 @@ def test_move_operators(code, exp_ast):
                         arg1=ast.Id("c"),
                         arg2=ast.Id("d"),
                     )),
+                )),
+                ast.VarDecl("doubleNeg", value=ast.UnaryExpr(
+                    arg=ast.UnaryExpr(
+                        arg=ast.Id("b"), op="!"
+                    ),
+                    op ="!",
                 )),
                 ast.VarDecl("doubleMinus", value=ast.BinExpr(
                     op='-',
@@ -1463,6 +1470,62 @@ def test_move_operators(code, exp_ast):
     ],
 ])
 def test_expressions(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def func() {
+            return % ! - - + ^ ' a;
+        }""",
+        [
+            ast.FuncDef(ast.Id("func"), body=[
+                ast.Return(ast.UnaryExpr(
+                    op="%",
+                    arg=ast.UnaryExpr(
+                        op="!",
+                        arg=ast.UnaryExpr(
+                            op="-",
+                            arg=ast.UnaryExpr(
+                                op="-",
+                                arg=ast.UnaryExpr(
+                                    op="+",
+                                    arg=ast.CallerContextExpr(
+                                        arg=ast.FuncCall(
+                                            name=ast.Id("a"),
+                                            inject_context=True
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ))
+            ]),
+        ],
+    ],
+    [
+        """def func() {
+            return - - a --;
+        }""",
+        [
+            ast.FuncDef(ast.Id("func"), body=[
+                ast.Return(ast.UnaryExpr(
+                    op="-",
+                    arg=ast.UnaryExpr(
+                        op="-",
+                        arg=ast.UnaryExpr(
+                            op="--",
+                            arg=ast.Id("a")
+                        )
+                    ),
+                ))
+            ]),
+        ],
+    ],
+])
+def test_weird_expressions(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 

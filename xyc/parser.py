@@ -524,14 +524,14 @@ def parse_expression(
     elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!", "&", "%"}:
         coords = itoken.peak_coords()
         op = itoken.consume()
-        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        # NOTE no precedence + 1 in order to allow for chaining unary operators
+        arg1 = parse_expression(itoken, precedence, op_prec=op_prec)
         if op != '!' and isinstance(arg1, Const) and arg1.type != "str":
             if op == '-':
                 arg1.value = -arg1.value
                 arg1.value_str = f'-{arg1.value_str}'
         else:
             arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=coords)
-        return arg1
     elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"++", "--"}:
             raise ParsingError("Prefix increment and decrement are not supported. "
                             "More infor at TBD", itoken)
