@@ -2807,12 +2807,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             obj.num_cnodes = len(cfunc.body) - obj.first_cnode_idx
 
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
-            is_builitin_math = (
-                expr_to_move_idx is not None and
-                arg_exprs[expr_to_move_idx].inferred_type.builtin and obj.inferred_type.builtin
-                and isinstance(expr.name, xy.Id) and expr.name.name in {"add", "sub", "mul", "div"}
-            )
-            if expr_to_move_idx is not None and not is_builitin_math:
+            if expr_to_move_idx is not None:
                 tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, cfunc, ctx)
                 arg_exprs[expr_to_move_idx] = tmp_obj
             

@@ -67,6 +67,8 @@ void bitwiseOps_testMixing(void) {
     uint64_t tmp_arg12 = bitwiseOps_get__Long__Bits(a);
     uint64_t tmp_arg13 = tmp_arg12 ^ bitwiseOps_get__Long__Bits(b);
     const int64_t e = (int64_t)tmp_arg13;
-    const int64_t f = (int64_t)(bitwiseOps_get__Long__Bits(a) ^ bitwiseOps_get__Long__Bits(b));
+    uint64_t tmp_arg14 = bitwiseOps_get__Long__Bits(a);
+    uint64_t tmp_arg15 = tmp_arg14 ^ bitwiseOps_get__Long__Bits(b);
+    const int64_t f = (int64_t)tmp_arg15;
     const int64_t g = (int64_t)(bitwiseOps_get__Long__Bits(d) >> 5);
 }

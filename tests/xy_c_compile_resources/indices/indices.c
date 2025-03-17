@@ -43,13 +43,14 @@ float indices_testPoint(int32_t i) {
     indices_Point p2 = (indices_Point){0, 0, 0, 1.0f};
     p1.m_x = indices_get__Point__Int(p1, i);
     p2.m_z = indices_get__Point__Int(p1, 4 - i);
-    const float sum = p1.m_x + indices_get__Point__Int(p2, 2) + p2.m_z + indices_get__Point__Int(p1, 3);
+    float tmp_arg0 = p1.m_x + indices_get__Point__Int(p2, 2) + p2.m_z;
+    const float sum = tmp_arg0 + indices_get__Point__Int(p1, 3);
     float res = indices_get__Point__Int(p1, 0);
-    float tmp_arg0 = indices_get__Point__Int(p1, 0);
+    float tmp_arg1 = indices_get__Point__Int(p1, 0);
     if (!(0 <= 3)) {
         abort();
     }
-    indices_set__Point__Int__Float(&p2, 0, tmp_arg0);
+    indices_set__Point__Int__Float(&p2, 0, tmp_arg1);
     res += indices_get__Point__Int(p2, 0);
     return res + sum;
 }

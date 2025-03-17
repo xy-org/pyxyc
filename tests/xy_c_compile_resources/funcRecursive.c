@@ -14,7 +14,9 @@ int32_t funcRecursive_func2(int32_t b) {
 }
 
 int32_t funcRecursive_func3(int32_t c) {
-    return funcRecursive_func1(c) + funcRecursive_func2(-c) + c - funcRecursive_func4(c, -c);
+    int32_t tmp_arg0 = funcRecursive_func1(c);
+    int32_t tmp_arg1 = tmp_arg0 + funcRecursive_func2(-c);
+    return tmp_arg1 + c - funcRecursive_func4(c, -c);
 }
 
 int32_t funcRecursive_func4(int32_t a, int32_t b) {
