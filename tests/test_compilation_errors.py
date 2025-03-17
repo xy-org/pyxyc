@@ -365,6 +365,34 @@ src.xy:2:39: error: Cannot set value for pseudo field `field`. Pseudo fields can
                                         ^^^
 """
     ),
+    (
+        """struct MyStruct {
+        }
+        
+        def f() {
+            s := MyStruct{5};
+        }
+        """,
+        """\
+src.xy:5:27: error: Too many positional value in struct literal. Provided '1' but type has only '0' fields
+|             s := MyStruct{5};
+                            ^^^
+"""
+    ),
+        (
+        """struct MyStruct {
+        }
+        
+        def f() {
+            s := MyStruct{missing=5};
+        }
+        """,
+        """\
+src.xy:5:27: error: No field named 'missing'
+|             s := MyStruct{missing=5};
+                            ^^^^^^^^^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

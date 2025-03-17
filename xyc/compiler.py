@@ -2434,6 +2434,12 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
     named_objs = {}
     field_objs = list(type_obj.fields.values())
 
+    if len(expr_args) > len(field_objs):
+        raise CompilationError(
+            f"Too many positional value in struct literal. Provided '{len(expr_args)}' but type has only '{len(field_objs)}' fields", 
+            expr
+        )
+
     any_pseudos = False
     for i, arg in enumerate(expr_args):
         val_obj = compile_expr(arg, cast, cfunc, ctx)
@@ -2448,7 +2454,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
 
     for name, arg in expr_kwargs.items():
         if name not in type_obj.fields:
-            raise CompilationError(f"No field named '{name}", arg)
+            raise CompilationError(f"No field named '{name}'", expr)
         if name in named_objs:
             raise CompilationError(f"Field {name} already set", arg)
         named_objs[name] = compile_expr(arg, cast, cfunc, ctx)
