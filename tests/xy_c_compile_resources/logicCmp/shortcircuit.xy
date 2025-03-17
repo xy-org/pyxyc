@@ -1,0 +1,27 @@
+def func1() -> Bool {
+    return false;
+}
+
+def func2() -> Bool {
+    return true;
+}
+
+def func3(a := func1(), b := func2()) -> Bool {
+    return a != b;
+}
+
+def test1(a: Bool, b: Bool) {
+    c := b & func1();
+}
+
+def test2(a: Bool, b: Bool) {
+    d := a | (b & func1());
+}
+
+def test3(a: Bool, b: Bool) {
+    e := func1() & func3();
+}
+
+def test4() {
+    d := (func1() & func2()) | (func1() | func2() | func3());
+}

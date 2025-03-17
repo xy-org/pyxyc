@@ -32,7 +32,8 @@ float for3_sum(for3_Array arr) {
         if (!(tmp_iter0 < arr.m_len)) {
             abort();
         }
-        res += *for3_get(&arr, tmp_iter0);
+        float* tmp_ref1 = for3_get(&arr, tmp_iter0);
+        res += *tmp_ref1;
     }
     return res;
 }
@@ -47,10 +48,12 @@ float for3_mix(for3_Array arr1, for3_Array arr2) {
             if (!(tmp_iter0 < arr1.m_len)) {
                 abort();
             }
+            float* tmp_ref2 = for3_get(&arr1, tmp_iter0);
             if (!(tmp_iter1 < arr2.m_len)) {
                 abort();
             }
-            res += i * *for3_get(&arr1, tmp_iter0) * *for3_get(&arr2, tmp_iter1);
+            float* tmp_ref3 = for3_get(&arr2, tmp_iter1);
+            res += i * *tmp_ref2 * *tmp_ref3;
         }
     }
     return res;
@@ -65,15 +68,17 @@ void for3_double(for3_Array* arr1) {
             if (!(tmp_iter0 < arr1->m_len)) {
                 abort();
             }
-            for3_set(arr1, tmp_iter0, 2.0f * *for3_get(arr1, tmp_iter0));
-            if (!(tmp_iter0 < arr1->m_len)) {
-                abort();
-            }
-            if (!(tmp_iter0 < arr1->m_len)) {
-                abort();
-            }
             float* tmp_ref2 = for3_get(arr1, tmp_iter0);
-            *tmp_ref2 += *for3_get(arr1, tmp_iter0);
+            for3_set(arr1, tmp_iter0, 2.0f * *tmp_ref2);
+            if (!(tmp_iter0 < arr1->m_len)) {
+                abort();
+            }
+            float* tmp_ref3 = for3_get(arr1, tmp_iter0);
+            if (!(tmp_iter0 < arr1->m_len)) {
+                abort();
+            }
+            float* tmp_ref4 = for3_get(arr1, tmp_iter0);
+            *tmp_ref3 += *tmp_ref4;
         }
     }
 }
@@ -89,10 +94,12 @@ void for3_iterAndChange(for3_Array* arr1) {
         if (!(tmp_iter0 < arr1->m_len)) {
             abort();
         }
-        for3_doSomething(*for3_get(arr1, tmp_iter0));
+        float* tmp_ref1 = for3_get(arr1, tmp_iter0);
+        for3_doSomething(*tmp_ref1);
         if (!(tmp_iter0 < arr1->m_len)) {
             abort();
         }
-        for3_changeSomehow(for3_get(arr1, tmp_iter0));
+        float* tmp_ref2 = for3_get(arr1, tmp_iter0);
+        for3_changeSomehow(tmp_ref2);
     }
 }

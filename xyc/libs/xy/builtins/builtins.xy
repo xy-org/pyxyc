@@ -381,11 +381,11 @@
     # Implemented by the compiler
 }
 
-*def and(a: Bool, b: Bool) -> Bool {
+*def and(a: Bool, ^b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
-*def or(a: Bool, b: Bool) -> Bool {
+*def or(a: Bool, ^b: Bool) -> Bool {
     # Implemented by the compiler
 }
 

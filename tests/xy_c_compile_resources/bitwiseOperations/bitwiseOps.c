@@ -23,8 +23,8 @@ uint64_t bitwiseOps_testBitGetSet(int32_t i) {
     bool tmp_arg0 = bitwiseOps_get__Bits64__Int(b, i);
     bitwiseOps_set__Bits64__Int__Bool(&b, 1, tmp_arg0);
     bool tmp_arg1 = bitwiseOps_get__Bits64__Int(b, 0);
-    bool tmp_arg2 = tmp_arg1 || bitwiseOps_get__Bits64__Int(b, 12);
-    bitwiseOps_set__Bits64__Int__Bool(&b, 10, tmp_arg2);
+    bool tmp_arg3 = tmp_arg1 || bitwiseOps_get__Bits64__Int(b, 12);
+    bitwiseOps_set__Bits64__Int__Bool(&b, 10, tmp_arg3);
     return b;
 }
 
@@ -56,15 +56,17 @@ void bitwiseOps_testMixing(void) {
     bool tmp_arg5 = bitwiseOps_get__Bits64__Int(tmp_arg3, 10);
     bitwiseOps_set__Long__Bits__Int__Bool(&a, 10, tmp_arg5);
     uint64_t tmp_arg6 = bitwiseOps_get__Long__Bits(a);
-    bitwiseOps_Bits tmp_arg7 = bitwiseOps_bits(a);
-    bool tmp_arg8 = !bitwiseOps_get__Bits64__Int(tmp_arg6, 11);
-    bitwiseOps_set__Long__Bits__Int__Bool(&a, 11, tmp_arg8);
+    bool tmp_arg7 = bitwiseOps_get__Bits64__Int(tmp_arg6, 11);
+    bitwiseOps_Bits tmp_arg8 = bitwiseOps_bits(a);
+    bitwiseOps_set__Long__Bits__Int__Bool(&a, 11, !tmp_arg7);
     uint64_t tmp_arg9 = bitwiseOps_get__Long__Bits(a);
     const uint64_t c = tmp_arg9 | bitwiseOps_get__Long__Bits(b);
     uint64_t tmp_arg10 = bitwiseOps_get__Long__Bits(a);
-    const int64_t d = (int64_t)(tmp_arg10 & bitwiseOps_get__Long__Bits(b));
-    uint64_t tmp_arg11 = bitwiseOps_get__Long__Bits(a);
-    const int64_t e = (int64_t)(tmp_arg11 ^ bitwiseOps_get__Long__Bits(b));
+    uint64_t tmp_arg11 = tmp_arg10 & bitwiseOps_get__Long__Bits(b);
+    const int64_t d = (int64_t)tmp_arg11;
+    uint64_t tmp_arg12 = bitwiseOps_get__Long__Bits(a);
+    uint64_t tmp_arg13 = tmp_arg12 ^ bitwiseOps_get__Long__Bits(b);
+    const int64_t e = (int64_t)tmp_arg13;
     const int64_t f = (int64_t)(bitwiseOps_get__Long__Bits(a) ^ bitwiseOps_get__Long__Bits(b));
     const int64_t g = (int64_t)(bitwiseOps_get__Long__Bits(d) >> 5);
 }

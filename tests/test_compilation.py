@@ -74,7 +74,7 @@ from xyc.compiler import CompilationError
     "indices/flags/flags",
     "logicCmp/cmpBools",
     "logicCmp/cmpBits",
-    # "logicCmp/shortcircuit"
+    "logicCmp/shortcircuit"
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)

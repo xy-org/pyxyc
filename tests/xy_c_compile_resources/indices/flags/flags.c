@@ -50,10 +50,10 @@ void flags_test1(void) {
 void flags_test2(void) {
     flags_String tmp_arg0 = flags_string("file.txt", 8);
     flags_open(tmp_arg0, (flags_OpenFlags){(int32_t)((uint32_t)(flags_OpenFlags){O_RDONLY}.m_value | (uint32_t)(flags_OpenFlags){O_WRONLY}.m_value)});
+    flags_String tmp_arg2 = flags_string("file.txt", 8);
     flags_OpenFlags tmp1 = (flags_OpenFlags){0};
     flags_set(&tmp1, (flags_OpenFlags){O_WRONLY}, true);
     flags_set(&tmp1, (flags_OpenFlags){O_APPEND}, true);
-    flags_String tmp_arg2 = flags_string("file.txt", 8);
     flags_open(tmp_arg2, tmp1);
 }
 
@@ -62,16 +62,16 @@ void flags_test3(void) {
     flags_set(&flags, (flags_OpenFlags){O_WRONLY}, true);
     flags_String tmp_arg0 = flags_string("file.txt", 8);
     flags_open(tmp_arg0, flags);
+    flags_String tmp_arg2 = flags_string("file.txt", 8);
     flags_OpenFlags tmp1 = flags;
     flags_set(&tmp1, (flags_OpenFlags){O_APPEND}, true);
-    flags_String tmp_arg2 = flags_string("file.txt", 8);
     flags_open(tmp_arg2, tmp1);
-    flags_OpenFlags tmp3 = flags;
     flags_String tmp_arg4 = flags_string("file.txt", 8);
+    flags_OpenFlags tmp3 = flags;
     flags_open(tmp_arg4, tmp3);
+    flags_String tmp_arg6 = flags_string("file.txt", 8);
     flags_OpenFlags tmp5 = (flags_OpenFlags){0};
     flags_set(&tmp5, (flags_OpenFlags){O_RDONLY}, true);
-    flags_String tmp_arg6 = flags_string("file.txt", 8);
     flags_open(tmp_arg6, (flags_OpenFlags){(int32_t)((uint32_t)flags.m_value | (uint32_t)tmp5.m_value)});
 }
 

@@ -2791,9 +2791,20 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     arg_exprs = ArgList()
     expr_to_move_idx = None
     for i in range(len(expr.args)):
-        obj = compile_expr(expr.args[i], cast, cfunc, ctx, deref=False)
+        dummy_func = c.Func("dummy")
+        obj = compile_expr(expr.args[i], cast, dummy_func, ctx, deref=False)
         if isinstance(obj, IdxObj):
-            obj = idx_decay_to_ptr_or_val(obj, cast, cfunc, ctx)
+            obj = idx_decay_to_ptr_or_val(obj, cast, dummy_func, ctx)
+        if len(dummy_func.body):
+            if expr_to_move_idx is not None:
+                arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
+                    arg_exprs[expr_to_move_idx], cast, cfunc, ctx
+                )
+                expr_to_move_idx = None
+            obj.first_cnode_idx = len(cfunc.body)
+            cfunc.body.extend(dummy_func.body)
+            obj = maybe_move_to_temp(obj, cast, cfunc, ctx)
+            obj.num_cnodes = len(cfunc.body) - obj.first_cnode_idx
 
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
             is_builitin_math = (
@@ -2922,6 +2933,8 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
         tmp_obj.c_node.value = expand_array_to_init_list(expr_obj)
     else:
         tmp_obj.c_node.value = expr_obj.c_node
+    if expr_obj.num_cnodes > 0:
+        assert len(cfunc.body) == expr_obj.first_cnode_idx + expr_obj.num_cnodes
     cfunc.body.append(tmp_obj.c_node)
     return ExprObj(
         xy_node=expr_obj.xy_node,
@@ -2929,8 +2942,8 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
         inferred_type=expr_obj.inferred_type,
         tags=expr_obj.tags,
         compiled_obj=tmp_obj,
-        first_cnode_idx=expr_obj.first_cnode_idx,
-        num_cnodes=expr_obj.num_cnodes + 1,
+        first_cnode_idx=expr_obj.first_cnode_idx if expr_obj.num_cnodes > 0 else len(cfunc.body)-1,
+        num_cnodes=expr_obj.num_cnodes + 1 if expr_obj.num_cnodes > 0 else 1,
     )
 
 def is_simple_cexpr(expr):
@@ -3055,6 +3068,37 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             xy_node=expr,
             inferred_type=func_obj.rtype_obj
         )
+    elif (is_builtin_func(func_obj, "and") or is_builtin_func(func_obj, "or")) and arg_exprs[0].inferred_type is ctx.bool_obj and arg_exprs[1].inferred_type is ctx.bool_obj:
+        redact_code(arg_exprs[1], cast, cfunc, ctx)
+        dummy_func = c.Func("dummy")
+        defered_expr = compile_expr(arg_exprs[1].xy_node, cast, dummy_func, ctx, deref=True)
+        c_op = "&&" if is_builtin_func(func_obj, "and") else "||"
+        non_empty_body_nodes = [n for n in dummy_func.body if not isinstance(n, c.Empty)]
+        if len(non_empty_body_nodes) == 0:
+            cfunc.body.extend(dummy_func.body)
+            res = c.Expr(arg_exprs[0].c_node, defered_expr.c_node, op=c_op)
+            return ExprObj(
+                xy_node=expr,
+                c_node=res,
+                inferred_type=func_obj.rtype_obj
+            )
+        else:
+            tmp_obj = ctx.create_tmp_var(ctx.bool_obj, name_hint="shortcircuit", xy_node=expr)
+            tmp_obj.c_node.value = arg_exprs[0].c_node
+            cfunc.body.append(tmp_obj.c_node)
+
+            res = c.If(c.Id(tmp_obj.c_node.name))
+            if c_op == "||":
+                res.cond = c.UnaryExpr(res.cond, op="!", prefix=True)
+
+            res.body.extend(dummy_func.body)
+            res.body.append(c.Expr(c.Id(tmp_obj.c_node.name), defered_expr.c_node, op="="))
+            cfunc.body.append(res)
+            return ExprObj(
+                xy_node=expr,
+                c_node=c.Id(tmp_obj.c_node.name),
+                inferred_type=func_obj.rtype_obj
+            )
     elif func_obj.builtin and len(arg_exprs) == 2:
         func_to_op_map = {
             "add": '+',
