@@ -1,0 +1,21 @@
+import macrosAndFuncs.module1;
+
+def func2() -> Int {
+    return 5;
+}
+
+def func1(a: Int, b: Int) -> Int {
+    return a + b;
+}
+
+def test() -> Int {
+    # This "test" may look like random bs but there was an actual bug
+    # that caused tmp variable names to get duplicated when mixing functions
+    # and macros from different modules
+    my: Struct;
+    a := func1(func2(), func2());
+    x := macro3(my);
+    b := func1(func2(), func2());
+    c := func1(func2(), func2());
+    return x'to(Int) + a + b + c;
+}

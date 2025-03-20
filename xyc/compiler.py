@@ -3326,6 +3326,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     callee_ctx.func_namespaces = copy(callee_ctx.func_namespaces[:2])
     callee_ctx.caller_contexts = copy(callee_ctx.caller_contexts)
     callee_ctx.push_caller_context(caller_ctx)
+    callee_ctx.tmp_names = caller_ctx.tmp_names
 
     # XXX
     if hasattr(func_obj.c_node, 'name'):

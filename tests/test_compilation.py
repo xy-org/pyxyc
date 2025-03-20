@@ -156,6 +156,7 @@ def test_common_errors(code, err_msg, tmp_path):
     "visibility/package3",
     "structVisibility/package2",
     "multipleMacros",
+    "macrosAndFuncs",
     "crossModuleSelect",
 ])
 def test_module_compilation(resource_dir, module, tmp_path):

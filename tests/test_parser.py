@@ -551,6 +551,20 @@ def test_parse_implied_context_expr(code, exp_ast):
     [
         """
         def func(x: int)
+            x + 1;
+        """,
+        [
+            ast.FuncDef(ast.Id("func"),
+                params=[
+                    ast.param("x", type=ast.Id("int")),
+                ],
+                body=ast.BinExpr(ast.Id("x"), ast.Const(1), op="+")
+            ),
+        ]
+    ],
+    [
+        """
+        def func(x: int)
         # comment
         # >> comment
         # << comment
