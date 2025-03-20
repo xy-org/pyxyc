@@ -294,6 +294,10 @@
     # Implemented by the compiler
 }
 
+*def to(a: Bool, :Uint) -> Uint {
+    # Implemented by the compiler
+}
+
 *def to(a: Bool, :Long) -> Long {
     # Implemented by the compiler
 }

@@ -2174,6 +2174,17 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
         )
 
 def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
+    try:
+        return do_idx_set(idx_obj, val_obj, cast, cfunc, ctx)
+    except CompilationError as e:
+        raise CompilationError(
+            f"Cannot set 'in({idx_obj.container.inferred_type.name}) "
+            f"{idx_obj.idx.inferred_type.name}' "\
+            f"because: {e.error_message}", e.xy_node,
+            notes=e.notes
+        )
+
+def do_idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
     if isinstance(idx_obj.idx, VarObj):
         return ExprObj(
             c_node=c.Expr(idx_obj.c_node, val_obj.c_node, op="="),
@@ -2198,12 +2209,10 @@ def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
     arg_objs = ArgList(idx_chain)
     set_fobj = maybe_find_func_obj("set", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
     if set_fobj is None:
-        # import pdb; pdb.set_trace()
         shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
         if not isinstance(shortened_idx, IdxObj):
-            raise CompilationError("Cannot set index", idx_obj.xy_node)
+            raise CompilationError(f"Can neither set nor decay {fmt_idx_typename(idx_obj)}", idx_obj.xy_node)
         if shortened_idx is None:
-            import pdb; pdb.set_trace()
             raise CompilationError("Cannot set index", idx_obj.xy_node)
         return idx_set(shortened_idx, val_obj, cast, cfunc, ctx)
     else:
@@ -2221,6 +2230,19 @@ def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
             arg_exprs=args_prepared,
             cast=cast, cfunc=cfunc, ctx=ctx
         )
+
+def fmt_idx_typename(idx_obj: IdxObj):
+    res = ""
+    if idx_obj.container is not None:
+        res = idx_obj.container.inferred_type.name
+    res += "["
+    while getattr(idx_obj, 'idx', None) is not None:
+        if res[-1] != "[":
+            res += ", "
+        res += idx_obj.idx.inferred_type.name
+        idx_obj = idx_obj.idx
+    res += "]"
+    return res
 
 def idx_flatten_chain(idx_obj: IdxObj, cast, cfunc, ctx):
     if is_ptr_type(idx_obj.idx.inferred_type, ctx):

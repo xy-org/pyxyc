@@ -379,7 +379,7 @@ operator_precedence = {
     "==": 5, "!=": 5, "in": 5,
     "&": 4,
     "|": 3, "||": 3,
-    "=": 2, '+=': 2, '-=': 2, "|=": 2, '*=': 2, '/=': 2, ".=": 2, "=<": 2, "=>": 2,
+    "=": 2, '+=': 2, '-=': 2, "|=": 2, "&=": 2, '*=': 2, '/=': 2, ".=": 2, "=<": 2, "=>": 2,
 }
 MIN_PRECEDENCE=2
 UNARY_PRECEDENCE=10
@@ -688,7 +688,7 @@ def parse_expression(
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
             end_coord = arg2.coords[1] if arg2 is not None else op_coords[1]
             arg1 = BinExpr(
-                arg2, Const(True), op="=", src=itoken.src, coords=[op_coords[0], end_coord]
+                arg2, Const(True, src=itoken.src, coords=arg2.coords), op="=", src=itoken.src, coords=[op_coords[0], end_coord]
             )
         else:
             arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)

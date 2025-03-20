@@ -1,0 +1,14 @@
+struct MyStruct {
+    value := 0;
+
+    flag1 : pseudo = Flag{1};
+    flag2 : pseudo = Flag{2};
+}
+
+struct Flag {
+    value: Int;
+}
+
+def test(s: MyStruct) -> Bool {
+    return s.flag1;
+}
