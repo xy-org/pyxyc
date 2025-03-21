@@ -35,9 +35,9 @@ bool macros1_impl__Struct__Tag3(macros1_Struct s) {
 }
 
 void macros1_test(void) {
-    macros1_Struct a = (macros1_Struct){0};
-    macros1_Struct b = (macros1_Struct){0};
-    macros1_Struct c = (macros1_Struct){0};
+    macros1_Struct a = {0};
+    macros1_Struct b = {0};
+    macros1_Struct c = {0};
     const int32_t x = macros1_impl__Struct__Tag1(a);
     const float y = macros1_impl__Struct__Tag2(b);
     const int32_t z = macros1_impl__Struct__Tag1(c);

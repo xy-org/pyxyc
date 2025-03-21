@@ -28,6 +28,6 @@ boundaryExprMultiModule_module_Rtti boundaryExprMultiModule_rtti(void) {
 }
 
 void boundaryExprMultiModule_main(void) {
-    boundaryExprMultiModule_Struct x = (boundaryExprMultiModule_Struct){0};
+    boundaryExprMultiModule_Struct x = {0};
     boundaryExprMultiModule_module_print(boundaryExprMultiModule_rtti());
 }

@@ -33,20 +33,20 @@ int32_t slices_max__Int(void) {
 }
 
 void slices_testIntSlices(void) {
-    const slices_AllSlice a = (slices_AllSlice){0};
+    const slices_AllSlice a = {0};
     int32_t tmp_arg0 = slices_max__Int();
-    const slices_IntSlice b = (slices_IntSlice){1, tmp_arg0, 1};
+    const slices_IntSlice b = {1, tmp_arg0, 1};
     const int32_t x = 10;
     const int32_t y = 1000;
-    const slices_IntSlice c = (slices_IntSlice){0, x, 1};
-    const slices_IntSlice d = (slices_IntSlice){1, x, y};
-    const slices_IntSlice e = (slices_IntSlice){0, slices_max__Int(), -1};
-    const slices_IntSlice f = (slices_IntSlice){0, x, 1};
-    const slices_IntSlice g = (slices_IntSlice){0, x, y};
+    const slices_IntSlice c = {0, x, 1};
+    const slices_IntSlice d = {1, x, y};
+    const slices_IntSlice e = {0, slices_max__Int(), -1};
+    const slices_IntSlice f = {0, x, 1};
+    const slices_IntSlice g = {0, x, y};
     int32_t tmp_arg1 = slices_max__Int();
-    const slices_IntSlice i = (slices_IntSlice){x, tmp_arg1, y};
-    const slices_IntSlice j = (slices_IntSlice){x, y, 1};
-    const slices_IntSlice k = (slices_IntSlice){x, y, 1};
+    const slices_IntSlice i = {x, tmp_arg1, y};
+    const slices_IntSlice j = {x, y, 1};
+    const slices_IntSlice k = {x, y, 1};
 }
 
 int64_t slices_max__Long(void) {
@@ -54,9 +54,9 @@ int64_t slices_max__Long(void) {
 }
 
 void slices_testDataSlices(void) {
-    const slices_Date today = (slices_Date){time(NULL)};
-    const slices_Date tomorrow = (slices_Date){(slices_Date){time(NULL)}.m_unixtime + 24 * 60 * 60};
-    const slices_DateSlice a = (slices_DateSlice){today, tomorrow, (slices_Date){1}};
-    const slices_DateSlice b = (slices_DateSlice){tomorrow, today, (slices_Date){-1}};
-    const slices_DateSlice d = (slices_DateSlice){(slices_Date){0}, tomorrow, (slices_Date){1}};
+    const slices_Date today = {time(NULL)};
+    const slices_Date tomorrow = {(slices_Date){time(NULL)}.m_unixtime + 24 * 60 * 60};
+    const slices_DateSlice a = {today, tomorrow, (slices_Date){1}};
+    const slices_DateSlice b = {tomorrow, today, (slices_Date){-1}};
+    const slices_DateSlice d = {(slices_Date){0}, tomorrow, (slices_Date){1}};
 }

@@ -16,7 +16,7 @@ void injectScopeArgs_func(int32_t a, float b, injectScopeArgs_MyStruct c) {
 void injectScopeArgs_test1(void) {
     const int32_t a = 0;
     const float b = .0f;
-    const injectScopeArgs_MyStruct c = (injectScopeArgs_MyStruct){0};
+    const injectScopeArgs_MyStruct c = {0};
     injectScopeArgs_func(a, b, c);
 }
 

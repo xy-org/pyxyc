@@ -29,7 +29,7 @@ void stringInterpolation_append__StrBuilder__Ptr__Size(stringInterpolation_StrBu
 }
 
 stringInterpolation_Str stringInterpolation_to(stringInterpolation_StrBuilder* builder) {
-    const stringInterpolation_Str res = (stringInterpolation_Str){builder->m_addr, builder->m_size};
+    const stringInterpolation_Str res = {builder->m_addr, builder->m_size};
     return res;
 }
 

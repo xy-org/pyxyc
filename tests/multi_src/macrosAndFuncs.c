@@ -39,7 +39,7 @@ int32_t macrosAndFuncs_func1(int32_t a, int32_t b) {
 }
 
 int32_t macrosAndFuncs_test(void) {
-    macrosAndFuncs_module1_Struct my = (macrosAndFuncs_module1_Struct){0};
+    macrosAndFuncs_module1_Struct my = {0};
     int32_t tmp_arg0 = macrosAndFuncs_func2();
     const int32_t a = macrosAndFuncs_func1(tmp_arg0, macrosAndFuncs_func2());
     macrosAndFuncs_module1_Struct tmp1 = my;

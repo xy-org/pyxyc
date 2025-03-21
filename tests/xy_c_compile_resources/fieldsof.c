@@ -28,19 +28,19 @@ void fieldsof_printFields(fieldsof_FieldDesc* fieldsPtr, size_t fieldsLen) {
 }
 
 void fieldsof_test1(void) {
-    const fieldsof_MyStruct s = (fieldsof_MyStruct){0};
+    const fieldsof_MyStruct s = {0};
     const fieldsof_FieldDesc descs[3] = {(fieldsof_FieldDesc){sizeof(s.m_a)}, (fieldsof_FieldDesc){sizeof(s.m_b)}, (fieldsof_FieldDesc){sizeof(s.m_c)}};
 }
 
 void fieldsof_test2(void) {
-    const fieldsof_MyStruct s = (fieldsof_MyStruct){0};
+    const fieldsof_MyStruct s = {0};
     fieldsof_FieldDesc tmp_arg0[3] = {(fieldsof_FieldDesc){sizeof(s.m_a)}, (fieldsof_FieldDesc){sizeof(s.m_b)}, (fieldsof_FieldDesc){sizeof(s.m_c)}};
     for (size_t tmp_iter1 = 0; tmp_iter1 < 3; ++tmp_iter1) {
     }
 }
 
 void fieldsof_test3(void) {
-    const fieldsof_MyStruct s = (fieldsof_MyStruct){0};
+    const fieldsof_MyStruct s = {0};
     fieldsof_FieldDesc tmp_arg0[3] = {(fieldsof_FieldDesc){sizeof(s.m_a)}, (fieldsof_FieldDesc){sizeof(s.m_b)}, (fieldsof_FieldDesc){sizeof(s.m_c)}};
     fieldsof_printFields(tmp_arg0, 3);
 }

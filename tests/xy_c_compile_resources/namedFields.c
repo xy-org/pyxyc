@@ -29,14 +29,14 @@ namedFields_String namedFields_string(void* addr, size_t size) {
 }
 
 void namedFields_test(void) {
-    namedFields_Person p1 = (namedFields_Person){0};
-    const namedFields_Person p2 = (namedFields_Person){0};
-    const namedFields_Person p3 = (namedFields_Person){namedFields_string("Johnny", 6), namedFields_string("Cash", 4)};
-    const namedFields_Person p4 = (namedFields_Person){namedFields_string("Johnny", 6), namedFields_string("Cash", 4), 71, 1.88, true};
-    const namedFields_Person p5 = (namedFields_Person){(namedFields_String){0}, (namedFields_String){0}, 71, 0, true};
-    const namedFields_Person p6 = (namedFields_Person){namedFields_string("Jonny", 5), namedFields_string("Cash", 4), 0, 0, true};
-    const namedFields_Person p7 = (namedFields_Person){namedFields_string("Johnny", 6), namedFields_string("Cash", 4), 71};
-    const namedFields_Person p8 = (namedFields_Person){(namedFields_String){0}, (namedFields_String){0}, 71, 0, 0, (namedFields_Color){0, 0, 0}};
+    namedFields_Person p1 = {0};
+    const namedFields_Person p2 = {0};
+    const namedFields_Person p3 = {namedFields_string("Johnny", 6), namedFields_string("Cash", 4)};
+    const namedFields_Person p4 = {namedFields_string("Johnny", 6), namedFields_string("Cash", 4), 71, 1.88, true};
+    const namedFields_Person p5 = {(namedFields_String){0}, (namedFields_String){0}, 71, 0, true};
+    const namedFields_Person p6 = {namedFields_string("Jonny", 5), namedFields_string("Cash", 4), 0, 0, true};
+    const namedFields_Person p7 = {namedFields_string("Johnny", 6), namedFields_string("Cash", 4), 71};
+    const namedFields_Person p8 = {(namedFields_String){0}, (namedFields_String){0}, 71, 0, 0, (namedFields_Color){0, 0, 0}};
     namedFields_Person tmp0 = p3;
     tmp0.m_age = 71;
     tmp0.m_married = true;

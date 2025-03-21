@@ -21,15 +21,15 @@ struct package2_module1_Struct2 {
 };
 
 void package1_module1_test(void) {
-    const package1_module1_Struct1 a = (package1_module1_Struct1){0};
-    const package1_module1_Struct2 b = (package1_module1_Struct2){0};
+    const package1_module1_Struct1 a = {0};
+    const package1_module1_Struct2 b = {0};
 }
 
 void package1_module2_test(void) {
-    const package1_module1_Struct1 a = (package1_module1_Struct1){0};
+    const package1_module1_Struct1 a = {0};
 }
 
 void package2_test(void) {
-    const package1_module1_Struct1 a = (package1_module1_Struct1){0};
-    const package2_module1_Struct2 b = (package2_module1_Struct2){0};
+    const package1_module1_Struct1 a = {0};
+    const package2_module1_Struct2 b = {0};
 }

@@ -24,7 +24,7 @@ boundaryExpr3_Msg boundaryExpr3_longComputation(void) {
 }
 
 void boundaryExpr3_test(void) {
-    const boundaryExpr3_Logger log = (boundaryExpr3_Logger){0};
+    const boundaryExpr3_Logger log = {0};
     bool tmp1 = 0;
     if (log.m_enabled) {
         tmp1 = boundaryExpr3_doLog(log, boundaryExpr3_longComputation());

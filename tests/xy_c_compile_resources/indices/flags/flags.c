@@ -58,7 +58,7 @@ void flags_test2(void) {
 }
 
 void flags_test3(void) {
-    flags_OpenFlags flags = (flags_OpenFlags){0};
+    flags_OpenFlags flags = {0};
     flags_set(&flags, (flags_OpenFlags){O_WRONLY}, true);
     flags_String tmp_arg0 = flags_string("file.txt", 8);
     flags_open(tmp_arg0, flags);

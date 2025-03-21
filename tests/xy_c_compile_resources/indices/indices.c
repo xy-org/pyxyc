@@ -39,8 +39,8 @@ void indices_set__Point__Int__Float(indices_Point* p, int32_t idx, float v) {
 }
 
 float indices_testPoint(int32_t i) {
-    indices_Point p1 = (indices_Point){0, 0, 0, (float)i};
-    indices_Point p2 = (indices_Point){0, 0, 0, 1.0f};
+    indices_Point p1 = {0, 0, 0, (float)i};
+    indices_Point p2 = {0, 0, 0, 1.0f};
     p1.m_x = indices_get__Point__Int(p1, i);
     p2.m_z = indices_get__Point__Int(p1, 4 - i);
     float tmp_arg0 = p1.m_x + indices_get__Point__Int(p2, 2) + p2.m_z;
@@ -71,7 +71,7 @@ void indices_set__PointCloud__Int__Point(indices_PointCloud* pc, int32_t i, indi
 }
 
 void indices_testPointCloud(indices_PointCloud* m0, indices_PointCloud m1) {
-    indices_PointCloud ms = (indices_PointCloud){0};
+    indices_PointCloud ms = {0};
     indices_append(&ms, (indices_Point){1.0f, 1.0f, .05f, 1.0f});
     indices_append(&ms, (indices_Point){1.0f, 1.0f, .05f, 1.0f});
     const indices_Point p = *indices_get__PointCloud__Int(*m0, 10);

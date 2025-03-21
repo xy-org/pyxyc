@@ -26,7 +26,7 @@ funcs_A funcs_callDoubles(funcs_A* a) {
 }
 
 int32_t funcs_test(void) {
-    funcs_A a = (funcs_A){5};
+    funcs_A a = {5};
     funcs_double(a);
     funcs_doubleInout(&a);
     return funcs_callDoubles(&a).m_num;
@@ -55,7 +55,7 @@ funcs_A funcs_rndA(void) {
 void funcs_testDefaultArgs(void) {
     funcs_defaultArg0((funcs_A){0}, (funcs_A){0});
     funcs_defaultArg1((funcs_A){0}, (funcs_A){0});
-    const funcs_A a = (funcs_A){10};
+    const funcs_A a = {10};
     funcs_defaultArg1(a, (funcs_A){0});
     funcs_defaultArg2(a, funcs_rndA());
     funcs_defaultArg2(a, (funcs_A){10});

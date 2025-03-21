@@ -1705,7 +1705,7 @@ def compile_vardecl(node, cast, cfunc, ctx):
     res_obj = VarObj(node, cvar, type_desc, needs_dtor=needs_dtor)
     ctx.ns[node.name] = res_obj
 
-    if node.value is not None:
+    if value_obj is not None:
         if isinstance(type_desc, ArrTypeObj):
             cvar.value = expand_array_to_init_list(value_obj)
         else:
@@ -1715,6 +1715,9 @@ def compile_vardecl(node, cast, cfunc, ctx):
             cvar.value = c.InitList(elems=[c.Const(0)])
         else:
             cvar.value = type_desc.init_value
+
+    if isinstance(cvar.value, c.CompoundLiteral):
+        cvar.value = c.InitList(elems=cvar.value.args)
 
     return res_obj
 

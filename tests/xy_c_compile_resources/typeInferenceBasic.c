@@ -23,7 +23,7 @@ void typeInferenceBasic_func(void) {
     const size_t z = 1024;
     const bool t = true;
     const bool f = false;
-    const typeInferenceBasic_Pair p = (typeInferenceBasic_Pair){a, b};
+    const typeInferenceBasic_Pair p = {a, b};
 }
 
 void typeInferenceBasic_implicitVoid(void) {

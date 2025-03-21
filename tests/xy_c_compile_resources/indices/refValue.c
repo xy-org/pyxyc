@@ -20,7 +20,7 @@ void refValue_test(void) {
     int32_t a = 10;
     int32_t* const b = &a;
     int32_t* const c = &a;
-    const refValue_Data d = (refValue_Data){0};
+    const refValue_Data d = {0};
     const float e = refValue_get(d, refValue_func1(d, 10));
     const int32_t f = refValue_func1(d, 10);
 }

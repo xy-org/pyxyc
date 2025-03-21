@@ -24,7 +24,7 @@ void enums2_printColor(enums2_Color c) {
 }
 
 void enums2_test(void) {
-    const enums2_Color c1 = (enums2_Color){.2f, .2f, 1};
+    const enums2_Color c1 = {.2f, .2f, 1};
     const enums2_Color c2 = ENUMS2_PALETTE.m_blue;
     enums2_printColor(c1);
     enums2_printColor(c2);

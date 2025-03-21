@@ -21,14 +21,14 @@ void pseudoFields_set(pseudoFields_Point* p, pseudoFields_CoordField f, float va
 }
 
 void pseudoFields_test(void) {
-    pseudoFields_Point p1 = (pseudoFields_Point){0};
+    pseudoFields_Point p1 = {0};
     pseudoFields_set(&p1, (pseudoFields_CoordField){0}, 10.0f);
     pseudoFields_set(&p1, (pseudoFields_CoordField){1}, 20.0f);
     float tmp_arg0 = pseudoFields_get(p1, (pseudoFields_CoordField){0});
     pseudoFields_set(&p1, (pseudoFields_CoordField){2}, tmp_arg0 + pseudoFields_get(p1, (pseudoFields_CoordField){1}));
     pseudoFields_set(&p1, (pseudoFields_CoordField){0}, pseudoFields_get(p1, (pseudoFields_CoordField){0}));
     pseudoFields_set(&p1, (pseudoFields_CoordField){0}, p1.m_coords[0]);
-    const pseudoFields_Point p2 = (pseudoFields_Point){{10.0f, 20.0f, 30.0f}};
+    const pseudoFields_Point p2 = {{10.0f, 20.0f, 30.0f}};
     pseudoFields_Point tmp1 = p1;
     pseudoFields_set(&tmp1, (pseudoFields_CoordField){0}, 10.0f);
     pseudoFields_set(&tmp1, (pseudoFields_CoordField){1}, 20.0f);
