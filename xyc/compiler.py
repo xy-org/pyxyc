@@ -2610,7 +2610,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             if len(p.command) != 2 and p.command[0] != "cat":
                 raise CompilationError("Only cat'ing a single file is currently supported", p)
             with open(os.path.join(ctx.module_path, p.command[1])) as f:
-                to_append = xy.Const(f.read())
+                to_append = xy.Const(escape_str(f.read()))
         if is_str(to_append) and len(parts) > 0 and is_str(parts[-1]):
             parts[-1].value += to_append.value
             parts[-1].value_str += to_append.value_str
@@ -2722,7 +2722,10 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             )
         else:
             return builder_tmpvar_id
-    
+
+def escape_str(s: str):
+    return s.translate(str.maketrans({"\n": "\\n", '"': '\\"', '\\': '\\\\'}))
+
 def is_str_const(node: xy.Node) -> bool:
     return isinstance(node, xy.Const) and isinstance(node.value, str)
 
