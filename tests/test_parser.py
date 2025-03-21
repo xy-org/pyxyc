@@ -1482,6 +1482,24 @@ def test_move_operators(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def test(a: Any) func(%a{0});""",
+        [
+            ast.FuncDef(ast.Id("test"), body=ast.FuncCall(
+                name=ast.Id("func"), args=[
+                    ast.UnaryExpr(
+                        ast.StructLiteral(
+                            name=ast.Id("a"),
+                            args=[ast.Const(0)]
+                        ),
+                        op="%"
+                    )
+                ]
+            ), params=[
+                ast.VarDecl("a", type=ast.Id("Any"), is_param=True)
+            ]),
+        ]
+    ],
 ])
 def test_expressions(code, exp_ast):
     act_ast = parse_code(code)
