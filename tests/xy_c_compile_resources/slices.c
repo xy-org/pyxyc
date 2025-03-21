@@ -33,20 +33,20 @@ int32_t slices_max__Int(void) {
 }
 
 void slices_testIntSlices(void) {
-    const slices_AllSlice a = {0};
+    const slices_AllSlice l_a = {0};
     int32_t tmp_arg0 = slices_max__Int();
-    const slices_IntSlice b = {1, tmp_arg0, 1};
-    const int32_t x = 10;
-    const int32_t y = 1000;
-    const slices_IntSlice c = {0, x, 1};
-    const slices_IntSlice d = {1, x, y};
-    const slices_IntSlice e = {0, slices_max__Int(), -1};
-    const slices_IntSlice f = {0, x, 1};
-    const slices_IntSlice g = {0, x, y};
+    const slices_IntSlice l_b = {1, tmp_arg0, 1};
+    const int32_t l_x = 10;
+    const int32_t l_y = 1000;
+    const slices_IntSlice l_c = {0, l_x, 1};
+    const slices_IntSlice l_d = {1, l_x, l_y};
+    const slices_IntSlice l_e = {0, slices_max__Int(), -1};
+    const slices_IntSlice l_f = {0, l_x, 1};
+    const slices_IntSlice l_g = {0, l_x, l_y};
     int32_t tmp_arg1 = slices_max__Int();
-    const slices_IntSlice i = {x, tmp_arg1, y};
-    const slices_IntSlice j = {x, y, 1};
-    const slices_IntSlice k = {x, y, 1};
+    const slices_IntSlice l_i = {l_x, tmp_arg1, l_y};
+    const slices_IntSlice l_j = {l_x, l_y, 1};
+    const slices_IntSlice l_k = {l_x, l_y, 1};
 }
 
 int64_t slices_max__Long(void) {
@@ -54,9 +54,9 @@ int64_t slices_max__Long(void) {
 }
 
 void slices_testDataSlices(void) {
-    const slices_Date today = {time(NULL)};
-    const slices_Date tomorrow = {(slices_Date){time(NULL)}.m_unixtime + 24 * 60 * 60};
-    const slices_DateSlice a = {today, tomorrow, (slices_Date){1}};
-    const slices_DateSlice b = {tomorrow, today, (slices_Date){-1}};
-    const slices_DateSlice d = {(slices_Date){0}, tomorrow, (slices_Date){1}};
+    const slices_Date l_today = {time(NULL)};
+    const slices_Date l_tomorrow = {(slices_Date){time(NULL)}.m_unixtime + 24 * 60 * 60};
+    const slices_DateSlice l_a = {l_today, l_tomorrow, (slices_Date){1}};
+    const slices_DateSlice l_b = {l_tomorrow, l_today, (slices_Date){-1}};
+    const slices_DateSlice l_d = {(slices_Date){0}, l_tomorrow, (slices_Date){1}};
 }

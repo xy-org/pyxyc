@@ -12,10 +12,10 @@ struct boundaryExpr3_Msg {
     char __empty_structs_are_not_allowed_in_c__;
 };
 
-void boundaryExpr3_info(boundaryExpr3_Logger log, bool logged) {
+void boundaryExpr3_info(boundaryExpr3_Logger p_log, bool p_logged) {
 }
 
-bool boundaryExpr3_doLog(boundaryExpr3_Logger log, boundaryExpr3_Msg msg) {
+bool boundaryExpr3_doLog(boundaryExpr3_Logger p_log, boundaryExpr3_Msg p_msg) {
     return true;
 }
 
@@ -24,12 +24,12 @@ boundaryExpr3_Msg boundaryExpr3_longComputation(void) {
 }
 
 void boundaryExpr3_test(void) {
-    const boundaryExpr3_Logger log = {0};
+    const boundaryExpr3_Logger l_log = {0};
     bool tmp1 = 0;
-    if (log.m_enabled) {
-        tmp1 = boundaryExpr3_doLog(log, boundaryExpr3_longComputation());
+    if (l_log.m_enabled) {
+        tmp1 = boundaryExpr3_doLog(l_log, boundaryExpr3_longComputation());
     } else {
         tmp1 = false;
     }
-    boundaryExpr3_info(log, tmp1);
+    boundaryExpr3_info(l_log, tmp1);
 }

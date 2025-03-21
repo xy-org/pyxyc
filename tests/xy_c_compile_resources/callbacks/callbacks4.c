@@ -20,10 +20,10 @@ void callbacks4_test1(void) {
 void callbacks4_test2(void) {
 }
 
-void* callbacks4_str(void* addr, size_t size) {
-    return addr;
+void* callbacks4_str(void* p_addr, size_t p_size) {
+    return p_addr;
 }
 
 void callbacks4_test(void) {
-    const callbacks4_FuncDesc tests[2] = {(callbacks4_FuncDesc){callbacks4_test1, callbacks4_str("test1", 5)}, (callbacks4_FuncDesc){callbacks4_test2, callbacks4_str("test2", 5)}};
+    const callbacks4_FuncDesc l_tests[2] = {(callbacks4_FuncDesc){callbacks4_test1, callbacks4_str("test1", 5)}, (callbacks4_FuncDesc){callbacks4_test2, callbacks4_str("test2", 5)}};
 }

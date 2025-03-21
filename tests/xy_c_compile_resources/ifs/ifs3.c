@@ -2,8 +2,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-int32_t ifs3_compute(int32_t a, int32_t b, int32_t c) {
-    return a + b * c;
+int32_t ifs3_compute(int32_t p_a, int32_t p_b, int32_t p_c) {
+    return p_a + p_b * p_c;
 }
 
 int32_t ifs3_helper1(void) {

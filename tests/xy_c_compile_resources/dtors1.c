@@ -9,42 +9,42 @@ struct dtors1_Array {
     void* m_mem;
 };
 
-void dtors1_free(void* mem) {
+void dtors1_free(void* p_mem) {
 }
 
-void dtors1_push(dtors1_Array* arr, int32_t val) {
+void dtors1_push(dtors1_Array* p_arr, int32_t p_val) {
 }
 
-void dtors1_dtor(dtors1_Array p, bool managed) {
-    if (managed) {
-        dtors1_free(p.m_mem);
+void dtors1_dtor(dtors1_Array p_p, bool p_managed) {
+    if (p_managed) {
+        dtors1_free(p_p.m_mem);
     }
 }
 
-void dtors1_update(dtors1_Array* arr) {
+void dtors1_update(dtors1_Array* p_arr) {
 }
 
-int32_t dtors1_errorProne(dtors1_Array arr) {
+int32_t dtors1_errorProne(dtors1_Array p_arr) {
     return 0;
 }
 
-dtors1_Array dtors1_funcReturningAnObjectWithDtor(int32_t num) {
-    dtors1_Array arr = {0};
-    for (int32_t i = 0; i < num; ++i) {
-        dtors1_push(&arr, i);
+dtors1_Array dtors1_funcReturningAnObjectWithDtor(int32_t p_num) {
+    dtors1_Array l_arr = {0};
+    for (int32_t i = 0; i < p_num; ++i) {
+        dtors1_push(&l_arr, i);
     }
-    return arr;
+    return l_arr;
 }
 
-void* dtors1_addr(dtors1_Array p) {
-    return p.m_mem;
+void* dtors1_addr(dtors1_Array p_p) {
+    return p_p.m_mem;
 }
 
 void dtors1_test1(void) {
-    dtors1_Array arr = {0};
-    dtors1_push(&arr, 10);
-    dtors1_update(&arr);
-    const int32_t tmp_err0 = dtors1_errorProne(arr);
+    dtors1_Array l_arr = {0};
+    dtors1_push(&l_arr, 10);
+    dtors1_update(&l_arr);
+    const int32_t tmp_err0 = dtors1_errorProne(l_arr);
     if ((bool)tmp_err0) {
         abort();
     }
@@ -54,113 +54,113 @@ void dtors1_test1(void) {
         abort();
     }
     dtors1_dtor(tmp_arg1, true);
-    dtors1_dtor(arr, true);
+    dtors1_dtor(l_arr, true);
 }
 
-int32_t dtors1_test2(int32_t rng) {
-    dtors1_Array arr1 = {0};
-    const int32_t tmp_err0 = dtors1_errorProne(arr1);
+int32_t dtors1_test2(int32_t p_rng) {
+    dtors1_Array l_arr1 = {0};
+    const int32_t tmp_err0 = dtors1_errorProne(l_arr1);
     if ((bool)tmp_err0) {
-        dtors1_dtor(arr1, true);
+        dtors1_dtor(l_arr1, true);
         return tmp_err0;
     }
-    dtors1_Array arr2 = {0};
-    const int32_t tmp_err1 = dtors1_errorProne(arr2);
+    dtors1_Array l_arr2 = {0};
+    const int32_t tmp_err1 = dtors1_errorProne(l_arr2);
     if ((bool)tmp_err1) {
-        dtors1_dtor(arr2, true);
-        dtors1_dtor(arr1, true);
+        dtors1_dtor(l_arr2, true);
+        dtors1_dtor(l_arr1, true);
         return tmp_err1;
     }
-    dtors1_Array arr3 = {0};
-    dtors1_dtor(arr3, true);
-    dtors1_dtor(arr2, true);
-    dtors1_dtor(arr1, true);
+    dtors1_Array l_arr3 = {0};
+    dtors1_dtor(l_arr3, true);
+    dtors1_dtor(l_arr2, true);
+    dtors1_dtor(l_arr1, true);
     return 0;
 }
 
-int32_t dtors1_test3(int32_t rng, dtors1_Array* _res0) {
-    dtors1_Array arr1 = {0};
-    const int32_t tmp_err0 = dtors1_errorProne(arr1);
+int32_t dtors1_test3(int32_t p_rng, dtors1_Array* _res0) {
+    dtors1_Array l_arr1 = {0};
+    const int32_t tmp_err0 = dtors1_errorProne(l_arr1);
     if ((bool)tmp_err0) {
-        dtors1_dtor(arr1, true);
+        dtors1_dtor(l_arr1, true);
         return tmp_err0;
     }
-    dtors1_Array arr2 = {0};
-    const int32_t tmp_err1 = dtors1_errorProne(arr2);
+    dtors1_Array l_arr2 = {0};
+    const int32_t tmp_err1 = dtors1_errorProne(l_arr2);
     if ((bool)tmp_err1) {
-        dtors1_dtor(arr2, true);
-        dtors1_dtor(arr1, true);
+        dtors1_dtor(l_arr2, true);
+        dtors1_dtor(l_arr1, true);
         return tmp_err1;
     }
-    dtors1_Array arr3 = {0};
+    dtors1_Array l_arr3 = {0};
     dtors1_Array tmp3 = (dtors1_Array){0};
-    if (rng == 0) {
-        tmp3 = arr1;
-    } else if (rng == 1) {
-        tmp3 = arr2;
+    if (p_rng == 0) {
+        tmp3 = l_arr1;
+    } else if (p_rng == 1) {
+        tmp3 = l_arr2;
     } else {
-        tmp3 = arr3;
+        tmp3 = l_arr3;
     }
     *_res0 = tmp3;
-    dtors1_dtor(arr3, true);
-    dtors1_dtor(arr2, true);
-    dtors1_dtor(arr1, true);
+    dtors1_dtor(l_arr3, true);
+    dtors1_dtor(l_arr2, true);
+    dtors1_dtor(l_arr1, true);
     return 0;
 }
 
-int32_t dtors1_test4(int32_t rng, dtors1_Array* _res0) {
-    dtors1_Array arr1 = {0};
-    const int32_t tmp_err0 = dtors1_errorProne(arr1);
+int32_t dtors1_test4(int32_t p_rng, dtors1_Array* _res0) {
+    dtors1_Array l_arr1 = {0};
+    const int32_t tmp_err0 = dtors1_errorProne(l_arr1);
     if ((bool)tmp_err0) {
-        dtors1_dtor(arr1, true);
+        dtors1_dtor(l_arr1, true);
         return tmp_err0;
     }
-    int32_t num = 10;
-    while (rng < num) {
-        dtors1_Array arr2 = {0};
-        const int32_t tmp_err1 = dtors1_errorProne(arr2);
+    int32_t l_num = 10;
+    while (p_rng < l_num) {
+        dtors1_Array l_arr2 = {0};
+        const int32_t tmp_err1 = dtors1_errorProne(l_arr2);
         if ((bool)tmp_err1) {
-            dtors1_dtor(arr2, true);
-            dtors1_dtor(arr1, true);
+            dtors1_dtor(l_arr2, true);
+            dtors1_dtor(l_arr1, true);
             return tmp_err1;
         }
-        for (int32_t i = 0; i < num; ++i) {
-            dtors1_Array arr3 = {0};
-            const int32_t tmp_err2 = dtors1_errorProne(arr3);
+        for (int32_t i = 0; i < l_num; ++i) {
+            dtors1_Array l_arr3 = {0};
+            const int32_t tmp_err2 = dtors1_errorProne(l_arr3);
             if ((bool)tmp_err2) {
-                dtors1_dtor(arr3, true);
-                dtors1_dtor(arr2, true);
-                dtors1_dtor(arr1, true);
+                dtors1_dtor(l_arr3, true);
+                dtors1_dtor(l_arr2, true);
+                dtors1_dtor(l_arr1, true);
                 return tmp_err2;
             }
-            if (i == rng * 2) {
-                dtors1_Array arr4 = {0};
-                *_res0 = arr1;
-                dtors1_dtor(arr4, true);
-                dtors1_dtor(arr3, true);
-                dtors1_dtor(arr2, true);
+            if (i == p_rng * 2) {
+                dtors1_Array l_arr4 = {0};
+                *_res0 = l_arr1;
+                dtors1_dtor(l_arr4, true);
+                dtors1_dtor(l_arr3, true);
+                dtors1_dtor(l_arr2, true);
                 return 0;
             }
-            if (rng == 3) {
-                dtors1_Array arr4 = {0};
-                dtors1_dtor(arr4, true);
-                dtors1_dtor(arr3, true);
+            if (p_rng == 3) {
+                dtors1_Array l_arr4 = {0};
+                dtors1_dtor(l_arr4, true);
+                dtors1_dtor(l_arr3, true);
                 break;
             }
-            dtors1_dtor(arr3, true);
+            dtors1_dtor(l_arr3, true);
         }
-        num--;
-        dtors1_dtor(arr2, true);
+        l_num--;
+        dtors1_dtor(l_arr2, true);
     }
     *_res0 = (dtors1_Array){0};
     return 0;
 }
 
-dtors1_Array dtors1_test5(int32_t rng) {
-    dtors1_Array arrs[10] = {0};
-    dtors1_Array tmp_res0 = arrs[rng];
+dtors1_Array dtors1_test5(int32_t p_rng) {
+    dtors1_Array l_arrs[10] = {0};
+    dtors1_Array tmp_res0 = l_arrs[p_rng];
     for (size_t _i = 0; _i < 10; ++_i) {
-        dtors1_dtor(arrs[_i], true);
+        dtors1_dtor(l_arrs[_i], true);
     }
     return tmp_res0;
 }

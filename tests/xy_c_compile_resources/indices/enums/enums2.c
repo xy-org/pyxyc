@@ -20,12 +20,12 @@ struct enums2_PaletteType {
     enums2_Color m_white;
 };
 
-void enums2_printColor(enums2_Color c) {
+void enums2_printColor(enums2_Color p_c) {
 }
 
 void enums2_test(void) {
-    const enums2_Color c1 = {.2f, .2f, 1};
-    const enums2_Color c2 = ENUMS2_PALETTE.m_blue;
-    enums2_printColor(c1);
-    enums2_printColor(c2);
+    const enums2_Color l_c1 = {.2f, .2f, 1};
+    const enums2_Color l_c2 = ENUMS2_PALETTE.m_blue;
+    enums2_printColor(l_c1);
+    enums2_printColor(l_c2);
 }

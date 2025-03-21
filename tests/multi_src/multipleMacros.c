@@ -10,6 +10,6 @@ struct multipleMacros_module1_Struct {
 };
 
 bool multipleMacros_test(void) {
-    multipleMacros_module1_Struct my = {0};
-    return my.m_a < my.m_a;
+    multipleMacros_module1_Struct l_my = {0};
+    return l_my.m_a < l_my.m_a;
 }

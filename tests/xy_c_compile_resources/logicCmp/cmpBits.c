@@ -2,17 +2,17 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-void cmpBits_test(uint32_t a, uint32_t b) {
-    const uint32_t c = ~(a ^ b);
-    const uint32_t d = a ^ b;
-    const uint32_t e = ~a;
-    const uint32_t f = ~~a;
-    const uint32_t g = a ^ b;
-    const uint32_t h = a ^ b | ~(uint32_t)0;
-    const uint32_t i = (a ^ b) & 0;
-    const uint32_t j = ~(a ^ b);
-    const uint32_t k = a & b;
-    const uint32_t l = a | b;
-    const uint32_t m = a ^ b;
-    const uint32_t n = a ^ b;
+void cmpBits_test(uint32_t p_a, uint32_t p_b) {
+    const uint32_t l_c = ~(p_a ^ p_b);
+    const uint32_t l_d = p_a ^ p_b;
+    const uint32_t l_e = ~p_a;
+    const uint32_t l_f = ~~p_a;
+    const uint32_t l_g = p_a ^ p_b;
+    const uint32_t l_h = p_a ^ p_b | ~(uint32_t)0;
+    const uint32_t l_i = (p_a ^ p_b) & 0;
+    const uint32_t l_j = ~(p_a ^ p_b);
+    const uint32_t l_k = p_a & p_b;
+    const uint32_t l_l = p_a | p_b;
+    const uint32_t l_m = p_a ^ p_b;
+    const uint32_t l_n = p_a ^ p_b;
 }

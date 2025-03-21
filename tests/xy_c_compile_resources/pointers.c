@@ -2,6 +2,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-void* pointers_pointerFun(void* a) {
-    return (int8_t*)a + 1;
+void* pointers_pointerFun(void* p_a) {
+    return (int8_t*)p_a + 1;
 }

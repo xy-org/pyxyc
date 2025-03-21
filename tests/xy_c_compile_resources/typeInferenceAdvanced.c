@@ -13,7 +13,7 @@ int32_t typeInferenceAdvanced_rng(void) {
     return 0;
 }
 
-int64_t typeInferenceAdvanced_myadd(int32_t a, int32_t b) {
+int64_t typeInferenceAdvanced_myadd(int32_t p_a, int32_t p_b) {
     return 0;
 }
 
@@ -21,16 +21,16 @@ typeInferenceAdvanced_Pair typeInferenceAdvanced_ctorPair(void) {
     return (typeInferenceAdvanced_Pair){0, 1};
 }
 
-float typeInferenceAdvanced_transform(int64_t num) {
+float typeInferenceAdvanced_transform(int64_t p_num) {
     return 0;
 }
 
 void typeInferenceAdvanced_func(void) {
-    const int32_t a = typeInferenceAdvanced_rng();
-    const int32_t b = typeInferenceAdvanced_rng() + 10;
-    const float c = typeInferenceAdvanced_transform(typeInferenceAdvanced_myadd(a, b));
-    const typeInferenceAdvanced_Pair d = typeInferenceAdvanced_ctorPair();
-    const double e = 1 + 1.1718;
-    const float ef = 2.1718f;
-    const double pi = 1 + 1.0 + 1.14f;
+    const int32_t l_a = typeInferenceAdvanced_rng();
+    const int32_t l_b = typeInferenceAdvanced_rng() + 10;
+    const float l_c = typeInferenceAdvanced_transform(typeInferenceAdvanced_myadd(l_a, l_b));
+    const typeInferenceAdvanced_Pair l_d = typeInferenceAdvanced_ctorPair();
+    const double l_e = 1 + 1.1718;
+    const float l_ef = 2.1718f;
+    const double l_pi = 1 + 1.0 + 1.14f;
 }

@@ -1372,7 +1372,7 @@ def compile_params(params, cast, cfunc, ctx):
 
         param_obj.is_pseudo = param.is_pseudo
         if not param.is_pseudo:
-            cparam = c.VarDecl(param.name, c.QualType(c_type))
+            cparam = c.VarDecl(mangle_var(param, ctx), c.QualType(c_type))
             cfunc.params.append(cparam)
             param_obj.c_node = cparam
 
@@ -1552,9 +1552,10 @@ def compile_func(node, ctx, ast, cast):
     fdesc: FuncObj = fspace.find(node, [], ctx)
     cfunc = fdesc.c_node
 
-    param_objs = []
     ctx.push_ns()
     for param_obj in fdesc.param_objs:
+        if param_obj.xy_node.name in ctx.ns:
+            raise CompilationError(f"Parameter {param_obj.xy_node.name} already defined", param_obj.xy_node)
         ctx.ns[param_obj.xy_node.name] = param_obj
 
     ctx.current_fobj = fdesc
@@ -1660,7 +1661,8 @@ def type_needs_dtor(type_obj):
 
 def compile_vardecl(node, cast, cfunc, ctx):
     var_name = node.name
-    cvar = c.VarDecl(name=var_name, qtype=c.QualType(is_const=not node.mutable))
+    mangled_name = mangle_var(node, ctx)
+    cvar = c.VarDecl(name=mangled_name, qtype=c.QualType(is_const=not node.mutable))
     value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
     if node.is_move:
         value_obj = move_out(value_obj, cast, cfunc, ctx)
@@ -1727,6 +1729,11 @@ def compile_vardecl(node, cast, cfunc, ctx):
         cvar.value = c.InitList(elems=cvar.value.args)
 
     return res_obj
+
+def mangle_var(node: xy.VarDecl, ctx: CompilerContext):
+    if node.is_param:
+        return f"p_{node.name}"
+    return f"l_{node.name}"
 
 def expand_array_to_init_list(value_obj: ExprObj):
     if isinstance(value_obj.c_node, c.InitList):

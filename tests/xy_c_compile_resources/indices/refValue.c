@@ -8,19 +8,19 @@ struct refValue_Data {
     char __empty_structs_are_not_allowed_in_c__;
 };
 
-float refValue_get(refValue_Data d, int32_t i) {
-    return (float)(i * 2);
+float refValue_get(refValue_Data p_d, int32_t p_i) {
+    return (float)(p_i * 2);
 }
 
-int32_t refValue_func1(refValue_Data d, int32_t i) {
-    return i;
+int32_t refValue_func1(refValue_Data p_d, int32_t p_i) {
+    return p_i;
 }
 
 void refValue_test(void) {
-    int32_t a = 10;
-    int32_t* const b = &a;
-    int32_t* const c = &a;
-    const refValue_Data d = {0};
-    const float e = refValue_get(d, refValue_func1(d, 10));
-    const int32_t f = refValue_func1(d, 10);
+    int32_t l_a = 10;
+    int32_t* const l_b = &l_a;
+    int32_t* const l_c = &l_a;
+    const refValue_Data l_d = {0};
+    const float l_e = refValue_get(l_d, refValue_func1(l_d, 10));
+    const int32_t l_f = refValue_func1(l_d, 10);
 }

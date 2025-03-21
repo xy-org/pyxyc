@@ -14,7 +14,7 @@ struct positionalTags_Point {
 };
 
 size_t positionalTags_test(void) {
-    positionalTags_Array ints = {0};
-    positionalTags_Array points = {0};
-    return ints.m_len + points.m_len + 4 + 8;
+    positionalTags_Array l_ints = {0};
+    positionalTags_Array l_points = {0};
+    return l_ints.m_len + l_points.m_len + 4 + 8;
 }

@@ -16,7 +16,7 @@ struct boundaryExprMultiModule_Struct {
     char __empty_structs_are_not_allowed_in_c__;
 };
 
-void boundaryExprMultiModule_module_print(boundaryExprMultiModule_module_Rtti rtti) {
+void boundaryExprMultiModule_module_print(boundaryExprMultiModule_module_Rtti p_rtti) {
 }
 
 boundaryExprMultiModule_module_Rtti boundaryExprMultiModule_module_rtti(void) {
@@ -28,6 +28,6 @@ boundaryExprMultiModule_module_Rtti boundaryExprMultiModule_rtti(void) {
 }
 
 void boundaryExprMultiModule_main(void) {
-    boundaryExprMultiModule_Struct x = {0};
+    boundaryExprMultiModule_Struct l_x = {0};
     boundaryExprMultiModule_module_print(boundaryExprMultiModule_rtti());
 }

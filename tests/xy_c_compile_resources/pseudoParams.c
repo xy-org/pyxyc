@@ -2,30 +2,30 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-int32_t pseudoParams_func1__Int__Int(int32_t x) {
-    return x;
+int32_t pseudoParams_func1__Int__Int(int32_t p_x) {
+    return p_x;
 }
 
-int32_t pseudoParams_func1__Int__Bool(int32_t x, bool y) {
+int32_t pseudoParams_func1__Int__Bool(int32_t p_x, bool p_y) {
     int32_t tmp0 = 0;
-    if (y) {
-        tmp0 = x;
+    if (p_y) {
+        tmp0 = p_x;
     } else {
-        tmp0 = x + 2;
+        tmp0 = p_x + 2;
     }
     return tmp0;
 }
 
-int32_t pseudoParams_func2__Int__Int(int32_t x) {
-    return x * 2;
+int32_t pseudoParams_func2__Int__Int(int32_t p_x) {
+    return p_x * 2;
 }
 
-int32_t pseudoParams_func2__Int__Double(int32_t x, double y) {
+int32_t pseudoParams_func2__Int__Double(int32_t p_x, double p_y) {
     int32_t tmp1 = 0;
-    if (y > 0) {
-        tmp1 = x;
+    if (p_y > 0) {
+        tmp1 = p_x;
     } else {
-        tmp1 = x * 2;
+        tmp1 = p_x * 2;
     }
     return tmp1;
 }

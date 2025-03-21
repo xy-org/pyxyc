@@ -9,6 +9,6 @@ struct funcAndStruct_Point {
     float m_y;
 };
 
-float funcAndStruct_dot(funcAndStruct_Point p1, funcAndStruct_Point p2) {
-    return p1.m_x * p2.m_x + p1.m_y + p2.m_y;
+float funcAndStruct_dot(funcAndStruct_Point p_p1, funcAndStruct_Point p_p2) {
+    return p_p1.m_x * p_p2.m_x + p_p1.m_y + p_p2.m_y;
 }

@@ -13,8 +13,8 @@ void crossModuleSelect_module2_testSomething(void) {
 }
 
 void crossModuleSelect_main(void) {
-    const xy_fp__void tests[1] = {crossModuleSelect_module2_testSomething};
+    const xy_fp__void l_tests[1] = {crossModuleSelect_module2_testSomething};
     for (size_t tmp_iter0 = 0; tmp_iter0 < 1; ++tmp_iter0) {
-        tests[tmp_iter0]();
+        l_tests[tmp_iter0]();
     }
 }

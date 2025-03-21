@@ -2,23 +2,23 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-int32_t funcRecursive_func2(int32_t b);
-int32_t funcRecursive_func4(int32_t a, int32_t b);
+int32_t funcRecursive_func2(int32_t p_b);
+int32_t funcRecursive_func4(int32_t p_a, int32_t p_b);
 
-int32_t funcRecursive_func1(int32_t a) {
-    return funcRecursive_func2(a);
+int32_t funcRecursive_func1(int32_t p_a) {
+    return funcRecursive_func2(p_a);
 }
 
-int32_t funcRecursive_func2(int32_t b) {
-    return funcRecursive_func2(b);
+int32_t funcRecursive_func2(int32_t p_b) {
+    return funcRecursive_func2(p_b);
 }
 
-int32_t funcRecursive_func3(int32_t c) {
-    int32_t tmp_arg0 = funcRecursive_func1(c);
-    int32_t tmp_arg1 = tmp_arg0 + funcRecursive_func2(-c);
-    return tmp_arg1 + c - funcRecursive_func4(c, -c);
+int32_t funcRecursive_func3(int32_t p_c) {
+    int32_t tmp_arg0 = funcRecursive_func1(p_c);
+    int32_t tmp_arg1 = tmp_arg0 + funcRecursive_func2(-p_c);
+    return tmp_arg1 + p_c - funcRecursive_func4(p_c, -p_c);
 }
 
-int32_t funcRecursive_func4(int32_t a, int32_t b) {
-    return a + b;
+int32_t funcRecursive_func4(int32_t p_a, int32_t p_b) {
+    return p_a + p_b;
 }

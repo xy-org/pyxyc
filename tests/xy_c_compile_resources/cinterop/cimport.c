@@ -7,8 +7,8 @@
 int __xy_sys_argc;
 char** __xy_sys_argv;
 
-void* cimport_cstr(void* addr, size_t size) {
-    return addr;
+void* cimport_cstr(void* p_addr, size_t p_size) {
+    return p_addr;
 }
 
 int32_t cimport_main(void) {

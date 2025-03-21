@@ -2,8 +2,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-int32_t ifs2_compute(int32_t a, int32_t b, int32_t c) {
-    return a + b * c;
+int32_t ifs2_compute(int32_t p_a, int32_t p_b, int32_t p_c) {
+    return p_a + p_b * p_c;
 }
 
 int32_t ifs2_helper1(void) {
@@ -18,9 +18,9 @@ int32_t ifs2_helper3(void) {
     return 3;
 }
 
-int32_t ifs2_test1(bool cond) {
+int32_t ifs2_test1(bool p_cond) {
     int32_t tmp2 = 0;
-    if (cond) {
+    if (p_cond) {
         int32_t tmp_arg0 = ifs2_helper1();
         int32_t tmp_arg1 = ifs2_helper2();
         tmp2 = ifs2_compute(tmp_arg0, tmp_arg1, ifs2_helper3());
@@ -28,9 +28,9 @@ int32_t ifs2_test1(bool cond) {
     return tmp2;
 }
 
-int32_t ifs2_test2(bool cond) {
+int32_t ifs2_test2(bool p_cond) {
     int32_t tmp2 = 0;
-    if (cond) {
+    if (p_cond) {
         int32_t tmp_arg0 = ifs2_helper1();
         int32_t tmp_arg1 = ifs2_helper2();
         tmp2 = ifs2_compute(tmp_arg0, tmp_arg1, ifs2_helper3());
@@ -42,13 +42,13 @@ int32_t ifs2_test2(bool cond) {
     return tmp2;
 }
 
-int32_t ifs2_test3(int32_t num) {
+int32_t ifs2_test3(int32_t p_num) {
     int32_t tmp3 = 0;
-    if (num > 0) {
+    if (p_num > 0) {
         int32_t tmp_arg1 = ifs2_helper1();
         int32_t tmp_arg2 = ifs2_helper2();
         tmp3 = ifs2_compute(tmp_arg1, tmp_arg2, ifs2_helper3());
-    } else if (num < 0) {
+    } else if (p_num < 0) {
         int32_t tmp_arg5 = ifs2_helper1();
         int32_t tmp_arg6 = ifs2_helper1();
         tmp3 = ifs2_compute(tmp_arg5, tmp_arg6, ifs2_helper1());

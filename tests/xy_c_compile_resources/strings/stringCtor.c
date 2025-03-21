@@ -17,16 +17,16 @@ struct stringCtor_Ascii {
     char __empty_structs_are_not_allowed_in_c__;
 };
 
-stringCtor_Str stringCtor_str(void* addr, size_t size) {
-    return (stringCtor_Str){addr, size};
+stringCtor_Str stringCtor_str(void* p_addr, size_t p_size) {
+    return (stringCtor_Str){p_addr, p_size};
 }
 
 void stringCtor_createStrings(void) {
-    const stringCtor_Str str = stringCtor_str("", 0);
-    const stringCtor_Str str1 = stringCtor_str("abc", 3);
-    const stringCtor_Str str2 = stringCtor_str("def", 3);
+    const stringCtor_Str l_str = stringCtor_str("", 0);
+    const stringCtor_Str l_str1 = stringCtor_str("abc", 3);
+    const stringCtor_Str l_str2 = stringCtor_str("def", 3);
 }
 
-size_t stringCtor_strLen(stringCtor_Str str) {
-    return str.m_size;
+size_t stringCtor_strLen(stringCtor_Str p_str) {
+    return p_str.m_size;
 }
