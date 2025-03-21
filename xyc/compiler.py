@@ -1659,7 +1659,8 @@ def type_needs_dtor(type_obj):
     return dtor_tag is not None and is_ct_true(dtor_tag)
 
 def compile_vardecl(node, cast, cfunc, ctx):
-    cvar = c.VarDecl(name=node.name, qtype=c.QualType(is_const=not node.mutable))
+    var_name = node.name
+    cvar = c.VarDecl(name=var_name, qtype=c.QualType(is_const=not node.mutable))
     value_obj = compile_expr(node.value, cast, cfunc, ctx) if node.value is not None else None
     if node.is_move:
         value_obj = move_out(value_obj, cast, cfunc, ctx)
@@ -1703,7 +1704,13 @@ def compile_vardecl(node, cast, cfunc, ctx):
     needs_dtor = type_needs_dtor(type_desc)
 
     res_obj = VarObj(node, cvar, type_desc, needs_dtor=needs_dtor)
-    ctx.ns[node.name] = res_obj
+
+    if var_name in ctx.ns:
+        raise CompilationError(
+            f"Varaible '{var_name}' already defined", node,
+            notes=[("Previous definition", ctx.ns[var_name].xy_node)]
+        )
+    ctx.ns[var_name] = res_obj
 
     if value_obj is not None:
         if isinstance(type_desc, ArrTypeObj):

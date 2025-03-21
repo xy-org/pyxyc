@@ -379,7 +379,7 @@ src.xy:5:27: error: Too many positional value in struct literal. Provided '1' bu
                             ^^^
 """
     ),
-        (
+    (
         """struct MyStruct {
         }
         
@@ -391,6 +391,21 @@ src.xy:5:27: error: Too many positional value in struct literal. Provided '1' bu
 src.xy:5:27: error: No field named 'missing'
 |             s := MyStruct{missing=5};
                             ^^^^^^^^^^^
+"""
+    ),
+    (
+        """def test() {
+            x := 0;
+            x := 1;
+        }
+        """,
+        """\
+src.xy:3:13: error: Varaible 'x' already defined
+|             x := 1;
+              ^
+src.xy:2:13: note: Previous definition
+|             x := 0;
+              ^
 """
     ),
 ])
