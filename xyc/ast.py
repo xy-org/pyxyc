@@ -210,6 +210,10 @@ class Continue(Node):
     loop_name: Node | None = None
 
 @dataclass
+class ExternalCommand(Node):
+    command: list[str] = field(default_factory=list)
+
+@dataclass
 class AttachTags(Node):
     arg: Node | None = None
 

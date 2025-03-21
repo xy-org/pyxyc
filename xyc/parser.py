@@ -979,13 +979,39 @@ def parse_str_literal(prefix, prefix_start, itoken):
                 lit = itoken.src.code[part_start:part_end]
                 res.parts.append(Const(lit))
 
-            is_introspective = itoken.check("=")
-            args_coords_start = itoken.peak_coords()[0]
-            args, kwargs = parse_args_kwargs(itoken)
-            args_coords_end = itoken.peak_coords()[0]
-            res.parts.append(Args(args, kwargs, is_introspective=is_introspective,
-                                  src=itoken.src,
-                                  coords=(args_coords_start, args_coords_end)))
+            if not itoken.check("#"):
+                is_introspective = itoken.check("=")
+                args_coords_start = itoken.peak_coords()[0]
+                args, kwargs = parse_args_kwargs(itoken)
+                args_coords_end = itoken.peak_coords()[0]
+                res.parts.append(Args(args, kwargs, is_introspective=is_introspective,
+                                    src=itoken.src,
+                                    coords=(args_coords_start, args_coords_end)))
+            else:
+                # calling an external command probably
+                itoken.expect("!")
+                cmds = []
+                expr_start = itoken.peak_coords()[0]
+                cmd_start = 0
+                cmd_end = 0
+                while itoken.peak() != "}":
+                    if cmd_end != itoken.peak_coords()[0]:
+                        if cmd_start != cmd_end:
+                            cmds.append(itoken.src.code[cmd_start:cmd_end])
+                        cmd_start = itoken.peak_coords()[0]
+                    cmd_end = itoken.peak_coords()[1]
+                    itoken.consume()
+                if cmd_start != cmd_end:
+                    cmds.append(itoken.src.code[cmd_start:cmd_end])
+                if len(cmds) == 0:
+                    raise ParsingError("Missing command", itoken)
+                res.parts.append(
+                    ExternalCommand(
+                        cmds,
+                        src=itoken.src,
+                        coords=(expr_start, itoken.peak_coords()[0])
+                    )
+                )
 
             part_start = itoken.peak_coords()[0] + 1
             itoken.expect("}")

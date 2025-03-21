@@ -546,6 +546,7 @@ class TmpNames:
 class CompilerContext:
     builder: any
     module_name: str  # TODO maybe module_name should be a list of the module names
+    module_path: str = ""
 
     data_ns: IdTable = field(default_factory=IdTable)
     func_ns: IdTable = field(default_factory=IdTable)
@@ -928,8 +929,9 @@ class CompilerContext:
     def pop_caller_context(self):
         return self.caller_contexts.pop()
 
-def compile_module(builder, module_name, asts):
+def compile_module(builder, module_name, asts, module_path):
     ctx = CompilerContext(builder, module_name)
+    ctx.module_path = module_path
     res = c.Ast()
 
     if module_name == "xy.builtins":
@@ -1464,8 +1466,8 @@ def remove_calltime_tags(obj: CompiledObj):
 
     return has_any
 
-def compile_builtins(builder, module_name, asts):
-    mh, _ = compile_module(builder, module_name, asts)
+def compile_builtins(builder, module_name, asts, module_path):
+    mh, _ = compile_module(builder, module_name, asts, module_path)
     cast = c.Ast()
 
     # always include it as it is everywhere
@@ -1523,8 +1525,8 @@ def compile_builtins(builder, module_name, asts):
 
     return mh, cast
 
-def compile_ctti(builder, module_name, asts):
-    mh, _ = compile_module(builder, module_name, asts)
+def compile_ctti(builder, module_name, asts, module_path):
+    mh, _ = compile_module(builder, module_name, asts, module_path)
     cast = c.Ast()
 
     for obj in itertools.chain(mh.ctx.data_ns.values(), mh.ctx.func_ns.values()):
@@ -2600,12 +2602,27 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
         )
     func_desc: FuncObj = ctx.str_prefix_reg[expr.prefix]
 
+    parts = []
+    is_str = lambda node: isinstance(node, xy.Const) and isinstance(node.value, str)
+    for p in expr.parts:
+        to_append = p
+        if isinstance(p, xy.ExternalCommand):
+            if len(p.command) != 2 and p.command[0] != "cat":
+                raise CompilationError("Only cat'ing a single file is currently supported", p)
+            with open(os.path.join(ctx.module_path, p.command[1])) as f:
+                to_append = xy.Const(f.read())
+        if is_str(to_append) and len(parts) > 0 and is_str(parts[-1]):
+            parts[-1].value += to_append.value
+            parts[-1].value_str += to_append.value_str
+        else:
+            parts.append(to_append)
+
     interpolation = ("interpolation" in func_desc.tags["xyStr"].kwargs and
                      ct_isTrue(func_desc.tags["xyStr"].kwargs["interpolation"]))
     if not interpolation:
-        is_error = len(expr.parts) > 1
-        if not is_error and len(expr.parts) == 1:
-            is_error = not isinstance(expr.parts[0], xy.Const)
+        is_error = len(parts) > 1
+        if not is_error and len(parts) == 1:
+            is_error = not isinstance(parts[0], xy.Const)
         if is_error:
             raise CompilationError(
                 f"Interpolation is not enabled for prefix \"{expr.prefix}\"",
@@ -2613,7 +2630,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             )
     
     if not interpolation:
-        str_const = remove_xy_escapes(expr.parts[0].value if len(expr.parts) else "")
+        str_const = remove_xy_escapes(parts[0].value if len(parts) else "")
         c_func = c.FuncCall(func_desc.c_name, args=[
             c.Const(f'"{str_const}"'),
             c.Const(cstr_len(str_const)),
@@ -2644,7 +2661,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             cfunc=cfunc,
             ctx=ctx
         ).c_node
-        for part in expr.parts:
+        for part in parts:
             if is_str_const(part):
                 part_value = remove_xy_escapes(part.value)
                 append_call = find_and_call(

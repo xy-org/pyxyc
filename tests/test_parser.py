@@ -2345,6 +2345,31 @@ def test_ambiguous_tags(code, err_msg):
             ]),
         ]
     ],
+    [
+        """def main() -> void {
+            s1 := "{#! cat file.txt }";
+            s2 := "before {#! command -a -b -c file.txt } after";
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("s1", type=None, value=ast.StrLiteral(
+                    parts=[
+                        ast.ExternalCommand(["cat", "file.txt"])
+                    ],
+                    full_str="{#! cat file.txt }",
+                )),
+                ast.VarDecl("s2", type=None, value=ast.StrLiteral(
+                    parts=[
+                        ast.Const("before "),
+                        ast.ExternalCommand(["command", "-a", "-b", "-c", "file.txt"]),
+                        ast.Const(" after"),
+                    ],
+                    full_str="before {#! command -a -b -c file.txt } after",
+                )),
+            ]),
+        ]
+    ],
 ])
 def test_parse_string_literals(code, exp_ast):
     act_ast = parse_code(code)

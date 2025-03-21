@@ -1,0 +1,7 @@
+def str~[StrCtor{prefix="", interpolation=false}](addr: Ptr, size: Size)
+    addr;
+
+def test() {
+    s1 := "{#! cat externalFile.txt }";
+    s2 := "File has '{#! cat externalFile.txt }' as content";
+}

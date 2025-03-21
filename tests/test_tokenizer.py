@@ -265,6 +265,11 @@ from xyc.tokenizer import split_tokens
         ['c', ':', '=<', 'b', ';'],
         None
     ),
+    (
+        'f"{#! cast }"',
+        ['f', '"', '{', '#', '!', 'cast', '}', '"'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)

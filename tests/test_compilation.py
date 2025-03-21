@@ -40,6 +40,7 @@ from xyc.compiler import CompilationError
     "globalConstants",
     "funcs",
     "strings/stringInterpolation",
+    "strings/embedFile",
     "namedArguments",
     "namedFields",
     "positionalTags",
@@ -74,15 +75,16 @@ from xyc.compiler import CompilationError
     "indices/flags/flags",
     "logicCmp/cmpBools",
     "logicCmp/cmpBits",
-    "logicCmp/shortcircuit"
+    "logicCmp/shortcircuit",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
+    src_path=str(resource_dir / "xy_c_compile_resources" / f"{filename}.xy")
     project = builder.parse_module(
-        str(resource_dir / "xy_c_compile_resources" / f"{filename}.xy"),
+        src_path,
         module_name=module_name
     )
-    c_project = builder.compile_project(project)
+    c_project = builder.compile_project(project, os.path.dirname(src_path))
     assert len(c_project) == 1
     assert f"{module_name}.c" in c_project
     c_act = stringify(c_project[f"{module_name}.c"])
@@ -107,7 +109,7 @@ def test_arrays_common_errors(code, err_msg, tmp_path):
 
     project = builder.parse_module(str(fn), module_name="test")
     with pytest.raises(CompilationError, match=err_msg):
-        builder.compile_project(project)
+        builder.compile_project(project, tmp_path)
 
 code_ast = [
     ("""def func(t: MissingType) -> void {
@@ -143,7 +145,7 @@ def test_common_errors(code, err_msg, tmp_path):
 
     project = builder.parse_module(str(fn), module_name="test")
     with pytest.raises(CompilationError, match=err_msg):
-        builder.compile_project(project)
+        builder.compile_project(project, tmp_path)
 
 
 @pytest.mark.parametrize("module", [

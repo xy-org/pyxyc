@@ -76,7 +76,7 @@ class Builder:
         module_ast = parse_module(module_path, builtins_module_name)
 
         header, c_srcs = compile_builtins(
-            self, builtins_module_name, list(module_ast.values())[0]
+            self, builtins_module_name, list(module_ast.values())[0], module_path
         )
 
         self.module_cache[builtins_module_name] = CompiledModule(header, c_srcs)
@@ -89,7 +89,7 @@ class Builder:
         module_ast = parse_module(module_path, ctti_module_name)
 
         header, c_srcs = compile_ctti(
-            self, ctti_module_name, list(module_ast.values())[0]
+            self, ctti_module_name, list(module_ast.values())[0], module_path
         )
 
         self.module_cache[ctti_module_name] = CompiledModule(header, c_srcs)
@@ -98,7 +98,7 @@ class Builder:
         module_ast = parse_module(module_path, module_name)
         assert len(module_ast) == 1
         header, c_srcs = compile_module(
-            self, module_name, list(module_ast.values())[0]
+            self, module_name, list(module_ast.values())[0], module_path
         )
         self.module_cache[module_name] = CompiledModule(header, c_srcs)
         if header.ctx.entrypoint_obj is not None:
@@ -177,14 +177,14 @@ def parse_file(fn):
     src = Source(fn, code)
     return parse_code(src)
 
-def compile_project(project):
+def compile_project(project, module_path):
     # TODO remove that function
     print("Compiling...")
     res = {}
     builder = Builder("")
     builder.compile_builtins()
     for module_name, asts in project.items():
-        header, c_srcs = compile_module(builder, module_name, asts)
+        header, c_srcs = compile_module(builder, module_name, asts, module_path)
         builder.module_cache[module_name] = CompiledModule(header, c_srcs)
         if header.ctx.entrypoint_obj is not None:
             builder.entrypoint_module_names.append(module_name)
