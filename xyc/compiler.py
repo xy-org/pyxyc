@@ -1731,11 +1731,7 @@ c_symbol_type = TypeInferenceError(
 )
 
 def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
-    before_idx = len(cfunc.body) if cfunc is not None else 0
     res = do_compile_expr(expr, cast, cfunc, ctx, deref=deref)
-    after_idx = len(cfunc.body) if cfunc is not None else 0
-    res.first_cnode_idx = before_idx
-    res.num_cnodes = after_idx - before_idx
     return res
 
 def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
@@ -2829,9 +2825,9 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
                     arg_exprs[expr_to_move_idx], cast, cfunc, ctx
                 )
                 expr_to_move_idx = None
+            obj = maybe_move_to_temp(obj, cast, dummy_func, ctx)
             obj.first_cnode_idx = len(cfunc.body)
             cfunc.body.extend(dummy_func.body)
-            obj = maybe_move_to_temp(obj, cast, cfunc, ctx)
             obj.num_cnodes = len(cfunc.body) - obj.first_cnode_idx
 
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
