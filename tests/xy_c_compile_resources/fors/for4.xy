@@ -4,7 +4,7 @@
 
 ;; An array of up to 100 floats
 struct Array {
-    elems: Float[100];
+    elems: @Float[100];
     len: Size;
 }
 

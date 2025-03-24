@@ -21,7 +21,7 @@ def special~Test3() {}
 
 def test3~Test1() {}
 
-def runTests(x: pseudo ()->()[], tPtr := x'addrof, tLen : Size = x'len) {
+def runTests(x: pseudo @()->()[], tPtr := x'addrof, tLen : Size = x'len) {
 }
 
 def runSpecial(x: ()->void) {

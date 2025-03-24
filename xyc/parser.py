@@ -455,12 +455,20 @@ def parse_expression(
             for_expr = parse_for(itoken)
             arg1 = ListComprehension(loop=for_expr, src=itoken.src, coords=coords)
         else:
-            # array literal
-            itoken.expect('{', "Array literals are constructed using the @{elems,...} syntax")
-            itoken.skip_empty_lines()
-            ret_args = parse_expr_list(itoken)
-            itoken.expect("}", msg="Missing closing bracket")
-            arg1 = ArrayLit(ret_args, src=itoken.src, coords=coords)
+            # array type or literal
+            coords = itoken.peak_coords()
+            if itoken.peak() != "{":
+                type_name = parse_expression(itoken, precedence, op_prec=op_prec)
+                itoken.expect("[", "Missing dimension of array. Syntax is @Type[dimension]")
+                dims = parse_expr_list(itoken)
+                arg1 = ArrayType(type_name, dims, src=itoken.src, coords=(coords[0], itoken.peak_coords()[1]))
+                itoken.expect("]")
+            else:
+                itoken.expect("{")
+                itoken.skip_empty_lines()
+                ret_args = parse_expr_list(itoken)
+                itoken.expect("}", msg="Missing closing bracket")
+                arg1 = ArrayLit(ret_args, src=itoken.src, coords=coords)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "[":
         # Indexing without a base i.e. derefing
         coords = itoken.peak_coords()
@@ -938,8 +946,6 @@ def parse_break_continue(itoken):
 
 
 def expr_to_type(expr):
-    if isinstance(expr, Select):
-        return ArrayType(expr.base, expr.args.args, src=expr.src, coords=expr.coords)
     return expr
 
 def expr_to_param(expr, itoken):
@@ -961,9 +967,13 @@ def parse_struct_literal(itoken, struct_expr):
     args, kwargs = parse_args_kwargs(itoken)
     itoken.expect("}")
     end_coords = itoken.peak_coords()
-    return StructLiteral(
-        struct_expr, args, kwargs, src=itoken.src, coords=[start_coords[0], end_coords[1]]
-    )
+    if isinstance(struct_expr, ArrayType):
+        assert len(kwargs) == 0
+        return ArrayLit(elems=args, base=struct_expr, src=itoken.src, coords=[start_coords[0], end_coords[1]])
+    else:
+        return StructLiteral(
+            struct_expr, args, kwargs, src=itoken.src, coords=[start_coords[0], end_coords[1]]
+        )
 
 def parse_str_literal(prefix, prefix_start, itoken):
     res = StrLiteral(prefix=prefix, src=itoken.src)

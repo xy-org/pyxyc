@@ -98,6 +98,6 @@ def test4(rng: Int) -> Array || Int {
 }
 
 def test5(rng: Int) -> Array {
-    arrs : Array[10];
+    arrs : @Array[10];
     return arrs[rng]; # temporary value so move out or copy
 }

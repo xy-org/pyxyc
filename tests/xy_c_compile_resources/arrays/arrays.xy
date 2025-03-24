@@ -1,9 +1,9 @@
 def constructingArrays() -> Int {
     arr := @{0, 1, 2};
-    brr: Int[3] = @{3, 4, 5};
-    crr: Int[3] = @{6, 7, 8};
-    drr: Int[3];
-    err := Int[4]@{1, 2, 3};; the last element is filled with a zero
-    frr := Int[]@{1, 2, 3};; the length is deduced from the init list
+    brr: @Int[3] = @{3, 4, 5};
+    crr: @Int[3] = @{6, 7, 8};
+    drr: @Int[3];
+    err := @Int[4]{1, 2, 3};; the last element is filled with a zero
+    frr := @Int[]{1, 2, 3};; the length is deduced from the init list
     return arr[0] + brr[1] + crr[2] + drr[0] + err[1] + frr[2];
 }

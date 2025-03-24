@@ -415,25 +415,25 @@ struct StrCtor {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-*def get(arr: pseudo Any[], index: Int) -> in(arr) Ptr {
+*def get(arr: pseudo @Any[], index: Int) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-*def get(arr: pseudo Any[], index: Uint) -> in(arr) Ptr {
+*def get(arr: pseudo @Any[], index: Uint) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
-*def get(arr: pseudo Any[], index: Size) -> in(arr) Ptr {
-    # Implemented by the compiler
-}
-
-;; Set element at position {index} of the array {arr}
-*def set(arr: pseudo Any[], index: Uint, val: pseudo Any) -> void {
+*def get(arr: pseudo @Any[], index: Size) -> in(arr) Ptr {
     # Implemented by the compiler
 }
 
 ;; Set element at position {index} of the array {arr}
-*def set(arr: pseudo Any[], index: Size, val: pseudo Any) -> void {
+*def set(arr: pseudo @Any[], index: Uint, val: pseudo Any) -> void {
+    # Implemented by the compiler
+}
+
+;; Set element at position {index} of the array {arr}
+*def set(arr: pseudo @Any[], index: Size, val: pseudo Any) -> void {
     # Implemented by the compiler
 }
 
@@ -447,19 +447,19 @@ struct EntryPoint {
 
 # Arrays
 
-*def iter(arr: pseudo Any[]) -> in(arr) Size {
+*def iter(arr: pseudo @Any[]) -> in(arr) Size {
     # Implemented by the compiler
 }
 
-*def valid(arr: pseudo Any[], idx: Size) -> Bool {
+*def valid(arr: pseudo @Any[], idx: Size) -> Bool {
     # Implemented by the compiler
 }
 
-*def next(arr: pseudo Any[], idx: mut Size) -> void {
+*def next(arr: pseudo @Any[], idx: mut Size) -> void {
     # Implemented by the compiler
 }
 
-*def len(arr: pseudo Any[]) -> Size {
+*def len(arr: pseudo @Any[]) -> Size {
     # Implemented by the compiler
 }
 

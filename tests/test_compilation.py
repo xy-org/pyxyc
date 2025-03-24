@@ -95,10 +95,10 @@ def test_c_compilation(resource_dir, filename):
 
 code_ast = [
     ("""def main() -> void {
-        arr: Int[];
+        arr: @Int[];
     }""",
     "Only pseudo params are allowed to have a length not known at compile time"),
-    ("""def func(nums: Int[]) -> void {
+    ("""def func(nums: @Int[]) -> void {
     }""",
     "Only pseudo params are allowed to have a length not known at compile time"),
 ]

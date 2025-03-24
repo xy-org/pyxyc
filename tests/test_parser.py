@@ -2399,8 +2399,8 @@ def test_parse_string_literals(code, exp_ast):
         """def main() -> void {
             empty := @{};
             arr := @{2.718, 3.14};
-            uninitialized : int[10];
-            m: int[2, 2] = @{@{1, 2}, @{3, 4}};
+            uninitialized : @int[10];
+            m: @int[2, 2] = @{@{1, 2}, @{3, 4}};
         }
         """,
         [
@@ -2430,7 +2430,7 @@ def test_parse_string_literals(code, exp_ast):
     ],
     [
         """def main() -> Str {
-            m: int[2, 2] = @{@{0, 1}, @{2, 3}};
+            m: @int[2, 2] = @{@{0, 1}, @{2, 3}};
             letters := @{"a", "b", "c", "d"};
             return letters[m[1, 0]];
         }
@@ -2466,7 +2466,7 @@ def test_parse_string_literals(code, exp_ast):
         ]
     ],
     [
-        """def sum(nums: int[2]) -> int {
+        """def sum(nums: @int[2]) -> int {
             return nums[0] + nums[1];
         }
         """,
@@ -2488,7 +2488,7 @@ def test_parse_string_literals(code, exp_ast):
         ]
     ],
     [
-        """def mkArray() -> int[2] {
+        """def mkArray() -> @int[2] {
             return @{0, 1};
         }
         """,
@@ -2512,8 +2512,8 @@ def test_parse_string_literals(code, exp_ast):
     [
         """def arrayLiterals() {
             a := @{0, 1};
-            b := int[2]@{0, 1};
-            c := int[]@{0, 1};
+            b := @int[2]{0, 1};
+            c := @int[]{0, 1};
             d := List~int@{0, 1};
             e := list@{0, 1};
         }
@@ -2556,13 +2556,6 @@ def test_parse_string_literals(code, exp_ast):
         """def comprehension() -> void {
             a := @{0, 1};
             b := @for (i in a) i*2;
-            #c := @[for (i in a) -> (res: int) {res *= i;}   ];
-            #d := @[
-            #    for (i in a) -> (res: int) {res *= i;},
-            #];
-            #e := Array[for (i in a) i*2];
-
-            #f := @[(for (i in a) -> (res: int) {res *= i;})];
         }
         """,
         [
@@ -2583,52 +2576,6 @@ def test_parse_string_literals(code, exp_ast):
                             )
                         ),
                     )),
-                    # ast.VarDecl("c", value=ast.ListComprehension(
-                    #     loop=ast.ForExpr(
-                    #         over=[
-                    #             ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
-                    #         ],
-                    #         block=ast.Block(
-                    #             returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
-                    #             body=[ast.BinExpr(ast.Id("res"), ast.Id("i"), "*=")],
-                    #         )
-                    #     ),
-                    # )),
-                    # ast.VarDecl("d", value=ast.ListComprehension(
-                    #     loop=ast.ForExpr(
-                    #         over=[
-                    #             ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
-                    #         ],
-                    #         block=ast.Block(
-                    #             returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
-                    #             body=[ast.BinExpr(ast.Id("res"), ast.Id("i"), "*=")],
-                    #         )
-                    #     ),
-                    # )),
-                    # ast.VarDecl("e", value=ast.ListComprehension(
-                    #     list_type=ast.Id("Array"),
-                    #     loop=ast.ForExpr(
-                    #         over=[
-                    #             ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
-                    #         ],
-                    #         block=ast.Block(
-                    #             body=ast.BinExpr(ast.Id("i"), ast.Const(2), "*"),
-                    #         )
-                    #     ),
-                    # )),
-                    # ast.VarDecl("f", value=ast.ArrayLit(
-                    #     elems=[
-                    #         ast.ForExpr(
-                    #             over=[
-                    #                 ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
-                    #             ],
-                    #             block=ast.Block(
-                    #                 returns=[ast.VarDecl("res", type=ast.Id("int"), varying=True)],
-                    #                 body=[ast.BinExpr(ast.Id("res"), ast.Id("i"), "*=")],
-                    #             )
-                    #         ),
-                    #     ],
-                    # )),
                 ]
             ),
         ]

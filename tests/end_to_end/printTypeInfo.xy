@@ -14,7 +14,7 @@ struct MyStruct {
 
     ;; Array of
     ;; floats
-    arr: Float[10];
+    arr: @Float[10];
 
     next: Ptr~MyStruct;
 }
@@ -32,7 +32,7 @@ def printTypeInfo(
     s: pseudo Any,
     typeName := nameof(%s),
     typeComment := commentof(%s),
-    fields: pseudo FieldDesc[] = @for (f in s'fieldsof) FieldDesc{
+    fields: pseudo @FieldDesc[] = @for (f in s'fieldsof) FieldDesc{
         name=f'nameof,
         typename=nameof(%f),
         size=f'sizeof,

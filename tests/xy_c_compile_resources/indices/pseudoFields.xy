@@ -3,7 +3,7 @@ struct Point {
     y : pseudo = CoordField{1};
     z : pseudo = CoordField{2};
 
-    coords: Float[3];
+    coords: @Float[3];
 }
 
 struct CoordField{
