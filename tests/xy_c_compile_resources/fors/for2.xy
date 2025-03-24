@@ -6,7 +6,7 @@ struct Fib {
     b := 1;
 }
 
-def fibonacci~IterCtor() -> in() Fib {
+def fibonacci~IterCtor() -> [ Fib ] {
     return Fib{};
 }
 

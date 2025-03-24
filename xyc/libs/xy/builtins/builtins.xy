@@ -69,15 +69,15 @@
     # Implemented by the compiler
 }
 
-*def get(ptr: Ptr) -> in() Ptr~[^ptr..to] {
+*def get(ptr: Ptr) -> [ Ptr~[^ptr..to] ] {
     # Implemented by the compiler
 }
 
-*def get(ptr: Ptr, idx: Int) -> in() Ptr~[^ptr..to] {
+*def get(ptr: Ptr, idx: Int) -> [ Ptr~[^ptr..to] ] {
     # Implemented by the compiler
 }
 
-*def get(ptr: Ptr, idx: Size) -> in() Ptr~[^ptr..to] {
+*def get(ptr: Ptr, idx: Size) -> [ Ptr~[^ptr..to] ] {
     # Implemented by the compiler
 }
 
@@ -415,15 +415,15 @@ struct StrCtor {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-*def get(arr: pseudo @Any[], index: Int) -> in(arr) Ptr {
+*def get(arr: pseudo @Any[], index: Int) -> arr[ Ptr ] {
     # Implemented by the compiler
 }
 
-*def get(arr: pseudo @Any[], index: Uint) -> in(arr) Ptr {
+*def get(arr: pseudo @Any[], index: Uint) -> arr[ Ptr ] {
     # Implemented by the compiler
 }
 
-*def get(arr: pseudo @Any[], index: Size) -> in(arr) Ptr {
+*def get(arr: pseudo @Any[], index: Size) -> arr[ Ptr ] {
     # Implemented by the compiler
 }
 
@@ -447,7 +447,7 @@ struct EntryPoint {
 
 # Arrays
 
-*def iter(arr: pseudo @Any[]) -> in(arr) Size {
+*def iter(arr: pseudo @Any[]) -> arr[ Size ] {
     # Implemented by the compiler
 }
 

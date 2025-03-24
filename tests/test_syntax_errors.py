@@ -268,7 +268,7 @@ def test_callbacks_and_fselect(code, err_msg):
         "Syntax ambiguity"
     ),
     (
-        """def get(ptr: Ptr, idx: int) -> in(ptr) Ptr~[<< ptr..to] {
+        """def get(ptr: Ptr, idx: int) -> ptr[ Ptr~[<< ptr..to] ] {
         }""",
         "Guards are allowed only on new lines"
     ),
@@ -282,7 +282,7 @@ def test_callbacks_and_fselect(code, err_msg):
         "Expected operand found operator"
     ),
     (
-        "def get(ptr: Ptr, idx: int) -> in(ptr) Ptr~[^ptr..to] ptr",
+        "def get(ptr: Ptr, idx: int) -> ptr[ Ptr~[^ptr..to] ] ptr",
         "Blocks must have their body in curly brackets"
     ),
     (
@@ -296,6 +296,18 @@ def test_callbacks_and_fselect(code, err_msg):
     (
         "struct *Struct() {}",
         "Visibility marker goes before 'struct'"
+    ),
+    (
+        """
+        def x(a: Array) -> ref(a) Int {}
+        """,
+        "Blocks must have their body in curly brackets"
+    ),
+    (
+        """
+        def x(a: Array) -> in(a) Int {}
+        """,
+        "Expected operand found operator"
     ),
 ])
 def test_func_def_errors(code, err_msg):

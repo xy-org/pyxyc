@@ -4,7 +4,7 @@ struct List~[type: struct] {
     # ...
 }
 
-def get(arr: List, i: Int) -> in(arr) Ptr~[^arr..type] {
+def get(arr: List, i: Int) -> arr[ Ptr~[^arr..type] ] {
     return Ptr{};
 }
 

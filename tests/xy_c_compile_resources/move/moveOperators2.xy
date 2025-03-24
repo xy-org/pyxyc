@@ -2,7 +2,7 @@ struct IntList {
     # ...
 }
 
-def get(arr: IntList, i: Int) -> in(arr) Ptr~Int {
+def get(arr: IntList, i: Int) -> arr[ Ptr~Int ] {
     return Ptr{};
 }
 

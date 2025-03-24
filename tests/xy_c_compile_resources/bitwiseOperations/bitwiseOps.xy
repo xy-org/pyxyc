@@ -6,7 +6,7 @@ def get(b: Bits64, i: Int) -> Bool {
     return (b & (b'oneBit \shiftl i))'to(Long) != 0;
 }
 
-def set(b: mut Bits64, i: Int, val: Bool) -> in(b) Int {
+def set(b: mut Bits64, i: Int, val: Bool) -> b[ Int ] {
     b = b | (val'to(Ulong)'to(Bits64) \shiftl i);
     return i;
 }
@@ -23,7 +23,7 @@ def testBitGetSet(i: Int) -> Bits64 {
 
 struct Bits {}
 
-def bits(a: Long) -> in(a) Bits {
+def bits(a: Long) -> a[ Bits ] {
     return Bits{};
 }
 

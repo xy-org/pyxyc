@@ -7,7 +7,7 @@ struct PointList {
     # ...
 }
 
-def get(arr: PointList, i: Int) -> in(arr) Ptr~Point {
+def get(arr: PointList, i: Int) -> arr[ Ptr~Point ] {
     return Ptr{};
 }
 

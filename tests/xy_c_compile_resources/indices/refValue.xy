@@ -5,7 +5,7 @@ def get(d: Data, i: Int) -> Float {
     return (i*2)'to(Float);
 }
 
-def func1(d: Data, i: Int) -> in(d) Int {
+def func1(d: Data, i: Int) -> d[ Int ] {
     return i; 
 }
 

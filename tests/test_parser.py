@@ -2005,18 +2005,18 @@ def test_visibility(code, exp_ast):
         struct Array {
         }
 
-        def func(arr: Array) -> in(arr) int {
+        def func(arr: Array) -> arr[ int ] {
             return 0;
         }
 
-        def func(arr: Array) -> (in(arr) int) {
+        def func(arr: Array) -> (arr[int]) {
             return 0;
         }
 
-        def func(arr: Array, idx: int) -> in(arr) Ptr~int {
+        def func(arr: Array, idx: int) -> arr[ Ptr~int ] {
         }
 
-        def func(idx: int) -> in() Ptr~int {
+        def func(idx: int) -> [Ptr~int] {
         }
         """,
         [

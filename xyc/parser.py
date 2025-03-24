@@ -293,6 +293,13 @@ def parse_block(itoken):
         if isinstance(expr, VarDecl):
             expr.mutable = True
             block.returns.append(expr)
+        elif isinstance(expr, Select):
+            assert len(expr.args.args) <= 1
+            assert len(expr.args.kwargs) == 0
+            index_in = expr.base if expr.base is not None else nobase
+            block.returns.append(
+                VarDecl(type=expr.args.args[0], index_in=index_in, mutable=True, src=expr.src, coords=expr.coords)
+            )
         else:
             block.returns.append(
                 VarDecl(type=expr, src=expr.src, coords=expr.coords)
@@ -496,8 +503,6 @@ def parse_expression(
         # announomous struct literal
         itoken.consume()
         arg1 = parse_struct_literal(itoken, None)
-    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "in":
-        arg1 = parse_var_decl(itoken, Empty(), MIN_PRECEDENCE, op_prec)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "$":
         arg1 = parse_func_select(itoken)
     elif precedence >= MAX_PRECEDENCE and itoken.peak() == "^":
@@ -815,17 +820,6 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
         raise ParsingError(f"'{itoken.peak()}' is a reserved keyword", itoken)
     elif itoken.check("pseudo"):
         decl.is_pseudo = True
-    elif itoken.check("in"):
-        itoken.expect("(")
-        itoken.skip_empty_lines()
-        if itoken.peak() != ")":
-            decl.index_in = parse_expression(itoken, is_toplevel=False)
-            itoken.skip_empty_lines()
-        else:
-            decl.index_in = nobase
-        if itoken.peak() == ",":
-            raise ParsingError("Indecies require only one base", itoken)
-        itoken.expect(")")
 
     if itoken.peak() in var_qualifiers:
         raise ParsingError("Only one variable qualifier is allowed.", itoken)

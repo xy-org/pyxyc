@@ -7,7 +7,7 @@ struct Point {
     w: Float = 1.0f;
 }
 
-def select(p: Point, idx: Int) -> in(p) Int {
+def select(p: Point, idx: Int) -> p[ Int ] {
     return idx;
 }
 
@@ -51,11 +51,11 @@ def append(pc: mut PointCloud, p: Point) {
     # rest omitted for brievity
 }
 
-def select(pc: PointCloud, i: Int) -> in(pc) Int {
+def select(pc: PointCloud, i: Int) -> pc[ Int ] {
     return i;
 }
 
-def get(pc: PointCloud, i: Int) -> in(pc) Ptr~Point {
+def get(pc: PointCloud, i: Int) -> pc[ Ptr~Point ] {
     return pc.mem + i * sizeof(Point);
 }
  

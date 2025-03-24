@@ -24,7 +24,7 @@ def slice(start: Size, end: Size) -> Slice{
     return Slice{start, end};
 }
 
-def iter(arr: Array, slice: Slice) -> in(arr) SliceIter {
+def iter(arr: Array, slice: Slice) -> arr[ SliceIter ] {
     return SliceIter{slice.n, slice.m};
 }
 
