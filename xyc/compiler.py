@@ -778,6 +778,8 @@ class CompilerContext:
                     xy_node=node
                 )
             else:
+                if len(node.parts) > 1:
+                    raise CompilationError("Cannot evaluate expression at compile time", node.parts[1])
                 return ExtSymbolObj(
                     c_node=c.Id(node.full_str),
                     xy_node=node,
@@ -2612,7 +2614,6 @@ def guess_macro_rtype(expr, cast, ctx):
 
 def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
     parts = []
-    is_str = lambda node: isinstance(node, xy.Const) and isinstance(node.value, str)
     for p in expr.parts:
         to_append = p
         if isinstance(p, xy.ExternalCommand):
@@ -2620,7 +2621,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                 raise CompilationError("Only cat'ing a single file is currently supported", p)
             with open(os.path.join(ctx.module_path, p.command[1])) as f:
                 to_append = xy.Const(escape_str(f.read()))
-        if is_str(to_append) and len(parts) > 0 and is_str(parts[-1]):
+        if is_str_const(to_append) and len(parts) > 0 and is_str_const(parts[-1]):
             parts[-1].value += to_append.value
             parts[-1].value_str += to_append.value_str
         else:
@@ -2743,8 +2744,20 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             return builder_tmpvar_id
         
 def compile_inlinec(expr, parts, cast, cfunc, ctx):
-    assert len(parts) == 1
-    res = c.Id(parts[0].value_str)
+    inlinec = ""
+    for p in parts:
+        if is_str_const(p):
+            inlinec += remove_xy_escapes(p.value)
+        else:
+            assert isinstance(p, xy.Args)
+            assert len(p.args) == 1
+            assert len(p.kwargs) == 0
+            obj = compile_expr(p.args[0], cast, cfunc, ctx, deref=True)
+            if not isinstance(obj.c_node, c.Id):
+                raise CompilationError("NYI. Only variabled can be used for inlinec interpolation", p)
+            inlinec += obj.c_node.name
+
+    res = c.Id(inlinec)
     return ExprObj(
         c_node=res,
         xy_node=expr,
