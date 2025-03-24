@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <string.h>
 
 typedef struct pseudoFields_Point pseudoFields_Point;
 typedef struct pseudoFields_CoordField pseudoFields_CoordField;

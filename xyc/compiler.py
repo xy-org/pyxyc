@@ -2345,6 +2345,7 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
             tmp_obj = ctx.create_tmp_var(val_type)
             tmp_obj.c_node.value = val.c_node
             cfunc.body.append(tmp_obj.c_node)
+            cast.includes.append(c.Include("string.h"))
             c_res = c.FuncCall(
                 "memcpy",
                 args=[
@@ -2662,15 +2663,6 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             ]
         )
         return do_compile_fcall(expr, func_desc, args, cast, cfunc, ctx)
-        # c_func = c.FuncCall(func_desc.c_name, args=[
-        #     c.Const(f'"{str_const}"'),
-        #     c.Const(cstr_len(str_const)),
-        # ])
-        # return ExprObj(
-        #     c_node=c_func,
-        #     xy_node=expr,
-        #     inferred_type=func_desc.rtype_obj
-        # )
     else:
         builder_tmpvar = ctx.create_tmp_var(func_desc.rtype_obj, f"{expr.prefix}str", xy_node=expr)
         cfunc.body.append(builder_tmpvar.c_node)
