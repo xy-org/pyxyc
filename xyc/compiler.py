@@ -771,11 +771,17 @@ class CompilerContext:
                             c_node=c.Const(node.value_str),
                             inferred_type=const_type_obj)
         elif isinstance(node, xy.StrLiteral):
-            return StrObj(
-                prefix=node.prefix,
-                parts=[self.eval(p) for p in node.parts],
-                xy_node=node
-            )
+            if node.prefix != "inlinec":
+                return StrObj(
+                    prefix=node.prefix,
+                    parts=[self.eval(p) for p in node.parts],
+                    xy_node=node
+                )
+            else:
+                return ExtSymbolObj(
+                    c_node=c.Id(node.full_str),
+                    xy_node=node,
+                )
         elif isinstance(node, xy.StructLiteral):
             instance_type = self.eval(node.name)
             if instance_type is None:
@@ -801,17 +807,11 @@ class CompilerContext:
                 base = self.eval(node.arg1, msg="Cannot find symbol")
                 if isinstance(base, ImportObj):
                     if base.is_external:
-                        if isinstance(node.arg2, xy.Id):
-                            return ExtSymbolObj(
-                                c_node=c.Id(node.arg2.name),
-                                xy_node=node.arg2,
-                            )
-                        else:
-                            assert isinstance(node.arg2, xy.StrLiteral)
-                            return ExtSymbolObj(
-                                c_node=c.Id(node.arg2.full_str),
-                                xy_node=node,
-                            )
+                        assert isinstance(node.arg2, xy.Id)
+                        return ExtSymbolObj(
+                            c_node=c.Id(node.arg2.name),
+                            xy_node=node.arg2,
+                        )
                     else:
                         assert isinstance(node.arg2, xy.Id)
                         return base.module_header.ctx.eval(node.arg2, msg, is_func=is_func)
@@ -1770,12 +1770,10 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             if isinstance(arg1_obj.inferred_type, ImportObj):
                 assert arg1_obj.inferred_type.is_external
-                if isinstance(expr.arg2, xy.Id):
-                    field_name = expr.arg2.name
-                    res = c.Id(field_name)
-                else:
-                    assert isinstance(expr.arg2, xy.StrLiteral)
-                    res = c.Id(expr.arg2.full_str)
+                if not isinstance(expr.arg2, xy.Id):
+                    raise CompilationError("Expected identifier", expr.arg2)
+                field_name = expr.arg2.name
+                res = c.Id(field_name)
                 return ExprObj(
                     c_node=res,
                     xy_node=expr,
@@ -2613,13 +2611,6 @@ def guess_macro_rtype(expr, cast, ctx):
         return macro_type_obj
 
 def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
-    if expr.prefix not in ctx.str_prefix_reg:
-        raise CompilationError(
-            f"No string constructor registered for prefix \"{expr.prefix}\"",
-            expr
-        )
-    func_desc: FuncObj = ctx.str_prefix_reg[expr.prefix]
-
     parts = []
     is_str = lambda node: isinstance(node, xy.Const) and isinstance(node.value, str)
     for p in expr.parts:
@@ -2634,6 +2625,16 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             parts[-1].value_str += to_append.value_str
         else:
             parts.append(to_append)
+
+    if expr.prefix == "inlinec":
+        return compile_inlinec(expr, parts, cast, cfunc, ctx)
+
+    if expr.prefix not in ctx.str_prefix_reg:
+        raise CompilationError(
+            f"No string constructor registered for prefix \"{expr.prefix}\"",
+            expr
+        )
+    func_desc: FuncObj = ctx.str_prefix_reg[expr.prefix]
 
     interpolation = ("interpolation" in func_desc.tags["xyStr"].kwargs and
                      ct_isTrue(func_desc.tags["xyStr"].kwargs["interpolation"]))
@@ -2740,6 +2741,15 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             )
         else:
             return builder_tmpvar_id
+        
+def compile_inlinec(expr, parts, cast, cfunc, ctx):
+    assert len(parts) == 1
+    res = c.Id(parts[0].value_str)
+    return ExprObj(
+        c_node=res,
+        xy_node=expr,
+        inferred_type=c_symbol_type
+    )
 
 def escape_str(s: str):
     return s.translate(str.maketrans({"\n": "\\n", '"': '\\"', '\\': '\\\\'}))
