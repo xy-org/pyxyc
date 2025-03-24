@@ -2651,15 +2651,26 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
     
     if not interpolation:
         str_const = remove_xy_escapes(parts[0].value if len(parts) else "")
-        c_func = c.FuncCall(func_desc.c_name, args=[
-            c.Const(f'"{str_const}"'),
-            c.Const(cstr_len(str_const)),
-        ])
-        return ExprObj(
-            c_node=c_func,
-            xy_node=expr,
-            inferred_type=func_desc.rtype_obj
+        args = ArgList(
+            args=[
+                ExprObj(
+                    expr, c.Const(f'"{str_const}"'), ctx.ptr_obj
+                ),
+                ExprObj(
+                    expr, c.Const(cstr_len(str_const)), ctx.size_obj
+                )
+            ]
         )
+        return do_compile_fcall(expr, func_desc, args, cast, cfunc, ctx)
+        # c_func = c.FuncCall(func_desc.c_name, args=[
+        #     c.Const(f'"{str_const}"'),
+        #     c.Const(cstr_len(str_const)),
+        # ])
+        # return ExprObj(
+        #     c_node=c_func,
+        #     xy_node=expr,
+        #     inferred_type=func_desc.rtype_obj
+        # )
     else:
         builder_tmpvar = ctx.create_tmp_var(func_desc.rtype_obj, f"{expr.prefix}str", xy_node=expr)
         cfunc.body.append(builder_tmpvar.c_node)

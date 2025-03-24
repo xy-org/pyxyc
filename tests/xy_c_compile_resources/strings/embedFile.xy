@@ -1,5 +1,6 @@
-def str~[StrCtor{prefix="", interpolation=false}](addr: Ptr, size: Size)
-    addr;
+def str~[StrCtor{prefix="", interpolation=false}](addr: Ptr, size: Size) -> Ptr {
+    return addr;
+}
 
 def test() {
     s1 := "{#! cat externalFile.txt }";
