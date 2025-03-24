@@ -547,6 +547,7 @@ class CompilerContext:
     builder: any
     module_name: str  # TODO maybe module_name should be a list of the module names
     module_path: str = ""
+    imported_modules: set[str] = field(default_factory=set)
 
     data_ns: IdTable = field(default_factory=IdTable)
     func_ns: IdTable = field(default_factory=IdTable)
@@ -4713,6 +4714,10 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
             cast.includes.append(c.Include(header_obj.parts[0].value))
         import_obj.is_external = True
     else:
+        if imprt.lib in ctx.imported_modules:
+            # already imported nothing to do
+            return
+        ctx.imported_modules.add(imprt.lib)
         module_header = ctx.builder.import_module(imprt.lib)
         if module_header is None:
             raise CompilationError(f"Cannot find module '{imprt.lib}'", imprt)
