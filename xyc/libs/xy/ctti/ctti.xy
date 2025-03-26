@@ -39,7 +39,7 @@ struct StrLit {
     # Implemented by the compiler
 }
 
-;; Return path to currently file
+;; Return path to the file where the function is called
 *def fileof() -> StrLit {
     # Implemented by the compiler
 }
@@ -49,7 +49,7 @@ struct StrLit {
     # Implemented by the compiler
 }
 
-;; Return current line
+;; Return line number where the function is called
 *def lineof() -> Uint {
     # Implemented by the compiler
 }

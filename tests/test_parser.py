@@ -883,6 +883,46 @@ def test_parse_default_param_values(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def main() -> void {
+            (a);
+            (func) a, b;
+            (func) a, b=10;
+            (func) (func) x, y;
+            (func) x, (func) y;
+            (func) x + (func) y;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("main"),
+                returns=[ast.VarDecl(type=ast.Id("void"))],
+                body=[
+                    ast.Id("a"),
+                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a"), ast.Id("b")]),
+                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a")],
+                                 kwargs={"b": ast.Const(10)}),
+                    ast.FuncCall(ast.Id("func"), args=[
+                        ast.FuncCall(ast.Id("func"), args=[ast.Id("x"), ast.Id("y")])
+                    ]),
+                    ast.FuncCall(ast.Id("func"), args=[
+                        ast.Id("x"),
+                        ast.FuncCall(ast.Id("func"), args=[ast.Id("y")])
+                    ]),
+                    ast.FuncCall(
+                        ast.Id("func"),
+                        args=[
+                            ast.BinExpr(
+                                ast.Id("x"),
+                                ast.FuncCall(ast.Id("func"), args=[ast.Id("y")]),
+                                op="+",
+                            )
+                        ]
+                    )
+                ]
+            ),
+        ]
+    ],
 ])
 def test_parse_func_call(code, exp_ast):
     act_ast = parse_code(code)

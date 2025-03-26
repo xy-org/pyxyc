@@ -418,12 +418,21 @@ def parse_expression(
         raise ParsingError("... is not allowed in expressions", itoken)
 
     if precedence >= MAX_PRECEDENCE and itoken.check("("):
-        # bracketed expression or func type
+        # bracketed expression, func type, or reverse calling notation
+        next_token = itoken.peak()
         bracketed_exprs = parse_expr_list(itoken, is_toplevel=False)
         itoken.expect(")", msg="Missing closing bracket")
-        if itoken.peak() != "->":
+        if len(bracketed_exprs) == 1 and isinstance(bracketed_exprs[0], Id) and not is_end_of_expr(itoken) and next_token[0].isalpha():
+            # reverse function call notation
+            coords = itoken.peak_coords()
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+            arg1 = FuncCall(bracketed_exprs[0], ret_args, kwargs, inject_args,
+                            src=itoken.src, coords=coords)
+        elif itoken.peak() != "->":
             # bracketed expression
-            if len(bracketed_exprs) > 1:
+            if len(bracketed_exprs) == 0:
+                raise ParsingError("No expression in brackets", itoken)
+            elif len(bracketed_exprs) > 1:
                 raise ParsingError("',' is used only to separate arguments or params not as operator", itoken)
             arg1 = bracketed_exprs[0]
         else:

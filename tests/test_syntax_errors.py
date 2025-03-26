@@ -179,6 +179,27 @@ def test_invalid_slices(code, err_msg):
         """,
         "Variable name must be an identifier"
     ),
+    (
+        """def main() -> void {
+            ((func)) a;
+        }
+        """,
+        "Malformed expression"
+    ),
+    (
+        """def main() -> void {
+            ()func;
+        }
+        """,
+        "No expression in brackets"
+    ),
+    (
+        """def main() -> void {
+            a + ();
+        }
+        """,
+        "No expression in brackets"
+    ),
 ])
 def test_invalid_expression(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
