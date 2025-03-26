@@ -2836,6 +2836,7 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
             xy_node=expr,
             c_node=c.Id(func_obj.c_name),
             inferred_type=FuncTypeObj(c_typename=c_typename, xy_node=expr, func_obj=func_obj),
+            compiled_obj=func_obj
         )
     else:
         # select multiple
@@ -3282,28 +3283,13 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             compiled_obj=arg_exprs[0],
         )
     elif is_builtin_func(func_obj, "nameof"):
-        if isinstance(arg_exprs[0].compiled_obj, ArrTypeObj):
-            name = arg_exprs[0].compiled_obj.base_type_obj.xy_node.name
-            name += "[" + ",".join(str(d) for d in arg_exprs[0].compiled_obj.dims) + "]"
-        elif isinstance(arg_exprs[0].compiled_obj, (TypeObj, VarObj)):
-            name = arg_exprs[0].compiled_obj.xy_node.name
-        elif isinstance(arg_exprs[0].compiled_obj, FuncTypeObj):
-            if arg_exprs[0].compiled_obj.func_obj is not None:
-                name = arg_exprs[0].compiled_obj.func_obj.xy_node.name
-            else:
-                name = "UNKNOWN"
-        elif isinstance(arg_exprs[0].compiled_obj, FuncObj):
-            name = arg_exprs[0].compiled_obj.xy_node.name.name
-        else:
-            import pdb; pdb.set_trace()
-            name = "<UNKNOWN>"
-        return compile_expr(
-            xy.StrLiteral(
-                parts=[xy.Const(name)], full_str=name,
-                src=expr.src, coords=expr.coords,
-            ),
-            cast, cfunc, ctx
-        )
+        return compile_nameof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+    elif is_builtin_func(func_obj, "packageof"):
+        return compile_packageof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+    elif is_builtin_func(func_obj, "fileof"):
+        return compile_fileof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+    elif is_builtin_func(func_obj, "lineof"):
+        return compile_lineof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "commentof"):
         comment = ""
         if arg_exprs[0].compiled_obj is not None:
@@ -3625,6 +3611,82 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     caller_ctx.pop_ns()
 
     return res_obj
+
+def compile_nameof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    redact_code(arg_exprs[0], cast, cfunc, ctx)
+    if isinstance(arg_exprs[0].compiled_obj, ArrTypeObj):
+        name = arg_exprs[0].compiled_obj.base_type_obj.xy_node.name
+        name += "[" + ",".join(str(d) for d in arg_exprs[0].compiled_obj.dims) + "]"
+    elif isinstance(arg_exprs[0].compiled_obj, (TypeObj, VarObj)):
+        name = arg_exprs[0].compiled_obj.xy_node.name
+    elif isinstance(arg_exprs[0].compiled_obj, FuncTypeObj):
+        if arg_exprs[0].compiled_obj.func_obj is not None:
+            name = arg_exprs[0].compiled_obj.func_obj.xy_node.name
+        else:
+            name = "UNKNOWN"
+    elif isinstance(arg_exprs[0].compiled_obj, FuncObj):
+        name = arg_exprs[0].compiled_obj.xy_node.name.name
+    else:
+        raise CompilationError("Cannot determine name", expr)
+    return compile_expr(
+        xy.StrLiteral(
+            parts=[xy.Const(name)], full_str=name,
+            src=expr.src, coords=expr.coords,
+        ),
+        cast, cfunc, ctx
+    )
+
+def compile_packageof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    redact_code(arg_exprs[0], cast, cfunc, ctx)
+    obj = arg_exprs[0].compiled_obj
+    if obj is None:
+        obj = arg_exprs[0]
+    obj_ctx = None
+    if isinstance(obj, (FuncObj, TypeObj)) and obj.module_header is not None:
+        obj_ctx = obj.module_header.ctx
+    if obj_ctx is None:
+        obj_ctx = ctx
+    return compile_expr(
+        xy.StrLiteral(
+            parts=[xy.Const(obj_ctx.module_name)], full_str=obj_ctx.module_name,
+            src=expr.src, coords=expr.coords,
+        ),
+        cast, cfunc, ctx
+    )
+
+def compile_fileof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    redact_code(arg_exprs[0], cast, cfunc, ctx)
+    obj = arg_exprs[0].compiled_obj
+    if obj is None:
+        obj = arg_exprs[0]
+    file = obj.xy_node.src.filename
+    file = os.path.relpath(file)
+    return compile_expr(
+        xy.StrLiteral(
+            parts=[xy.Const(file)], full_str=file,
+            src=expr.src, coords=expr.coords,
+        ),
+        cast, cfunc, ctx
+    )
+
+def compile_lineof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    redact_code(arg_exprs[0], cast, cfunc, ctx)
+    obj = arg_exprs[0].compiled_obj
+    if obj is None:
+        obj = arg_exprs[0]
+
+    start = obj.xy_node.coords[0]
+    line_num = 1 if start >= 0 else -1
+    for i in range(start):
+        if obj.xy_node.src.code[i] == "\n":
+            line_num += 1
+
+    return compile_expr(
+        xy.Const(
+            line_num, src=expr.src, coords=expr.coords,
+        ),
+        cast, cfunc, ctx
+    )
 
 def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: CompilerContext):
     if len(expr.loop.over) != 1:

@@ -373,7 +373,7 @@ def parse_toplevel_type_expr(itoken):
     return parse_expression(itoken, op_prec=toplevel_precedence_map)
 
 # ref is a reserved keyword
-var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo", "ref"}
+var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo"}
 
 operator_precedence = {
     "^": 12, "unary[": 12, "unary'": 12,
@@ -808,7 +808,10 @@ def parse_num_const(token: str, tk_coords, itoken):
 
 def parse_var_decl(itoken, name_token, precedence, op_prec):
     decl = VarDecl(src=itoken.src, coords=name_token.coords)
-    if not isinstance(name_token, Empty):
+    if isinstance(name_token, CallerContextExpr):
+        decl.name = name_token.arg.name
+        decl.is_callerContext = True
+    elif not isinstance(name_token, Empty):
         decl.name = name_token.name
     else:
         decl.coords = itoken.peak_coords()
@@ -816,7 +819,7 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
     if itoken.check("mut"):
         decl.mutable = True
         decl.explicit_mutable = True
-    elif itoken.peak() in {"out", "inout", "outin", "ref"}:
+    elif itoken.peak() in {"out", "inout", "outin"}:
         raise ParsingError(f"'{itoken.peak()}' is a reserved keyword", itoken)
     elif itoken.check("pseudo"):
         decl.is_pseudo = True

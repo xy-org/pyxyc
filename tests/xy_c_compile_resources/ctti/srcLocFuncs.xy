@@ -1,0 +1,15 @@
+import xy.ctti;
+
+def str~[StrCtor{prefix=""}](addr: Ptr, size: Size) addr;
+
+def testFunc() {
+}
+
+def test() {
+    a := $testFunc()'nameof;
+    b := $testFunc()'packageof;
+    c := packageof(testFunc());
+    d := $testFunc()'fileof;
+    e := $testFunc()'lineof;
+    f := lineof(1 + 1);
+}

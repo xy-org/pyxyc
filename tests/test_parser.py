@@ -734,6 +734,19 @@ def test_parse_advanced_funcs(code, exp_ast):
     ],
     [
         """
+        def test(^msg: pseudo Any) {}
+        """,
+        [
+            ast.FuncDef(ast.Id("test"),
+                params=[
+                    ast.param("msg", type=ast.Id("Any"), is_callerContext=True, is_pseudo=True),
+                ],
+                returns=[], body=[]
+            ),
+        ]
+    ],
+    [
+        """
         def func(x: pseudo Any, val: int = ^(x+1)) {}
         """,
         [

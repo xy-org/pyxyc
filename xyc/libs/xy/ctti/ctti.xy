@@ -1,12 +1,12 @@
-*def sizeof(arg: Any) -> Size {
+*def sizeof(^arg: Any) -> Size {
     # Implemented by the compiler
 }
 
-*def offsetof(arg: pseudo Any) -> Size {
+*def offsetof(^arg: Any) -> Size {
     # Implemented by the compiler
 }
 
-*def alignof(arg: pseudo Any) -> Size {
+*def alignof(^arg: Any) -> Size {
     # Implemented by the compiler
 }
 
@@ -14,7 +14,7 @@ struct FieldArray {
     # Compile-time only structure implemented by the compiler
 }
 
-*def fieldsof(arg: pseudo Any) -> FieldArray {
+*def fieldsof(^arg: Any) -> FieldArray {
     # Implemented by the compiler
 }
 
@@ -22,11 +22,23 @@ struct StrLit {
     # Implemented by the compiler
 }
 
-*def nameof(arg: pseudo Any) -> StrLit {
+*def nameof(^arg: Any) -> StrLit {
     # Implemented by the compiler
 }
 
-*def commentof(arg: pseudo Any) -> StrLit {
+*def commentof(^arg: Any) -> StrLit {
+    # Implemented by the compiler
+}
+
+*def packageof(^arg: Any) -> StrLit {
+    # Implemented by the compiler
+}
+
+*def fileof(^arg: Any) -> StrLit {
+    # Implemented by the compiler
+}
+
+*def lineof(^arg: Any) -> Int {
     # Implemented by the compiler
 }
 

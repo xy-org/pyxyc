@@ -56,7 +56,7 @@ from xyc.compiler import CompilationError
     "boundaryExpr/boundaryExpr3",
     # TODO "properties",
     "exitWithError",
-    "fieldsof",
+    "ctti/fieldsof",
     "injectScopeArgs",
     "callbacks/callbacks1",
     "callbacks/callbacks2",
@@ -76,6 +76,7 @@ from xyc.compiler import CompilationError
     "logicCmp/cmpBools",
     "logicCmp/cmpBits",
     "logicCmp/shortcircuit",
+    "ctti/srcLocFuncs",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
