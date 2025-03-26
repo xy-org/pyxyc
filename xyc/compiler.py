@@ -3655,11 +3655,15 @@ def compile_packageof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     )
 
 def compile_fileof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
-    redact_code(arg_exprs[0], cast, cfunc, ctx)
-    obj = arg_exprs[0].compiled_obj
-    if obj is None:
-        obj = arg_exprs[0]
-    file = obj.xy_node.src.filename
+    if len(arg_exprs) > 0:
+        redact_code(arg_exprs[0], cast, cfunc, ctx)
+        obj = arg_exprs[0].compiled_obj
+        if obj is None:
+            obj = arg_exprs[0]
+        xy_node = obj.xy_node
+    else:
+        xy_node = expr
+    file = xy_node.src.filename
     file = os.path.relpath(file)
     return compile_expr(
         xy.StrLiteral(
@@ -3670,20 +3674,24 @@ def compile_fileof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     )
 
 def compile_lineof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
-    redact_code(arg_exprs[0], cast, cfunc, ctx)
-    obj = arg_exprs[0].compiled_obj
-    if obj is None:
-        obj = arg_exprs[0]
+    if len(arg_exprs) > 0:
+        redact_code(arg_exprs[0], cast, cfunc, ctx)
+        obj = arg_exprs[0].compiled_obj
+        if obj is None:
+            obj = arg_exprs[0]
+        xy_node = obj.xy_node
+    else:
+        xy_node = expr
 
-    start = obj.xy_node.coords[0]
+    start = xy_node.coords[0]
     line_num = 1 if start >= 0 else -1
     for i in range(start):
-        if obj.xy_node.src.code[i] == "\n":
+        if xy_node.src.code[i] == "\n":
             line_num += 1
 
     return compile_expr(
         xy.Const(
-            line_num, src=expr.src, coords=expr.coords,
+            line_num, src=expr.src, coords=expr.coords, type="Uint",
         ),
         cast, cfunc, ctx
     )

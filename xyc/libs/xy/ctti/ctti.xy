@@ -34,11 +34,23 @@ struct StrLit {
     # Implemented by the compiler
 }
 
+;; Return the path to the file where {arg} is compiled
 *def fileof(^arg: Any) -> StrLit {
     # Implemented by the compiler
 }
 
-*def lineof(^arg: Any) -> Int {
+;; Return path to currently file
+*def fileof() -> StrLit {
+    # Implemented by the compiler
+}
+
+;; Return the line {arg} is defined on
+*def lineof(^arg: Any) -> Uint {
+    # Implemented by the compiler
+}
+
+;; Return current line
+*def lineof() -> Uint {
     # Implemented by the compiler
 }
 

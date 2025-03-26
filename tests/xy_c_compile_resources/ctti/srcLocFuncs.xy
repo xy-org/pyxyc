@@ -12,4 +12,6 @@ def test() {
     d := $testFunc()'fileof;
     e := $testFunc()'lineof;
     f := lineof(1 + 1);
+    g := 'fileof;
+    h := 'lineof;
 }
