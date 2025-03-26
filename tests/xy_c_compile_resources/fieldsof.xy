@@ -15,7 +15,7 @@ struct FieldDesc {
 }
 
 def print(d: FieldDesc) {
-    # ommited for brevity
+    # omitted for brevity
 }
 
 def printFields(
