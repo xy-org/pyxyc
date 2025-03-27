@@ -1969,6 +1969,27 @@ def test_parse_struct(code, exp_ast):
             ]),
         ],
     ],
+    [
+        """
+        def stringCtor(addr: Ptr, len: Size) Str{=addr, =len};
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("stringCtor"),
+                params=[
+                    ast.VarDecl("addr", ast.Id("Ptr"), is_param=True),
+                    ast.VarDecl("len", ast.Id("Size"), is_param=True),
+                ],
+                body=ast.StructLiteral(
+                    ast.Id("Str"),
+                    kwargs={
+                        "addr": ast.Id("addr"),
+                        "len": ast.Id("len"),
+                    }
+                )
+            ),
+        ],
+    ],
 ])
 def test_struct_literals(code, exp_ast):
     act_ast = parse_code(code)

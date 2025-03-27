@@ -1085,7 +1085,14 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False
         if itoken.peak() != "...":
             if itoken.peak() == "<<":
                 raise ParsingError("Guards are allowed only on new lines", itoken)
+            introspective = itoken.check("=")
             expr = parse_expression(itoken, is_toplevel=is_toplevel)
+            if introspective:
+                if not isinstance(expr, Id):
+                    raise ParsingError("Only simply identifiers can use the leading '=' shortcut")
+                expr = BinExpr(
+                    expr, expr, op="=", src=expr.src, coords=expr.coords
+                )
 
             res.append(expr)
         else:
