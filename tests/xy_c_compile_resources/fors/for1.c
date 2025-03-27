@@ -11,7 +11,7 @@ void for1_busywait(void) {
 }
 
 void for1_busywait2(void) {
-    for (int32_t tmp_iter0 = 0; tmp_iter0 < 10000; ++tmp_iter0) {
+    for (int32_t tmp_0_iter = 0; tmp_0_iter < 10000; ++tmp_0_iter) {
     }
 }
 

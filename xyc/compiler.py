@@ -528,10 +528,9 @@ class TmpNames:
     tmp_var_i: int = 0
 
     def gen_tmp_name(self, name_hint="") -> str:
-        tmp_var_name = f"tmp{'_' if name_hint else ''}{name_hint}"
-        tmp_var_name = f"{tmp_var_name}{self.tmp_var_i}"
+        tmp_name = f"tmp_{self.tmp_var_i}{'_' if name_hint else ''}{name_hint}"
         self.tmp_var_i += 1
-        return tmp_var_name
+        return tmp_name
     
     def enter_block(self):
         pass

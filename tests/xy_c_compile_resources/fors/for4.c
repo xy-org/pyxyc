@@ -44,10 +44,10 @@ void for4_set(for4_Array p_arr, for4_SliceIter p_iter, float p_val) {
 }
 
 void for4_calmpTo0(for4_Array* p_arr, size_t p_n, size_t p_m) {
-    for4_Slice tmp_arg0 = for4_slice(p_n, p_m);
-    for (for4_SliceIter tmp_iter1 = for4_iter(*p_arr, tmp_arg0); for4_valid(*p_arr, tmp_iter1); for4_next(*p_arr, &tmp_iter1)) {
-        if (for4_get(*p_arr, tmp_iter1) < 0) {
-            for4_set(*p_arr, tmp_iter1, 0.0f);
+    for4_Slice tmp_0_arg = for4_slice(p_n, p_m);
+    for (for4_SliceIter tmp_1_iter = for4_iter(*p_arr, tmp_0_arg); for4_valid(*p_arr, tmp_1_iter); for4_next(*p_arr, &tmp_1_iter)) {
+        if (for4_get(*p_arr, tmp_1_iter) < 0) {
+            for4_set(*p_arr, tmp_1_iter, 0.0f);
         }
     }
 }

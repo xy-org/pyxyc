@@ -7,11 +7,11 @@
 #define GLOBALCONSTANTS_E 2.71828
 
 int32_t globalConstants_func(void) {
-    int32_t tmp0 = 0;
+    int32_t tmp_0 = 0;
     if (GLOBALCONSTANTS_PI > GLOBALCONSTANTS_E) {
-        tmp0 = GLOBALCONSTANTS_C;
+        tmp_0 = GLOBALCONSTANTS_C;
     } else {
-        tmp0 = 0;
+        tmp_0 = 0;
     }
-    return tmp0;
+    return tmp_0;
 }

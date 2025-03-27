@@ -34,8 +34,8 @@ int32_t slices_max__Int(void) {
 
 void slices_testIntSlices(void) {
     const slices_AllSlice l_a = {0};
-    int32_t tmp_arg0 = slices_max__Int();
-    const slices_IntSlice l_b = {1, tmp_arg0, 1};
+    int32_t tmp_0_arg = slices_max__Int();
+    const slices_IntSlice l_b = {1, tmp_0_arg, 1};
     const int32_t l_x = 10;
     const int32_t l_y = 1000;
     const slices_IntSlice l_c = {0, l_x, 1};
@@ -43,8 +43,8 @@ void slices_testIntSlices(void) {
     const slices_IntSlice l_e = {0, slices_max__Int(), -1};
     const slices_IntSlice l_f = {0, l_x, 1};
     const slices_IntSlice l_g = {0, l_x, l_y};
-    int32_t tmp_arg1 = slices_max__Int();
-    const slices_IntSlice l_i = {l_x, tmp_arg1, l_y};
+    int32_t tmp_1_arg = slices_max__Int();
+    const slices_IntSlice l_i = {l_x, tmp_1_arg, l_y};
     const slices_IntSlice l_j = {l_x, l_y, 1};
     const slices_IntSlice l_k = {l_x, l_y, 1};
 }

@@ -24,13 +24,13 @@ int32_t callbacks1_test(void) {
 }
 
 int32_t callbacks1_abs(int32_t p_a) {
-    int32_t tmp1 = 0;
+    int32_t tmp_1 = 0;
     if (p_a < 0) {
-        tmp1 = -p_a;
+        tmp_1 = -p_a;
     } else {
-        tmp1 = p_a;
+        tmp_1 = p_a;
     }
-    return tmp1;
+    return tmp_1;
 }
 
 int32_t callbacks1_cb(int32_t p_a) {
@@ -38,11 +38,11 @@ int32_t callbacks1_cb(int32_t p_a) {
 }
 
 int32_t callbacks1_funnyFun(int32_t p_a, double p_b) {
-    int32_t tmp0 = 0;
+    int32_t tmp_0 = 0;
     if (p_b < 2 * p_a) {
-        tmp0 = p_a;
+        tmp_0 = p_a;
     } else {
-        tmp0 = -p_a;
+        tmp_0 = -p_a;
     }
-    return tmp0;
+    return tmp_0;
 }

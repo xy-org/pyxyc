@@ -19,63 +19,63 @@ int32_t ifs3_helper3(void) {
 }
 
 int32_t ifs3_test1(void) {
-    int32_t tmp_arg0 = ifs3_helper1();
-    int32_t tmp_arg1 = ifs3_helper2();
-    int32_t tmp3 = 0;
-    if (ifs3_compute(tmp_arg0, tmp_arg1, ifs3_helper3()) > 0) {
-        tmp3 = 1;
+    int32_t tmp_0_arg = ifs3_helper1();
+    int32_t tmp_1_arg = ifs3_helper2();
+    int32_t tmp_3 = 0;
+    if (ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3()) > 0) {
+        tmp_3 = 1;
     } else {
-        tmp3 = 0;
+        tmp_3 = 0;
     }
-    return tmp3;
+    return tmp_3;
 }
 
 int32_t ifs3_test2(void) {
-    int32_t tmp_arg0 = ifs3_helper1();
-    int32_t tmp_arg1 = ifs3_helper2();
-    int32_t tmp3 = 0;
-    if (ifs3_compute(tmp_arg0, tmp_arg1, ifs3_helper3()) > 0) {
-        tmp3 = 0;
+    int32_t tmp_0_arg = ifs3_helper1();
+    int32_t tmp_1_arg = ifs3_helper2();
+    int32_t tmp_3 = 0;
+    if (ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3()) > 0) {
+        tmp_3 = 0;
     } else {
-        int32_t tmp_arg4 = ifs3_helper3();
-        int32_t tmp_arg5 = ifs3_helper2();
-        if (ifs3_compute(tmp_arg4, tmp_arg5, ifs3_helper1()) < 0) {
-            tmp3 = 1;
+        int32_t tmp_4_arg = ifs3_helper3();
+        int32_t tmp_5_arg = ifs3_helper2();
+        if (ifs3_compute(tmp_4_arg, tmp_5_arg, ifs3_helper1()) < 0) {
+            tmp_3 = 1;
         } else {
-            tmp3 = 2;
+            tmp_3 = 2;
         }
     }
-    return tmp3;
+    return tmp_3;
 }
 
 int32_t ifs3_test3(void) {
-    int32_t tmp_arg0 = ifs3_helper1();
-    int32_t tmp_arg1 = ifs3_helper2();
-    int32_t tmp3 = 0;
-    if (ifs3_compute(tmp_arg0, tmp_arg1, ifs3_helper3()) > 0) {
-        tmp3 = 0;
+    int32_t tmp_0_arg = ifs3_helper1();
+    int32_t tmp_1_arg = ifs3_helper2();
+    int32_t tmp_3 = 0;
+    if (ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3()) > 0) {
+        tmp_3 = 0;
     } else {
-        int32_t tmp_arg4 = ifs3_helper3();
-        int32_t tmp_arg5 = ifs3_helper2();
-        if (ifs3_compute(tmp_arg4, tmp_arg5, ifs3_helper1()) == 0) {
-            int32_t tmp_arg7 = ifs3_helper3();
-            int32_t tmp_arg8 = ifs3_helper2();
-            tmp3 = ifs3_compute(tmp_arg7, tmp_arg8, ifs3_helper1());
+        int32_t tmp_4_arg = ifs3_helper3();
+        int32_t tmp_5_arg = ifs3_helper2();
+        if (ifs3_compute(tmp_4_arg, tmp_5_arg, ifs3_helper1()) == 0) {
+            int32_t tmp_7_arg = ifs3_helper3();
+            int32_t tmp_8_arg = ifs3_helper2();
+            tmp_3 = ifs3_compute(tmp_7_arg, tmp_8_arg, ifs3_helper1());
         } else {
-            tmp3 = 2;
+            tmp_3 = 2;
         }
     }
-    return tmp3;
+    return tmp_3;
 }
 
 void ifs3_test4(void) {
-    int32_t tmp_arg0 = ifs3_helper1();
-    int32_t tmp_arg1 = ifs3_helper2();
-    int32_t tmp5 = 0;
-    if (ifs3_compute(tmp_arg0, tmp_arg1, ifs3_helper3()) > 0) {
-        int32_t tmp_arg3 = ifs3_helper3();
-        int32_t tmp_arg4 = ifs3_helper2();
-        tmp5 = ifs3_compute(tmp_arg3, tmp_arg4, ifs3_helper1());
+    int32_t tmp_0_arg = ifs3_helper1();
+    int32_t tmp_1_arg = ifs3_helper2();
+    int32_t tmp_5 = 0;
+    if (ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3()) > 0) {
+        int32_t tmp_3_arg = ifs3_helper3();
+        int32_t tmp_4_arg = ifs3_helper2();
+        tmp_5 = ifs3_compute(tmp_3_arg, tmp_4_arg, ifs3_helper1());
     }
-    tmp5;
+    tmp_5;
 }

@@ -15,16 +15,16 @@ void listLiterals_dtor(listLiterals_List* p_l) {
 }
 
 void listLiterals_test(void) {
-    listLiterals_List tmp_arr_comp0 = (listLiterals_List){0};
-    listLiterals_push(&tmp_arr_comp0, 1);
-    listLiterals_push(&tmp_arr_comp0, 2);
-    listLiterals_push(&tmp_arr_comp0, 3);
-    const listLiterals_List l_list1 = tmp_arr_comp0;
-    listLiterals_List tmp_arg1 = l_list1;
-    listLiterals_push(&tmp_arg1, 3);
-    listLiterals_push(&tmp_arg1, 2);
-    listLiterals_push(&tmp_arg1, 1);
-    const listLiterals_List l_list2 = tmp_arg1;
+    listLiterals_List tmp_0_arr_comp = (listLiterals_List){0};
+    listLiterals_push(&tmp_0_arr_comp, 1);
+    listLiterals_push(&tmp_0_arr_comp, 2);
+    listLiterals_push(&tmp_0_arr_comp, 3);
+    const listLiterals_List l_list1 = tmp_0_arr_comp;
+    listLiterals_List tmp_1_arg = l_list1;
+    listLiterals_push(&tmp_1_arg, 3);
+    listLiterals_push(&tmp_1_arg, 2);
+    listLiterals_push(&tmp_1_arg, 1);
+    const listLiterals_List l_list2 = tmp_1_arg;
     listLiterals_dtor(&l_list2);
     listLiterals_dtor(&l_list1);
 }

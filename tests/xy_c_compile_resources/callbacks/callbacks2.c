@@ -19,8 +19,8 @@ void callbacks2_test2(void) {
 
 void callbacks2_invokeTests(void) {
     const xy_fp__void l_tests[3] = {callbacks2_test1, callbacks2_test2, callbacks2_test3};
-    for (size_t tmp_iter0 = 0; tmp_iter0 < 3; ++tmp_iter0) {
-        l_tests[tmp_iter0]();
+    for (size_t tmp_0_iter = 0; tmp_0_iter < 3; ++tmp_0_iter) {
+        l_tests[tmp_0_iter]();
     }
 }
 

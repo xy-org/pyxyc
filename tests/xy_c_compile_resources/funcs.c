@@ -61,6 +61,6 @@ void funcs_testDefaultArgs(void) {
     funcs_defaultArg2(l_a, (funcs_A){10});
     funcs_defaultArg3(l_a, funcs_defaultArg1(l_a, (funcs_A){0}));
     funcs_defaultArg3(l_a, (funcs_A){20});
-    funcs_A tmp_arg0 = funcs_defaultArg2((funcs_A){0}, funcs_rndA());
-    funcs_defaultArg3(tmp_arg0, funcs_defaultArg1(tmp_arg0, (funcs_A){0}));
+    funcs_A tmp_0_arg = funcs_defaultArg2((funcs_A){0}, funcs_rndA());
+    funcs_defaultArg3(tmp_0_arg, funcs_defaultArg1(tmp_0_arg, (funcs_A){0}));
 }

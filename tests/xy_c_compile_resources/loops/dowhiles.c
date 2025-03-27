@@ -14,11 +14,11 @@ int32_t dowhiles_simpleDoWhile(int32_t p_x, int32_t p_y) {
 }
 
 int32_t dowhiles_write(int32_t p_lim) {
-    int32_t tmp_total0 = 0;
+    int32_t tmp_0_total = 0;
     do {
-        tmp_total0 += dowhiles_step();
-    } while (tmp_total0 < p_lim);
-    return tmp_total0;
+        tmp_0_total += dowhiles_step();
+    } while (tmp_0_total < p_lim);
+    return tmp_0_total;
 }
 
 int32_t dowhiles_step(void) {

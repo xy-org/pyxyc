@@ -20,10 +20,10 @@ void for2_next(for2_Fib* p_fib) {
 int32_t for2_mulFibs(int32_t p_lim) {
     int32_t l_res = 1;
     {
-        int32_t tmp_iter0 = 0;
-        for2_Fib tmp_iter1 = for2_fibonacci();
-        for (; tmp_iter0 < p_lim && true; ++tmp_iter0, for2_next(&tmp_iter1)) {
-            l_res *= tmp_iter1.m_a;
+        int32_t tmp_0_iter = 0;
+        for2_Fib tmp_1_iter = for2_fibonacci();
+        for (; tmp_0_iter < p_lim && true; ++tmp_0_iter, for2_next(&tmp_1_iter)) {
+            l_res *= tmp_1_iter.m_a;
         }
     }
     return l_res;

@@ -25,11 +25,11 @@ boundaryExpr3_Msg boundaryExpr3_longComputation(void) {
 
 void boundaryExpr3_test(void) {
     const boundaryExpr3_Logger l_log = {0};
-    bool tmp1 = 0;
+    bool tmp_1 = 0;
     if (l_log.m_enabled) {
-        tmp1 = boundaryExpr3_doLog(l_log, boundaryExpr3_longComputation());
+        tmp_1 = boundaryExpr3_doLog(l_log, boundaryExpr3_longComputation());
     } else {
-        tmp1 = false;
+        tmp_1 = false;
     }
-    boundaryExpr3_info(l_log, tmp1);
+    boundaryExpr3_info(l_log, tmp_1);
 }
