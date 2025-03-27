@@ -159,6 +159,23 @@ def main(i: int) -> int {
             ast.Import(lib="xylib", comment=";; Used for stuff"),
         ],
     ],
+    [
+        """def func(
+            x: Float, ;; x coordinate
+            y: Float = 0, ;; y coordinate
+            ;; z
+            ;; coordinate
+            z: Float = 0,
+        ) {}""",
+        [
+            ast.FuncDef(ast.Id("func"), body=[], params=[
+                ast.VarDecl("x", ast.Id("Float"), is_param=True, comment=";; x coordinate"),
+                ast.VarDecl("y", ast.Id("Float"), value=ast.Const(0), is_param=True, comment=";; y coordinate"),
+                ast.VarDecl("z", ast.Id("Float"), value=ast.Const(0), is_param=True,
+                            comment=";; z\n            ;; coordinate")
+            ])
+        ],
+    ],
 ])
 def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)

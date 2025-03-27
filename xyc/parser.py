@@ -191,10 +191,10 @@ def parse_sl_comment(itoken):
         src=itoken.src, coords=[comment_start-1, comment_start]
     )
 
-def parse_ml_comment(itoken):
+def parse_ml_comment(itoken, until_eol=False):
     comment_start = itoken.token_pos[itoken.i-1]
     itoken.skip_until("\n")
-    while itoken.check(";;"):
+    while not until_eol and itoken.check(";;"):
         itoken.skip_until("\n")
     comment_end = itoken.token_pos[itoken.i-1]
 
@@ -335,7 +335,10 @@ def parse_params(itoken):
     res = []
     itoken.expect("(", msg="Missing param list")
     itoken.skip_empty_lines()
+    comment = ""
     while itoken.peak() not in {")", "]", "}", ";"}:
+        if itoken.check(";;"):
+            comment = parse_ml_comment(itoken).comment
         param = parse_expression(itoken)
         if not isinstance(param, VarDecl):
             raise ParsingError("Invalid parameter. Proper syntax is 'name : Type = value'", itoken)
@@ -353,6 +356,11 @@ def parse_params(itoken):
             param.mutable = False
         param.is_param = True
         res.append(param)
+
+        param.comment = comment
+        comment = ""
+        if itoken.check(";;"):
+            param.comment += parse_ml_comment(itoken, until_eol=True).comment
 
         itoken.skip_empty_lines()
 
