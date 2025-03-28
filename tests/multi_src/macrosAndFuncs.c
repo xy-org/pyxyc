@@ -4,10 +4,6 @@
 
 typedef struct macrosAndFuncs_module1_Struct macrosAndFuncs_module1_Struct;
 
-int32_t macrosAndFuncs_module1_func2(void);
-int32_t macrosAndFuncs_module1_func3(void);
-int32_t macrosAndFuncs_module1_func1(int32_t p_a, int32_t p_b);
-
 struct macrosAndFuncs_module1_Struct {
     int32_t m_a;
     float m_b;

@@ -204,8 +204,8 @@ src.xy:7:13: error: Multiple function matches for 'fun(Int)'
 |             fun(0);
               ^^^
 note: Candidates are:
-    fun(Int, [Long]) -> Int
-    fun(Int, [Short]) -> Short
+    fun(Int, [Long])
+    fun(Int, [Short])
 """),
     ("""
         struct Str {}
@@ -406,6 +406,17 @@ src.xy:3:13: error: Varaible 'x' already defined
 src.xy:2:13: note: Previous definition
 |             x := 0;
               ^
+"""
+    ),
+    (
+        """
+        def func1() func2();
+        def func2() -> MissingType {}
+        """,
+        """\
+src.xy:3:24: error: Cannot find type 'MissingType'
+|         def func2() -> MissingType {}
+                         ^^^^^^^^^^^
 """
     ),
 ])

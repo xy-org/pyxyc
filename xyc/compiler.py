@@ -501,7 +501,7 @@ def func_sig(fobj: FuncObj, include_ret=False):
             res += pobj.type_desc.name
         if pobj.xy_node is not None and pobj.xy_node.value is not None:
             res += "]"
-    if include_ret:
+    if include_ret and not fobj.is_macro:
         res += ") -> "
         if len(fdef.returns) > 1:
             res += "("
@@ -1292,9 +1292,9 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     fobj.has_calltime_tags = has_calltime_tags
 
     if fobj.is_macro:
-        # We don't really need a type for macros but it can be useful
-        # for debuggin
-        rtype_compiled = guess_macro_rtype(node.body, cast, ctx)
+        # Macros have boundary expressions as body so the type may very depending on the 
+        # arguments.
+        rtype_compiled = macro_type_obj
 
         # Let's do an early check about returning a type
         if isinstance(fobj.xy_node.body, xy.UnaryExpr) and fobj.xy_node.body.op == "%":
@@ -1310,8 +1310,6 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     cfunc.rtype = (etype_compiled.c_name
                     if etype_compiled is not None
                     else rtype_compiled.c_name)
-
-    # cast.func_decls.append(cfunc)
 
     fobj.c_node = cfunc
     fobj.rtype_obj = rtype_compiled
@@ -2606,12 +2604,6 @@ def do_infer_type(expr, cast, ctx):
             notes=e.notes
         )
     
-def guess_macro_rtype(expr, cast, ctx):
-    try:
-        return do_infer_type(expr, cast, ctx)
-    except:
-        return macro_type_obj
-
 def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
     parts = []
     for p in expr.parts:

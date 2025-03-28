@@ -7,8 +7,6 @@ typedef struct macros1_Tag1 macros1_Tag1;
 typedef struct macros1_Tag2 macros1_Tag2;
 typedef struct macros1_Tag3 macros1_Tag3;
 
-int32_t macros1_impl__Struct__Tag1(macros1_Struct p_s);
-
 struct macros1_Struct {
     int32_t m_field;
 };
