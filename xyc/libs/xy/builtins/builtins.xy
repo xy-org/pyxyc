@@ -169,31 +169,6 @@
     # Implemented by the compiler
 }
 
-;; Add and accumulate
-*def addEqual(a: Int, b: Int) -> void {
-    # Implemented by the compiler
-}
-
-*def addEqual(a: Float, b: Float) -> void {
-    # Implemented by the compiler
-}
-
-*def addEqual(a: Float, b: Int) -> void {
-    # Implemented by the compiler
-}
-
-*def addEqual(a: mut Int, b: Size) -> void {
-    # Implemented by the compiler
-}
-
-*def addEqual(a: mut Size, b: Size) -> void {
-    # Implemented by the compiler
-}
-
-*def addEqual(a: mut Size, b: Int) -> void {
-    # Implemented by the compiler
-}
-
 ;; Subtraction
 *def sub(a: Int, b: Int) -> Int {
     # Implemented by the compiler
@@ -265,15 +240,6 @@
 }
 
 *def mul(a: Uint, b: Float) -> Float {
-    # Implemented by the compiler
-}
-
-;; Multiplication with accumulate
-*def mulEqual(a: Double, b: Double) -> Int {
-    # Implemented by the compiler
-}
-
-*def mulEqual(a: Int, b: Int) -> Int {
     # Implemented by the compiler
 }
 

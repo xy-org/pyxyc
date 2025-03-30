@@ -1763,7 +1763,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             ))
         )
     elif isinstance(expr, xy.BinExpr):
-        if expr.op not in {'.', '=', '.=', '..', '=<'}:
+        if expr.op not in {'.', '=', '.=', '..', '=<', '+=', '-=', '*=', '/='}:
             return compile_binop(expr, cast, cfunc, ctx)
         elif expr.op == '.':
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
@@ -1800,6 +1800,23 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                     # getting a field of a type
                     field_obj = struct_obj.fields[field_name]
                     return field_obj.default_value_obj
+        elif expr.op in {'+=', '-=', '*=', '/=', '&=', '|='}:
+            val_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
+            acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
+            acc_tmp = maybe_move_to_temp(acc_obj, cast, cfunc, ctx)
+            math_op = find_and_call(operatorToFname[expr.op[0]], ArgList([acc_tmp, val_obj]), cast, cfunc, ctx, expr)
+            if isinstance(acc_obj, IdxObj):
+                res = idx_set(acc_obj, math_op, cast, cfunc, ctx)
+                res.c_node = optimize_acc_expr(res.c_node)
+                return res
+            else:
+                res = c.Expr(acc_obj.c_node, math_op.c_node, op="=")
+                res = optimize_acc_expr(res)
+                return ExprObj(
+                    xy_node=expr,
+                    c_node=res,
+                    inferred_type=math_op.inferred_type
+                )
         elif expr.op == '.=':
             if not (isinstance(expr.arg2, xy.StructLiteral) and expr.arg2.name is None):
                 raise CompilationError("The right hand side of the '.=' operator must be an anonymous struct literal")
@@ -2100,6 +2117,12 @@ def create_loop_over_array(obj, cast, cfunc, ctx: CompilerContext):
         [c.UnaryExpr(c.Id(tmp_i.c_node.name), op="++", prefix=True)]
     )
     return cfor
+
+def optimize_acc_expr(c_expr):
+    if (isinstance(c_expr, c.Expr) and c_expr.op == "=" and
+        isinstance(c_expr.arg2, c.Expr) and c_expr.arg1 == c_expr.arg2.arg1):
+        return c.Expr(c_expr.arg1, c_expr.arg2.arg2, op=c_expr.arg2.op+"=")
+    return c_expr
 
 def is_tmp_expr(obj: ExprObj):
     return (
@@ -3180,16 +3203,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             "sub": '-',
             "mul": '*',
             "div": '/',
-            "addEqual": "+=",
-            "subEqual": "-=",
-            "mulEqual": "*=",
-            "divEqual": "/=",
             "or": "||",
-            "opEqual": "||=",
             "and": "&&",
-            "andEqual": "&&=",
-            "bor": "|",
-            "band": "&",
             "shiftl": "<<",
             "shiftr": ">>",
         }
@@ -4701,21 +4716,16 @@ def compile_binop(binexpr, cast, cfunc, ctx):
     fcall = rewrite_op(binexpr, ctx)
     return compile_expr(fcall, cast, cfunc, ctx)
 
+operatorToFname = fname = {
+    "+": "add",
+    "-": "sub",
+    "*": "mul",
+    "/": "div",
+    "|": "or",
+    "&": "and",
+}
 def rewrite_op(binexpr, ctx):
-    fname = {
-        "+": "add",
-        "+=": "addEqual",
-        "-": "sub",
-        "-=": "subEqual",
-        "*": "mul",
-        "*=": "mulEqual",
-        "/": "div",
-        "/=": "divEqual",
-        "|": "or",
-        "|=": "orEqual",
-        "&": "and",
-        "&=": "andEqual",
-    }.get(binexpr.op, None)
+    fname = operatorToFname.get(binexpr.op, None)
     if fname is not None:
         return xy.FuncCall(
             xy.Id(fname, src=binexpr.src, coords=binexpr.coords),

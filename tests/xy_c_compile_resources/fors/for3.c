@@ -32,8 +32,7 @@ float for3_sum(for3_Array p_arr) {
         if (!(tmp_0_iter < p_arr.m_len)) {
             abort();
         }
-        float* tmp_1_ref = for3_get(&p_arr, tmp_0_iter);
-        l_res += *tmp_1_ref;
+        l_res += *for3_get(&p_arr, tmp_0_iter);
     }
     return l_res;
 }
@@ -73,12 +72,11 @@ void for3_double(for3_Array* p_arr1) {
             if (!(tmp_0_iter < p_arr1->m_len)) {
                 abort();
             }
-            float* tmp_3_ref = for3_get(p_arr1, tmp_0_iter);
             if (!(tmp_0_iter < p_arr1->m_len)) {
                 abort();
             }
-            float* tmp_4_ref = for3_get(p_arr1, tmp_0_iter);
-            *tmp_3_ref += *tmp_4_ref;
+            float* tmp_3_ref = for3_get(p_arr1, tmp_0_iter);
+            for3_set(p_arr1, tmp_0_iter, *tmp_3_ref + *for3_get(p_arr1, tmp_0_iter));
         }
     }
 }
