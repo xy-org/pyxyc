@@ -1907,17 +1907,11 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 struct_obj = arg1_obj.inferred_type
                 if field_name not in struct_obj.fields:
                     raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
-                # XXX hack for Bit fields
-                if arg1_obj.inferred_type.builtin and arg1_obj.inferred_type.xy_node.name.startswith("Bits") and expr.arg2.name == "value":
-                        return ExprObj(
-                            xy_node=arg1_obj.xy_node,
-                            c_node=arg1_obj.c_node,
-                            inferred_type=struct_obj.fields[field_name].type_desc
-                        )
                 is_field_of_type = isinstance(arg1_obj.compiled_obj, TypeObj)
                 if not is_field_of_type:
                     # normal get of an object
                     fget_obj = field_get(arg1_obj, struct_obj.fields[field_name], cast, cfunc, ctx)
+                    fget_obj.xy_node = expr
                     return maybe_deref(fget_obj, deref, cast, cfunc, ctx)
                 else:
                     # getting a field of a type
