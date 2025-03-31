@@ -1892,8 +1892,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 value_obj = maybe_deref(value_obj, True, cast, cfunc, ctx)
                 return idx_set(IdxObj(xy_node=expr, container=container_obj, idx=idx_obj), value_obj, cast, cfunc, ctx)
 
-            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
 
             return compile_assign(arg1_obj, arg2_obj, cast, cfunc, ctx, expr, expr.op=="=<")
         else:
