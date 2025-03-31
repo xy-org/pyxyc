@@ -2,6 +2,7 @@ import subprocess
 import re
 import sys
 import pytest
+from os import path
 import xyc.xyc as xyc
 
 valgrind_supported = "linux" in sys.platform
@@ -34,14 +35,15 @@ floats
     ("uniqueTmpVarNames", "", False),
     ("strAndIfs", "100", False),
     ("earlyReturn", "", False),
-    ("iterWithDtor", "Destroying Iter\n", False),
+    ("dtors/iterWithDtor", "Destroying Iter\n", False),
+    ("dtors/moveAndDtor", "Destroying s1\nDestroying \nDestroying s2\n", True),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     test_base = resource_dir / "end_to_end" / testname
     if not test_base.exists():
         test_base = test_base.with_suffix(".xy")
         assert test_base.exists()
-    executable = tmp_path / testname
+    executable = tmp_path / path.basename(tmp_path)
     assert xyc._main([
         str(test_base),
         "-L", str(resource_dir / "end_to_end_deps/"),

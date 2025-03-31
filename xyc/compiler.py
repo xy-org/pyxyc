@@ -1302,6 +1302,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             is_pseudo=field.is_pseudo,
             default_value_obj=default_value_obj,
             fieldof_obj=type_obj,
+            needs_dtor=field_type_obj.needs_dtor,
         )
 
         if not field.is_pseudo:
@@ -1752,7 +1753,7 @@ def call_dtor(obj, cast, cfunc, ctx):
 
 def call_dtors(ns, cast, cfunc, ctx):
     for obj in reversed(ns.values()):
-        if isinstance(obj, VarObj) and obj.needs_dtor:
+        if isinstance(obj, VarObj) and obj.needs_dtor and not obj.xy_node.is_param:
             expr = ExprObj(
                 xy_node=obj.xy_node,
                 c_node=c.Id(obj.c_node.name),
@@ -2176,6 +2177,8 @@ def compile_assign(dest_obj, value_obj, cast, cfunc, ctx, expr_node, is_move=Fal
 
     if is_move:
         value_obj = move_out(value_obj, cast, cfunc, ctx)
+        if dest_obj.inferred_type.needs_dtor:
+            call_dtor(dest_obj, cast, cfunc, ctx)
 
     if isinstance(dest_obj, IdxObj):
         res = idx_set(dest_obj, value_obj, cast, cfunc, ctx)

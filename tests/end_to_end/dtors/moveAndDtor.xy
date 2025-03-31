@@ -1,0 +1,16 @@
+import libxy.stdio;
+import libxy.string;
+
+struct Struct {
+    name: Str;
+}
+
+def dtor(s: Struct) {
+    print(f"Destroying {s.name}\n");
+}
+
+def main~EntryPoint() {
+    s1 : mut = Struct{f"s1"};
+    s2 : mut = Struct{f"s2"};
+    s1 =< s2;
+}
