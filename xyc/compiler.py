@@ -1867,18 +1867,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             acc_tmp = maybe_move_to_temp(acc_obj, cast, cfunc, ctx)
             math_op = find_and_call(operatorToFname[expr.op[0]], ArgList([acc_tmp, val_obj]), cast, cfunc, ctx, expr)
-            if isinstance(acc_obj, IdxObj):
-                res = idx_set(acc_obj, math_op, cast, cfunc, ctx)
-                res.c_node = optimize_acc_expr(res.c_node)
-                return res
-            else:
-                res = c.Expr(acc_obj.c_node, math_op.c_node, op="=")
-                res = optimize_acc_expr(res)
-                return ExprObj(
-                    xy_node=expr,
-                    c_node=res,
-                    inferred_type=math_op.inferred_type
-                )
+            return compile_assign(acc_obj, math_op, cast, cfunc, ctx, expr)
         elif expr.op == '.=':
             if not (isinstance(expr.arg2, xy.StructLiteral) and expr.arg2.name is None):
                 raise CompilationError("The right hand side of the '.=' operator must be an anonymous struct literal")
@@ -1906,18 +1895,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
 
-            if expr.op == "=<":
-                arg2_obj = move_out(arg2_obj, cast, cfunc, ctx)
-
-            if isinstance(arg1_obj, IdxObj):
-                return idx_set(arg1_obj, arg2_obj, cast, cfunc, ctx)
-            else:
-                res = c.Expr(arg1_obj.c_node, arg2_obj.c_node, op="=")
-                return ExprObj(
-                    xy_node=expr,
-                    c_node=res,
-                    inferred_type=arg2_obj.inferred_type
-                )
+            return compile_assign(arg1_obj, arg2_obj, cast, cfunc, ctx, expr, expr.op=="=<")
         else:
             # compile get tag
             assert expr.op == ".."
@@ -2138,6 +2116,23 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
     
+def compile_assign(dest_obj, value_obj, cast, cfunc, ctx, expr_node, is_move=False):
+    if is_move:
+        value_obj = move_out(value_obj, cast, cfunc, ctx)
+
+    if isinstance(dest_obj, IdxObj):
+        res = idx_set(dest_obj, value_obj, cast, cfunc, ctx)
+        res.c_node = optimize_acc_expr(res.c_node)
+        return res
+    else:
+        res = c.Expr(dest_obj.c_node, value_obj.c_node, op="=")
+        res = optimize_acc_expr(res)
+        return ExprObj(
+            xy_node=expr_node,
+            c_node=res,
+            inferred_type=value_obj.inferred_type
+        )
+
 def move_out(obj: ExprObj, cast, cfunc, ctx):
     if is_tmp_expr(obj):
         return obj
