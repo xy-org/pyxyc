@@ -1,0 +1,36 @@
+;; Test iterator that has a dtor
+
+import libxy.stdio;
+import libxy.string;
+
+struct Iter {
+    n := 0;
+    # ...
+}
+
+def dtor(m: Iter) {
+    print("Destroying Iter\n");
+}
+
+def ls~IterCtor() -> [ Iter ] {
+    return Iter{};
+}
+
+def valid(iter: Iter) -> Bool {
+    return iter.n < 10;
+}
+
+def next(iter: mut Iter) {
+    iter.n++;
+}
+
+def get(iter: Iter) -> Int {
+    return 0;
+}
+
+def main~EntryPoint() {
+    for (resource in ls()) {
+        # ...
+        x := resource;
+    }
+}

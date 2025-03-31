@@ -1,0 +1,15 @@
+struct Tag1~[TagCtor{label="tag1"}] {}
+struct Tag2~[TagCtor{label="tag2"}] {}
+
+struct Data {
+    # ...
+}
+
+def func() -> Data~Tag2 {
+    return Data~Tag2{};
+}
+
+def test() {
+    d : Data~Tag1;
+    d = func();
+}

@@ -76,7 +76,7 @@ void indices_testPointCloud(indices_PointCloud* p_m0, indices_PointCloud p_m1) {
     indices_append(&l_ms, (indices_Point){1.0f, 1.0f, .05f, 1.0f});
     const indices_Point l_p = *indices_get__PointCloud__Int(*p_m0, 10);
     indices_set__PointCloud__Int__Point(p_m0, 0, (indices_Point){1.0f, 2.0f, 3.0f, 0.0f});
-    indices_get__PointCloud__Int(*p_m0, 0)->m_y = 10;
+    indices_get__PointCloud__Int(*p_m0, 0)->m_y = 10.0f;
     indices_Point* tmp_0_ref = indices_get__PointCloud__Int(p_m1, 1);
     const float l_tmp = indices_get__Point__Int(*tmp_0_ref, 2);
     indices_set__PointCloud__Int__Point(&l_ms, 2, *indices_get__PointCloud__Int(*p_m0, 2));

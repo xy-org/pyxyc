@@ -13,7 +13,7 @@ bool bitwiseOps_get__Bits64__Int(uint64_t p_b, int32_t p_i) {
 }
 
 int32_t bitwiseOps_set__Bits64__Int__Bool(uint64_t* p_b, int32_t p_i, bool p_val) {
-    *p_b = *p_b | (uint64_t)p_val << p_i;
+    *p_b |= (uint64_t)p_val << p_i;
     return p_i;
 }
 

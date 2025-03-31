@@ -72,7 +72,7 @@ def testPointCloud(m0: mut PointCloud, m1: PointCloud) {
 
     m0[0] = Point{1.0f, 2.0f, 3.0f, 0.0f};
 
-    m0[0].y = 10;
+    m0[0].y = 10.0;
     tmp := m1[1][2];
 
     ms[2] = m0[2];

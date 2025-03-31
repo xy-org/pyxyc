@@ -445,7 +445,9 @@ def cmp_arg_param_types(arg_type, param_type):
     if isinstance(arg_type, FuncTypeObj) and isinstance(param_type, FuncTypeObj):
         return True  # XXX
 
-    if arg_type.get_base_type() is not param_type.get_base_type():
+    arg_type_module = arg_type.module_header.module_name if arg_type.module_header is not None else ""
+    param_type_module = param_type.module_header.module_name if param_type.module_header is not None else ""
+    if not (arg_type_module == param_type_module and arg_type.get_base_type().xy_node.name == param_type.get_base_type().xy_node.name):
         return False
     
     return True
@@ -475,6 +477,63 @@ def compatible_types(src_type, dst_type):
         return False
     
     return True
+
+def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node):
+    if src_type is None or dst_type is None:
+        return [] ## c types
+    # TODO maybe remove cmp_arg_param_types
+    if src_type is dst_type:
+        return []
+
+    if dst_type is any_type_obj:
+        return []
+
+    if isinstance(src_type, ArrTypeObj):
+        if not isinstance(dst_type, ArrTypeObj):
+            return [("Left side is not an array", dst_type.xy_node)]
+        return []
+        if len(arg_type.dims) != len(param_type.dims):
+            return False
+        for i in range(len(arg_type.dims)):
+            if arg_type.dims[i] != param_type.dims[i]:
+                return False
+            
+    if isinstance(src_type, FuncTypeObj) and isinstance(dst_type, FuncTypeObj):
+        return []  # XXX
+
+    if not (src_type.get_base_type().xy_node.name == dst_type.get_base_type().xy_node.name and src_type.get_base_type().c_name == dst_type.get_base_type().c_name):
+        return [(f"Incompatible types {fmt_type(src_type.get_base_type())} and {fmt_type(dst_type.get_base_type())}", xy_node)]
+    
+
+    for tag_name, tag in dst_type.tags.items():
+        other_tag = src_type.tags.get(tag_name, None)
+        if other_tag is None:
+            return [
+                (f"Cannot discard tag '{tag_name}'", xy_node),
+                (f"Tag attached here", tag.xy_node),
+            ]
+        if not ct_equals(tag, other_tag):
+            return [
+                (f"Values for tag '{tag_name}' differ", xy_node),
+                (f"Left tag attached here", other_tag.xy_node),
+                (f"Right tag attached here", tag.xy_node),
+            ]
+    
+    return []
+
+def ct_equals(tag, other_tag):
+    if not isinstance(tag, type(other_tag)):
+        return False
+    return tag == other_tag
+
+def assert_compatible_types(xy_node, expr1_obj, expr2_obj, ctx):
+    errors = cmp_types_updated(expr1_obj.inferred_type, expr2_obj.inferred_type, xy_node)
+    if len(errors) > 0:
+        if implicit_zero_conversion(expr2_obj, expr1_obj.inferred_type, ctx):
+            return
+        raise CompilationError(*errors[0],
+            notes=[*errors[1:]]
+        )
 
 def fcall_sig(name, args_inferred_types, inject_args=False):
     return name + "(" + \
@@ -705,6 +764,8 @@ class CompilerContext:
                         f"Missing default label for type '{tag_obj.xy_node.name}'",
                         xy_tag, notes=[(no_label_msg, None)])
                 label = tag_obj.tags["xyTag"].kwargs["label"].as_str()
+                tag_obj = copy(tag_obj)
+                tag_obj.xy_node = xy_tag
             elif isinstance(tag_obj, InstanceObj):
                 assert tag_obj.type_obj is not None
                 if "xyTag" not in tag_obj.type_obj.tags:
@@ -2117,6 +2178,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
     
 def compile_assign(dest_obj, value_obj, cast, cfunc, ctx, expr_node, is_move=False):
+    assert_compatible_types(expr_node, dest_obj, value_obj, ctx)
+
     if is_move:
         value_obj = move_out(value_obj, cast, cfunc, ctx)
 
@@ -2138,6 +2201,8 @@ def move_out(obj: ExprObj, cast, cfunc, ctx):
         return obj
 
     tmp_obj = copy_to_temp(obj, cast, cfunc, ctx)
+    if is_tmp_expr(tmp_obj):
+        tmp_obj.compiled_obj.needs_dtor = False
     # break the connection between the temp and the value as once we move out
     # there is no longer a connection. Note this is different to copying to a tmp
     # value as argument evaluation order doesn't guarantee lack of incompatable
@@ -2892,7 +2957,7 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
             candidates: list[FuncObj] = fselect_unnamed(expr, arg_inferred_types, ctx, partial_matches=False)
             required_tags = ctx.eval_tags(expr.tags, cast=cast)
             for cand in candidates:
-                if compatible_tags(cand.tags, required_tags):
+                if has_required_tags(cand.tags, required_tags):
                     func_obj = cand
                     break
             if func_obj is None:
@@ -2917,7 +2982,7 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
         res_objs = []
         required_tags = ctx.eval_tags(expr.tags, cast=cast)
         for cand in candidates:
-            if compatible_tags(cand.tags, required_tags):
+            if has_required_tags(cand.tags, required_tags):
                 ensure_func_decl(cand, cast, cfunc, ctx)
 
                 params = cand.param_objs
@@ -2932,7 +2997,7 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
             inferred_type=fselection_type_obj,
         )
     
-def compatible_tags(base_tags, required_tags):
+def has_required_tags(base_tags, required_tags):
     for tag_name, tag_value in required_tags.items():
         if tag_value != base_tags.get(tag_name, None):
             return False
@@ -4270,6 +4335,10 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                     start_value = start_obj.c_node if start_obj is not None else iter_type.init_value 
                     iter_var_decl = c.VarDecl(iter_name, c.QualType(iter_type.c_name, is_const=False), value=start_value)
                     ctx.ns[iter_name] = VarObj(xy_node=iter_node, c_node=iter_var_decl, type_desc=iter_type)
+                    if for_outer_block is None and ctx.ns[iter_name].needs_dtor:
+                        for_outer_block = c.Block()
+                        no_for_vars = True
+
                     if no_for_vars:
                         for_outer_block.body.append(iter_var_decl)
                     else:
@@ -4342,6 +4411,10 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                     inferred_type=iter_var_decl.type_desc
                 )
                 ctx.ns[iter_var_decl.c_node.name] = iter_var_decl
+                if for_outer_block is None and iter_var_decl.needs_dtor:
+                    for_outer_block = c.Block()
+                    no_for_vars = True
+
                 if no_for_vars:
                     for_outer_block.body.append(iter_var_decl.c_node)
                 else:
@@ -4386,15 +4459,19 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
         inferred_type = ret_obj.type_desc
     assert len(return_objs) <= 1
 
+    ctx.push_ns()
     if for_node.block.is_embedded:
         update_expr = compile_expr(for_node.block.body, cast, cfor, ctx)
         cfor.body.append(update_expr.c_node)
     else:
         compile_body(for_node.block.body, cast, cfor, ctx)
-    ctx.pop_ns()
+    ctx.pop_ns() # for the body
 
     if len(return_objs) > 0:
         cfunc.body.append(cfor if for_outer_block is None else for_outer_block)
+
+    call_dtors(ctx.ns, cast, cfunc if for_outer_block is None else for_outer_block, ctx)
+    ctx.pop_ns() # for the loop
 
     if len(return_objs) > 0:
         c_res = c.Id(return_objs[0].c_node.name)
