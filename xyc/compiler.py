@@ -23,6 +23,9 @@ class TypeObj(CompiledObj):
     fields: dict[str, 'VarObj'] = field(default_factory=dict)
     init_value: any = None
     is_init_value_zeros: bool = True
+    needs_dtor: bool = False
+    has_explicit_dtor: bool = False
+    has_auto_dtor: bool = False
     base_type_obj: 'TypeObj' = None
     fully_compiled: bool = False
     module_header: 'ModuleHeader' = None  # None means current module
@@ -1055,7 +1058,41 @@ def compile_header(ctx: CompilerContext, asts, cast):
             )
         ctx.fsig2obj[fsig] = fobj
 
+    # finally check if we need to auto generate any dtors
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.StructDef):
+                type_obj: TypeObj = ctx.data_ns[node.name]
+                maybe_generate_dtor(type_obj, asts, cast, ctx)
+
     return cast
+
+def maybe_generate_dtor(type_obj: TypeObj, asts, cast, ctx):
+    if type_obj.module_header is not None:
+        return type_obj.needs_dtor
+    if type_obj.has_explicit_dtor or type_obj.has_auto_dtor:
+        return True
+    if not type_obj.needs_dtor:  # don't know so lets check
+        for f in type_obj.fields.values():
+            if not f.is_pseudo:
+                f.needs_dtor = maybe_generate_dtor(f.type_desc, asts, cast, ctx)
+                type_obj.needs_dtor = type_obj.needs_dtor or f.needs_dtor
+    if type_obj.needs_dtor:
+        type_obj.has_auto_dtor = True
+        dtor_node = xy.FuncDef(
+            xy.Id("dtor"), type_obj.xy_node.visibility,
+            params=[xy.VarDecl("obj", xy.Id(type_obj.xy_node.name))],
+            body=[],
+        )
+        fobj = FuncObj(
+            xy_node=dtor_node,
+        )
+        func_space = ctx.ensure_func_space(dtor_node.name)
+        func_space.append(fobj)
+        compile_func_prototype(fobj, cast, ctx)
+        asts[0].append(dtor_node)
+        return True
+    return False
 
 keywords = {
     "if", "for", "while", "Any", "def", "struct", "in", "inout", "outin", "out",
@@ -1286,6 +1323,11 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
 
     fobj.params_compiled = True
     fobj.param_objs = param_objs
+
+    # check if dtor
+    if fobj.xy_node.name.name == "dtor" and len(param_objs) > 0:
+        param_objs[0].inferred_type.needs_dtor = True
+        param_objs[0].inferred_type.has_explicit_dtor = True
 
     rtype_compiled, etype_compiled, any_refs, has_calltime_tags = compile_ret_err_types(node, cast, cfunc, ctx)
     move_args_to_temps = move_args_to_temps or any_refs
@@ -1568,6 +1610,11 @@ def compile_func(node, ctx, ast, cast):
     if not fdesc.is_macro:
         cast.funcs.append(cfunc)
     fdesc.decl_visible = True
+
+    if node.name.name == "dtor" and len(fdesc.param_objs) > 0:
+        # auto call dtors for fields
+        call_dtors_for_fields(fdesc.param_objs[0], cast, cfunc, ctx)
+
     ctx.pop_ns()
 
 def compile_body(body, cast, cfunc, ctx, is_func_body=False):
@@ -1611,6 +1658,37 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
 
     ctx.exit_block()
 
+def call_dtors_for_fields(obj: VarObj, cast, cfunc, ctx):
+    type_obj = obj.type_desc
+    for name, field in type_obj.fields.items():
+        if not field.is_pseudo and field.needs_dtor:
+            expr_obj = ExprObj(
+                xy_node=field.xy_node,
+                c_node=c.Expr(c.Id(obj.c_node.name), c.Id(field.c_node.name), op="."),
+                inferred_type=field.type_desc,
+                compiled_obj=field,
+            )
+            call_dtor(expr_obj, cast, cfunc, ctx)
+
+def call_dtor(obj, cast, cfunc, ctx):
+    if not isinstance(obj.inferred_type, ArrTypeObj):
+        dtor_obj = find_and_call("dtor", ArgList([obj]), cast, cfunc, ctx, obj.xy_node)
+        cfunc.body.append(dtor_obj.c_node)
+    else:
+        cfor = c.For(
+            [c.VarDecl("_i", qtype=c.QualType(c.Type("size_t"), is_const=False), value=c.Const(0))],
+            c.Expr(c.Id("_i"), c.Const(obj.inferred_type.dims[0]), op="<"),
+            [c.UnaryExpr(c.Id("_i"), op="++", prefix=True)]
+        )
+        dtor_arg_obj = ExprObj(
+            xy_node=obj.xy_node,
+            c_node=c.Index(c.Id(obj.c_node.name), index=c.Id("_i")),
+            inferred_type=obj.inferred_type.base_type_obj,
+        )
+        dtor_obj = find_and_call("dtor", ArgList([dtor_arg_obj]), cast, cfunc, ctx, obj.xy_node)
+        cfor.body.append(dtor_obj.c_node)
+        cfunc.body.append(cfor)
+
 def call_dtors(ns, cast, cfunc, ctx):
     for name, obj in reversed(ns.items()):
         if isinstance(obj, VarObj) and obj.needs_dtor:
@@ -1651,13 +1729,13 @@ def any_dtors(ctx):
                 return True
     return False
 
-def type_needs_dtor(type_obj):
+def type_needs_dtor(type_obj: TypeObj):
     if type_obj is None:
         return False
-    dtor_tag = type_obj.tags.get("xy_dtor", None)
-    if dtor_tag is None and isinstance(type_obj, ArrTypeObj):
-        dtor_tag = type_obj.base_type_obj.tags.get("xy_dtor", None)
-    return dtor_tag is not None and is_ct_true(dtor_tag)
+    elif isinstance(type_obj, ArrTypeObj):
+        return type_obj.base_type_obj.needs_dtor
+    else:
+        return type_obj.needs_dtor
 
 def compile_vardecl(node, cast, cfunc, ctx):
     var_name = node.name

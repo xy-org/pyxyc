@@ -1,4 +1,4 @@
-struct Array~[xy_dtor=true, managed=true] {
+struct Array~[managed=true] {
     mem: Ptr;
 }
 
@@ -99,5 +99,5 @@ def test4(rng: Int) -> Array || Int {
 
 def test5(rng: Int) -> Array {
     arrs : @Array[10];
-    return arrs[rng]; # temporary value so move out or copy
+    return arrs[rng]; # value is moved out
 }

@@ -20,12 +20,12 @@ struct MyStruct {
 }
 
 struct FieldDesc{
-    name: Str;
-    typename: Str;
+    name: Str~MemStatic;
+    typename: Str~MemStatic;
     size: Size;
     offset: Size;
     alignment: Size;
-    comment: Str;
+    comment: Str~MemStatic;
 }
 
 def printTypeInfo(

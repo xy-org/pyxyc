@@ -1,0 +1,28 @@
+struct Top {
+    m: Middle;
+}
+
+struct Middle {
+    b: Bottom;
+}
+
+struct Bottom {
+    d: Data;
+}
+
+struct Data {
+    s: Str;
+}
+
+struct Str {
+    # ...
+}
+
+def dtor(s: Str) {
+    # ...
+}
+
+def test() {
+    t := Top{};
+    # ...
+}

@@ -1,0 +1,47 @@
+struct Str {
+    # ...
+}
+
+def dtor(s: Str) {
+    # ...
+}
+
+struct Person {
+    age: Int; 
+    name: Str;
+    family: Str;
+}
+
+struct Mob {
+    people: @Person[20];
+    # ...
+}
+
+def dtor(m: Mob) {
+    # ...
+}
+
+def test1() {
+    m := Mob{};
+    # ...
+}
+
+struct Array~[elem: struct] {
+    mem: Ptr;
+    # ...
+}
+
+def get(arr: Array, i:Size) arr[ arr.mem~[elem..elem] + i ];
+
+def set(arr: Array, i: Size, elem: Any) {
+    # ...
+}
+
+def dtor(arr: Array) {
+    # map cb over all elements
+}
+
+def test2(i) -> Mob {
+    mobs : mut = Array~Mob{};
+    return mobs[i];
+}
