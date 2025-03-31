@@ -1682,7 +1682,7 @@ def call_dtor(obj, cast, cfunc, ctx):
         )
         dtor_arg_obj = ExprObj(
             xy_node=obj.xy_node,
-            c_node=c.Index(c.Id(obj.c_node.name), index=c.Id("_i")),
+            c_node=c.Index(obj.c_node, index=c.Id("_i")),
             inferred_type=obj.inferred_type.base_type_obj,
         )
         dtor_obj = find_and_call("dtor", ArgList([dtor_arg_obj]), cast, cfunc, ctx, obj.xy_node)
@@ -1690,31 +1690,15 @@ def call_dtor(obj, cast, cfunc, ctx):
         cfunc.body.append(cfor)
 
 def call_dtors(ns, cast, cfunc, ctx):
-    for name, obj in reversed(ns.items()):
+    for obj in reversed(ns.values()):
         if isinstance(obj, VarObj) and obj.needs_dtor:
-            if not isinstance(obj.type_desc, ArrTypeObj):
-                dtor_arg_obj = ExprObj(
-                    xy_node=obj.xy_node,
-                    c_node=c.Id(obj.c_node.name),
-                    inferred_type=obj.inferred_type,
-                    compiled_obj=obj
-                )
-                dtor_obj = find_and_call("dtor", ArgList([dtor_arg_obj]), cast, cfunc, ctx, obj.xy_node)
-                cfunc.body.append(dtor_obj.c_node)
-            else:
-                cfor = c.For(
-                    [c.VarDecl("_i", qtype=c.QualType(c.Type("size_t"), is_const=False), value=c.Const(0))],
-                    c.Expr(c.Id("_i"), c.Const(obj.type_desc.dims[0]), op="<"),
-                    [c.UnaryExpr(c.Id("_i"), op="++", prefix=True)]
-                )
-                dtor_arg_obj = ExprObj(
-                    xy_node=obj.xy_node,
-                    c_node=c.Index(c.Id(obj.c_node.name), index=c.Id("_i")),
-                    inferred_type=obj.inferred_type.base_type_obj,
-                )
-                dtor_obj = find_and_call("dtor", ArgList([dtor_arg_obj]), cast, cfunc, ctx, obj.xy_node)
-                cfor.body.append(dtor_obj.c_node)
-                cfunc.body.append(cfor)
+            expr = ExprObj(
+                xy_node=obj.xy_node,
+                c_node=c.Id(obj.c_node.name),
+                inferred_type=obj.inferred_type,
+                compiled_obj=obj
+            )
+            call_dtor(expr, cast, cfunc, ctx)
 
 def call_all_dtors(cast, cfunc, ctx):
     # first 2 are global and local namespaces
