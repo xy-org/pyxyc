@@ -16,12 +16,12 @@ def makeStr(num := 0) -> Str {
 def makeStrMacro() Str{10};
 
 
-def func(s1: mut Str, s2: Str) {
+def func(s1: mut Str, s2: Str, s3: Str) {
     print("In func()\n");
     # ...
 }
 
 def main~EntryPoint() {
     s := 'makeStr;
-    func(makeStr(1), 'makeStrMacro);
+    func(makeStr(1), 'makeStrMacro, Str{20});
 }
