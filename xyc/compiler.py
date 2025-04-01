@@ -1124,19 +1124,20 @@ def compile_header(ctx: CompilerContext, asts, cast):
         for node in ast:
             if isinstance(node, xy.StructDef):
                 type_obj: TypeObj = ctx.data_ns[node.name]
-                maybe_generate_dtor(type_obj, asts, cast, ctx)
+                fill_missing_dtors(type_obj, asts, cast, ctx)
 
     return cast
 
-def maybe_generate_dtor(type_obj: TypeObj, asts, cast, ctx):
+def fill_missing_dtors(type_obj: TypeObj, asts, cast, ctx):
     if type_obj.module_header is not None:
         return type_obj.needs_dtor
     if type_obj.has_explicit_dtor or type_obj.has_auto_dtor:
         return True
-    if not type_obj.needs_dtor:  # don't know so lets check
+    if not type_obj.needs_dtor:
+        # maybe it doesn't need a dtor or maybe we don't realize it yet
         for f in type_obj.fields.values():
             if not f.is_pseudo:
-                f.needs_dtor = maybe_generate_dtor(f.type_desc, asts, cast, ctx)
+                f.needs_dtor = fill_missing_dtors(f.type_desc, asts, cast, ctx)
                 type_obj.needs_dtor = type_obj.needs_dtor or f.needs_dtor
     if type_obj.needs_dtor:
         type_obj.has_auto_dtor = True
@@ -1306,6 +1307,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
         )
 
         if not field.is_pseudo:
+            type_obj.needs_dtor = type_obj.needs_dtor or field_type_obj.needs_dtor
             cstruct.fields.append(cfield)
     type_obj.fields = fields
 
@@ -1474,11 +1476,11 @@ def compile_params(params, cast, cfunc, ctx):
         if param_obj.type_desc is any_struct_type_obj:
             raise CompilationError("function parameters cannot be of type struct.", param)
 
+        cparam = c.VarDecl(mangle_var(param, ctx), c.QualType(c_type))
+        param_obj.c_node = cparam
         param_obj.is_pseudo = param.is_pseudo
         if not param.is_pseudo:
-            cparam = c.VarDecl(mangle_var(param, ctx), c.QualType(c_type))
             cfunc.params.append(cparam)
-            param_obj.c_node = cparam
 
         param_objs.append(param_obj)
         ctx.ns[param_obj.xy_node.name] = param_obj
@@ -1865,6 +1867,8 @@ def expand_array_to_init_list(value_obj: ExprObj):
         return value_obj.c_node
 
     res = c.InitList()
+    if len(value_obj.inferred_type.dims) <= 0:
+        raise CompilationError("Cannot determine array dimensions", value_obj.xy_node)
     for i in range(0, value_obj.inferred_type.dims[0]):
         res.elems.append(c.Index(value_obj.c_node, c.Const(i)))
     return res
