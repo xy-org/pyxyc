@@ -57,6 +57,57 @@ class TypeObj(CompiledObj):
         return xy.PackageVisibility
     
 @dataclass
+class TypeExprObj(CompiledObj):
+    type_obj: TypeObj = None
+
+    @property
+    def c_name(self):
+        return self.type_obj.c_name
+    
+    @property
+    def name(self):
+        return self.type_obj.name
+    
+    @property
+    def fields(self):
+        return self.type_obj.fields
+    
+    @property
+    def module_header(self):
+        return self.type_obj.module_header
+
+    @property
+    def base_type_obj(self):
+        return self.type_obj
+    
+    @property
+    def needs_dtor(self):
+        return self.type_obj.needs_dtor
+    
+    @needs_dtor.setter
+    def needs_dtor(self, needs_dtor):
+        self.type_obj.needs_dtor = needs_dtor
+
+    @property
+    def has_explicit_dtor(self):
+        return self.type_obj.has_explicit_dtor
+    
+    @has_explicit_dtor.setter
+    def has_explicit_dtor(self, val):
+        self.type_obj.has_explicit_dtor = val
+    
+    @property
+    def has_auto_dtor(self):
+        return self.has_auto_dtor
+    
+    @has_auto_dtor.setter
+    def has_auto_dtor(self, val):
+        self.type_obj.has_auto_dtor = val
+    
+    def get_base_type(self):
+        return self.type_obj
+    
+@dataclass
 class ArrTypeObj(TypeObj):
     dims : list = field(default_factory=list)
 
@@ -478,7 +529,7 @@ def compatible_types(src_type, dst_type):
     
     return True
 
-def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node):
+def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node, fcall_rules=False):
     if src_type is None or dst_type is None:
         return [] ## c types
     # TODO maybe remove cmp_arg_param_types
@@ -501,18 +552,21 @@ def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node):
     if isinstance(src_type, FuncTypeObj) and isinstance(dst_type, FuncTypeObj):
         return []  # XXX
 
+    if isinstance(dst_type, TypeInferenceError) or dst_type is any_type_obj or src_type is any_type_obj:
+        return []
+
     if not (src_type.get_base_type().xy_node.name == dst_type.get_base_type().xy_node.name and src_type.get_base_type().c_name == dst_type.get_base_type().c_name):
         return [(f"Incompatible types {fmt_type(src_type.get_base_type())} and {fmt_type(dst_type.get_base_type())}", xy_node)]
     
 
     for tag_name, tag in dst_type.tags.items():
         other_tag = src_type.tags.get(tag_name, None)
-        if other_tag is None:
+        if not fcall_rules and other_tag is None:
             return [
                 (f"Cannot discard tag '{tag_name}'", xy_node),
                 (f"Tag attached here", tag.xy_node),
             ]
-        if not ct_equals(tag, other_tag):
+        if other_tag is not None and not ct_equals(tag, other_tag):
             return [
                 (f"Values for tag '{tag_name}' differ", xy_node),
                 (f"Left tag attached here", other_tag.xy_node),
@@ -524,10 +578,14 @@ def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node):
 def ct_equals(tag, other_tag):
     if not isinstance(tag, type(other_tag)):
         return False
-    return tag == other_tag
+    if tag == other_tag:
+        return True
+    if isinstance(tag, FuncTypeObj):
+        return tag.c_name == other_tag.c_name
+    return False
 
-def assert_compatible_types(xy_node, expr1_obj, expr2_obj, ctx):
-    errors = cmp_types_updated(expr1_obj.inferred_type, expr2_obj.inferred_type, xy_node)
+def check_type_compatibility(xy_node, expr1_obj, expr2_obj, ctx, fcall_rules=False):
+    errors = cmp_types_updated(expr1_obj.inferred_type, expr2_obj.inferred_type, xy_node, fcall_rules)
     if len(errors) > 0:
         if implicit_zero_conversion(expr2_obj, expr1_obj.inferred_type, ctx):
             return
@@ -643,6 +701,8 @@ class CompilerContext:
         self.func_namespaces = [self.global_func_ns, self.func_ns]
 
     def is_prim_int(self, type_obj):
+        if isinstance(type_obj,TypeExprObj):
+            type_obj = type_obj.base_type_obj
         return type_obj in self.prim_int_objs
 
     def push_ns(self, ns_type=None):
@@ -785,6 +845,9 @@ class CompilerContext:
             tag_obj = self.eval(xy_tag)
             if label in res:
                 raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
+            #if isinstance(tag_obj, TypeObj):
+            #    tag_obj = copy(tag_obj)
+            #    tag_obj.xy_node = xy_tag
             res[label] = tag_obj
         return res
 
@@ -1462,7 +1525,14 @@ def compile_params(params, cast, cfunc, ctx):
             any_default_value_params = True
 
         if param.type is not None:
-            param_obj.type_desc = find_type(param.type, cast, ctx)
+            ptype_obj = find_type(param.type, cast, ctx)
+            if isinstance(param.type, xy.Id) and len(ptype_obj.tags):
+                ptype_obj = TypeExprObj(
+                    xy_node=ptype_obj.xy_node,
+                    c_node=ptype_obj.c_node,
+                    type_obj=ptype_obj
+                )
+            param_obj.type_desc = ptype_obj
         else:
             param_obj.type_desc = do_infer_type(param.value, cast, ctx)
 
@@ -2177,7 +2247,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
     
 def compile_assign(dest_obj, value_obj, cast, cfunc, ctx, expr_node, is_move=False):
-    assert_compatible_types(expr_node, dest_obj, value_obj, ctx)
+    check_type_compatibility(expr_node, dest_obj, value_obj, ctx)
 
     if is_move:
         value_obj = move_out(value_obj, cast, cfunc, ctx)
@@ -2629,7 +2699,9 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         field_obj = field_objs[i]
         if field_obj.type_desc is recursive_pseudo_field_type_obj:
             raise CompilationError(f"Cannot set value for pseudo field `{field_objs[i].xy_node.name}`. Pseudo fields cannot initialize other pseudo fields.", expr)
-        if field_obj.xy_node.is_pseudo:
+        if not field_obj.xy_node.is_pseudo:
+            check_type_compatibility(arg, field_obj, val_obj, ctx)
+        else:
             any_pseudos = True
         if not any_pseudos:
             pos_objs[i] = val_obj
@@ -3536,6 +3608,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             )
             if pobj.xy_node.is_callerContext:
                 redact_code(arg, cast, cfunc, ctx)
+            check_type_compatibility(arg.xy_node, pobj, arg, ctx, fcall_rules=True)
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:
@@ -3554,7 +3627,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                         var_decl = ctx.lookup(pobj.xy_node.name, is_func=False)
                         if var_decl is not None and not isinstance(var_decl, VarObj):
                             raise CompilationError("'{pobj.xy_node.name}' is not a var", pobj.xy_node)
-                        elif var_decl is not None:
+                        elif var_decl is not None and compatible_types(var_decl.inferred_type, pobj.type_desc):
                             if var_decl.xy_node.is_pseudo:
                                 raise CompilationError(f"'{pobj.xy_node.name}' is a pseudo param", var_decl.xy_node)
                             value_obj = ExprObj(
@@ -3564,7 +3637,12 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                             )
                     if value_obj is None:
                         if pobj.xy_node.value is None:
-                            raise CompilationError(f"Cannot find var '{pobj.xy_node.name}' to auto inject", expr)
+                            var_decl = ctx.lookup(pobj.xy_node.name, is_func=False)
+                            notes = []
+                            if isinstance(var_decl, VarObj):
+                                notes = [(f"Variable '{pobj.xy_node.name}' has unsuitable type", var_decl.xy_node)]
+                                notes.extend(cmp_types_updated(var_decl.inferred_type, pobj.type_desc, expr))
+                            raise CompilationError(f"Cannot find var '{pobj.xy_node.name}' to auto inject", expr, notes=notes)
                         value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, callee_ctx)
                     to_move = (
                         (i < len(leftover_params) - 1) or
@@ -3587,6 +3665,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             else:
                 value_obj = arg_exprs.kwargs[pobj.xy_node.name]
             
+            check_type_compatibility(value_obj.xy_node, pobj, value_obj, ctx, fcall_rules=True)
             args_list.append(value_obj)
             args_writable.append(False)
             if not pobj.xy_node.is_pseudo:
@@ -4604,7 +4683,7 @@ def assert_rtype_match(value_obj, fobj, ctx: CompilerContext):
 def implicit_zero_conversion(value_obj, dest_type, ctx: CompilerContext):
     return (
         isinstance(value_obj.xy_node, xy.Const) and value_obj.xy_node.value == 0
-        and value_obj.xy_node.type == "Int" and ctx.is_prim_int(dest_type)
+        and value_obj.xy_node.type == "Int" and (ctx.is_prim_int(dest_type) or is_ptr_type(dest_type, ctx))
     )
 
 
