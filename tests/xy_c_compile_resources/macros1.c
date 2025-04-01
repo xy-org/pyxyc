@@ -2,16 +2,16 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct macros1_Struct macros1_Struct;
 typedef struct macros1_Tag1 macros1_Tag1;
+typedef struct macros1_Struct macros1_Struct;
 typedef struct macros1_Tag2 macros1_Tag2;
 typedef struct macros1_Tag3 macros1_Tag3;
 
-struct macros1_Struct {
-    int32_t m_field;
-};
 struct macros1_Tag1 {
     char __empty_structs_are_not_allowed_in_c__;
+};
+struct macros1_Struct {
+    int32_t m_field;
 };
 struct macros1_Tag2 {
     char __empty_structs_are_not_allowed_in_c__;

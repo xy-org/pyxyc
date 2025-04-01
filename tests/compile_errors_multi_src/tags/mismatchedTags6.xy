@@ -1,0 +1,22 @@
+struct Data {}
+struct Tag1 {}
+struct Tag2 {}
+
+struct Struct {
+    d: Data~[tag=Tag1];
+}
+
+def func(s: Struct, desc : Desc~[tag=Tag1] = ^describe(s)) {
+    # ...
+}
+
+struct Desc {}
+
+def describe(s: Struct) -> Desc~[tag=Tag2] {
+    # ...
+}
+
+def test() {
+    s := Struct{};
+    func(s);
+}

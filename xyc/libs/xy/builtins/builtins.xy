@@ -149,7 +149,7 @@
     # Implemented by the compiler
 }
 
-*def add(a: Long, b: Int) -> Double {
+*def add(a: Long, b: Int) -> Long {
     # Implemented by the compiler
 }
 

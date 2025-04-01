@@ -23,8 +23,8 @@ def test3(b: Float, c: MyStruct, a: Int) {
     func(...);
 }
 
-def test5(d:Double, c: MyStruct) {
+def test5(d: Double, c: MyStruct) {
     a := c.a;
-    b := c.b;
+    b := c.b'to(Float);
     func(...);
 }

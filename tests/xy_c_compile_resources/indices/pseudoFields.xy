@@ -1,7 +1,7 @@
 struct Point {
-    x : pseudo = CoordField{0};
-    y : pseudo = CoordField{1};
-    z : pseudo = CoordField{2};
+    x : pseudo = CoordField{0u};
+    y : pseudo = CoordField{1u};
+    z : pseudo = CoordField{2u};
 
     coords: @Float[3];
 }

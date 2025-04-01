@@ -37,6 +37,7 @@ floats
     ("earlyReturn", "", False),
     ("dtors/iterWithDtor", "Destroying Iter\n", False),
     ("dtors/moveAndDtor", "Destroying s1\nDestroying \nDestroying s2\n", True),
+    #("dtors/rvalueDtor", "", False),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     test_base = resource_dir / "end_to_end" / testname

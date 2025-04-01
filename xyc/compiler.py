@@ -824,8 +824,10 @@ class CompilerContext:
                         f"Missing default label for type '{tag_obj.xy_node.name}'",
                         xy_tag, notes=[(no_label_msg, None)])
                 label = tag_obj.tags["xyTag"].kwargs["label"].as_str()
-                tag_obj = copy(tag_obj)
-                tag_obj.xy_node = xy_tag
+                tag_obj = TypeExprObj(
+                    xy_node=xy_tag, c_node=tag_obj.c_node,
+                    type_obj=tag_obj, tags=tag_obj.tags
+                )
             elif isinstance(tag_obj, InstanceObj):
                 assert tag_obj.type_obj is not None
                 if "xyTag" not in tag_obj.type_obj.tags:
@@ -845,9 +847,12 @@ class CompilerContext:
             tag_obj = self.eval(xy_tag)
             if label in res:
                 raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
-            #if isinstance(tag_obj, TypeObj):
-            #    tag_obj = copy(tag_obj)
-            #    tag_obj.xy_node = xy_tag
+            if isinstance(tag_obj, TypeObj):
+                fully_compile_type(tag_obj, cast, ast, self)
+                tag_obj = TypeExprObj(
+                    xy_node=xy_tag, c_node=tag_obj.c_node,
+                    type_obj=tag_obj, tags=tag_obj.tags
+                )
             res[label] = tag_obj
         return res
 
@@ -2033,7 +2038,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             field_name = expr.arg2.name
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
             tag_obj = tag_get(expr, arg1_obj, field_name, ctx)
-            if isinstance(tag_obj, TypeObj):
+            if isinstance(tag_obj, (TypeObj, TypeExprObj)):
                 return ExprObj(
                     c_node=c.Id(tag_obj.c_node.name),
                     inferred_type=tag_obj,

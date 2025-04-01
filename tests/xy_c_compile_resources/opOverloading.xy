@@ -56,8 +56,8 @@ def cmp(p1: Pair, p2: Pair) -> MyInt {
 }
 
 def cmpPairs() -> Int {
-    p1 := Pair{0, 1};
-    p2 := Pair{2, 3};
+    p1 := Pair{MyInt{0}, MyInt{1}};
+    p2 := Pair{MyInt{2}, MyInt{3}};
     if (p1 > p2) {
         return 1;
     }

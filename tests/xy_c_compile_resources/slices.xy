@@ -49,8 +49,8 @@ def max(:Long) -> Long {
 }
 def max(:Date) = Date{max(Long)};
 
-def slice(start: Date, end := Date'max, step := Date{1}) = DateSlice{start, end, step};
-def slice(end: Date, step := Date{1}) = DateSlice{Date{0}, end, step};
+def slice(start: Date, end := Date'max, step := Date{1L}) = DateSlice{start, end, step};
+def slice(end: Date, step := Date{1L}) = DateSlice{Date{0}, end, step};
 def slice(step: Date) = DateSlice{Date{0}, Date'max, step};
 
 def today() = Date{c.time(c.NULL)};
@@ -60,6 +60,6 @@ def testDataSlices() {
     today := today();
     tomorrow := tomorrow();
     a := today:tomorrow;
-    b := tomorrow:today:Date{-1};
+    b := tomorrow:today:Date{-1L};
     d := :tomorrow:;
 }

@@ -1,0 +1,11 @@
+struct Data {}
+struct Tag1 {}
+struct Tag2 {}
+
+struct Struct {
+    d: Data~[tag=Tag1];
+}
+
+def test() {
+    s := Struct{Data~[tag=Tag2]{}};
+}

@@ -59,8 +59,8 @@ opOverloading_MyInt opOverloading_cmp__Pair__Pair(opOverloading_Pair p_p1, opOve
 }
 
 int32_t opOverloading_cmpPairs(void) {
-    const opOverloading_Pair l_p1 = {0, 1};
-    const opOverloading_Pair l_p2 = {2, 3};
+    const opOverloading_Pair l_p1 = {(opOverloading_MyInt){0}, (opOverloading_MyInt){1}};
+    const opOverloading_Pair l_p2 = {(opOverloading_MyInt){2}, (opOverloading_MyInt){3}};
     if (opOverloading_cmp__MyInt__Int(opOverloading_cmp__Pair__Pair(l_p1, l_p2), 0) > 0) {
         return 1;
     }

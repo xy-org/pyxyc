@@ -1,0 +1,16 @@
+struct Data {}
+struct Tag1 {}
+struct Tag2 {}
+
+struct Struct {
+    d: Data~[tag=Tag1];
+}
+
+def func(d: Data~[tag=Tag2]) {
+    # ...
+}
+
+def test() {
+    s := Struct{};
+    func(s.d);
+}
