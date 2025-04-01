@@ -1,0 +1,22 @@
+import libxy.stdio;
+import libxy.string;
+
+struct Data {
+    num: Int;
+}
+
+*def func(p1: Str) -> Data {
+    return retagged(p1~[memory=MemStatic]);
+}
+
+*def retagged(p2: Str) -> Data
+>> nullTerminated(p2)
+{
+    # ...
+    return Data{};
+}
+
+def main~EntryPoint() {
+    func("abc");
+    func(f"abc");
+}

@@ -62,6 +62,10 @@ class TypeExprObj(CompiledObj):
 
     @property
     def c_name(self):
+        if self.builtin and self.type_obj.xy_node.name == "Ptr" and "to" in self.tags \
+            and self.tags["to"] is not calltime_expr_obj:
+            to_obj = self.tags["to"]
+            return to_obj.c_name + "*"
         return self.type_obj.c_name
     
     @property
@@ -98,11 +102,27 @@ class TypeExprObj(CompiledObj):
     
     @property
     def has_auto_dtor(self):
-        return self.has_auto_dtor
+        return self.type_obj.has_auto_dtor
     
     @has_auto_dtor.setter
     def has_auto_dtor(self, val):
         self.type_obj.has_auto_dtor = val
+
+    @property
+    def visibility(self):
+        return self.type_obj.visibility
+    
+    @property
+    def init_value(self):
+        return self.type_obj.init_value
+    
+    @property
+    def builtin(self):
+        return self.type_obj.builtin
+    
+    @property
+    def is_init_value_zeros(self):
+        return self.type_obj.is_init_value_zeros
     
     def get_base_type(self):
         return self.type_obj
@@ -576,6 +596,8 @@ def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node, fcall_rules
     return []
 
 def ct_equals(tag, other_tag):
+    if isinstance(other_tag, (TypeExprObj, TypeObj)) and isinstance(tag, (TypeExprObj, TypeObj)):
+        return tag.c_name == other_tag.c_name
     if not isinstance(tag, type(other_tag)):
         return False
     if tag == other_tag:
@@ -628,7 +650,7 @@ def func_sig(fobj: FuncObj, include_ret=False):
         if fobj.rtype_obj is None:
             res += "<ERROR>!"
         else:
-            res += fobj.rtype_obj.xy_node.name
+            res += fobj.rtype_obj.name
         if len(fdef.returns) > 1:
             res += ")"
     else:
@@ -766,7 +788,7 @@ class CompilerContext:
             raise CompilationError(f"Cannot find type '{self.eval_to_id(name)}'", name)
         if isinstance(obj, ExtSymbolObj):
             return ext_symbol_to_type(obj)
-        if not isinstance(obj, TypeObj):
+        if not isinstance(obj, (TypeObj, TypeExprObj)):
             raise CompilationError("Not a type", name)
         if not is_obj_visible(obj, self):
             raise CompilationError(f"Struct '{obj.name}' is not visible", name)
@@ -826,7 +848,7 @@ class CompilerContext:
                 label = tag_obj.tags["xyTag"].kwargs["label"].as_str()
                 tag_obj = TypeExprObj(
                     xy_node=xy_tag, c_node=tag_obj.c_node,
-                    type_obj=tag_obj, tags=tag_obj.tags
+                    type_obj=tag_obj, tags=copy(tag_obj.tags)
                 )
             elif isinstance(tag_obj, InstanceObj):
                 assert tag_obj.type_obj is not None
@@ -851,7 +873,7 @@ class CompilerContext:
                 fully_compile_type(tag_obj, cast, ast, self)
                 tag_obj = TypeExprObj(
                     xy_node=xy_tag, c_node=tag_obj.c_node,
-                    type_obj=tag_obj, tags=tag_obj.tags
+                    type_obj=tag_obj, tags=copy(tag_obj.tags)
                 )
             res[label] = tag_obj
         return res
@@ -948,7 +970,7 @@ class CompilerContext:
                     else:
                         assert isinstance(node.arg2, xy.Id)
                         return base.module_header.ctx.eval(node.arg2, msg, is_func=is_func)
-                elif isinstance(base, TypeObj):
+                elif isinstance(base, (TypeObj, TypeExprObj)):
                     return base.fields[node.arg2.name]
                 elif isinstance(base, VarObj):
                     if node.arg2.name not in base.type_desc.fields:
@@ -969,10 +991,11 @@ class CompilerContext:
                 obj.tags = self.eval_tags(node.tags)
             elif isinstance(obj, TypeObj):
                 base_type = obj
-                obj = copy(obj)
-                obj.base_type_obj = base_type
-                obj.tags = copy(obj.tags)
-                obj.tags.update(self.eval_tags(node.tags, obj.tag_specs))
+                obj = TypeExprObj(
+                    xy_node=node, c_node=base_type.c_node, type_obj=base_type,
+                    tags=copy(obj.tags)
+                )
+                obj.tags.update(self.eval_tags(node.tags, base_type.tag_specs))
             else:
                 raise CompilationError(f"Cannot assign tags to obj of type {obj.__class__.__name__}", node)
             return obj
@@ -1268,6 +1291,8 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
                 fully_compile_type(type_obj, cast, ast, ctx)
 
 def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
+    if isinstance(type_obj, TypeExprObj):
+        type_obj = type_obj.type_obj
     if type_obj.fully_compiled:
         return
     type_obj.fully_compiled = True
@@ -1890,7 +1915,7 @@ def compile_vardecl(node, cast, cfunc, ctx):
                     "at compile time", node)
         cvar.qtype.type.name = type_desc.base_type_obj.c_name
         cvar.qtype.type.dims = type_desc.dims
-    elif isinstance(type_desc, TypeObj):
+    elif isinstance(type_desc, (TypeObj, TypeExprObj)):
         cvar.qtype.type.name = type_desc.c_name
     else:
         err_node = node.type if node.type is not None else node
@@ -2165,7 +2190,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             if len(res.elems) == 0:
                 res.elems.append(c.Const(0))
         else: # array literal with not array type
-            if isinstance(arr_type, TypeObj):
+            if isinstance(arr_type, (TypeObj, TypeExprObj)):
                 tmp = ctx.create_tmp_var(arr_type, "arr_comp", xy_node=expr)
                 tmp.needs_dtor = False
                 cfunc.body.append(tmp.c_node)
@@ -2222,6 +2247,14 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_continue(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.AttachTags):
         obj = compile_expr(expr.arg, cast, cfunc, ctx)
+        if isinstance(obj.inferred_type, TypeExprObj):
+            obj.inferred_type = copy(obj.inferred_type)
+            obj.inferred_type.tags = copy(obj.inferred_type.tags)
+        elif isinstance(obj.inferred_type, TypeObj):
+            obj.inferred_type = TypeExprObj(
+                xy_node=expr, c_node=obj.inferred_type.c_node,
+                type_obj=obj.inferred_type, tags=copy(obj.inferred_type.tags)
+            )
         obj.inferred_type.tags.update(ctx.eval_tags(expr.tags)) # tags are attached to the type
         return obj
     elif isinstance(expr, xy.SliceExpr):
@@ -2629,6 +2662,8 @@ def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerCon
     )
 
 def is_ptr_type(type_obj, ctx):
+    if isinstance(type_obj, TypeExprObj):
+        type_obj = type_obj.type_obj
     return type_obj is ctx.ptr_obj or type_obj.base_type_obj is ctx.ptr_obj
 
 def ptr_type_to(type_obj, ctx):
@@ -2639,9 +2674,7 @@ def ptr_type_to(type_obj, ctx):
     return ptr_type
 
 def tag_get(expr, obj, tag_label, ctx):
-    if isinstance(obj.compiled_obj, VarObj):
-        obj = obj.compiled_obj.type_desc
-    elif isinstance(obj.compiled_obj, TypeObj):
+    if isinstance(obj.compiled_obj, (TypeObj, TypeExprObj)):
         obj = obj.compiled_obj
     else:
         obj = obj.inferred_type
@@ -2662,7 +2695,7 @@ def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
         raise CompilationError("Anonymous struct literals are not supported", expr)
     type_obj = ctx.eval(expr.name, msg="Cannot find type")
     tmp_obj = None
-    if not isinstance(type_obj, TypeObj):
+    if not isinstance(type_obj, (TypeObj, TypeExprObj)):
         # assert isinstance(type_obj, VarObj)
         var_obj = type_obj
         type_obj = type_obj.inferred_type
@@ -3358,7 +3391,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         )
     elif is_builtin_func(func_obj, "cmp"):
         c_op="-"
-        if arg_exprs[0].inferred_type.xy_node.name.startswith("Bits"):
+        if arg_exprs[0].inferred_type.name.startswith("Bits"):
             c_op = "^"
         res = c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op=c_op)
         return ExprObj(
@@ -3414,7 +3447,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             # TODO what if Ptr has an attached type
             c_arg1 = c.Cast(c_arg1, to="int8_t*")
         c_op = func_to_op_map[func_obj.xy_node.name.name]
-        if arg_exprs[0].inferred_type.xy_node.name.startswith("Bits"):
+        if arg_exprs[0].inferred_type.name.startswith("Bits"):
             if c_op == '-':
                 c_op = '^'
             elif c_op not in {">>", "<<"}:
@@ -3830,8 +3863,10 @@ def compile_nameof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if isinstance(arg_exprs[0].compiled_obj, ArrTypeObj):
         name = arg_exprs[0].compiled_obj.base_type_obj.xy_node.name
         name += "[" + ",".join(str(d) for d in arg_exprs[0].compiled_obj.dims) + "]"
-    elif isinstance(arg_exprs[0].compiled_obj, (TypeObj, VarObj)):
+    elif isinstance(arg_exprs[0].compiled_obj, VarObj):
         name = arg_exprs[0].compiled_obj.xy_node.name
+    elif isinstance(arg_exprs[0].compiled_obj, (TypeObj, TypeExprObj)):
+        name = arg_exprs[0].compiled_obj.name
     elif isinstance(arg_exprs[0].compiled_obj, FuncTypeObj):
         if arg_exprs[0].compiled_obj.func_obj is not None:
             name = arg_exprs[0].compiled_obj.func_obj.xy_node.name

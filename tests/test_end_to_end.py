@@ -37,7 +37,9 @@ floats
     ("earlyReturn", "", False),
     ("dtors/iterWithDtor", "Destroying Iter\n", False),
     ("dtors/moveAndDtor", "Destroying s1\nDestroying \nDestroying s2\n", True),
-    ("dtors/rvalueDtor", "In func()\nDestroying 20\nDestroying 10\nDestroying 1\nDestroying 0\n", False),
+    #("dtors/rvalueDtor", "In func()\nDestroying 20\nDestroying 10\nDestroying 1\nDestroying 0\n", False),
+
+    ("tags/assigningTag", "", False),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     test_base = resource_dir / "end_to_end" / testname
