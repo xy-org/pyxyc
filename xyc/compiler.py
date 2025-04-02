@@ -3624,6 +3624,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     callee_ctx.caller_contexts = copy(callee_ctx.caller_contexts)
     callee_ctx.push_caller_context(caller_ctx)
     callee_ctx.tmp_names = caller_ctx.tmp_names
+    callee_ctx.current_fobj = caller_ctx.current_fobj
 
     # XXX
     if hasattr(func_obj.c_node, 'name'):
@@ -3755,18 +3756,19 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         callee_ctx.eval_calltime_exprs = eval_stored_value
         cast_result = True
 
+    macro_expr_obj = None
     if func_obj.is_macro:
         try:
-            body_expr_obj = compile_expr(func_obj.xy_node.body, cast, cfunc, callee_ctx)
+            macro_expr_obj = compile_expr(func_obj.xy_node.body, cast, cfunc, callee_ctx, deref=False)
         except CompilationError as e:
             raise CompilationError(
                 f"Failed to call macro '{ctx.eval_to_id(func_obj.xy_node.name)}'", expr,
                 notes=[(e.error_message, e.xy_node), *(e.notes if e.notes else [])]
             )
-        if isinstance(body_expr_obj, TypeObj):
+        if isinstance(macro_expr_obj, TypeObj):
             raise CompilationError("Functions cannot return a type", expr)
-        res = body_expr_obj.c_node
-        rtype_obj = body_expr_obj.inferred_type
+        res = macro_expr_obj.c_node
+        rtype_obj = macro_expr_obj.inferred_type
     elif (
         func_obj.xy_node is not None and
         (func_obj.etype_obj is not None or len(func_obj.xy_node.returns) > 1)
@@ -3838,12 +3840,16 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 body=[c.FuncCall("abort")]
             ))
 
-    raw_fcall_obj = FCallObj(
-        c_node=res,
-        xy_node=expr,
-        inferred_type=rtype_obj,
-        func_obj=func_obj
-    )
+    if macro_expr_obj is not None:
+        raw_fcall_obj = copy(macro_expr_obj)
+        raw_fcall_obj.xy_node = expr
+    else:
+        raw_fcall_obj = FCallObj(
+            c_node=res,
+            xy_node=expr,
+            inferred_type=rtype_obj,
+            func_obj=func_obj
+        )
 
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:
         if func_obj.xy_node.returns[0].is_based:

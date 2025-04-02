@@ -1,0 +1,28 @@
+struct Fib {
+    a := 0;
+    b := 1;
+}
+
+struct Error {
+    num := 0;
+}
+
+def to(e: Error, :Bool) e.num != 0;
+
+def dtor(f: Fib) {
+    # ...
+}
+
+def fibonacci~IterCtor() mkFib();
+
+def mkFib~IterCtor()-> [ Fib ] || Error {
+    return Fib{};
+}
+
+def valid(fib: Fib) = true;
+
+def next(fib: mut Fib) {
+    fib = Fib{fib.a + fib.b, fib.a};
+}
+
+def get(fib: Fib) = fib.a;

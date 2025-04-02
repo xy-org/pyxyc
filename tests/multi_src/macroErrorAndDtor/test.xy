@@ -1,0 +1,7 @@
+import macroErrorAndDtor.module1;
+
+def test() {
+    for (f in fibonacci()) {
+        # ...
+    }
+}
