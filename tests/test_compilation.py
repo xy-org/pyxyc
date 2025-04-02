@@ -68,6 +68,7 @@ from xyc.compiler import CompilationError
     "move/moveOperators1",
     "move/moveOperators2",
     "move/moveOperators3",
+    "move/moveOperators4",
     "splitNamespaces",
     "cinterop/usingCtypes",
     "bitwiseOperations/bitBasics",

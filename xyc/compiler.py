@@ -2307,7 +2307,7 @@ def compile_assign(dest_obj, value_obj, cast, cfunc, ctx, expr_node, is_move=Fal
         )
 
 def move_out(obj: ExprObj, cast, cfunc, ctx):
-    if is_tmp_expr(obj):
+    if is_tmp_expr(obj) or not is_lvalue(obj):
         return obj
 
     tmp_obj = copy_to_temp(obj, cast, cfunc, ctx)
@@ -2320,6 +2320,9 @@ def move_out(obj: ExprObj, cast, cfunc, ctx):
     tmp_obj.compiled_obj = None
     reset_obj(obj, cast, cfunc, ctx)
     return tmp_obj
+
+def is_lvalue(obj: ExprObj):
+    return isinstance(obj, IdxObj) or isinstance(obj.compiled_obj, VarObj)
 
 def reset_obj(obj: ExprObj, cast, cfunc, ctx):
     if isinstance(obj, IdxObj):
