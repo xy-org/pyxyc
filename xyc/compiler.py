@@ -2322,7 +2322,7 @@ def move_out(obj: ExprObj, cast, cfunc, ctx):
     return tmp_obj
 
 def is_lvalue(obj: ExprObj):
-    return isinstance(obj, IdxObj) or isinstance(obj.compiled_obj, VarObj)
+    return isinstance(obj, IdxObj) or isinstance(obj.compiled_obj, (VarObj, IdxObj))
 
 def reset_obj(obj: ExprObj, cast, cfunc, ctx):
     if isinstance(obj, IdxObj):
