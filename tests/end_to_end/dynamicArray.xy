@@ -4,6 +4,7 @@ import libxy.memory;
 import libxy.stdio;
 import libxy.string;
 import libxy.slice;
+import libxy.error;
 
 struct Array~[elemType: struct, xy_dtor=true] {
     mem: Memory;
