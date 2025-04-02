@@ -1,27 +1,27 @@
 import libxy.stdio;
 import libxy.string;
 
-struct Str {
+struct Data {
     num: Int;
 }
 
-def dtor(s: Str) {
+def dtor(s: Data) {
     print(f"Destroying {s.num}\n");
 }
 
-def makeStr(num := 0) -> Str {
-    return Str{num};
+def makeStr(num := 0) -> Data {
+    return Data{num};
 }
 
-def makeStrMacro() Str{10};
+def makeStrMacro() Data{10};
 
 
-def func(s1: mut Str, s2: Str, s3: Str) {
+def func(s1: mut Data, s2: Data, s3: Data) {
     print("In func()\n");
     # ...
 }
 
 def main~EntryPoint() {
     s := 'makeStr;
-    func(makeStr(1), 'makeStrMacro, Str{20});
+    func(makeStr(1), 'makeStrMacro, Data{20});
 }

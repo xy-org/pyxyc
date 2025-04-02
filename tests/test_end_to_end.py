@@ -37,7 +37,7 @@ floats
     ("earlyReturn", "", False),
     ("dtors/iterWithDtor", "Destroying Iter\n", False),
     ("dtors/moveAndDtor", "Destroying s1\nDestroying \nDestroying s2\n", True),
-    #("dtors/rvalueDtor", "In func()\nDestroying 20\nDestroying 10\nDestroying 1\nDestroying 0\n", False),
+    ("dtors/rvalueDtor", "In func()\nDestroying 20\nDestroying 10\nDestroying 1\nDestroying 0\n", False),
 
     ("tags/assigningTag", "", False),
 ])

@@ -162,6 +162,7 @@ class FuncTypeObj(TypeObj):
 @dataclass
 class TypeInferenceError:
     msg: str = ""
+    needs_dtor: bool = False
 
 @dataclass
 class StrObj(CompiledObj):
@@ -3154,6 +3155,14 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             else:
                 # defer move to tmp for as long as possible
                 expr_to_move_idx = i
+        elif type_needs_dtor(obj.inferred_type) and isinstance(obj.c_node, c.CompoundLiteral):
+            if expr_to_move_idx is not None:
+                tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, cfunc, ctx)
+                arg_exprs[expr_to_move_idx] = tmp_obj
+
+            # immediatelly move if a dtor is required
+            obj = move_to_temp(obj, cast, cfunc, ctx)
+            expr_to_move_idx = None
 
         arg_exprs.args.append(obj)
     if len(expr.kwargs) > 0 and expr_to_move_idx is not None:
