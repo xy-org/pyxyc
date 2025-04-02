@@ -4,7 +4,7 @@ from os import path
 import subprocess
 from xyc.ast import Source
 from xyc.parser import parse_code
-from xyc.compiler import compile_module, compile_ctti, compile_builtins, maybe_add_main
+from xyc.compiler import compile_module, compile_ctti, compile_builtins, maybe_add_main, CompilationError
 import xyc.cstringifier as cstringifier
 from dataclasses import dataclass
 import xyc.cast as c
@@ -44,6 +44,9 @@ class Builder:
         self.entrypoint_module_names = []
         self.entrypoint_priority = 0
 
+        self.module_import_stack = []
+        self.module_import_index = {}
+
     def build(self):
         module_name = path.basename(self.input)
         if "." in module_name:
@@ -53,9 +56,13 @@ class Builder:
         self.do_compile_module(module_name, self.input)
         self.do_build()
 
-    def import_module(self, module_name: str):
+    def import_module(self, module_name: str, xy_node):
         if module_name in self.module_cache:
             return self.module_cache[module_name].header
+        
+        self.check_cyclical_imports(module_name, xy_node)
+        self.module_import_index[module_name] = len(self.module_import_stack)
+        self.module_import_stack.append(xy_node)
         
         if module_name == "xy.ctti":
             self.compile_ctti()
@@ -64,9 +71,26 @@ class Builder:
         module_path = self.locate_module(module_name)
         if module_path is None:
             return None
+
         header, _ = self.do_compile_module(module_name, module_path)
 
+        del self.module_import_index[module_name] 
+        self.module_import_stack.pop()
+
         return header
+    
+    def check_cyclical_imports(self, module_name, xy_node):
+        idx = self.module_import_index.get(module_name, None)
+        if idx is not None:
+            notes = []
+            while idx < len(self.module_import_stack):
+                msg = "Which in turn imports"
+                if len(notes) == 0:
+                    msg = "Cyclical module dependency. Import loop begins here:"
+                notes.append((msg, self.module_import_stack[idx]))
+                idx = idx + 1
+            notes.append(("Finally imports:", xy_node))
+            raise CompilationError(*notes[0], notes=notes[1:])
     
     def compile_builtins(self):
         builtins_module_name = "xy.builtins"

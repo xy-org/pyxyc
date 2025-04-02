@@ -1,0 +1,5 @@
+import recursiveDeps.module1;
+
+def test() {
+    # ...
+}

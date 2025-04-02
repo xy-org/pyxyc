@@ -5087,7 +5087,7 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
             # already imported nothing to do
             return
         ctx.imported_modules.add(imprt.lib)
-        module_header = ctx.builder.import_module(imprt.lib)
+        module_header = ctx.builder.import_module(imprt.lib, imprt)
         if module_header is None:
             raise CompilationError(f"Cannot find module '{imprt.lib}'", imprt)
         import_obj.module_header = module_header

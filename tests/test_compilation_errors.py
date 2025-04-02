@@ -470,6 +470,8 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
     ("tags/mismatchedTags4.xy", r".*Values for tag 'tag' differ(.|\n)*mismatchedTags4.xy:6:18: note: Left tag attached here(.|\n)*mismatchedTags4.xy:10:27: note: Right tag attached here"),
     ("tags/mismatchedTags5.xy", r".*Values for tag 'tag' differ"),
     ("tags/mismatchedTags6.xy", r".*Values for tag 'tag' differ"),
+
+    ("recursiveDeps", r".*Cyclical module dependency. Import loop begins here:.*"),
 ])
 def test_compilation_errors_src(package, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
