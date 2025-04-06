@@ -693,6 +693,63 @@ def test_parse_advanced_funcs(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def func(input: Int) -> Int || Error {
+              if (input < 0) return 0;
+              return 100;
+           }
+        """,
+        [
+            ast.FuncDef(ast.Id("func"), params=[ast.VarDecl("input", ast.Id("Int"), is_param=True)],
+                returns=[
+                    ast.VarDecl(type=ast.Id("Int")),
+                ],
+                etype=ast.Id("Error"),
+                body=[
+                    ast.IfExpr(
+                        ast.BinExpr(ast.Id("input"), ast.Const(0), op="<"),
+                        block=ast.Block(
+                            body=[ast.Return(ast.Const(0))]
+                        )
+                    ),
+                    ast.Return(ast.Const(100)),
+                ]
+            ),
+        ]
+    ],
+    [
+        """def func(input: Int) -> Int || Error {
+              if (input < 0) error Error{-1};
+              return 100;
+           }
+        """,
+        [
+            ast.FuncDef(ast.Id("func"), params=[ast.VarDecl("input", ast.Id("Int"), is_param=True)],
+                returns=[
+                    ast.VarDecl(type=ast.Id("Int")),
+                ],
+                etype=ast.Id("Error"),
+                body=[
+                    ast.IfExpr(
+                        ast.BinExpr(ast.Id("input"), ast.Const(0), op="<"),
+                        block=ast.Block(
+                            body=[ast.Error(
+                                ast.StructLiteral(ast.Id("Error"), args=[ast.Const(-1)])
+                            )]
+                        )
+                    ),
+                    ast.Return(ast.Const(100)),
+                ]
+            ),
+        ]
+    ],
+])
+def test_early_returns_and_errors(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """

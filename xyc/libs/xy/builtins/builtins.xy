@@ -31,6 +31,13 @@
     # Implemented by the compiler
 }
 
+;; 32-bit signed unicode character/codepoint
+;; No input validation is performed so even values outside of the Unicode
+;; codepoint range (0 - 1_114_111) can be used as long as they fit in 32 bits.
+*struct Char {
+    # Implemented by the compiler
+}
+
 ;; 64-bit signed integer type
 *struct Long {
     # Implemented by the compiler

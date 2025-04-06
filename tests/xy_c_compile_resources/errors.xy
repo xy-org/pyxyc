@@ -56,8 +56,6 @@ def errorInFuncThatIssuesDifferentKindOfError(x: Int, y: Int) -> Int || Error2 {
     if (x > 2*y) {
         error Error{1};
     }
-    if (x >= y) {
-        error Error2{2, x, y};
-    }
+    if (x >= y) error Error2{2, x, y};
     return x + y;
 }

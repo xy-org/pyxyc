@@ -272,7 +272,7 @@ def parse_func_select(itoken: TokenIter):
 
     return node
 
-def parse_block(itoken):
+def parse_block(itoken, accept_early_return=False):
     block = Block(src=itoken.src)
     explicit_block = False
 
@@ -324,6 +324,14 @@ def parse_block(itoken):
         itoken.expect("{", "Blocks must have their body in curly brackets '{body}'")
         itoken.consume(-1)
         block.body = parse_body(itoken)
+    elif itoken.peak() in {"return", "error"}:
+        if not accept_early_return:
+            raise ParsingError(f"'{itoken.peak()}' is not allowed here", itoken)
+
+        if itoken.peak() == "return":
+            block.body = [parse_return(itoken)]
+        else:
+            block.body = [parse_error(itoken)]
     elif itoken.peak() != "{":
         block.body = parse_expression(itoken)
     else:
@@ -868,7 +876,7 @@ def parse_if(itoken):
     itoken.expect("(", msg=f"Missing conditional expression for '{token_name}'")
     if_expr.cond = parse_expression(itoken)
     itoken.expect(")", msg="Missing closing bracket")
-    if_expr.block = parse_block(itoken)
+    if_expr.block = parse_block(itoken, accept_early_return=True)
 
     if isinstance(if_expr.block.body, list) and itoken.peak() == "if":
         raise ParsingError(
@@ -878,7 +886,7 @@ def parse_if(itoken):
 
     itoken.skip_empty_lines()
     if itoken.check("else"):
-        if_expr.else_node = parse_block(itoken)
+        if_expr.else_node = parse_block(itoken, accept_early_return=True)
     elif itoken.peak() == "elif":
         if_expr.else_node = parse_if(itoken)
 
@@ -1149,19 +1157,11 @@ def parse_stmt_list(itoken: TokenIter):
                 "The correct syntax to import a library is 'import <libname>'",
                 itoken
             )
-        elif itoken.check("return"):
-            expr = parse_expr_list(itoken)
-            if len(expr) == 1:
-                expr = expr[0]
-            node = Return(expr, src=itoken.src, coords=coords)
+        elif itoken.peak() == "return":
+            node = parse_return(itoken)
             itoken.expect_semicolon()
-        elif itoken.check("error"):
-            exprs = parse_expr_list(itoken)
-            if len(exprs) == 0:
-                raise ParsingError("Missing value for \"error\" statement", itoken)
-            if len(exprs) > 1:
-                raise ParsingError("Only one error can be issued", itoken)
-            node = Error(exprs[0], src=itoken.src, coords=coords)
+        elif itoken.peak() == "error":
+            node = parse_error(itoken)
             itoken.expect_semicolon()
         elif itoken.peak() == "#":
             itoken.consume()
@@ -1216,6 +1216,26 @@ def parse_stmt_list(itoken: TokenIter):
     if comment_node is not None:
         body.append(comment_node)
     return body
+
+def parse_return(itoken):
+    coords = itoken.peak_coords()
+    assert itoken.check("return")
+    expr = parse_expr_list(itoken)
+    if len(expr) == 1:
+        expr = expr[0]
+    node = Return(expr, src=itoken.src, coords=coords)
+    return node
+
+def parse_error(itoken):
+    coords = itoken.peak_coords()
+    assert itoken.check("error")
+    exprs = parse_expr_list(itoken)
+    if len(exprs) == 0:
+        raise ParsingError("Missing value for \"error\" statement", itoken)
+    if len(exprs) > 1:
+        raise ParsingError("Only one error can be issued", itoken)
+    node = Error(exprs[0], src=itoken.src, coords=coords)
+    return node
 
 def fuzzy_cmp(str1, str2):
     return SM(None, str1, str2).ratio()
