@@ -193,6 +193,15 @@
     # Implemented by the compiler
 }
 
+*def sub(ptr: Ptr, b: Int) -> Ptr~[^ptr..to] {
+    # Implemented by the compiler
+}
+
+*def sub(ptr: Ptr, b: Size) -> Ptr~[^ptr..to] {
+    # Implemented by the compiler
+}
+
+
 *def neg(a: Int) -> Int {
     # Implemented by the compiler
 }

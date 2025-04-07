@@ -2272,7 +2272,10 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 xy_node=expr, c_node=obj.inferred_type.c_node,
                 type_obj=obj.inferred_type, tags=copy(obj.inferred_type.tags)
             )
-        obj.inferred_type.tags.update(ctx.eval_tags(expr.tags)) # tags are attached to the type
+        tags_to_attach = ctx.eval_tags(expr.tags)
+        obj.inferred_type.tags.update(tags_to_attach) # tags are attached to the type
+        if is_ptr_type(obj.inferred_type, ctx) and "to" in tags_to_attach:
+            obj.c_node = c.Cast(obj.c_node, obj.inferred_type.c_name)
         return obj
     elif isinstance(expr, xy.SliceExpr):
         # rewrite slice
@@ -3470,10 +3473,6 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             "shiftr": ">>",
         }
         c_arg1 = arg_exprs[0].c_node
-        if func_obj.rtype_obj is ctx.ptr_obj:
-            # TODO what if function returns multiple values if len(func_obj.xy_node.returns) == 1
-            # TODO what if Ptr has an attached type
-            c_arg1 = c.Cast(c_arg1, to="int8_t*")
         c_op = func_to_op_map[func_obj.xy_node.name.name]
         if arg_exprs[0].inferred_type.name.startswith("Bits"):
             if c_op == '-':
@@ -3484,10 +3483,22 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_arg1, arg_exprs[1].c_node,
             op=c_op,
         )
+
+        inferred_type = func_obj.rtype_obj
+        if is_ptr_type(arg_exprs[0].inferred_type, ctx):
+            to_type = arg_exprs[0].inferred_type.tags.get("to", None)
+            if to_type is None:
+                raise CompilationError("Cannot do arithmetic with untagged pointers", expr)
+            if isinstance(inferred_type, TypeObj):
+                inferred_type = TypeExprObj(inferred_type.xy_node, inferred_type.c_node, inferred_type)
+            else:
+                inferred_type = copy(inferred_type)
+            inferred_type.tags["to"] = arg_exprs[0].inferred_type.tags["to"]
+
         return ExprObj(
             xy_node=expr,
             c_node=res,
-            inferred_type=func_obj.rtype_obj
+            inferred_type=inferred_type,
         )
     elif is_builtin_func(func_obj, "len"):
         dims = arg_exprs[0].inferred_type.dims

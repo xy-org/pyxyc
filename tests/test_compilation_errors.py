@@ -419,6 +419,18 @@ src.xy:3:24: error: Cannot find type 'MissingType'
                          ^^^^^^^^^^^
 """
     ),
+    (
+        """
+        def pointerFun(a: Ptr) -> Ptr {
+            return a + 1;
+        }
+        """,
+        """\
+src.xy:3:20: error: Cannot do arithmetic with untagged pointers
+|             return a + 1;
+                     ^^^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
