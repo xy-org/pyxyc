@@ -222,6 +222,10 @@
     # Implemented by the compiler
 }
 
+*def dec(a: mut Size) -> void {
+    # Implemented by the compiler
+}
+
 *def inc(a: mut Size) -> void {
     # Implemented by the compiler
 }
@@ -320,6 +324,10 @@
 
 ;; Compares {a} to {b}.
 *def cmp(a: Int, b: Int) -> Int {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Byte, b: Char) -> Int {
     # Implemented by the compiler
 }
 
