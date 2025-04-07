@@ -544,6 +544,8 @@ def parse_expression(
             arg1 = parse_num_const(token, tk_coords, itoken)
         elif token == '"':
             arg1 = parse_str_literal("", tk_coords[0], itoken)
+        elif token == '`':
+            arg1 = parse_char_literal(token, tk_coords, itoken)
         elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:
             if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*', token):
                 raise ParsingError(f"Invalid prefix Name", itoken)
@@ -1061,6 +1063,17 @@ def parse_str_literal(prefix, prefix_start, itoken):
     res.coords = (prefix_start, part_end+1)
     res.full_str = itoken.src.code[prefix_start+len(prefix)+1:part_end]
     return res
+
+def parse_char_literal(token, tk_coords, itoken):
+    start = tk_coords[1]
+    while itoken.peak() != '`':
+        itoken.check("\\")
+        itoken.consume()
+    end = itoken.peak_coords()[0]
+    assert itoken.check("`")
+
+    lit = itoken.src.code[start:end]
+    return Const(lit, lit, type="Char", src=itoken.src, coords=tk_coords)
 
 def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False, accept_inject=False):
     positional, named = [], {}

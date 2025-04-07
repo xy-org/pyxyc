@@ -2536,6 +2536,19 @@ def test_ambiguous_tags(code, err_msg):
             ]),
         ]
     ],
+    [
+        """def main() {
+            char1 := `a`;
+            char2 := `ж`;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.VarDecl("char1", type=None, value=ast.Const("a", type="Char")),
+                ast.VarDecl("char2", type=None, value=ast.Const("ж", type="Char")),
+            ]),
+        ]
+    ],
 ])
 def test_parse_string_literals(code, exp_ast):
     act_ast = parse_code(code)

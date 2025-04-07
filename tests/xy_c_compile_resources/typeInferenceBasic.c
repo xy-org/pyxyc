@@ -15,6 +15,7 @@ void typeInferenceBasic_func(void) {
     const float l_c = 5.5f;
     const float l_d = 3.14f;
     const float l_e = .333f;
+    const int32_t l_h = 'h';
     const double l_w = 2.1718;
     const double l_x = 0;
     const double l_y = .0;

@@ -1693,7 +1693,7 @@ def compile_builtins(builder, module_name, asts, module_path):
             ctype_map = {
                 "Byte": "int8_t", "Ubyte": "uint8_t",
                 "Short": "int16_t", "Ushort": "uint16_t",
-                "Int": "int32_t", "Uint": "uint32_t",
+                "Int": "int32_t", "Uint": "uint32_t", "Char": "int32_t",
                 "Long": "int64_t", "Ulong": "uint64_t",
                 "Size": "size_t",
                 "Float": "float", "Double": "double",
@@ -1984,9 +1984,25 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
 
 def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
     if isinstance(expr, xy.Const):
+        value = expr.value_str
+        if expr.type == "Char":
+            # chars need escaping and conversion to unicode
+            value = value.replace("\\`", "`")
+            expected_len = 1 if not value.startswith('\\') else 2
+            if len(value) != expected_len:
+                raise CompilationError("Invalid char literal", expr)
+            if not value.startswith('\\'):
+                codepoint = ord(value)
+                if codepoint > 127:
+                    value = format(codepoint, "#06x")
+                else:
+                    value = f"'{value}'"
+            else:
+                value = f"'{value}'"
+
         return ExprObj(
             xy_node=expr,
-            c_node=c.Const(expr.value_str),
+            c_node=c.Const(value),
             inferred_type=ctx.get_compiled_type(xy.Id(
                 expr.type, src=expr.src, coords=expr.coords
             ))
