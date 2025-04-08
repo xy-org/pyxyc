@@ -173,6 +173,13 @@ def stringify_body(body, frags, ident=1):
             frags.extend((" " * ident * 4, "}\n"))
         elif isinstance(stmt, Empty):
             pass
+        elif isinstance(stmt, Label):
+            frags.extend((" " * (ident-1) * 4, stmt.name, ":\n"))
+        elif isinstance(stmt, Goto):
+            frags.append(" " * ident * 4)
+            frags.append("goto ")
+            stringify_expr(stmt.label, frags)
+            frags.append(";\n")
         else:
             frags.append(" " * (ident*4))
             stringify_expr(stmt, frags)

@@ -54,6 +54,10 @@ class Expr:
     op: str = ""
 
 @dataclass
+class Label:
+    name: str = ""
+
+@dataclass
 class Empty:
     pass
 
@@ -66,6 +70,10 @@ class UnaryExpr:
 @dataclass
 class Id:
     name: str
+
+@dataclass
+class Goto:
+    label: any = None
 
 @dataclass
 class Const:

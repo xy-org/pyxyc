@@ -30,6 +30,7 @@ void while2_test(int32_t* p_x, int32_t* p_y) {
     while (tmp_6_shortcircuit) {
         (*p_x)--;
         (*p_y)++;
+    L_0_CONTINUE_:
         if (!(*p_x >= *p_y)) {
             abort();
         }

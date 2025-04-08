@@ -319,10 +319,16 @@ class ArgList:
 class NamespaceType:
     Loop = 1
 
+@dataclass
+class NamespaceData:
+    type: NamespaceType = None
+    continue_label_name: str = None
+    loop_name: str = None
+
 class IdTable(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.type = None
+        self.data = NamespaceData()
 
     def merge(self, other: 'IdTable', ctx: 'CompilerContext', other_module_name: str):
         for key, value in other.items():
@@ -715,6 +721,8 @@ class CompilerContext:
     func_compilation_stack : dict = field(default_factory=dict)
     eval_calltime_exprs = True
 
+    next_label_idx = 0
+
     fsig2obj: dict[str, CompiledObj] = field(default_factory=dict)
 
     caller_contexts: list['CompilerContext'] = field(default_factory=list)
@@ -731,8 +739,9 @@ class CompilerContext:
     def push_ns(self, ns_type=None):
         table = IdTable()
         if ns_type is not None:
-            table.type = ns_type
+            table.data.type = ns_type
         self.data_namespaces.append(table)
+        return table
 
     @property
     def ns(self):
@@ -1052,10 +1061,16 @@ class CompilerContext:
     def gen_tmp_name(self, name_hint="") -> str:
         return self.tmp_names.gen_tmp_name(name_hint=name_hint)
     
+    def gen_tmp_label_name(self, name_hint="") -> str:
+        res = f"L_{self.next_label_idx}_CONTINUE_{name_hint}"
+        self.next_label_idx += 1
+        return res
+    
     def enter_block(self):
         self.tmp_names.enter_block()
 
     def enter_func(self):
+        self.next_label_idx = 0
         self.tmp_names.enter_func()
 
     def exit_block(self):
@@ -4325,9 +4340,9 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         inferred_type=inferred_type
     )
 
-def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
+def compile_while(xywhile: xy.WhileExpr, cast, cfunc, ctx: CompilerContext):
     cwhile = c.While()
-    ctx.push_ns(NamespaceType.Loop)
+    loop_data = ctx.push_ns(NamespaceType.Loop).data
 
     complex_cond = len(cfunc.body)
     cond_obj = compile_expr(xywhile.cond, cast, cfunc, ctx)
@@ -4362,6 +4377,7 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     if inferred_type is None:
         inferred_type = ctx.void_obj
 
+    name_hint = None
     if inferred_type is not ctx.void_obj and res_c is None:
         name_hint = None
         if isinstance(xywhile.block, xy.Block):
@@ -4373,6 +4389,9 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
         cfunc.body.append(tmp_obj.c_node)
         res_c = c.Id(tmp_obj.c_node.name)
 
+    # generate label before the body
+    if complex_cond:
+        loop_data.continue_label_name = ctx.gen_tmp_label_name(name_hint or "")
 
     # compile body
     if update_expr_obj is None:
@@ -4384,6 +4403,7 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     if complex_cond:
         # in theory we can simply copy paste the already generate code
         # but that looks too hacky
+        cwhile.body.append(c.Label(loop_data.continue_label_name))
         cond_obj = compile_expr(xywhile.cond, cast, cwhile, ctx)
         cwhile.body.append(c.Expr(cwhile.cond, cond_obj.c_node, op="="))
 
@@ -4673,7 +4693,7 @@ def compile_break(xybreak, cast, cfunc, ctx):
 
     for ns in reversed(ctx.data_namespaces):
         call_dtors(ns, cast, cfunc, ctx)
-        if ns.type is NamespaceType.Loop:
+        if ns.data.type is NamespaceType.Loop:
             break
 
     return ExprObj(
@@ -4686,14 +4706,24 @@ def compile_continue(xycont, cast, cfunc, ctx):
     if xycont.loop_name is not None:
         raise CompilationError("Continuing the outer loop is NYI", xycont)
 
+    df = None
     for ns in reversed(ctx.data_namespaces):
         call_dtors(ns, cast, cfunc, ctx)
-        if ns.type is NamespaceType.Loop:
+        if ns.data.type is NamespaceType.Loop:
+            df = ns
             break
+
+    if df is None:
+        raise CompilationError("Continue outside of a loop is not permited", xycont)
+    
+    if df.data.continue_label_name is not None:
+        c_res = c.Goto(c.Id(df.data.continue_label_name))
+    else:
+        c_res = c.Continue()
 
     return ExprObj(
         xy_node=xycont,
-        c_node=c.Continue(),
+        c_node=c_res,
         inferred_type=ctx.void_obj,
     )
 
