@@ -4329,7 +4329,9 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
     cwhile = c.While()
     ctx.push_ns(NamespaceType.Loop)
 
+    complex_cond = len(cfunc.body)
     cond_obj = compile_expr(xywhile.cond, cast, cfunc, ctx)
+    complex_cond = len(cfunc.body) != complex_cond and is_tmp_expr(cond_obj)
     cwhile.cond = cond_obj.c_node
 
     # determine return type if any
@@ -4377,6 +4379,13 @@ def compile_while(xywhile, cast, cfunc, ctx: CompilerContext):
         compile_body(xywhile.block.body, cast, cwhile, ctx)
     else:
         cwhile.body.append(update_expr_obj.c_node)
+
+    # reeval condition again if necessary
+    if complex_cond:
+        # in theory we can simply copy paste the already generate code
+        # but that looks too hacky
+        cond_obj = compile_expr(xywhile.cond, cast, cwhile, ctx)
+        cwhile.body.append(c.Expr(cwhile.cond, cond_obj.c_node, op="="))
 
     cfunc.body.append(cwhile)
     ctx.pop_ns()
