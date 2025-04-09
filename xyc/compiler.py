@@ -256,10 +256,6 @@ class IdxObj(ExprObj):
     container: CompiledObj = None
     idx: CompiledObj = None
 
-@dataclass
-class FCallObj(ExprObj):
-    func_obj: FuncObj | None = None
-
 @dataclass()
 class ExtSymbolObj(CompiledObj):
     @property
@@ -3888,11 +3884,10 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         raw_fcall_obj = copy(macro_expr_obj)
         raw_fcall_obj.xy_node = expr
     else:
-        raw_fcall_obj = FCallObj(
+        raw_fcall_obj = ExprObj(
             c_node=res,
             xy_node=expr,
             inferred_type=rtype_obj,
-            func_obj=func_obj,
         )
 
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:
@@ -4686,10 +4681,6 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
 def is_iter_ctor_call(expr_obj: ExprObj):
     if isinstance(expr_obj, FuncObj):
         return "xyIter" in expr_obj.tags
-    if isinstance(expr_obj, FCallObj):
-        return "xyIter" in expr_obj.func_obj.tags
-    if isinstance(expr_obj, IdxObj):
-        return is_iter_ctor_call(expr_obj.idx)
     return False
 
 def compile_break(xybreak, cast, cfunc, ctx):
