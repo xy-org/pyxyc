@@ -1,0 +1,34 @@
+import libxy.string;
+import libxy.slice;
+import libxy.stdio;
+
+def test(cond: Bool) {
+   if (cond) {
+        print("Match\n");
+    } else {
+        print("No Match\n");
+    } 
+}
+
+def funcReturningIdx(s: Str) -> s[ SizeInterval ] {
+    print("In funcReturningIdx\n");
+    res := 0z:(s'len-4);
+    return res;
+}
+
+def get(s: Str, int: SizeInterval) -> Str~MemExt
+>> int.start < s.len
+>> (int.end - int.start) <= s.len
+{
+    return Str{s.addr + int.start, int.end - int.start};
+}
+
+def returnString() -> Str {
+    print("In returnString\n");
+    return f"stringPartial";
+}
+
+def main~EntryPoint() {
+    test(funcReturningIdx("stringFull") == "string");
+    test(funcReturningIdx(returnString()) == "string");
+}
