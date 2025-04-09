@@ -16,7 +16,8 @@ void moveOperators2_set(moveOperators2_IntList* p_arr, int32_t p_i, int32_t p_va
 }
 
 void moveOperators2_test(moveOperators2_IntList* p_a, moveOperators2_IntList* p_b, int32_t p_i, int32_t p_j) {
-    int32_t tmp_0_ref = *moveOperators2_get(*p_b, p_j);
+    int32_t* tmp_0_arg = moveOperators2_get(*p_b, p_j);
+    int32_t tmp_1_ref = *tmp_0_arg;
     moveOperators2_set(p_b, p_j, 0);
-    moveOperators2_set(p_a, p_i, tmp_0_ref);
+    moveOperators2_set(p_a, p_i, tmp_1_ref);
 }

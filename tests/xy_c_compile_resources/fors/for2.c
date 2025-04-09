@@ -21,9 +21,10 @@ int32_t for2_mulFibs(int32_t p_lim) {
     int32_t l_res = 1;
     {
         int32_t tmp_0_iter = 0;
-        for2_Fib tmp_1_iter = for2_fibonacci();
-        for (; tmp_0_iter < p_lim && true; ++tmp_0_iter, for2_next(&tmp_1_iter)) {
-            l_res *= tmp_1_iter.m_a;
+        for2_Fib tmp_1_arg = for2_fibonacci();
+        for2_Fib tmp_2_iter = tmp_1_arg;
+        for (; tmp_0_iter < p_lim && true; ++tmp_0_iter, for2_next(&tmp_2_iter)) {
+            l_res *= tmp_2_iter.m_a;
         }
     }
     return l_res;

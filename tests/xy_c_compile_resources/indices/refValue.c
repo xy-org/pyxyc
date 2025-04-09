@@ -21,6 +21,8 @@ void refValue_test(void) {
     int32_t* const l_b = &l_a;
     int32_t* const l_c = &l_a;
     const refValue_Data l_d = {0};
-    const float l_e = refValue_get(l_d, refValue_func1(l_d, 10));
-    const int32_t l_f = refValue_func1(l_d, 10);
+    int32_t tmp_0_arg = refValue_func1(l_d, 10);
+    const float l_e = refValue_get(l_d, tmp_0_arg);
+    int32_t tmp_1_arg = refValue_func1(l_d, 10);
+    const int32_t l_f = tmp_1_arg;
 }

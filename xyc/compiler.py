@@ -245,6 +245,7 @@ class ExprObj(CompiledObj):
     compiled_obj: CompiledObj | None = None
     first_cnode_idx: int = -1
     num_cnodes: int = -1
+    is_iter_ctor: bool = False
 
 @dataclass
 class ConstObj(ExprObj):
@@ -2606,6 +2607,7 @@ def idx_setup(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
         idx_obj.inferred_type = idx_obj.idx.inferred_type.func_obj.rtype_obj
     else:
         idx_obj.container = maybe_move_to_temp(idx_obj.container, cast, cfunc, ctx)
+        idx_obj.idx = maybe_move_to_temp(idx_obj.idx, cast, cfunc, ctx)
 
         tmp_names = ctx.tmp_names
         ctx.tmp_names = TmpNames()
@@ -3890,7 +3892,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=res,
             xy_node=expr,
             inferred_type=rtype_obj,
-            func_obj=func_obj
+            func_obj=func_obj,
         )
 
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:
@@ -3907,6 +3909,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 container=base,
                 idx=raw_fcall_obj,
                 xy_node=expr,
+                is_iter_ctor=is_iter_ctor_call(func_obj)
             ),
             cast, cfunc, ctx
         )
@@ -4579,9 +4582,9 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                     )
                     ictor_obj = compile_fcall(gen, cast, cfunc, ctx)
                 else:
-                    collection_obj = compile_expr(collection_node, cast, cfunc, ctx, deref=False)
+                    collection_obj = compile_expr(collection_node, cast, for_outer_block if for_outer_block else cfunc, ctx, deref=False)
                     iter_arg_objs = []
-                    if is_iter_ctor_call(collection_obj):
+                    if collection_obj.is_iter_ctor:
                         ictor_obj = collection_obj
                     else:
                         collection_obj = maybe_move_to_temp(collection_obj, cast, cfunc, ctx)
@@ -4681,6 +4684,8 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
     )
 
 def is_iter_ctor_call(expr_obj: ExprObj):
+    if isinstance(expr_obj, FuncObj):
+        return "xyIter" in expr_obj.tags
     if isinstance(expr_obj, FCallObj):
         return "xyIter" in expr_obj.func_obj.tags
     if isinstance(expr_obj, IdxObj):

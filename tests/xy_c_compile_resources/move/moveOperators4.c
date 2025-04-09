@@ -20,5 +20,6 @@ int32_t moveOperators4_func(int32_t p_num) {
 }
 
 void moveOperators4_test(moveOperators4_IntList* p_a, moveOperators4_IntList* p_b, int32_t p_i, int32_t p_j) {
-    moveOperators4_set(p_a, p_i, moveOperators4_func(*moveOperators4_get(*p_b, p_j)));
+    int32_t* tmp_0_arg = moveOperators4_get(*p_b, p_j);
+    moveOperators4_set(p_a, p_i, moveOperators4_func(*tmp_0_arg));
 }

@@ -1,0 +1,36 @@
+def cond1(a: Int, b: Int) -> Bool
+>> a >= b
+{
+    return true;
+}
+
+def cond2(a: Int, b: Int) -> Bool
+>> a < b
+{
+    return b < 10;
+}
+
+struct TypeWithDtor{
+    id: Int;
+}
+
+def dtor(resource: TypeWithDtor) {
+    # ...
+}
+
+def test(x: mut Int, y: mut Int) {
+    do {
+        a := TypeWithDtor{-1};
+        x--;
+        while inner(cond2(y, x)) {
+            y++;
+            if (y > 0) {
+                continue outer;
+            }
+            elif (y < -500) {
+                break inner;
+            }
+        }
+        y--;
+    } while outer(cond1(x, y));
+}

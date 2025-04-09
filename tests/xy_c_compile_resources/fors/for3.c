@@ -27,56 +27,63 @@ void for3_set(for3_Array* p_arr, size_t p_idx, float p_elem) {
 }
 
 float for3_sum(for3_Array p_arr) {
+    size_t tmp_0_arg = for3_iter();
     float l_res = 0;
-    for (size_t tmp_0_iter = for3_iter(); tmp_0_iter < p_arr.m_len; for3_next(&tmp_0_iter)) {
-        if (!(tmp_0_iter < p_arr.m_len)) {
+    for (size_t tmp_1_iter = tmp_0_arg; tmp_1_iter < p_arr.m_len; for3_next(&tmp_1_iter)) {
+        if (!(tmp_1_iter < p_arr.m_len)) {
             abort();
         }
-        l_res += *for3_get(&p_arr, tmp_0_iter);
+        float* tmp_2_arg = for3_get(&p_arr, tmp_1_iter);
+        l_res += *tmp_2_arg;
     }
     return l_res;
 }
 
 float for3_mix(for3_Array p_arr1, for3_Array p_arr2) {
+    size_t tmp_0_arg = for3_iter();
+    size_t tmp_2_arg = for3_iter();
     float l_res = 0;
     {
         uint32_t i = 0;
-        size_t tmp_0_iter = for3_iter();
-        size_t tmp_1_iter = for3_iter();
-        for (; tmp_0_iter < p_arr1.m_len && tmp_1_iter < p_arr2.m_len; ++i, for3_next(&tmp_0_iter), for3_next(&tmp_1_iter)) {
-            if (!(tmp_0_iter < p_arr1.m_len)) {
+        size_t tmp_1_iter = tmp_0_arg;
+        size_t tmp_3_iter = tmp_2_arg;
+        for (; tmp_1_iter < p_arr1.m_len && tmp_3_iter < p_arr2.m_len; ++i, for3_next(&tmp_1_iter), for3_next(&tmp_3_iter)) {
+            if (!(tmp_1_iter < p_arr1.m_len)) {
                 abort();
             }
-            float* tmp_2_ref = for3_get(&p_arr1, tmp_0_iter);
-            if (!(tmp_1_iter < p_arr2.m_len)) {
+            float* tmp_4_arg = for3_get(&p_arr1, tmp_1_iter);
+            if (!(tmp_3_iter < p_arr2.m_len)) {
                 abort();
             }
-            float* tmp_3_ref = for3_get(&p_arr2, tmp_1_iter);
-            l_res += i * *tmp_2_ref * *tmp_3_ref;
+            float* tmp_5_arg = for3_get(&p_arr2, tmp_3_iter);
+            l_res += i * *tmp_4_arg * *tmp_5_arg;
         }
     }
     return l_res;
 }
 
 void for3_double(for3_Array* p_arr1) {
-    for (size_t tmp_0_iter = for3_iter(); tmp_0_iter < p_arr1->m_len; for3_next(&tmp_0_iter)) {
-        if (!(tmp_0_iter < p_arr1->m_len)) {
+    size_t tmp_0_arg = for3_iter();
+    for (size_t tmp_1_iter = tmp_0_arg; tmp_1_iter < p_arr1->m_len; for3_next(&tmp_1_iter)) {
+        if (!(tmp_1_iter < p_arr1->m_len)) {
             abort();
         }
-        if (*for3_get(p_arr1, tmp_0_iter) > 0) {
-            if (!(tmp_0_iter < p_arr1->m_len)) {
+        float* tmp_2_arg = for3_get(p_arr1, tmp_1_iter);
+        if (*tmp_2_arg > 0) {
+            if (!(tmp_1_iter < p_arr1->m_len)) {
                 abort();
             }
-            float* tmp_2_ref = for3_get(p_arr1, tmp_0_iter);
-            for3_set(p_arr1, tmp_0_iter, 2.0f * *tmp_2_ref);
-            if (!(tmp_0_iter < p_arr1->m_len)) {
+            float* tmp_4_arg = for3_get(p_arr1, tmp_1_iter);
+            for3_set(p_arr1, tmp_1_iter, 2.0f * *tmp_4_arg);
+            if (!(tmp_1_iter < p_arr1->m_len)) {
                 abort();
             }
-            if (!(tmp_0_iter < p_arr1->m_len)) {
+            float* tmp_5_arg = for3_get(p_arr1, tmp_1_iter);
+            if (!(tmp_1_iter < p_arr1->m_len)) {
                 abort();
             }
-            float* tmp_3_ref = for3_get(p_arr1, tmp_0_iter);
-            for3_set(p_arr1, tmp_0_iter, *tmp_3_ref + *for3_get(p_arr1, tmp_0_iter));
+            float* tmp_6_arg = for3_get(p_arr1, tmp_1_iter);
+            for3_set(p_arr1, tmp_1_iter, *tmp_6_arg + *tmp_5_arg);
         }
     }
 }
@@ -88,16 +95,17 @@ void for3_changeSomehow(float* p_f) {
 }
 
 void for3_iterAndChange(for3_Array* p_arr1) {
-    for (size_t tmp_0_iter = for3_iter(); tmp_0_iter < p_arr1->m_len; for3_next(&tmp_0_iter)) {
-        if (!(tmp_0_iter < p_arr1->m_len)) {
+    size_t tmp_0_arg = for3_iter();
+    for (size_t tmp_1_iter = tmp_0_arg; tmp_1_iter < p_arr1->m_len; for3_next(&tmp_1_iter)) {
+        if (!(tmp_1_iter < p_arr1->m_len)) {
             abort();
         }
-        float* tmp_1_ref = for3_get(p_arr1, tmp_0_iter);
-        for3_doSomething(*tmp_1_ref);
-        if (!(tmp_0_iter < p_arr1->m_len)) {
+        float* tmp_2_arg = for3_get(p_arr1, tmp_1_iter);
+        for3_doSomething(*tmp_2_arg);
+        if (!(tmp_1_iter < p_arr1->m_len)) {
             abort();
         }
-        float* tmp_2_ref = for3_get(p_arr1, tmp_0_iter);
-        for3_changeSomehow(tmp_2_ref);
+        float* tmp_3_arg = for3_get(p_arr1, tmp_1_iter);
+        for3_changeSomehow(tmp_3_arg);
     }
 }

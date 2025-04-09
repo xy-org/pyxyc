@@ -19,12 +19,12 @@ int32_t bitwiseOps_set__Bits64__Int__Bool(uint64_t* p_b, int32_t p_i, bool p_val
 
 uint64_t bitwiseOps_testBitGetSet(int32_t p_i) {
     uint64_t l_b = 0;
-    bitwiseOps_set__Bits64__Int__Bool(&l_b, 0, true);
-    bool tmp_0_arg = bitwiseOps_get__Bits64__Int(l_b, p_i);
-    bitwiseOps_set__Bits64__Int__Bool(&l_b, 1, tmp_0_arg);
-    bool tmp_1_arg = bitwiseOps_get__Bits64__Int(l_b, 0);
-    bool tmp_3_arg = tmp_1_arg || bitwiseOps_get__Bits64__Int(l_b, 12);
-    bitwiseOps_set__Bits64__Int__Bool(&l_b, 10, tmp_3_arg);
+    int32_t tmp_0_arg = bitwiseOps_set__Bits64__Int__Bool(&l_b, 0, true);
+    bool tmp_1_arg = bitwiseOps_get__Bits64__Int(l_b, p_i);
+    int32_t tmp_2_arg = bitwiseOps_set__Bits64__Int__Bool(&l_b, 1, tmp_1_arg);
+    bool tmp_3_arg = bitwiseOps_get__Bits64__Int(l_b, 0);
+    bool tmp_5_arg = tmp_3_arg || bitwiseOps_get__Bits64__Int(l_b, 12);
+    int32_t tmp_6_arg = bitwiseOps_set__Bits64__Int__Bool(&l_b, 10, tmp_5_arg);
     return l_b;
 }
 
@@ -37,8 +37,9 @@ uint64_t bitwiseOps_get__Long__Bits(int64_t p_a) {
 }
 
 void bitwiseOps_set__Long__Bits__Int__Bool(int64_t* p_num, int32_t p_i, bool p_val) {
+    bitwiseOps_Bits tmp_0_arg = bitwiseOps_bits(*p_num);
     uint64_t l_bits = bitwiseOps_get__Long__Bits(*p_num);
-    bitwiseOps_set__Bits64__Int__Bool(&l_bits, p_i, p_val);
+    int32_t tmp_1_arg = bitwiseOps_set__Bits64__Int__Bool(&l_bits, p_i, p_val);
     *p_num = (int64_t)l_bits;
 }
 
@@ -51,24 +52,37 @@ void bitwiseOps_testMixing(void) {
     bitwiseOps_set__Long__Bits__Int__Bool(&l_b, 1, true);
     bitwiseOps_Bits tmp_2_arg = bitwiseOps_bits(l_b);
     bitwiseOps_set__Long__Bits__Int__Bool(&l_b, 2, true);
-    uint64_t tmp_3_arg = bitwiseOps_get__Long__Bits(l_b);
-    bitwiseOps_Bits tmp_4_arg = bitwiseOps_bits(l_a);
-    bool tmp_5_arg = bitwiseOps_get__Bits64__Int(tmp_3_arg, 10);
-    bitwiseOps_set__Long__Bits__Int__Bool(&l_a, 10, tmp_5_arg);
-    uint64_t tmp_6_arg = bitwiseOps_get__Long__Bits(l_a);
-    bool tmp_7_arg = bitwiseOps_get__Bits64__Int(tmp_6_arg, 11);
+    bitwiseOps_Bits tmp_3_arg = bitwiseOps_bits(l_a);
+    bitwiseOps_Bits tmp_4_arg = bitwiseOps_bits(l_b);
+    uint64_t tmp_5_arg = bitwiseOps_get__Long__Bits(l_b);
+    bool tmp_6_arg = bitwiseOps_get__Bits64__Int(tmp_5_arg, 10);
+    bitwiseOps_set__Long__Bits__Int__Bool(&l_a, 10, tmp_6_arg);
+    bitwiseOps_Bits tmp_7_arg = bitwiseOps_bits(l_a);
     bitwiseOps_Bits tmp_8_arg = bitwiseOps_bits(l_a);
-    bitwiseOps_set__Long__Bits__Int__Bool(&l_a, 11, !tmp_7_arg);
     uint64_t tmp_9_arg = bitwiseOps_get__Long__Bits(l_a);
-    const uint64_t l_c = tmp_9_arg | bitwiseOps_get__Long__Bits(l_b);
-    uint64_t tmp_10_arg = bitwiseOps_get__Long__Bits(l_a);
-    uint64_t tmp_11_arg = tmp_10_arg & bitwiseOps_get__Long__Bits(l_b);
-    const int64_t l_d = (int64_t)tmp_11_arg;
+    bool tmp_10_arg = bitwiseOps_get__Bits64__Int(tmp_9_arg, 11);
+    bitwiseOps_set__Long__Bits__Int__Bool(&l_a, 11, !tmp_10_arg);
+    bitwiseOps_Bits tmp_11_arg = bitwiseOps_bits(l_a);
     uint64_t tmp_12_arg = bitwiseOps_get__Long__Bits(l_a);
-    uint64_t tmp_13_arg = tmp_12_arg ^ bitwiseOps_get__Long__Bits(l_b);
-    const int64_t l_e = (int64_t)tmp_13_arg;
-    uint64_t tmp_14_arg = bitwiseOps_get__Long__Bits(l_a);
-    uint64_t tmp_15_arg = tmp_14_arg ^ bitwiseOps_get__Long__Bits(l_b);
-    const int64_t l_f = (int64_t)tmp_15_arg;
-    const int64_t l_g = (int64_t)(bitwiseOps_get__Long__Bits(l_d) >> 5);
+    bitwiseOps_Bits tmp_13_arg = bitwiseOps_bits(l_b);
+    uint64_t tmp_14_arg = bitwiseOps_get__Long__Bits(l_b);
+    const uint64_t l_c = tmp_12_arg | tmp_14_arg;
+    bitwiseOps_Bits tmp_15_arg = bitwiseOps_bits(l_a);
+    uint64_t tmp_16_arg = bitwiseOps_get__Long__Bits(l_a);
+    bitwiseOps_Bits tmp_17_arg = bitwiseOps_bits(l_b);
+    uint64_t tmp_18_arg = bitwiseOps_get__Long__Bits(l_b);
+    const int64_t l_d = (int64_t)(tmp_16_arg & tmp_18_arg);
+    bitwiseOps_Bits tmp_19_arg = bitwiseOps_bits(l_a);
+    uint64_t tmp_20_arg = bitwiseOps_get__Long__Bits(l_a);
+    bitwiseOps_Bits tmp_21_arg = bitwiseOps_bits(l_b);
+    uint64_t tmp_22_arg = bitwiseOps_get__Long__Bits(l_b);
+    const int64_t l_e = (int64_t)(tmp_20_arg ^ tmp_22_arg);
+    bitwiseOps_Bits tmp_23_arg = bitwiseOps_bits(l_a);
+    uint64_t tmp_24_arg = bitwiseOps_get__Long__Bits(l_a);
+    bitwiseOps_Bits tmp_25_arg = bitwiseOps_bits(l_b);
+    uint64_t tmp_26_arg = bitwiseOps_get__Long__Bits(l_b);
+    const int64_t l_f = (int64_t)(tmp_24_arg ^ tmp_26_arg);
+    bitwiseOps_Bits tmp_27_arg = bitwiseOps_bits(l_d);
+    uint64_t tmp_28_arg = bitwiseOps_get__Long__Bits(l_d);
+    const int64_t l_g = (int64_t)(tmp_28_arg >> 5);
 }
