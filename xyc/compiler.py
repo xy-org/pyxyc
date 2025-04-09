@@ -4341,10 +4341,12 @@ def compile_if(ifexpr, cast, cfunc, ctx):
 def compile_while(xywhile: xy.WhileExpr, cast, cfunc, ctx: CompilerContext):
     cwhile = c.While()
     loop_data = ctx.push_ns(NamespaceType.Loop).data
+    if xywhile.name:
+        loop_data.loop_name = ctx.eval_to_id(xywhile.name)
 
     complex_cond = len(cfunc.body)
     cond_obj = compile_expr(xywhile.cond, cast, cfunc, ctx)
-    complex_cond = len(cfunc.body) != complex_cond and is_tmp_expr(cond_obj)
+    complex_cond = len(cfunc.body) != complex_cond
     cwhile.cond = cond_obj.c_node
 
     # determine return type if any
@@ -4377,7 +4379,6 @@ def compile_while(xywhile: xy.WhileExpr, cast, cfunc, ctx: CompilerContext):
 
     name_hint = None
     if inferred_type is not ctx.void_obj and res_c is None:
-        name_hint = None
         if isinstance(xywhile.block, xy.Block):
             name_hint = xywhile.block.returns[0].name
         if name_hint is None:
@@ -4402,8 +4403,9 @@ def compile_while(xywhile: xy.WhileExpr, cast, cfunc, ctx: CompilerContext):
         # in theory we can simply copy paste the already generate code
         # but that looks too hacky
         cwhile.body.append(c.Label(loop_data.continue_label_name))
-        cond_obj = compile_expr(xywhile.cond, cast, cwhile, ctx)
-        cwhile.body.append(c.Expr(cwhile.cond, cond_obj.c_node, op="="))
+        reeval_cond_obj = compile_expr(xywhile.cond, cast, cwhile, ctx)
+        if is_tmp_expr(cond_obj):
+            cwhile.body.append(c.Expr(cwhile.cond, reeval_cond_obj.c_node, op="="))
 
     cfunc.body.append(cwhile)
     ctx.pop_ns()
@@ -4699,13 +4701,15 @@ def compile_break(xybreak, cast, cfunc, ctx):
     )
 
 def compile_continue(xycont, cast, cfunc, ctx):
-    if xycont.loop_name is not None:
-        raise CompilationError("Continuing the outer loop is NYI", xycont)
+    if xycont.loop_name:
+        target_loop_name = ctx.eval_to_id(xycont.loop_name)
+    else:
+        target_loop_name = None
 
     df = None
     for ns in reversed(ctx.data_namespaces):
         call_dtors(ns, cast, cfunc, ctx)
-        if ns.data.type is NamespaceType.Loop:
+        if ns.data.type is NamespaceType.Loop and target_loop_name == ns.data.loop_name:
             df = ns
             break
 

@@ -40,6 +40,8 @@ floats
     ("dtors/rvalueDtor", "In func()\nDestroying 20\nDestroying 10\nDestroying 1\nDestroying 0\n", False),
 
     ("tags/assigningTag", "", False),
+
+    ("indices/exprForBaseOffset", "In funcReturningIdx\nMatch\nIn returnString\nIn funcReturningIdx\nNo Match\n", True),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     test_base = resource_dir / "end_to_end" / testname

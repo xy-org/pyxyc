@@ -1,0 +1,11 @@
+def cond(a: Int, b: Int) -> Bool
+>> a >= b
+{
+    return a > 0;
+}
+
+def test(x: mut Int, y: mut Int) {
+    while outer(cond(x, y)) {
+        x--;
+    }
+}
