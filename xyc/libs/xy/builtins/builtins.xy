@@ -3,7 +3,7 @@
 ;; A type that means no-type
 *struct void {
     # Implemented by the compiler
-    # Should this even be a typeany
+    # Should this even be a struct
     # It is a type in C so it makes sense to be one in xy.
 }
 
@@ -565,21 +565,39 @@ struct FuncSelection {
     # Opaque to the programmer
 }
 
-;; Conversion
+;; Conversion integer type -> bits
 
-*def to(a: Int, :Bits32) -> Bits32 {
+*def to(a: (Ubyte, Byte), :Bits8) -> Bits8 {
     # implemented by the compiler
 }
 
-*def to(a: Uint, :Bits32) -> Bits32 {
+*def to(a: (Ushort, Short), :Bits16) -> Bits16 {
     # implemented by the compiler
 }
 
-*def to(a: Long, :Bits64) -> Bits64 {
+*def to(a: (Uint, Int), :Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
-*def to(a: Ulong, :Bits64) -> Bits64 {
+*def to(a: (Ulong, Long), :Bits64) -> Bits64 {
+    # implemented by the compiler
+}
+
+;; Conversion bits -> integer type
+
+*def to(a: Bits8, :Byte) -> Byte {
+    # implemented by the compiler
+}
+
+*def to(a: Bits8, :Ubyte) -> Ubyte {
+    # implemented by the compiler
+}
+
+*def to(a: Bits16, :Short) -> Short {
+    # implemented by the compiler
+}
+
+*def to(a: Bits16, :Ushort) -> Ushort {
     # implemented by the compiler
 }
 
@@ -600,40 +618,26 @@ struct FuncSelection {
 }
 
 ;; Bitwise and
-*def and(a: Bits32, b: Bits32) -> Bits32 {
-    # implemented by the compiler
-}
-
-*def and(a: Bits64, b: Bits64) -> Bits64 {
+*def and(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
     # implemented by the compiler
 }
 
 ;; Bitwise or
-*def or(a: Bits32, b: Bits32) -> Bits32 {
+*def or(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
     # implemented by the compiler
 }
 
-*def or(a: Bits64, b: Bits64) -> Bits64 {
-    # implemented by the compiler
-}
- 
 ;; Bitwise xor.
-*def sub(a: Bits32, b: Bits32) -> Bits32 {
+*def sub(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
     # implemented by the compiler
 }
 
-*def sub(a: Bits64, b: Bits64) -> Bits64 {
+;; Bitwise compare and not
+*def cmp(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
     # implemented by the compiler
 }
 
-;; Bitwise not
-*def cmp(a: Bits32, b: Bits32) -> Bits32 {
-    # implemented by the compiler
-}
-
-*def cmp(a: Bits64, b: Bits64) -> Bits64 {
-    # implemented by the compiler
-}
+;; Shifts left and right
 
 *def shiftl(a: Bits32, times: Int) -> Bits32 {
     # implemented by the compiler
