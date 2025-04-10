@@ -1128,11 +1128,11 @@ def compile_module(builder, module_name, asts, module_path):
         )
 
     ctx.compiling_header = True
-    compile_header(ctx, asts, res)
+    fobjs = compile_header(ctx, asts, res)
     ctx.compiling_header = False
     
-    for ast in asts:
-        compile_funcs(ctx, ast, res)
+    for fobj in fobjs:
+        compile_func(fobj, res, ctx)
     
     # maybe_add_main(ctx, res)
 
@@ -1200,13 +1200,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.FuncDef):
-                fobj = FuncObj(
-                    xy_node=node,
-                )
-                validate_name(node, ctx)
-                func_space = ctx.ensure_func_space(node.name)
-                func_space.append(fobj)
-                fobjs.append(fobj)
+                create_fobj(node, fobjs, ctx)
 
     for fobj in fobjs:
         compile_func_prototype(fobj, cast, ctx)
@@ -1228,11 +1222,31 @@ def compile_header(ctx: CompilerContext, asts, cast):
         for node in ast:
             if isinstance(node, xy.StructDef):
                 type_obj: TypeObj = ctx.data_ns[node.name]
-                fill_missing_dtors(type_obj, asts, cast, ctx)
+                fill_missing_dtors(type_obj, fobjs, asts, cast, ctx)
 
-    return cast
+    return fobjs
 
-def fill_missing_dtors(type_obj: TypeObj, asts, cast, ctx):
+def create_fobj(node: xy.FuncDef, fobjs, ctx):
+    for i, param in enumerate(node.params):
+        if isinstance(param.type, xy.Enumeration):
+            for item in param.type.items:
+                gen_fn = copy(node)
+                gen_fn.params = copy(node.params)
+                gen_param = copy(param)
+                gen_param.type = item
+                gen_fn.params[i] = gen_param
+                create_fobj(gen_fn, fobjs, ctx)
+            return
+    # No param type enumeration
+    fobj = FuncObj(
+        xy_node=node,
+    )
+    validate_name(node, ctx)
+    func_space = ctx.ensure_func_space(node.name)
+    func_space.append(fobj)
+    fobjs.append(fobj)
+
+def fill_missing_dtors(type_obj: TypeObj, all_fobjs, asts, cast, ctx):
     if type_obj.module_header is not None:
         return type_obj.needs_dtor
     if type_obj.has_explicit_dtor or type_obj.has_auto_dtor:
@@ -1241,7 +1255,7 @@ def fill_missing_dtors(type_obj: TypeObj, asts, cast, ctx):
         # maybe it doesn't need a dtor or maybe we don't realize it yet
         for f in type_obj.fields.values():
             if not f.is_pseudo:
-                f.needs_dtor = fill_missing_dtors(f.type_desc, asts, cast, ctx)
+                f.needs_dtor = fill_missing_dtors(f.type_desc, all_fobjs, asts, cast, ctx)
                 type_obj.needs_dtor = type_obj.needs_dtor or f.needs_dtor
     if type_obj.needs_dtor:
         type_obj.has_auto_dtor = True
@@ -1257,6 +1271,7 @@ def fill_missing_dtors(type_obj: TypeObj, asts, cast, ctx):
         func_space.append(fobj)
         compile_func_prototype(fobj, cast, ctx)
         asts[0].append(dtor_node)
+        all_fobjs.append(fobj)
         return True
     return False
 
@@ -1757,18 +1772,8 @@ def compile_ctti(builder, module_name, asts, module_path):
 
     return mh, cast
 
-def compile_funcs(ctx, ast, cast):
-    for node in ast:
-        if isinstance(node, xy.FuncDef):
-            compile_func(node, ctx, ast, cast)
-        elif isinstance(node, xy.Comment):
-            pass
-        elif not isinstance(node, (xy.StructDef, xy.Import, xy.VarDecl)):
-            raise CompilationError(f"{type(node).__name__} not allowed here", node)
-
-def compile_func(node, ctx, ast, cast):
-    fspace = ctx.eval_to_fspace(node.name)
-    fdesc: FuncObj = fspace.find(node, [], ctx)
+def compile_func(fdesc, cast, ctx):
+    node = fdesc.xy_node
     cfunc = fdesc.c_node
 
     ctx.push_ns()

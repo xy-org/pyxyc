@@ -1,0 +1,9 @@
+def func(a: (Int, Float, Byte), b: %a) -> %a {
+    return a + b;
+}
+
+def test() -> Long {
+    a := func(5, 10);
+    b := func(3.14, 9.8);
+    c := func(128b, -1b);
+}

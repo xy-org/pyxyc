@@ -76,15 +76,13 @@
     # Implemented by the compiler
 }
 
+;; Dereferencing a pointer
 *def get(ptr: Ptr) -> [ Ptr~[^ptr..to] ] {
     # Implemented by the compiler
 }
 
-*def get(ptr: Ptr, idx: Int) -> [ Ptr~[^ptr..to] ] {
-    # Implemented by the compiler
-}
-
-*def get(ptr: Ptr, idx: Size) -> [ Ptr~[^ptr..to] ] {
+;; Dereferencing a pointer at an index (offset)
+*def get(ptr: Ptr, idx: (Int, Size)) -> [ Ptr~[^ptr..to] ] {
     # Implemented by the compiler
 }
 
@@ -128,52 +126,118 @@
 
 # Arithmatic operations
 
-*def add(a: Int, b: Int) -> Int {
+## Byte
+
+*def add(a: Byte, b: Byte) -> Byte {
     # Implemented by the compiler
 }
 
-*def add(a: Int, b: Double) -> Double {
+*def add(
+    a: Byte, b: (Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double)
+) -> %b {
     # Implemented by the compiler
 }
 
-*def add(a: Int, b: Float) -> Float {
+## Ubyte
+
+*def add(a: Ubyte, b: (Byte, Ubyte)) -> Ubyte {
     # Implemented by the compiler
 }
 
-*def add(a: Double, b: Float) -> Double {
+*def add(
+    a: Ubyte,
+    b: (Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double)
+) -> %b {
     # Implemented by the compiler
 }
 
-*def add(a: Double, b: Double) -> Double {
+## Short
+
+*def add(a: Short, b: (Byte, Ubyte, Short)) -> Short {
     # Implemented by the compiler
 }
 
-*def add(a: Size, b: Size) -> Size {
+*def add(a: Short, b: (Ushort, Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
-*def add(a: Size, b: Int) -> Size {
+
+## Ushort
+
+*def add(a: Ushort, b: (Byte, Ubyte, Short, Ushort)) -> Ushort {
     # Implemented by the compiler
 }
 
-*def add(a: Long, b: Int) -> Long {
+*def add(a: Ushort, b: (Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
-*def add(a: Double, b: Int) -> Double {
+## Int
+
+*def add(a: Int, b: (Byte, Ubyte, Short, Ushort, Int)) -> Int {
     # Implemented by the compiler
 }
 
-*def add(a: Ptr, b: Int) -> Ptr {
+*def add(a: Int, b: (Uint, Long, Ulong, Size, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
-*def add(a: Ptr, b: Size) -> Ptr {
+## Uint
+
+*def add(a: Uint, b: (Byte, Ubyte, Short, Ushort, Int, Uint)) -> Uint {
     # Implemented by the compiler
 }
 
-*def add(a: Float, b: Float) -> Float {
+*def add(a: Uint, b: (Long, Ulong, Size, Double, Float)) -> %b {
     # Implemented by the compiler
+}
+
+## Long
+
+*def add(a: Long, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Long)) -> Long {
+    # Implemented by the compiler
+}
+
+*def add(a: Long, b: (Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+## Ulong
+
+*def add(a: Ulong, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong)) -> Ulong {
+    # Implemented by the compiler
+}
+
+*def add(a: Ulong, b: (Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+## Float
+
+*def add(a: Float, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float)) -> Float {
+    # Implemented by the compiler
+}
+
+*def add(a: Float, b: Double) -> %b {
+    # Implemented by the compiler
+}
+
+## Size
+
+*def add(a: Size, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Size {
+    # Implemented by the compiler
+}
+
+## Double
+
+*def add(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float, Double)) -> Double {
+    # Implemented by the compiler
+}
+
+## Ptr
+
+*def add(ptr: Ptr, num: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Ptr~[^ptr..to] {
+    # implemented by the compiler
 }
 
 ;; Subtraction

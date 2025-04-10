@@ -94,6 +94,10 @@ class Args(Node):
     is_introspective: bool = False
 
 @dataclass
+class Enumeration(Node):
+    items: list[Node] = field(default_factory=list)
+
+@dataclass
 class ScopeArgsInject(Node):
     pass  # Used only to store the coordinates of ...
 

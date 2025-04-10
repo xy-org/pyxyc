@@ -88,6 +88,7 @@ from xyc.compiler import CompilationError
     "logicCmp/cmpBits",
     "logicCmp/shortcircuit",
     "ctti/srcLocFuncs",
+    "funcs/paramTypeEnum",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)

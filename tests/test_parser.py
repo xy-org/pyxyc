@@ -688,6 +688,23 @@ def test_parse_implied_context_expr(code, exp_ast):
             ),
         ]
     ],
+    [
+        """
+        def func(num: (Int, Float, Byte)) {}
+        """,
+        [
+            ast.FuncDef(ast.Id("func"),
+                params=[ast.param(
+                    "num",
+                    type=ast.Enumeration([
+                        ast.Id("Int"), ast.Id("Float"), ast.Id("Byte")
+                    ]),
+                )],
+                returns=[],
+                body=[]
+            )
+        ]
+    ],
 ])
 def test_parse_advanced_funcs(code, exp_ast):
     act_ast = parse_code(code)

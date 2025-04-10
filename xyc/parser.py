@@ -449,8 +449,9 @@ def parse_expression(
             if len(bracketed_exprs) == 0:
                 raise ParsingError("No expression in brackets", itoken)
             elif len(bracketed_exprs) > 1:
-                raise ParsingError("',' is used only to separate arguments or params not as operator", itoken)
-            arg1 = bracketed_exprs[0]
+                arg1 = Enumeration(bracketed_exprs, src=itoken.src, coords=(bracketed_exprs[0].coords[0], bracketed_exprs[-1].coords[1]))
+            else:
+                arg1 = bracketed_exprs[0]
         else:
             # Func type
             coords = itoken.peak_coords()
