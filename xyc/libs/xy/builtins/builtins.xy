@@ -320,6 +320,10 @@
     # Implemented by the compiler
 }
 
+*def to(a: Char, :Byte) -> Byte {
+    # Implemented by the compiler
+}
+
 # Logical operations
 
 ;; Compares {a} to {b}.
@@ -328,6 +332,10 @@
 }
 
 *def cmp(a: Byte, b: Char) -> Int {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Byte, b: Byte) -> Byte {
     # Implemented by the compiler
 }
 
