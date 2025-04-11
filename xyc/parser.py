@@ -7,16 +7,17 @@ from xyc.ast import *
 class TokenIter:
     def __init__(self, tokens, token_pos, src):
         self.tokens = tokens
+        self.tokens.extend(("", ""))  # XXX, Yes, I know we are modifying the argument
         self.token_pos = token_pos
+        self.token_pos.extend([0, 0])
+        self.num_tokens = len(self.tokens) - 2
         self.i = 0
         self.src = src
 
     def has_more(self):
-        return self.i < len(self.tokens)
+        return self.i < self.num_tokens
     
     def peak(self):
-        if not self.has_more():
-            return ""
         return self.tokens[self.i]
     
     def peakn(self, n: int):

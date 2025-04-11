@@ -4978,7 +4978,13 @@ def find_type(texpr, cast, ctx, required=True):
     elif isinstance(texpr, xy.Id) and texpr.name == "Any":
         # Special case for ?
         return any_type_obj
-    if isinstance(texpr, xy.ArrayType):
+    elif isinstance(texpr, xy.Id):
+        validate_name(texpr, ctx)
+        res = ctx.eval(texpr, msg="Cannot find type")
+        if isinstance(res, ExtSymbolObj):
+            res = ext_symbol_to_type(res)
+        return res
+    elif isinstance(texpr, xy.ArrayType):
         base_type = find_type(texpr.base, cast, ctx)
         dims = []
         for d in texpr.dims:
@@ -5005,8 +5011,6 @@ def find_type(texpr, cast, ctx, required=True):
             )
         )
     else:
-        if isinstance(texpr, xy.Id):
-            validate_name(texpr, ctx)
         res = ctx.eval(texpr, msg="Cannot find type")
         if isinstance(res, ExtSymbolObj):
             res = ext_symbol_to_type(res)
