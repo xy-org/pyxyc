@@ -102,7 +102,7 @@ def main~EntryPoint() -> Int {
     }
 
     for (i in :, num in ints, point in points) {
-        res += (point.x - point.y) * num - i;
+        res += (point.x - point.y) * num - i'to(Int);
     };
 
     print(f"{=res}\n");

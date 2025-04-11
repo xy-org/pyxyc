@@ -126,6 +126,12 @@
 
 # Arithmatic operations
 
+## Bool
+
+*def cmp(a: Bool, c: Bool) -> Bool {
+    # Implemented by the compiler
+}
+
 ## Byte
 
 *def add(a: Byte, b: Byte) -> Byte {
@@ -133,6 +139,26 @@
 }
 
 *def add(
+    a: Byte, b: (Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double)
+) -> %b {
+    # Implemented by the compiler
+}
+
+*def sub(a: Byte, b: Byte) -> Byte {
+    # Implemented by the compiler
+}
+
+*def sub(
+    a: Byte, b: (Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double)
+) -> %b {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Byte, b: Byte) -> Byte {
+    # Implemented by the compiler
+}
+
+*def cmp(
     a: Byte, b: (Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double)
 ) -> %b {
     # Implemented by the compiler
@@ -151,6 +177,28 @@
     # Implemented by the compiler
 }
 
+*def sub(a: Ubyte, b: (Byte, Ubyte)) -> Ubyte {
+    # Implemented by the compiler
+}
+
+*def sub(
+    a: Ubyte,
+    b: (Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double)
+) -> %b {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Ubyte, b: (Byte, Ubyte)) -> Ubyte {
+    # Implemented by the compiler
+}
+
+*def cmp(
+    a: Ubyte,
+    b: (Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double)
+) -> %b {
+    # Implemented by the compiler
+}
+
 ## Short
 
 *def add(a: Short, b: (Byte, Ubyte, Short)) -> Short {
@@ -161,6 +209,21 @@
     # Implemented by the compiler
 }
 
+*def sub(a: Short, b: (Byte, Ubyte, Short)) -> Short {
+    # Implemented by the compiler
+}
+
+*def sub(a: Short, b: (Ushort, Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Short, b: (Byte, Ubyte, Short)) -> Short {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Short, b: (Ushort, Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
 
 ## Ushort
 
@@ -169,6 +232,22 @@
 }
 
 *def add(a: Ushort, b: (Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+*def sub(a: Ushort, b: (Byte, Ubyte, Short, Ushort)) -> Ushort {
+    # Implemented by the compiler
+}
+
+*def sub(a: Ushort, b: (Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Ushort, b: (Byte, Ubyte, Short, Ushort)) -> Ushort {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Ushort, b: (Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
@@ -182,6 +261,22 @@
     # Implemented by the compiler
 }
 
+*def sub(a: Int, b: (Byte, Ubyte, Short, Ushort, Int)) -> Int {
+    # Implemented by the compiler
+}
+
+*def sub(a: Int, b: (Uint, Long, Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Int, b: (Byte, Ubyte, Short, Ushort, Int)) -> Int {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Int, b: (Uint, Long, Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
 ## Uint
 
 *def add(a: Uint, b: (Byte, Ubyte, Short, Ushort, Int, Uint)) -> Uint {
@@ -189,6 +284,22 @@
 }
 
 *def add(a: Uint, b: (Long, Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+*def sub(a: Uint, b: (Byte, Ubyte, Short, Ushort, Int, Uint)) -> Uint {
+    # Implemented by the compiler
+}
+
+*def sub(a: Uint, b: (Long, Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Uint, b: (Byte, Ubyte, Short, Ushort, Int, Uint)) -> Uint {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Uint, b: (Long, Ulong, Size, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
@@ -202,6 +313,22 @@
     # Implemented by the compiler
 }
 
+*def sub(a: Long, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Long)) -> Long {
+    # Implemented by the compiler
+}
+
+*def sub(a: Long, b: (Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Long, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Long)) -> Long {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Long, b: (Ulong, Size, Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
 ## Ulong
 
 *def add(a: Ulong, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong)) -> Ulong {
@@ -209,6 +336,22 @@
 }
 
 *def add(a: Ulong, b: (Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+*def sub(a: Ulong, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong)) -> Ulong {
+    # Implemented by the compiler
+}
+
+*def sub(a: Ulong, b: (Double, Float)) -> %b {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Ulong, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong)) -> Ulong {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Ulong, b: (Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
@@ -222,9 +365,33 @@
     # Implemented by the compiler
 }
 
+*def sub(a: Float, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float)) -> Float {
+    # Implemented by the compiler
+}
+
+*def sub(a: Float, b: Double) -> %b {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Float, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float)) -> Float {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Float, b: Double) -> %b {
+    # Implemented by the compiler
+}
+
 ## Size
 
 *def add(a: Size, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Size {
+    # Implemented by the compiler
+}
+
+*def sub(a: Size, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Size {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Size, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Size {
     # Implemented by the compiler
 }
 
@@ -234,37 +401,23 @@
     # Implemented by the compiler
 }
 
+*def sub(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float, Double)) -> Double {
+    # Implemented by the compiler
+}
+
+*def cmp(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float, Double)) -> Double {
+    # Implemented by the compiler
+}
+
 ## Ptr
 
 *def add(ptr: Ptr, num: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Ptr~[^ptr..to] {
     # implemented by the compiler
 }
 
-;; Subtraction
-*def sub(a: Int, b: Int) -> Int {
-    # Implemented by the compiler
+*def sub(ptr: Ptr, num: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Ptr~[^ptr..to] {
+    # implemented by the compiler
 }
-
-*def sub(a: Int, b: Uint) -> Int {
-    # Implemented by the compiler
-}
-
-*def sub(a: Size, b: Int) -> Size {
-    # Implemented by the compiler
-}
-
-*def sub(a: Size, b: Size) -> Size {
-    # Implemented by the compiler
-}
-
-*def sub(ptr: Ptr, b: Int) -> Ptr~[^ptr..to] {
-    # Implemented by the compiler
-}
-
-*def sub(ptr: Ptr, b: Size) -> Ptr~[^ptr..to] {
-    # Implemented by the compiler
-}
-
 
 *def neg(a: Int) -> Int {
     # Implemented by the compiler
@@ -335,117 +488,108 @@
 
 # Conversion between types
 
+;; Convert {a} to Ubyte
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+        Float, Double, Char),
+    :Ubyte
+) -> Ubyte {
+    # Implemented by the compiler
+}
+
+;; Convert {a} to Byte
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+        Float, Double, Char),
+    :Byte
+) -> Byte {
+    # Implemented by the compiler
+}
+
+;; Convert {a} to Short
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+        Float, Double, Char),
+    :Short
+) -> Short {
+    # Implemented by the compiler
+}
+
+;; Convert {a} to Ushort
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+        Float, Double, Char),
+    :Ushort
+) -> Ushort {
+    # Implemented by the compiler
+}
+
+;; Convert {a} to Int
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+        Float, Double, Char),
+    :Int
+) -> Int {
+    # Implemented by the compiler
+}
+
+
 ;; Convert {a} to Uint
-*def to(a: Int, :Uint) -> Uint {
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+        Float, Double, Char),
+    :Uint
+) -> Uint {
     # Implemented by the compiler
 }
 
-*def to(a: Bool, :Int) -> Int {
+;; Convert {a} to Long
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+        Float, Double, Char),
+    :Long
+) -> Long {
     # Implemented by the compiler
 }
 
-*def to(a: Bool, :Uint) -> Uint {
+
+;; Convert {a} to Ulong
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+        Float, Double, Char),
+    :Ulong
+) -> Ulong {
     # Implemented by the compiler
 }
 
-*def to(a: Bool, :Long) -> Long {
+;; Convert {a} to Float
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
+        Float, Double, Char),
+    :Float
+) -> Float {
     # Implemented by the compiler
 }
 
-*def to(a: Int, :Ulong) -> Ulong {
+;; Convert {a} to Double
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
+        Float, Double, Char),
+    :Double
+) -> Double {
     # Implemented by the compiler
 }
 
-*def to(a: Int, b: Float) -> Float {
-    # Implemented by the compiler
-}
-
-*def to(a: Size, b: Float) -> Float {
-    # Implemented by the compiler
-}
-
-*def to(a: Int, b: Double) -> Double {
-    # Implemented by the compiler
-}
-
-*def to(a: Long, b: Ulong) -> Double {
-    # Implemented by the compiler
-}
-
-*def to(a: Ulong, b: Long) -> Double {
-    # Implemented by the compiler
-}
-
-*def to(a: Int, :Bool) -> Bool {
-    # Implemented by the compiler
-}
-
-*def to(a: Bool, :Ulong) -> Bool {
-    # Implemented by the compiler
-}
-
-*def to(a: Char, :Byte) -> Byte {
+;; Convert {a} to Bool
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
+        Float, Double, Char),
+    :Bool
+) -> Bool {
     # Implemented by the compiler
 }
 
 # Logical operations
-
-;; Compares {a} to {b}.
-*def cmp(a: Int, b: Int) -> Int {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Byte, b: Char) -> Int {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Byte, b: Byte) -> Byte {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Bool, b: Bool) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Long, b: Int) -> Long {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Ulong, b: Int) -> Long {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Uint, b: Int) -> Int {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Size, b: Size) -> Size {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Size, b: Int) -> Size {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Double, b: Int) -> Double {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Double, b: Double) -> Double {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Float, b: Float) -> Float {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Int, b: Size) -> Size {
-    # Implemented by the compiler
-}
-
-*def cmp(a: Float, b: Int) -> Size {
-    # Implemented by the compiler
-}
 
 *def and(a: Bool, ^b: Bool) -> Bool {
     # Implemented by the compiler
@@ -637,16 +781,35 @@ struct FuncSelection {
     # implemented by the compiler
 }
 
-;; Shifts left and right
-
-*def shiftl(a: (Bits8, Bits16, Bits32, Bits64), times: Int) -> %a {
+;; Shift bits left a given number of {times}
+;; *NOTE* If {times} is negative or larger than the number of bits in {a}
+;; then a mask is applied to {times} before shifting. The mask is
+;; * 0x03 - for Bits8  i.e. force a range of 0-7
+;; * 0x0F - for Bits16 i.e. force a range of 0-15
+;; * 0x1F - for Bits32 i.e. force a range of 0-31
+;; * 0x3F - for Bits64 i.e. force a range of 0-61
+;; is applied to {times} before the actual shift is performed
+*def shiftl(
+    a: (Bits8, Bits16, Bits32, Bits64),
+    times: (Byte, Ubyte, Short, Ushort, Int, Uint)
+) -> %a {
     # implemented by the compiler
 }
 
-*def shiftr(a: (Bits8, Bits16, Bits32, Bits64), times: Int) -> %a {
+;; Shift bits right a given number of {times}
+;; ...
+*def shiftr(
+    a: (Bits8, Bits16, Bits32, Bits64),
+    times: (Byte, Ubyte, Short, Ushort, Int, Uint)
+) -> %a {
     # implemented by the compiler
 }
 
-*def ashiftr(a: (Bits8, Bits16, Bits32, Bits64), times: Int) -> %a {
+;; Arithmetic shift bits right a given number of {times}
+;; ...
+*def ashiftr(
+    a: (Bits8, Bits16, Bits32, Bits64),
+    times: (Byte, Ubyte, Short, Ushort, Int, Uint)
+) -> %a {
     # implemented by the compiler
 }
