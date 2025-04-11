@@ -1,7 +1,5 @@
 def oneBit(:Bits64) 1l'to(Bits64);
 
-#def Any(b: Bits64) b'to(Long) != 0;
-
 def get(b: Bits64, i: Int) -> Bool {
     return (b & (b'oneBit \shiftl i))'to(Long) != 0;
 }

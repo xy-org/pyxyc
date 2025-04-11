@@ -639,18 +639,14 @@ struct FuncSelection {
 
 ;; Shifts left and right
 
-*def shiftl(a: Bits32, times: Int) -> Bits32 {
+*def shiftl(a: (Bits8, Bits16, Bits32, Bits64), times: Int) -> %a {
     # implemented by the compiler
 }
 
-*def shiftr(a: Bits32, times: Int) -> Bits32 {
+*def shiftr(a: (Bits8, Bits16, Bits32, Bits64), times: Int) -> %a {
     # implemented by the compiler
 }
 
-*def shiftl(a: Bits64, times: Int) -> Bits64 {
-    # implemented by the compiler
-}
-
-*def shiftr(a: Bits64, times: Int) -> Bits64 {
+*def ashiftr(a: (Bits8, Bits16, Bits32, Bits64), times: Int) -> %a {
     # implemented by the compiler
 }

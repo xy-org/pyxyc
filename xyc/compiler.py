@@ -3479,6 +3479,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 c_node=c.Id(tmp_obj.c_node.name),
                 inferred_type=func_obj.rtype_obj
             )
+    elif is_builtin_func(func_obj, "ashiftr"):
+        signed_ctype = arg_exprs[0].inferred_type.c_node.name[1:]
+        c_res = c.Cast(arg_exprs[0].c_node, to=signed_ctype)
+        c_res = c.Expr(c_res, arg_exprs[1].c_node, op=">>")
+        return ExprObj(
+            xy_node=expr,
+            c_node=c_res,
+            inferred_type=func_obj.rtype_obj
+        )
     elif func_obj.builtin and len(arg_exprs) == 2:
         func_to_op_map = {
             "add": '+',

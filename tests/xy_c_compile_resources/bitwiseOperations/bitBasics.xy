@@ -12,6 +12,8 @@ def test() -> Uint {
 
     g := !(c | f & e);
 
-    return g'to(Uint);
+    h := g \ashiftr 10;
+
+    return h'to(Uint);
 }
 
