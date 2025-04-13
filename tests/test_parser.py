@@ -1700,6 +1700,36 @@ def test_expressions(code, exp_ast):
             ]),
         ],
     ],
+    [
+        """def func() {
+            return a+b*c/d+:g+-g;
+        }""",
+        [
+            ast.FuncDef(ast.Id("func"), body=[
+                ast.Return(ast.SliceExpr(
+                    start=ast.BinExpr(
+                        ast.Id("a"),
+                        ast.BinExpr(
+                            ast.BinExpr(
+                                ast.Id("b"),
+                                ast.Id("c"),
+                                op="*"
+                            ),
+                            ast.Id("d"),
+                            op="/"
+                        ),
+                        op="+",
+                    ),
+                    end=ast.BinExpr(
+                        ast.Id("g"),
+                        ast.UnaryExpr(ast.Id("g"), op="-"),
+                        op="+",
+                    ),
+                    op="+",
+                ))
+            ]),
+        ],
+    ],
 ])
 def test_weird_expressions(code, exp_ast):
     act_ast = parse_code(code)

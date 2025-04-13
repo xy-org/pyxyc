@@ -967,7 +967,7 @@ def parse_break_continue(itoken):
         assert itoken.check("continue")
         res = Continue(src=itoken.src, coords=node_coords)
     if not is_end_of_expr(itoken):
-        res.loop_name = parse_expression(itoken)
+        res.loop_name = parse_expression(itoken, is_toplevel=False)
     return res
 
 
@@ -1235,7 +1235,7 @@ def parse_stmt_list(itoken: TokenIter):
 def parse_return(itoken):
     coords = itoken.peak_coords()
     assert itoken.check("return")
-    expr = parse_expr_list(itoken)
+    expr = parse_expr_list(itoken, is_toplevel=False)
     if len(expr) == 1:
         expr = expr[0]
     node = Return(expr, src=itoken.src, coords=coords)
