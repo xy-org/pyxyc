@@ -42,13 +42,20 @@ note: Candidates are:
             a := arr[0];
         }
      """, """\
-src.xy:6:21: error: Cannot decay 'in(Array) Int' because: Cannot find function 'get(Array, Int)'
+src.xy:6:21: error: Cannot decay 'Array[ Int ]' because: Cannot find function 'get(Array, Int)'
 |             a := arr[0];
                       ^
 note: Candidates are:
     in module xy.builtins
         *get(Ptr) -> Ptr
+        *get(Ptr, Byte) -> Ptr
+        *get(Ptr, Ubyte) -> Ptr
+        *get(Ptr, Short) -> Ptr
+        *get(Ptr, Ushort) -> Ptr
         *get(Ptr, Int) -> Ptr
+        *get(Ptr, Uint) -> Ptr
+        *get(Ptr, Long) -> Ptr
+        *get(Ptr, Ulong) -> Ptr
         *get(Ptr, Size) -> Ptr
         *get(Any[], Int) -> Ptr
         *get(Any[], Uint) -> Ptr

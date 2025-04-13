@@ -2424,8 +2424,8 @@ def idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
         return do_idx_get_once(idx_obj, cast, cfunc, ctx)
     except CompilationError as e:
         raise CompilationError(
-            f"Cannot decay 'in({idx_obj.container.inferred_type.name}) "
-            f"{idx_obj.idx.inferred_type.name}' "\
+            f"Cannot decay '{idx_obj.container.inferred_type.name}[ "
+            f"{idx_obj.idx.inferred_type.name} ]' "\
             f"because: {e.error_message}", e.xy_node,
             notes=e.notes
         )
