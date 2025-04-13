@@ -417,153 +417,10 @@ def parse_expression(
         itoken, precedence=MIN_PRECEDENCE, is_struct=False,
         op_prec=operator_precedence, is_toplevel=True
 ):
-    if itoken.peak() == "if":
-        return parse_if(itoken)
-    elif itoken.peak() in {"else", "elif"}:
-        raise ParsingError("Missing corresponding if", itoken)
-    elif itoken.peak() == "while":
-        return parse_while(itoken)
-    elif itoken.peak() == "do":
-        return parse_do_while(itoken)
-    elif itoken.peak() in {"break", "continue"}:
-        return parse_break_continue(itoken)
-    elif itoken.peak() == "for":
-        return parse_for(itoken)
-    elif itoken.peak() == ";":
-        raise ParsingError("Unexpected end of expression.", itoken)
-    elif itoken.peak() == "...":
-        raise ParsingError("... is not allowed in expressions", itoken)
-
-    if precedence >= MAX_PRECEDENCE and itoken.check("("):
-        # bracketed expression, func type, or reverse calling notation
-        next_token = itoken.peak()
-        bracketed_exprs = parse_expr_list(itoken, is_toplevel=False)
-        itoken.expect(")", msg="Missing closing bracket")
-        if len(bracketed_exprs) == 1 and isinstance(bracketed_exprs[0], Id) and not is_end_of_expr(itoken) and next_token[0].isalpha():
-            # reverse function call notation
-            coords = itoken.peak_coords()
-            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
-            arg1 = FuncCall(bracketed_exprs[0], ret_args, kwargs, inject_args,
-                            src=itoken.src, coords=coords)
-        elif itoken.peak() != "->":
-            # bracketed expression
-            if len(bracketed_exprs) == 0:
-                raise ParsingError("No expression in brackets", itoken)
-            elif len(bracketed_exprs) > 1:
-                arg1 = Enumeration(bracketed_exprs, src=itoken.src, coords=(bracketed_exprs[0].coords[0], bracketed_exprs[-1].coords[1]))
-            else:
-                arg1 = bracketed_exprs[0]
-        else:
-            # Func type
-            coords = itoken.peak_coords()
-            itoken.consume()
-            params = [
-                expr_to_param(expr, itoken)
-                for expr in bracketed_exprs
-            ]
-            arg1 = FuncType(params=params, src=itoken.src, coords=coords)
-            ret_args = []
-            if itoken.check("("):
-                ret_args = parse_expr_list(itoken)
-                itoken.expect(")")
-            else:
-                ret_args = [parse_toplevel_type_expr(itoken)]
-
-            if itoken.check("||"):
-                arg1.etype = parse_toplevel_type_expr(itoken)
-
-            for expr in ret_args:
-                expr = expr_to_type(expr)
-                if isinstance(expr, VarDecl):
-                    expr.mutable = True
-                    arg1.returns.append(expr)
-                else:
-                    arg1.returns.append(
-                        VarDecl(type=expr, src=expr.src, coords=expr.coords)
-                    )
-    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "@":
-        coords = itoken.peak_coords()
-        assert itoken.check('@')
-        if itoken.peak() == "for":
-            # list comprehension
-            for_expr = parse_for(itoken)
-            arg1 = ListComprehension(loop=for_expr, src=itoken.src, coords=coords)
-        else:
-            # array type or literal
-            coords = itoken.peak_coords()
-            if itoken.peak() != "{":
-                type_name = parse_expression(itoken, precedence, op_prec=op_prec)
-                itoken.expect("[", "Missing dimension of array. Syntax is @Type[dimension]")
-                dims = parse_expr_list(itoken)
-                arg1 = ArrayType(type_name, dims, src=itoken.src, coords=(coords[0], itoken.peak_coords()[1]))
-                itoken.expect("]")
-            else:
-                itoken.expect("{")
-                itoken.skip_empty_lines()
-                ret_args = parse_expr_list(itoken)
-                itoken.expect("}", msg="Missing closing bracket")
-                arg1 = ArrayLit(ret_args, src=itoken.src, coords=coords)
-    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "[":
-        # Indexing without a base i.e. derefing
-        coords = itoken.peak_coords()
-        itoken.consume() # [
-        itoken.skip_empty_lines()
-        ret_args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
-        itoken.expect("]", msg="Missing closing bracket")
-        arg1 = Select(base=None, args=Args(ret_args, kwargs), src=itoken.src, coords=coords)
-    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "'":
-        itoken.consume()
-        f_coords = itoken.peak_coords()
-        fname = parse_expression(itoken, precedence+1, op_prec=op_prec)
-        fcall = FuncCall(
-            fname, src=itoken.src, coords=f_coords,
-            inject_context=True
-        )
-        if itoken.check("("):
-            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
-            fcall.args.extend(ret_args)
-            fcall.kwargs = kwargs
-            fcall.inject_args = inject_args
-            itoken.expect(")")
-        arg1 = fcall
-    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "{":
-        # announomous struct literal
-        itoken.consume()
-        arg1 = parse_struct_literal(itoken, None)
-    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "$":
-        arg1 = parse_func_select(itoken)
-    elif precedence >= MAX_PRECEDENCE and itoken.peak() == "^":
-        coords = itoken.peak_coords()
-        itoken.consume()
-        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-        arg1 = CallerContextExpr(arg1, src=itoken.src, coords=coords)
-    elif precedence >= MAX_PRECEDENCE:
-        tk_coords = itoken.peak_coords()
-        token = itoken.consume()
-        if token in {"true", "false"}:
-            arg1 = Const(token == "true", token, "Bool", src=itoken.src, coords=tk_coords)
-        elif "." in token or (token[0] >= '0' and token[0] <= '9'):
-            arg1 = parse_num_const(token, tk_coords, itoken)
-        elif token == '"':
-            arg1 = parse_str_literal("", tk_coords[0], itoken)
-        elif token == '`':
-            arg1 = parse_char_literal(token, tk_coords, itoken)
-        elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:
-            if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*', token):
-                raise ParsingError(f"Invalid prefix Name", itoken)
-            itoken.expect('"')
-            arg1 = parse_str_literal(token, tk_coords[0], itoken)
-        elif token == ":":
-            arg1 = Empty(src=itoken.src, coords=tk_coords)
-            itoken.i -= 1
-        elif token[-1] == ":":
-            raise ParsingError("Operator slices require a start.", itoken)
-        elif token in operator_precedence:
-            itoken.consume(-1)
-            raise ParsingError("Expected operand found operator", itoken)
-        else:
-            arg1 = Id(token, src=itoken.src, coords=tk_coords)
-    elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!", "&", "%"}:
+    if precedence >= MAX_PRECEDENCE:
+        arg1 = parse_operand(itoken, precedence, op_prec)
+    
+    if precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!", "&", "%"}:
         coords = itoken.peak_coords()
         op = itoken.consume()
         # NOTE no precedence + 1 in order to allow for chaining unary operators
@@ -579,7 +436,7 @@ def parse_expression(
                             "More infor at TBD", itoken)
     elif itoken.peak() == "." and precedence == op_prec["."]:
         arg1 = None  # unary "."
-    else:
+    elif precedence < MAX_PRECEDENCE:
         if is_end_of_expr(itoken):
             raise ParsingError("Unexpected end of expression.", itoken)
         arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
@@ -758,6 +615,156 @@ def parse_expression(
         decl.type = expr_to_type(arg1.end)
         arg1 = decl
 
+    return arg1
+
+def parse_operand(itoken, precedence, op_prec):
+    if itoken.peak() == "if":
+        return parse_if(itoken)
+    elif itoken.peak() in {"else", "elif"}:
+        raise ParsingError("Missing corresponding if", itoken)
+    elif itoken.peak() == "while":
+        return parse_while(itoken)
+    elif itoken.peak() == "do":
+        return parse_do_while(itoken)
+    elif itoken.peak() in {"break", "continue"}:
+        return parse_break_continue(itoken)
+    elif itoken.peak() == "for":
+        return parse_for(itoken)
+    elif itoken.peak() == ";":
+        raise ParsingError("Unexpected end of expression.", itoken)
+    elif itoken.peak() == "...":
+        raise ParsingError("... is not allowed in expressions", itoken)
+
+    if itoken.check("("):
+        # bracketed expression, func type, or reverse calling notation
+        next_token = itoken.peak()
+        bracketed_exprs = parse_expr_list(itoken, is_toplevel=False)
+        itoken.expect(")", msg="Missing closing bracket")
+        if len(bracketed_exprs) == 1 and isinstance(bracketed_exprs[0], Id) and not is_end_of_expr(itoken) and next_token[0].isalpha():
+            # reverse function call notation
+            coords = itoken.peak_coords()
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+            arg1 = FuncCall(bracketed_exprs[0], ret_args, kwargs, inject_args,
+                            src=itoken.src, coords=coords)
+        elif itoken.peak() != "->":
+            # bracketed expression
+            if len(bracketed_exprs) == 0:
+                raise ParsingError("No expression in brackets", itoken)
+            elif len(bracketed_exprs) > 1:
+                arg1 = Enumeration(bracketed_exprs, src=itoken.src, coords=(bracketed_exprs[0].coords[0], bracketed_exprs[-1].coords[1]))
+            else:
+                arg1 = bracketed_exprs[0]
+        else:
+            # Func type
+            coords = itoken.peak_coords()
+            itoken.consume()
+            params = [
+                expr_to_param(expr, itoken)
+                for expr in bracketed_exprs
+            ]
+            arg1 = FuncType(params=params, src=itoken.src, coords=coords)
+            ret_args = []
+            if itoken.check("("):
+                ret_args = parse_expr_list(itoken)
+                itoken.expect(")")
+            else:
+                ret_args = [parse_toplevel_type_expr(itoken)]
+
+            if itoken.check("||"):
+                arg1.etype = parse_toplevel_type_expr(itoken)
+
+            for expr in ret_args:
+                expr = expr_to_type(expr)
+                if isinstance(expr, VarDecl):
+                    expr.mutable = True
+                    arg1.returns.append(expr)
+                else:
+                    arg1.returns.append(
+                        VarDecl(type=expr, src=expr.src, coords=expr.coords)
+                    )
+    elif itoken.peak() == "@":
+        coords = itoken.peak_coords()
+        assert itoken.check('@')
+        if itoken.peak() == "for":
+            # list comprehension
+            for_expr = parse_for(itoken)
+            arg1 = ListComprehension(loop=for_expr, src=itoken.src, coords=coords)
+        else:
+            # array type or literal
+            coords = itoken.peak_coords()
+            if itoken.peak() != "{":
+                type_name = parse_expression(itoken, precedence, op_prec=op_prec)
+                itoken.expect("[", "Missing dimension of array. Syntax is @Type[dimension]")
+                dims = parse_expr_list(itoken)
+                arg1 = ArrayType(type_name, dims, src=itoken.src, coords=(coords[0], itoken.peak_coords()[1]))
+                itoken.expect("]")
+            else:
+                itoken.expect("{")
+                itoken.skip_empty_lines()
+                ret_args = parse_expr_list(itoken)
+                itoken.expect("}", msg="Missing closing bracket")
+                arg1 = ArrayLit(ret_args, src=itoken.src, coords=coords)
+    elif itoken.peak() == "[":
+        # Indexing without a base i.e. derefing
+        coords = itoken.peak_coords()
+        itoken.consume() # [
+        itoken.skip_empty_lines()
+        ret_args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
+        itoken.expect("]", msg="Missing closing bracket")
+        arg1 = Select(base=None, args=Args(ret_args, kwargs), src=itoken.src, coords=coords)
+    elif itoken.peak() == "'":
+        itoken.consume()
+        f_coords = itoken.peak_coords()
+        fname = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        fcall = FuncCall(
+            fname, src=itoken.src, coords=f_coords,
+            inject_context=True
+        )
+        if itoken.check("("):
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+            fcall.args.extend(ret_args)
+            fcall.kwargs = kwargs
+            fcall.inject_args = inject_args
+            itoken.expect(")")
+        arg1 = fcall
+    elif itoken.peak() == "{":
+        # announomous struct literal
+        itoken.consume()
+        arg1 = parse_struct_literal(itoken, None)
+    elif itoken.peak() == "$":
+        arg1 = parse_func_select(itoken)
+    elif itoken.peak() == "^":
+        coords = itoken.peak_coords()
+        itoken.consume()
+        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        arg1 = CallerContextExpr(arg1, src=itoken.src, coords=coords)
+    else:
+        tk_coords = itoken.peak_coords()
+        token = itoken.consume()
+        if token in {"true", "false"}:
+            arg1 = Const(token == "true", token, "Bool", src=itoken.src, coords=tk_coords)
+        elif "." in token or (token[0] >= '0' and token[0] <= '9'):
+            arg1 = parse_num_const(token, tk_coords, itoken)
+        elif token == '"':
+            arg1 = parse_str_literal("", tk_coords[0], itoken)
+        elif token == '`':
+            arg1 = parse_char_literal(token, tk_coords, itoken)
+        elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:
+            if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*', token):
+                raise ParsingError(f"Invalid prefix Name", itoken)
+            itoken.expect('"')
+            arg1 = parse_str_literal(token, tk_coords[0], itoken)
+        elif token == ":":
+            arg1 = Empty(src=itoken.src, coords=tk_coords)
+            itoken.i -= 1
+        elif token[-1] == ":":
+            raise ParsingError("Operator slices require a start.", itoken)
+        elif token in operator_precedence:
+            itoken.consume(-1)
+            raise ParsingError("Expected operand found operator", itoken)
+        else:
+            arg1 = Id(token, src=itoken.src, coords=tk_coords)
+    
     return arg1
 
 def parse_num_const(token: str, tk_coords, itoken):
