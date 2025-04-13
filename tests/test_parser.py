@@ -1266,6 +1266,242 @@ def test_move_operators(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
+        """def main() {
+            a;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.Id("a"),
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            a + b;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.BinExpr(ast.Id("a"), ast.Id("b"), op="+")
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            a + b + c;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.BinExpr(
+                    ast.BinExpr(ast.Id("a"), ast.Id("b"), op="+"),
+                    ast.Id("c"),
+                    op="+")
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            a = -a;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.BinExpr(
+                    ast.Id("a"),
+                    ast.UnaryExpr(ast.Id("a"), op="-"),
+                    op="="
+                ),
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            a = b - -a;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.BinExpr(
+                    ast.Id("a"),
+                    ast.BinExpr(
+                        ast.Id("b"),
+                        ast.UnaryExpr(ast.Id("a"), op="-"),
+                        op="-"
+                    ),
+                    op="="
+                ),
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            a = a*b + c;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.BinExpr(
+                    ast.Id("a"),
+                    ast.BinExpr(
+                        ast.BinExpr(
+                            ast.Id("a"), ast.Id("b"), op="*",
+                        ),
+                        ast.Id("c"),
+                        op="+"
+                    ),
+                    op="="
+                ),
+            ]),
+        ]
+    ],
+    # [
+    #     """def main() {
+    #         a = b = c;
+    #     }
+    #     """,
+    #     [
+    #         ast.FuncDef(ast.Id("main"), body=[
+    #             ast.BinExpr(
+    #                 ast.Id("a"),
+    #                 ast.BinExpr(
+    #                     ast.Id("b"),
+    #                     ast.Id("c"),
+    #                     op="="
+    #                 ),
+    #                 op="="
+    #             ),
+    #         ]),
+    #     ]
+    # ],
+    [
+        """def main() {
+            sin();
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.FuncCall(ast.Id("sin"))
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            sin(a);
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.FuncCall(ast.Id("sin"), args=[ast.Id("a")])
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            sin(max());
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.FuncCall(ast.Id("sin"), args=[
+                    ast.FuncCall(ast.Id("max"))
+                ])
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            sin(max(3, 4));
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.FuncCall(ast.Id("sin"), args=[
+                    ast.FuncCall(ast.Id("max"), args=[ast.Const(3), ast.Const(4)])
+                ])
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            sin(max(3, 4)/3*pi);
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.FuncCall(ast.Id("sin"), args=[
+                    ast.BinExpr(
+                        ast.BinExpr(
+                            ast.FuncCall(ast.Id("max"), args=[ast.Const(3), ast.Const(4)]),
+                            ast.Const(3),
+                            op="/"
+                        ),
+                        ast.Id("pi"),
+                        op="*",
+                    )
+                ])
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            a'sin;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.FuncCall(ast.Id("sin"), args=[ast.Id("a")])
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            a'sin(b);
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.FuncCall(ast.Id("sin"), args=[ast.Id("a"), ast.Id("b")])
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            a \\sin b;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.FuncCall(ast.Id("sin"), args=[ast.Id("a"), ast.Id("b")])
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            a \\sin b(3, 4);
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.FuncCall(ast.Id("sin"), args=[
+                    ast.Id("a"),
+                    ast.FuncCall(
+                        ast.Id("b"),
+                        args=[ast.Const(3), ast.Const(4)]
+                    )
+                ])
+            ]),
+        ]
+    ],
+])
+def test_simple_expressions(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
         """def main() -> void {
             a := 0 + 1 * 2 + 3;
             b := (0 + 1) * (2 + 3);
