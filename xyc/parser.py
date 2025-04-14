@@ -417,187 +417,7 @@ def parse_expression(
         itoken, precedence=MIN_PRECEDENCE, is_struct=False,
         op_prec=operator_precedence, is_toplevel=True
 ):
-    if precedence >= MAX_PRECEDENCE:
-        arg1 = parse_operand(itoken, precedence, op_prec)
-    
-    if precedence == UNARY_PRECEDENCE and itoken.peak() in {"+", "-", "!", "&", "%"}:
-        coords = itoken.peak_coords()
-        op = itoken.consume()
-        # NOTE no precedence + 1 in order to allow for chaining unary operators
-        arg1 = parse_expression(itoken, precedence, op_prec=op_prec)
-        if op != '!' and isinstance(arg1, Const) and arg1.type != "str":
-            if op == '-':
-                arg1.value = -arg1.value
-                arg1.value_str = f'-{arg1.value_str}'
-        else:
-            arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=coords)
-    elif precedence == UNARY_PRECEDENCE and itoken.peak() in {"++", "--"}:
-            raise ParsingError("Prefix increment and decrement are not supported. "
-                            "More infor at TBD", itoken)
-    elif itoken.peak() == "." and precedence == op_prec["."]:
-        arg1 = None  # unary "."
-    elif precedence < MAX_PRECEDENCE:
-        if is_end_of_expr(itoken):
-            raise ParsingError("Unexpected end of expression.", itoken)
-        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-
-    converted_to_slice = False
-    op = itoken.peak()
-    op_coords = itoken.peak_coords()
-    while op in op_prec and op_prec[op] == precedence:
-        itoken.consume()  # operator
-        if op == "(":
-            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
-            itoken.expect(")")
-            fcall = FuncCall(arg1, ret_args, src=itoken.src, coords=arg1.coords)
-            fcall.kwargs = kwargs
-            fcall.inject_args = inject_args
-            arg1 = fcall
-        elif op == "'":
-            f_coords = itoken.peak_coords()
-            fname_node = parse_expression(itoken, precedence+1, op_prec=op_prec)
-            fcall = FuncCall(
-                fname_node,
-                [arg1], src=itoken.src, coords=f_coords)
-            if itoken.check("("):
-                ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
-                fcall.args.extend(ret_args)
-                fcall.kwargs = kwargs
-                fcall.inject_args = inject_args
-                itoken.expect(")")
-            arg1 = fcall
-        elif op == "\\":
-            f_coords = itoken.peak_coords()
-            fname = itoken.consume()
-            fcall = FuncCall(
-                Id(fname, src=itoken.src, coords=f_coords),
-                [arg1], src=itoken.src, coords=f_coords
-            )
-            arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-            fcall.args.append(arg2)
-            arg1 = fcall
-        elif op == "@":
-            if itoken.peak() == "for":
-                # list comprehension
-                for_expr = parse_for(itoken)
-                arg1 = ListComprehension(list_type=arg1, loop=for_expr, src=itoken.src, coords=op_coords)
-            else:
-                # array literal
-                itoken.expect('{', "Array literals are constructed using the @{elems,...} syntax")
-                itoken.skip_empty_lines()
-                ret_args = parse_expr_list(itoken)
-                itoken.expect("}", msg="Missing closing bracket")
-                arg1 = ArrayLit(ret_args, base=expr_to_type(arg1), src=itoken.src, coords=op_coords)
-        elif op[-1] == ":":
-            if op == ":" and itoken.peak() in var_qualifiers:
-                # it's a var decl
-                arg1 = parse_var_decl(itoken, arg1, precedence, op_prec)
-            elif converted_to_slice:
-                if arg1.step is not None:
-                    raise ParsingError(
-                        "Slices can have only 3 components - start:end:step",
-                        itoken
-                    )
-                if not is_end_of_expr(itoken):
-                    if op != ":":
-                        raise ParsingError(
-                            "Operator slices make sense only between the "
-                            "start and end expressions of a slice", itoken)
-                    arg1.step = parse_expression(itoken, precedence+1, op_prec=op_prec)
-            else:
-                converted_to_slice = True
-                arg2 = Empty()
-                if not is_end_of_expr(itoken):
-                    arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-                sliceop = SliceExpr(src=itoken.src, coords=arg1.coords)
-                if op != ":":
-                    sliceop.op = op[:-1]
-
-                if not isinstance(arg1, Empty):
-                    sliceop.start = arg1
-                elif sliceop.op is not None:
-                    raise ParsingError("Operator slices require both start and end expressions", itoken)
-
-                if not isinstance(arg2, Empty):
-                    sliceop.end = arg2
-                elif sliceop.op is not None:
-                    raise ParsingError("Operator slices require both start and end expressions", itoken)
-
-                arg1 = sliceop
-        elif op in {"=", "=<"} and isinstance(arg1, SliceExpr):
-            if isinstance(arg1.start, CallerContextExpr):
-                raise ParsingError("Caller context parameters cannot have default values", itoken)
-            decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=arg1.coords, is_move=(op=="=<"))
-            if not isinstance(arg1.start, Id):
-                raise ParsingError("Variable name must be an identifier", itoken)
-            decl.type = expr_to_type(arg1.end)
-            decl.value = parse_expression(itoken, precedence+1, op_prec=op_prec)
-            arg1 = decl
-        elif op == "[":
-            itoken.skip_empty_lines()
-            maybe_list_comp = itoken.peak() == "for"
-            ret_args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
-            itoken.expect("]")
-            if len(ret_args) == 1 and len(kwargs) == 0 and isinstance(ret_args[0], ForExpr):
-                # list comprehension with an explicit type
-                arg1 = ListComprehension(
-                    list_type=arg1,
-                    loop=ret_args[0], src=itoken.src, coords=op_coords
-                )
-            else:
-                arg1 = Select(
-                    arg1, Args(ret_args, kwargs), src=itoken.src, coords=op_coords
-                )
-        elif op == "~":
-            if isinstance(arg1, AttachTags):
-                # parse right to left
-                arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-                arg1.tags.args[0] = AttachTags(
-                    arg1.tags.args[0],
-                    TagList([arg2]),
-                    src=itoken.src, coords=op_coords
-                )
-            elif itoken.check("["):
-                ret_args, kwargs = parse_args_kwargs(itoken, is_taglist=True)
-                itoken.expect("]")
-                attach_tags = AttachTags(
-                    arg1, TagList(ret_args, kwargs), src=itoken.src, coords=op_coords
-                )
-                arg1 = attach_tags
-            else:
-                arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-                attach_tags = AttachTags(
-                    arg1, TagList([arg2]), src=itoken.src, coords=op_coords
-                )
-                arg1 = attach_tags
-        elif op == "{":
-            arg1 = parse_struct_literal(itoken, arg1)
-            if itoken.peak() == "~":
-                raise ParsingError(
-                    "Only simple positional tags can be chained. "
-                    "Please be explicit and put the tags in square brackets.",
-                    itoken
-                )
-        elif op in {"++", "--"}:
-            arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
-        elif op == "=>":
-            arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
-        elif op == "." and arg1 is None:
-            # unary . aka toggle => expand to arg = True
-            arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-            end_coord = arg2.coords[1] if arg2 is not None else op_coords[1]
-            arg1 = BinExpr(
-                arg2, Const(True, src=itoken.src, coords=arg2.coords), op="=", src=itoken.src, coords=[op_coords[0], end_coord]
-            )
-        else:
-            arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-            end_coord = arg2.coords[1] if arg2 is not None else arg1.coords[0] + len(op)
-            binop = BinExpr(
-                arg1, arg2, op, src=itoken.src,
-                coords=[arg1.coords[0], end_coord]
-            )
-            arg1 = binop
-        op = itoken.peak()
+    arg1 = do_parse_expression(itoken, precedence, op_prec)
 
     if (precedence == MIN_PRECEDENCE and isinstance(arg1, SliceExpr)
         and arg1.step is None and arg1.end is not None
@@ -614,6 +434,23 @@ def parse_expression(
                 raise ParsingError("Variable name must be an identifier", itoken)
         decl.type = expr_to_type(arg1.end)
         arg1 = decl
+
+    return arg1
+
+def do_parse_expression(
+        itoken, precedence=MIN_PRECEDENCE,
+        op_prec=operator_precedence,
+):
+    if precedence >= MAX_PRECEDENCE:
+        arg1 = parse_operand(itoken, precedence, op_prec)
+    elif precedence < MAX_PRECEDENCE:
+        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+
+    converted_to_slice = False
+    op = itoken.peak()
+    while op in op_prec and op_prec[op] == precedence:
+        arg1, converted_to_slice = parse_operator(arg1, itoken, precedence, op_prec, converted_to_slice)
+        op = itoken.peak()
 
     return arg1
 
@@ -738,6 +575,22 @@ def parse_operand(itoken, precedence, op_prec):
         itoken.consume()
         arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
         arg1 = CallerContextExpr(arg1, src=itoken.src, coords=coords)
+    elif itoken.peak() in {"++", "--"}:
+        raise ParsingError("Prefix increment and decrement are not supported. "
+                        "More infor at TBD", itoken)
+    elif itoken.peak() == ".":
+        arg1 = None  # unary "."
+    elif itoken.peak() in {"+", "-", "!", "&", "%"}:
+        coords = itoken.peak_coords()
+        op = itoken.consume()
+        # NOTE no precedence + 1 in order to allow for chaining unary operators
+        arg1 = parse_expression(itoken, UNARY_PRECEDENCE, op_prec=op_prec)
+        if op != '!' and isinstance(arg1, Const) and arg1.type != "str":
+            if op == '-':
+                arg1.value = -arg1.value
+                arg1.value_str = f'-{arg1.value_str}'
+        else:
+            arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=coords)
     else:
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
@@ -766,6 +619,162 @@ def parse_operand(itoken, precedence, op_prec):
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
     
     return arg1
+
+def parse_operator(arg1, itoken, precedence, op_prec, converted_to_slice):
+    op_coords = itoken.peak_coords()
+    op = itoken.consume()  # assumes valid operator
+    if op == "(":
+        ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+        itoken.expect(")")
+        fcall = FuncCall(arg1, ret_args, src=itoken.src, coords=arg1.coords)
+        fcall.kwargs = kwargs
+        fcall.inject_args = inject_args
+        arg1 = fcall
+    elif op == "'":
+        f_coords = itoken.peak_coords()
+        fname_node = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        fcall = FuncCall(
+            fname_node,
+            [arg1], src=itoken.src, coords=f_coords)
+        if itoken.check("("):
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+            fcall.args.extend(ret_args)
+            fcall.kwargs = kwargs
+            fcall.inject_args = inject_args
+            itoken.expect(")")
+        arg1 = fcall
+    elif op == "\\":
+        f_coords = itoken.peak_coords()
+        fname = itoken.consume()
+        fcall = FuncCall(
+            Id(fname, src=itoken.src, coords=f_coords),
+            [arg1], src=itoken.src, coords=f_coords
+        )
+        arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        fcall.args.append(arg2)
+        arg1 = fcall
+    elif op == "@":
+        if itoken.peak() == "for":
+            # list comprehension
+            for_expr = parse_for(itoken)
+            arg1 = ListComprehension(list_type=arg1, loop=for_expr, src=itoken.src, coords=op_coords)
+        else:
+            # array literal
+            itoken.expect('{', "Array literals are constructed using the @{elems,...} syntax")
+            itoken.skip_empty_lines()
+            ret_args = parse_expr_list(itoken)
+            itoken.expect("}", msg="Missing closing bracket")
+            arg1 = ArrayLit(ret_args, base=expr_to_type(arg1), src=itoken.src, coords=op_coords)
+    elif op[-1] == ":":
+        if op == ":" and itoken.peak() in var_qualifiers:
+            # it's a var decl
+            arg1 = parse_var_decl(itoken, arg1, precedence, op_prec)
+        elif converted_to_slice:
+            if arg1.step is not None:
+                raise ParsingError(
+                    "Slices can have only 3 components - start:end:step",
+                    itoken
+                )
+            if not is_end_of_expr(itoken):
+                if op != ":":
+                    raise ParsingError(
+                        "Operator slices make sense only between the "
+                        "start and end expressions of a slice", itoken)
+                arg1.step = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        else:
+            converted_to_slice = True
+            arg2 = Empty()
+            if not is_end_of_expr(itoken):
+                arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+            sliceop = SliceExpr(src=itoken.src, coords=arg1.coords)
+            if op != ":":
+                sliceop.op = op[:-1]
+
+            if not isinstance(arg1, Empty):
+                sliceop.start = arg1
+            elif sliceop.op is not None:
+                raise ParsingError("Operator slices require both start and end expressions", itoken)
+
+            if not isinstance(arg2, Empty):
+                sliceop.end = arg2
+            elif sliceop.op is not None:
+                raise ParsingError("Operator slices require both start and end expressions", itoken)
+
+            arg1 = sliceop
+    elif op in {"=", "=<"} and isinstance(arg1, SliceExpr):
+        if isinstance(arg1.start, CallerContextExpr):
+            raise ParsingError("Caller context parameters cannot have default values", itoken)
+        decl = VarDecl(name=arg1.start.name, src=itoken.src, coords=arg1.coords, is_move=(op=="=<"))
+        if not isinstance(arg1.start, Id):
+            raise ParsingError("Variable name must be an identifier", itoken)
+        decl.type = expr_to_type(arg1.end)
+        decl.value = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        arg1 = decl
+    elif op == "[":
+        itoken.skip_empty_lines()
+        maybe_list_comp = itoken.peak() == "for"
+        ret_args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
+        itoken.expect("]")
+        if len(ret_args) == 1 and len(kwargs) == 0 and isinstance(ret_args[0], ForExpr):
+            # list comprehension with an explicit type
+            arg1 = ListComprehension(
+                list_type=arg1,
+                loop=ret_args[0], src=itoken.src, coords=op_coords
+            )
+        else:
+            arg1 = Select(
+                arg1, Args(ret_args, kwargs), src=itoken.src, coords=op_coords
+            )
+    elif op == "~":
+        if isinstance(arg1, AttachTags):
+            # parse right to left
+            arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+            arg1.tags.args[0] = AttachTags(
+                arg1.tags.args[0],
+                TagList([arg2]),
+                src=itoken.src, coords=op_coords
+            )
+        elif itoken.check("["):
+            ret_args, kwargs = parse_args_kwargs(itoken, is_taglist=True)
+            itoken.expect("]")
+            attach_tags = AttachTags(
+                arg1, TagList(ret_args, kwargs), src=itoken.src, coords=op_coords
+            )
+            arg1 = attach_tags
+        else:
+            arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+            attach_tags = AttachTags(
+                arg1, TagList([arg2]), src=itoken.src, coords=op_coords
+            )
+            arg1 = attach_tags
+    elif op == "{":
+        arg1 = parse_struct_literal(itoken, arg1)
+        if itoken.peak() == "~":
+            raise ParsingError(
+                "Only simple positional tags can be chained. "
+                "Please be explicit and put the tags in square brackets.",
+                itoken
+            )
+    elif op in {"++", "--"}:
+        arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
+    elif op == "=>":
+        arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=op_coords)
+    elif op == "." and arg1 is None:
+        # unary . aka toggle => expand to arg = True
+        arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        end_coord = arg2.coords[1] if arg2 is not None else op_coords[1]
+        arg1 = BinExpr(
+            arg2, Const(True, src=itoken.src, coords=arg2.coords), op="=", src=itoken.src, coords=[op_coords[0], end_coord]
+        )
+    else:
+        arg2 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        end_coord = arg2.coords[1] if arg2 is not None else arg1.coords[0] + len(op)
+        binop = BinExpr(
+            arg1, arg2, op, src=itoken.src,
+            coords=[arg1.coords[0], end_coord]
+        )
+        arg1 = binop
+    return arg1, converted_to_slice
 
 def parse_num_const(token: str, tk_coords, itoken):
     suffix_map = {
