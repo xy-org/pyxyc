@@ -2041,7 +2041,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                     inferred_type=c_symbol_type
                 )
             else:
-                assert isinstance(expr.arg2, xy.Id)
+                if not isinstance(expr.arg2, xy.Id):
+                    raise CompilationError("The right hand side of '.' must be an identifier", expr.arg2)
                 field_name = expr.arg2.name
                 struct_obj = arg1_obj.inferred_type
                 if field_name not in struct_obj.fields:

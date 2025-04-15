@@ -1092,6 +1092,7 @@ def test_parse_var_decl(code, exp_ast):
             c := :a;
             d := a:;
             e := :a+b;
+            h := a:b:c;
             f := (a:):(:b):(d);
             (a: int) = 5;
             g[a:b] = c[e:f];
@@ -1105,6 +1106,11 @@ def test_parse_var_decl(code, exp_ast):
                 ast.VarDecl("d", value=ast.SliceExpr(start=ast.Id("a"))),
                 ast.VarDecl("e", value=ast.SliceExpr(
                     end=ast.BinExpr(ast.Id("a"), ast.Id("b"), op="+"),
+                )),
+                ast.VarDecl("h", value=ast.SliceExpr(
+                    start=ast.Id("a"),
+                    end=ast.Id("b"),
+                    step=ast.Id("c"),
                 )),
                 ast.VarDecl("f", value=ast.SliceExpr(
                     start=ast.SliceExpr(start=ast.Id("a")),
@@ -1131,6 +1137,24 @@ def test_parse_var_decl(code, exp_ast):
                     ),
                     op="=",
                 )
+            ]),
+        ]
+    ],
+    [
+        """def main() -> void {
+            f := :x:;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.VarDecl("f", value=ast.SliceExpr(
+                    start=ast.SliceExpr(
+                        start=None,
+                        end=ast.Id("x")
+                    ),
+                    end=None,
+                    step=None,
+                )),
             ]),
         ]
     ],
@@ -1356,25 +1380,25 @@ def test_move_operators(code, exp_ast):
             ]),
         ]
     ],
-    # [
-    #     """def main() {
-    #         a = b = c;
-    #     }
-    #     """,
-    #     [
-    #         ast.FuncDef(ast.Id("main"), body=[
-    #             ast.BinExpr(
-    #                 ast.Id("a"),
-    #                 ast.BinExpr(
-    #                     ast.Id("b"),
-    #                     ast.Id("c"),
-    #                     op="="
-    #                 ),
-    #                 op="="
-    #             ),
-    #         ]),
-    #     ]
-    # ],
+    [
+        """def main() {
+            a = b = c;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.BinExpr(
+                    ast.Id("a"),
+                    ast.BinExpr(
+                        ast.Id("b"),
+                        ast.Id("c"),
+                        op="="
+                    ),
+                    op="="
+                ),
+            ]),
+        ]
+    ],
     [
         """def main() {
             sin();
@@ -1877,6 +1901,38 @@ def test_simple_expressions(code, exp_ast):
                 ]
             ), params=[
                 ast.VarDecl("a", type=ast.Id("Any"), is_param=True)
+            ]),
+        ]
+    ],
+    [
+        """def test(s: Struct) {
+            (s.addr)~[to=Byte];
+        }""",
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.AttachTags(
+                    ast.BinExpr(ast.Id("s"), ast.Id("addr"), op="."),
+                    tags=ast.TagList(
+                        kwargs={"to": ast.Id("Byte")}
+                    )
+                )
+            ], params=[
+                ast.VarDecl("s", type=ast.Id("Struct"), is_param=True)
+            ]),
+        ]
+    ],
+    [
+        """def test(s: Struct) {
+            Array~Int{0};
+        }""",
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.StructLiteral(
+                    name=ast.AttachTags(ast.Id("Array"), tags=ast.TagList([ast.Id("Int")])),
+                    args=[ast.Const(0)],
+                )
+            ], params=[
+                ast.VarDecl("s", type=ast.Id("Struct"), is_param=True)
             ]),
         ]
     ],

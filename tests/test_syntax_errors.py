@@ -128,7 +128,7 @@ def test_semicolon_and_fors(code, err_msg):
         """def main() {
             a := a +: ;
         }""",
-        "Operator slices require both start and end expressions"
+        "Unexpected end of expression"
     ),
     (
         """def main() {

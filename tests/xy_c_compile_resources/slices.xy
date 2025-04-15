@@ -27,11 +27,11 @@ def testIntSlices() {
     c := 0:x;
     d := 1:x:y;
     e := ::-1;
-    f := :x:;
+    f := :x;
     g := :x:y;
     i := x::y;
     j := x:y;
-    k := x:y:;
+    k := x:y;
 }
 
 struct Date {
@@ -61,5 +61,5 @@ def testDataSlices() {
     tomorrow := tomorrow();
     a := today:tomorrow;
     b := tomorrow:today:Date{-1L};
-    d := :tomorrow:;
+    d := :tomorrow;
 }

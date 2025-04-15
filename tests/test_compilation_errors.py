@@ -347,7 +347,7 @@ src.xy:1:17: error: Functions cannot return a type
         """\
 src.xy:2:13: error: Recursive structs are not possible
 |             field: MyStruct;
-              ^^^^^
+              ^^^^^^^^^^^^^^^
 """
     ),
     (

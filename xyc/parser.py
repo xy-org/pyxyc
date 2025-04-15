@@ -393,17 +393,18 @@ def parse_toplevel_type_expr(itoken):
 var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo"}
 
 operator_precedence = {
-    "^": 12, "unary[": 12, "unary'": 12,
-    "~": 11, "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11, "@": 11,
+    "^": 13, "unary[": 13, "unary'": 13,
+    "~": 12, # right assoc
+    "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11,
     "unary+": 10, "unary-": 10, "!": 10, "&": 10, '%': 10,
-    "\\": 9,
+    "\\": 9, "@": 9,
     "*": 8, "/": 8,
     "+": 7, "-": 7,
     "<": 6, "<=": 6, ">=": 6, ">": 6, ":": 6, "+:": 6, "*:": 6, "-:": 6,
     "==": 5, "!=": 5, "in": 5,
     "&": 4,
     "|": 3, "||": 3,
-    "=": 2, '+=': 2, '-=': 2, "|=": 2, "&=": 2, '*=': 2, '/=': 2, ".=": 2, "=<": 2, "=>": 2,
+    "=": 2, '+=': 2, '-=': 2, "|=": 2, "&=": 2, '*=': 2, '/=': 2, ".=": 2, "=<": 2, "=>": 2, # right assoc
 }
 MIN_PRECEDENCE=2
 UNARY_PRECEDENCE=10
@@ -417,7 +418,9 @@ def parse_expression(
         itoken, precedence=MIN_PRECEDENCE, is_struct=False,
         op_prec=operator_precedence, is_toplevel=True
 ):
-    arg1 = do_parse_expression(itoken, precedence, op_prec)
+    arg1 = parse_operand(itoken, precedence, op_prec)
+
+    arg1 = do_parse_expression(arg1, itoken, precedence, op_prec)
 
     if (precedence == MIN_PRECEDENCE and isinstance(arg1, SliceExpr)
         and arg1.step is None and arg1.end is not None
@@ -430,29 +433,135 @@ def parse_expression(
                 decl.is_callerContext = decl.is_pseudo = True
             elif isinstance(arg1.start, Id):
                 decl.name = arg1.start.name
+        decl.type = expr_to_type(arg1.end)
+        arg1 = decl
+    elif (precedence == MIN_PRECEDENCE and isinstance(arg1, BinExpr)
+        and arg1.op in {"=", "=<"}
+        and isinstance(arg1.arg1, SliceExpr)
+        and arg1.arg1.step is None
+        and is_toplevel):
+        # it's actually a var decl
+        decl = VarDecl(mutable=not is_struct, src=arg1.src, coords=arg1.coords)
+        decl.is_move = arg1.op == "=<"
+        if arg1.arg1.start is not None:
+            decl.coords = arg1.arg1.start.coords
+            if isinstance(arg1.arg1.start, CallerContextExpr):
+                decl.name = arg1.arg1.start.arg.name
+                decl.is_callerContext = decl.is_pseudo = True
+            elif isinstance(arg1.arg1.start, Id):
+                decl.name = arg1.arg1.start.name
             else:
                 raise ParsingError("Variable name must be an identifier", itoken)
-        decl.type = expr_to_type(arg1.end)
+        decl.type = expr_to_type(arg1.arg1.end) if arg1.arg1.end is not None else None
+        decl.value = arg1.arg2
+        if not is_struct:
+            decl.mutable = decl.value is None
         arg1 = decl
 
     return arg1
 
 def do_parse_expression(
+        arg1,
         itoken, precedence=MIN_PRECEDENCE,
         op_prec=operator_precedence,
 ):
-    if precedence >= MAX_PRECEDENCE:
-        arg1 = parse_operand(itoken, precedence, op_prec)
-    elif precedence < MAX_PRECEDENCE:
-        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
-
     converted_to_slice = False
-    op = itoken.peak()
-    while op in op_prec and op_prec[op] == precedence:
-        arg1, converted_to_slice = parse_operator(arg1, itoken, precedence, op_prec, converted_to_slice)
-        op = itoken.peak()
+    lookahead = itoken.peak()
+    my_slice = False
+    while op_prec.get(lookahead, -1) >= precedence:
+        if lookahead in {"(", "'", "\\", "{", "["}:
+            arg1, converted_to_slice = parse_operator(arg1, itoken, op_prec[lookahead], op_prec, converted_to_slice)
+            lookahead = itoken.peak()
+        elif lookahead == "~" and itoken.peakn(2)[1] == "[":
+            arg1, converted_to_slice = parse_operator(arg1, itoken, op_prec[lookahead], op_prec, converted_to_slice)
+            lookahead = itoken.peak()
+        else:
+            op = itoken.consume() # the operator
 
+            # check for postfix operator 
+            if op == "=>":
+                arg1 = UnaryExpr(arg1, op=op)
+                return arg1
+            elif op in {"++", "--"}:
+                arg1 = UnaryExpr(arg1, op=op)
+                lookahead = itoken.peak()
+                continue
+
+            # check for postfix :
+            if itoken.peak() in op_prec:
+                if op == ":" and op_prec[op] > op_prec[itoken.peak()]:
+                    arg1 = SliceExpr(arg1, None, None, src=itoken.src, coords=itoken.peak_coords())
+                    lookahead = itoken.peak()
+                    continue
+
+            if op == ":" and is_end_of_expr(itoken):
+                arg1 = SliceExpr(arg1, None, None, src=itoken.src, coords=itoken.peak_coords())
+                return arg1
+
+            if itoken.peak() in var_qualifiers and op == ":":
+                arg1 = parse_var_decl(itoken, arg1, precedence, op_prec)
+                lookahead = itoken.peak()
+                continue
+
+            rhs = parse_operand(itoken, precedence, op_prec)
+            lookahead = itoken.peak()
+            while (op_prec.get(lookahead, -1) > (op_prec[op] - int(is_right_assoc(lookahead)))):
+                plus_one = int(op_prec[lookahead] > op_prec[op])
+                if lookahead == "(":
+                    rhs, converted_to_slice = parse_operator(rhs, itoken, op_prec[op] + plus_one, op_prec, converted_to_slice)
+                elif lookahead == "~" and itoken.peakn(2)[1] == "[":
+                    rhs, converted_to_slice = parse_operator(rhs, itoken, op_prec[lookahead], op_prec, converted_to_slice)
+                    lookahead = itoken.peak()
+                else:
+                    rhs = do_parse_expression(rhs, itoken, op_prec[op] + plus_one, op_prec)
+                lookahead = itoken.peak()
+
+            arg1, my_slice = combine_op(op, arg1, rhs, my_slice, itoken)
     return arg1
+
+def combine_op(op, arg1, rhs, my_slice, itoken):
+    coords = [0, 0]
+    if arg1 is not None:
+        coords[0] = arg1.coords[0]
+    if rhs is not None:
+        coords[1] = rhs.coords[1]
+
+    if op in {":", "+:", "-:", "*:"}:
+        if my_slice:
+            if op != ":":
+                raise ParsingError("Operator slices make sense only between the start and end expressions of a slice", itoken)
+            arg1.step = rhs
+        else:
+            arg1 = SliceExpr(arg1, rhs)
+            if len(op) > 1:
+                arg1.op = op[0]
+        my_slice = True
+    elif op in {"=", "=<"} and isinstance(arg1, SliceExpr) and my_slice:
+        coords = arg1.start.coords if arg1.start else arg1.coords
+        decl = VarDecl(None, arg1.end, rhs)
+        if isinstance(arg1.start, CallerContextExpr):
+            raise ParsingError("Caller context parameters cannot have default values", itoken)
+        elif isinstance(arg1.start, Id):
+            decl.name = arg1.start.name
+        decl.is_move = op == "=<"
+        arg1 = decl
+    elif op == "." and arg1 is None:
+        coords = rhs.coords
+        arg1 = BinExpr(rhs, Const(True, src=rhs.src, coords=rhs.coords), op="=")
+    elif op == '~':
+        arg1 = AttachTags(arg1, TagList([rhs]))
+    elif op == "@" and isinstance(rhs, StructLiteral):
+        arg1 = ArrayLit(rhs.args, base=arg1)  # TODO should we really do that
+    else:
+        arg1 = BinExpr(arg1, rhs, op=op)
+
+    arg1.src = itoken.src
+    arg1.coords = coords
+
+    return arg1, my_slice
+
+def is_right_assoc(op):
+    return op in {"=", "+=", "-=", "*=", "/=", "&=", "|=", "=<", "~"}
 
 def parse_operand(itoken, precedence, op_prec):
     if itoken.peak() == "if":
@@ -530,7 +639,7 @@ def parse_operand(itoken, precedence, op_prec):
             # array type or literal
             coords = itoken.peak_coords()
             if itoken.peak() != "{":
-                type_name = parse_expression(itoken, precedence, op_prec=op_prec)
+                type_name = parse_expression(itoken, op_prec["["]+1, op_prec=op_prec)
                 itoken.expect("[", "Missing dimension of array. Syntax is @Type[dimension]")
                 dims = parse_expr_list(itoken)
                 arg1 = ArrayType(type_name, dims, src=itoken.src, coords=(coords[0], itoken.peak_coords()[1]))
@@ -552,7 +661,7 @@ def parse_operand(itoken, precedence, op_prec):
     elif itoken.peak() == "'":
         itoken.consume()
         f_coords = itoken.peak_coords()
-        fname = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        fname = parse_expression(itoken, op_prec["'"]+1, op_prec=op_prec)
         fcall = FuncCall(
             fname, src=itoken.src, coords=f_coords,
             inject_context=True
@@ -573,13 +682,13 @@ def parse_operand(itoken, precedence, op_prec):
     elif itoken.peak() == "^":
         coords = itoken.peak_coords()
         itoken.consume()
-        arg1 = parse_expression(itoken, precedence+1, op_prec=op_prec)
+        arg1 = parse_expression(itoken, op_prec["^"]+1, op_prec=op_prec)
         arg1 = CallerContextExpr(arg1, src=itoken.src, coords=coords)
     elif itoken.peak() in {"++", "--"}:
         raise ParsingError("Prefix increment and decrement are not supported. "
                         "More infor at TBD", itoken)
     elif itoken.peak() == ".":
-        arg1 = None  # unary "."
+        return None  # unary "."
     elif itoken.peak() in {"+", "-", "!", "&", "%"}:
         coords = itoken.peak_coords()
         op = itoken.consume()
@@ -591,7 +700,18 @@ def parse_operand(itoken, precedence, op_prec):
                 arg1.value_str = f'-{arg1.value_str}'
         else:
             arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=coords)
+    elif itoken.peak() == ":":
+        coords = itoken.peak_coords()
+        itoken.consume()
+        if is_end_of_expr(itoken):
+            arg1 = SliceExpr(src=itoken.src, coords=coords)
+        else:
+            itoken.i -= 1
+            arg1 = None
     else:
+        arg1 = None
+
+    if arg1 is None:
         tk_coords = itoken.peak_coords()
         token = itoken.consume()
         if token in {"true", "false"}:
@@ -608,7 +728,7 @@ def parse_operand(itoken, precedence, op_prec):
             itoken.expect('"')
             arg1 = parse_str_literal(token, tk_coords[0], itoken)
         elif token == ":":
-            arg1 = Empty(src=itoken.src, coords=tk_coords)
+            arg1 = None
             itoken.i -= 1
         elif token[-1] == ":":
             raise ParsingError("Operator slices require a start.", itoken)
@@ -852,11 +972,11 @@ def parse_num_const(token: str, tk_coords, itoken):
     return res
 
 def parse_var_decl(itoken, name_token, precedence, op_prec):
-    decl = VarDecl(src=itoken.src, coords=name_token.coords)
+    decl = VarDecl(src=itoken.src, coords=name_token.coords if name_token else itoken.peak_coords())
     if isinstance(name_token, CallerContextExpr):
         decl.name = name_token.arg.name
         decl.is_callerContext = True
-    elif not isinstance(name_token, Empty):
+    elif not isinstance(name_token, Empty) and name_token is not None:
         decl.name = name_token.name
     else:
         decl.coords = itoken.peak_coords()
@@ -872,7 +992,7 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
     if itoken.peak() in var_qualifiers:
         raise ParsingError("Only one variable qualifier is allowed.", itoken)
     
-    if not is_end_of_expr(itoken):
+    if not is_end_of_expr(itoken) and itoken.peak() != "=":
         decl.type = expr_to_type(
             parse_expression(itoken, precedence+1, op_prec=op_prec)
         )
@@ -882,7 +1002,7 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
     return decl
 
 def is_end_of_expr(itoken):
-    return itoken.peak() in {";", ")", "]", "}", "=", ",", "=<", "=>"}
+    return itoken.peak() in {";", ")", "]", "}", ","}
 
 def parse_if(itoken):
     if_coords = itoken.peak_coords()
