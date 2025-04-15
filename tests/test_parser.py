@@ -1158,6 +1158,21 @@ def test_parse_var_decl(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def main() -> Slice {
+            return ::-1;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("Slice"), body=[
+                ast.Return(ast.SliceExpr(
+                    start=None,
+                    end=None,
+                    step=ast.Const(-1),
+                ))
+            ]),
+        ]
+    ],
 ])
 def test_parse_slices(code, exp_ast):
     act_ast = parse_code(code)
