@@ -490,6 +490,11 @@ def do_parse_expression(
             # check for postfix :
             if itoken.peak() in op_prec:
                 if op == ":" and op_prec[op] > op_prec[itoken.peak()]:
+                    if my_slice:
+                        if itoken.peak() == "=":
+                            raise ParsingError("Extra ':' in variable declaration", itoken)
+                        else:
+                            raise ParsingError("If a second ':' is present the step is mandatory", itoken)
                     arg1 = SliceExpr(arg1, None, None, src=itoken.src, coords=itoken.peak_coords())
                     lookahead = itoken.peak()
                     continue
