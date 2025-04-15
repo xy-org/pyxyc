@@ -51,7 +51,7 @@ from xyc.compiler import CompilationError
     "namedFields",
     "positionalTags",
     "indices/pseudoFields",
-    "guards",
+    "errors/guards",
     "indices/indices",
     "indices/refValue",
     "dtors/dtors1",
