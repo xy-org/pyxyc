@@ -1951,6 +1951,23 @@ def test_simple_expressions(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def test(s: Struct) {
+            func(s)~Tag;
+        }""",
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.AttachTags(
+                    ast.FuncCall(ast.Id("func"), args=[ast.Id("s")]),
+                    tags=ast.TagList(
+                        [ast.Id("Tag")]
+                    )
+                )
+            ], params=[
+                ast.VarDecl("s", type=ast.Id("Struct"), is_param=True)
+            ]),
+        ]
+    ],
 ])
 def test_expressions(code, exp_ast):
     act_ast = parse_code(code)

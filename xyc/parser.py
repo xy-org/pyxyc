@@ -393,9 +393,8 @@ def parse_toplevel_type_expr(itoken):
 var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo"}
 
 operator_precedence = {
-    "^": 13, "unary[": 13, "unary'": 13,
-    "~": 12, # right assoc
-    "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11,
+    "^": 12, "unary[": 12, "unary'": 12,
+    "~": 11, "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11,
     "unary+": 10, "unary-": 10, "!": 10, "&": 10, '%': 10,
     "\\": 9, "@": 9,
     "*": 8, "/": 8,
