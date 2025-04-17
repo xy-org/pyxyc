@@ -52,6 +52,7 @@ from xyc.compiler import CompilationError
     "positionalTags",
     "indices/pseudoFields",
     "errors/guards",
+    "errors/richErrors",
     "indices/indices",
     "indices/refValue",
     "dtors/dtors1",
@@ -97,7 +98,11 @@ def test_c_compilation(resource_dir, filename):
         src_path,
         module_name=module_name
     )
-    c_project = builder.compile_project(project, os.path.dirname(src_path))
+    rich_errors = "richErrors" in filename
+    c_project = builder.compile_project(
+        project, os.path.dirname(src_path),
+        rich_errors=rich_errors, abort_on_unhandled=not rich_errors
+    )
     assert len(c_project) == 1
     assert f"{module_name}.c" in c_project
     c_act = stringify(c_project[f"{module_name}.c"])

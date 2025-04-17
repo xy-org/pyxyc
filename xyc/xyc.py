@@ -35,7 +35,8 @@ def setup_builder(cli_args=None):
     builder = Builder(
         input=args.path, output=args.output,
         compile_only=args.compile_only,
-        library_path=args.library_path
+        library_path=args.library_path,
+        rich_errors=True, abort_on_unhandled=False
     )
     return builder
 

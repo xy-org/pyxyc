@@ -2321,7 +2321,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_caller_context_expr(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
-    
+
 def compile_assign(dest_obj, value_obj, cast, cfunc, ctx, expr_node, is_move=False):
     check_type_compatibility(expr_node, dest_obj, value_obj, ctx)
 
@@ -3786,12 +3786,24 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     out_guards = func_obj.xy_node.out_guards if func_obj.xy_node is not None else []
     if (len(in_guards) + len(out_guards)) > 0:
         cast.includes.append(c.Include("stdlib.h"))
+    param_print_code = []
     for guard in in_guards:
         guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
         if not is_ct_true(guard_obj):
+            on_guard_fail = []
+            gen_guard_failed_code(expr, guard, func_obj, cast, on_guard_fail, ctx)
+            if len(param_print_code) == 0:
+                gen_print_params_code(cast, param_print_code, ctx)
+            on_guard_fail.extend(param_print_code)
+
+            if ctx.builder.abort_on_unhandled:
+                on_guard_fail.append(c.FuncCall("abort"))
+            else:
+                on_guard_fail.append(c.FuncCall("exit", args=[c.Const(200)]))
+
             cfunc.body.append(c.If(
                 cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
-                body=[c.FuncCall("abort")]
+                body=on_guard_fail
             ))
 
     rtype_obj = func_obj.rtype_obj
@@ -3931,6 +3943,101 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
     return res_obj
 
+def gen_guard_failed_code(expr, guard, func_obj: FuncObj, cast, cbody, ctx: CompilerContext):
+    if not ctx.builder.rich_errors:
+        return
+    
+    cast.includes.append(c.Include("stdio.h"))
+    fn = os.path.relpath(guard.src.filename)
+    cbody.append(c.FuncCall("fprintf", args=[
+        c.Id("stderr"),
+        c.Const(f"\"\\n{fn}:%d \""),
+        c.Const(find_lineof(guard))
+    ]))
+    func_fullname = func_obj.module_header.module_name if func_obj.module_header else ctx.module_name
+    func_fullname += "." + ctx.eval_to_id(func_obj.xy_node.name)
+    cbody.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const(f"\"Guard failed when calling {func_fullname}!\\n\"")]))
+    linesrc = escape_str(find_linesrc(guard))
+    cbody.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const(f"\"| %s\\n\""), c.Const(f"\"{linesrc}\"")]))
+
+def gen_print_params_code(cast, cbody, ctx: CompilerContext):
+    if not ctx.builder.rich_errors:
+        return
+    cbody.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const("\"Arguments to Function are:\\n\"")]))
+    for name, obj in ctx.ns.items():
+        gen_print_var(name, obj, cast, cbody, ctx)
+
+def gen_print_var(name, obj: CompiledObj, cast, cbody, ctx):
+    fmt = []
+    args = []
+
+    decompose_obj_in_prints(obj, fmt, args, ctx)
+
+    fmt = "".join(fmt)
+    cbody.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const(f"\"    %s={fmt}\\n\""), c.Const(f"\"{name}\""), *args]))
+
+def decompose_obj_in_prints(obj, fmt, args, ctx: CompilerContext):
+    if obj.c_node is None and isinstance(obj, LazyObj): obj = obj.compiled_obj
+    if obj.c_node is None or obj.inferred_type is None:
+        fmt.append("\"???\"")
+
+    c_node = obj.c_node
+    if isinstance(obj, VarObj): c_node = c.Id(c_node.name)
+
+    type_obj = obj.inferred_type
+    tags = type_obj.tags
+    if isinstance(type_obj, TypeExprObj):
+        type_obj = type_obj.type_obj
+
+    if type_obj.builtin:
+        specifier = {
+            "Int": "%d",
+            "Size": "%zd",
+            "Ptr": "%p",
+            "Uint": "%u",
+            "Bool": "%d",
+            "Float": "%f",
+            "Double": "%f",
+        }.get(type_obj.name, None)
+        if specifier is not None:
+            fmt.append(specifier)
+            args.append(c_node)
+        else:
+            fmt.append("???")
+    else:
+        fmt.append(type_obj.name)
+        fmt.append("{")
+        trailing_comma = False
+        for fname, field in type_obj.fields.items():
+            if field.is_pseudo: continue
+            if field.c_node is None: continue
+            fmt.append(field.xy_node.name + "=")
+            fget_obj = field_get(obj, field, None, None, ctx)
+            decompose_obj_in_prints(fget_obj, fmt, args, ctx)
+            fmt.append(", ")
+            trailing_comma = True
+        if trailing_comma: fmt.pop()
+        fmt.append("}")
+    if len(tags):
+        fmt.append("~")
+        fmt.append(escape_str(fmt_tags(tags, ctx)))
+
+def fmt_tags(tags: dict, ctx: CompilerContext):
+    res = ["["]
+    for tag_name, tag_obj in tags.items():
+        res.append(f"{tag_name}=")
+        if isinstance(tag_obj, TypeExprObj):
+            type_obj = tag_obj.type_obj
+            res.append(type_obj.name)
+        elif isinstance(tag_obj, TypeObj):
+            res.append(tag_obj.name)
+        else:
+            res.append("???")
+        res.append(",")
+    if len(tags) > 0: res.pop()
+    res.append("]")
+    return "".join(res)
+
 def compile_nameof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     redact_code(arg_exprs[0], cast, cfunc, ctx)
     if isinstance(arg_exprs[0].compiled_obj, ArrTypeObj):
@@ -4004,11 +4111,7 @@ def compile_lineof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     else:
         xy_node = expr
 
-    start = xy_node.coords[0]
-    line_num = 1 if start >= 0 else -1
-    for i in range(start):
-        if xy_node.src.code[i] == "\n":
-            line_num += 1
+    line_num = find_lineof(xy_node)
 
     return compile_expr(
         xy.Const(
@@ -4016,6 +4119,23 @@ def compile_lineof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         ),
         cast, cfunc, ctx
     )
+
+def find_lineof(node):
+    start = node.coords[0]
+    line_num = 1 if start >= 0 else -1
+    for i in range(start):
+        if node.src.code[i] == "\n":
+            line_num += 1
+    return line_num
+
+def find_linesrc(node):
+    i = node.coords[0] - 1
+    while i >= 0 and node.src.code[i] != "\n":
+        i -= 1
+    j = node.coords[1]
+    while j < len(node.src.code) and node.src.code[j] != "\n":
+        j += 1
+    return node.src.code[i+1:j]
 
 def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: CompilerContext):
     if len(expr.loop.over) != 1:

@@ -17,13 +17,16 @@ class CompiledModule:
 class Builder:
     def __init__(self, input: str, output: str | None = None,
                  compile_only=False, work_dir=".xyc_build",
-                 library_path: list[str] = [], builtin_lib_path: str = None):
+                 library_path: list[str] = [], builtin_lib_path: str = None,
+                 rich_errors=False, abort_on_unhandled=True):
         self.input = input
         self.output = output
         self.project_name = path.splitext(path.basename(path.abspath(input)))[0]
         if not output:
             self.output = self.project_name
         self.module_cache = {}
+        self.rich_errors = rich_errors
+        self.abort_on_unhandled = abort_on_unhandled
 
         package_paths = []
         for lib in library_path:
@@ -201,11 +204,11 @@ def parse_file(fn):
     src = Source(fn, code)
     return parse_code(src)
 
-def compile_project(project, module_path):
+def compile_project(project, module_path, rich_errors=False, abort_on_unhandled=True):
     # TODO remove that function
     print("Compiling...")
     res = {}
-    builder = Builder("")
+    builder = Builder("", rich_errors=rich_errors, abort_on_unhandled=abort_on_unhandled)
     builder.compile_builtins()
     for module_name, asts in project.items():
         header, c_srcs = compile_module(builder, module_name, asts, module_path)
