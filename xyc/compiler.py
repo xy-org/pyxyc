@@ -245,6 +245,7 @@ class ExprObj(CompiledObj):
     compiled_obj: CompiledObj | None = None
     first_cnode_idx: int = -1
     num_cnodes: int = -1
+    tmp_var_names: set = field(default_factory=set)
     is_iter_ctor: bool = False
 
 @dataclass
@@ -745,7 +746,7 @@ class CompilerContext:
         return self.data_namespaces[-1]
 
     def pop_ns(self):
-        self.data_namespaces.pop()
+        return self.data_namespaces.pop()
 
     def ensure_func_space(self, name: xy.Id):
         if name.name not in self.func_ns:
@@ -3169,8 +3170,16 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     arg_exprs = ArgList()
     expr_to_move_idx = None
     for i in range(len(expr.args)):
+
         dummy_func = c.Func("dummy")
+        ctx.push_ns()
         obj = compile_expr(expr.args[i], cast, dummy_func, ctx, deref=False)
+        ns = ctx.ns
+        if isinstance(obj, ExprObj):
+            obj.tmp_var_names.update(ns.keys())
+        ctx.pop_ns()
+        ctx.ns.update(ns)
+
         if isinstance(obj, IdxObj):
             obj = idx_decay_to_ptr_or_val(obj, cast, dummy_func, ctx)
         if len(dummy_func.body):
@@ -3452,7 +3461,10 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     elif (is_builtin_func(func_obj, "and") or is_builtin_func(func_obj, "or")) and arg_exprs[0].inferred_type is ctx.bool_obj and arg_exprs[1].inferred_type is ctx.bool_obj:
         redact_code(arg_exprs[1], cast, cfunc, ctx)
         dummy_func = c.Func("dummy")
+        ctx.push_ns()
         defered_expr = compile_expr(arg_exprs[1].xy_node, cast, dummy_func, ctx, deref=True)
+        defered_ns = ctx.ns
+        ctx.pop_ns()
         c_op = "&&" if is_builtin_func(func_obj, "and") else "||"
         non_empty_body_nodes = [n for n in dummy_func.body if not isinstance(n, c.Empty)]
         if len(non_empty_body_nodes) == 0:
@@ -3475,6 +3487,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             res.body.extend(dummy_func.body)
             res.body.append(c.Expr(c.Id(tmp_obj.c_node.name), defered_expr.c_node, op="="))
             cfunc.body.append(res)
+            call_dtors(defered_ns, cast, res, ctx)
             return ExprObj(
                 xy_node=expr,
                 c_node=c.Id(tmp_obj.c_node.name),
@@ -4292,6 +4305,12 @@ def redact_code(obj: ExprObj, cast, cfunc, ctx):
     if obj.num_cnodes > 0:
         for idx in range(obj.first_cnode_idx, obj.first_cnode_idx + obj.num_cnodes):
             cfunc.body[idx] = c.Empty()
+    if isinstance(obj, ExprObj):
+        for tmp_var_name in obj.tmp_var_names:
+            ctx.ns.pop(tmp_var_name, None)
+    if isinstance(obj.compiled_obj, ExprObj):
+        for tmp_var_name in obj.compiled_obj.tmp_var_names:
+            ctx.ns.pop(tmp_var_name, None)
 
 def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
     assert len(arg_exprs) in range(1, 3)

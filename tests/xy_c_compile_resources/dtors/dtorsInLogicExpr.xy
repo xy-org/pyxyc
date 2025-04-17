@@ -1,0 +1,29 @@
+import libc~[CLib{headers=@{"string.h"}}] in c;
+
+struct Str {
+    addr: Ptr;
+}
+
+def dtor(s: Str) {
+    c.free(s.addr);
+}
+
+def createStr1() -> Str {
+    return Str{};
+}
+
+def createStr2() -> Str {
+    return Str{};
+}
+
+def copy(s: Str) -> Str {
+    return Str{};
+}
+
+def startswith(str: Str, prefix: Str) -> Bool {
+    return c.strcmp(str.addr, prefix.addr);
+}
+
+def test(s1: Str, s2: Str) -> Bool {
+    return createStr1()'copy'startswith(s1) | createStr2()'copy'startswith(s2);
+}

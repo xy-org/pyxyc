@@ -59,6 +59,7 @@ from xyc.compiler import CompilationError
     "dtors/dtors2",
     "dtors/dtors3",
     "dtors/dtors4",
+    "dtors/dtorsInLogicExpr",
     "paramsVsArgs",
     "boundaryExpr/boundaryExpr1",
     "boundaryExpr/boundaryExpr2",
