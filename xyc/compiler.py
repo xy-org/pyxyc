@@ -621,11 +621,14 @@ def check_type_compatibility(xy_node, expr1_obj, expr2_obj, ctx, fcall_rules=Fal
         )
 
 def fcall_sig(name, args_inferred_types, inject_args=False):
-    return name + "(" + \
-        ", ".join(fmt_type(t) for t in args_inferred_types) + \
+    sig = name + "(" + \
+        ", ".join(fmt_type(t) for t in args_inferred_types)
+    if len(args_inferred_types.kwargs) > 0:
+        sig += ", " + \
         ", ".join(f"{pname}: {fmt_type(t)}" for pname, t in args_inferred_types.kwargs.items()) + \
-        (", ..." if inject_args else "" )+ \
-        ")"
+        (", ..." if inject_args else "" )
+    sig +=  ")"
+    return sig
 
 def func_sig(fobj: FuncObj, include_ret=False):
     fdef: xy.FuncDef = fobj.xy_node
