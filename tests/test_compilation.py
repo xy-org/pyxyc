@@ -47,6 +47,7 @@ from xyc.compiler import CompilationError
     "strings/stringInterpolation",
     "strings/embedFile",
     "strings/chars",
+    "strings/escapes",
     "namedArguments",
     "namedFields",
     "positionalTags",

@@ -2944,14 +2944,17 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             )
     
     if not interpolation:
-        str_const = remove_xy_escapes(parts[0].value if len(parts) else "")
+        str_const, str_len = to_cstr(
+            parts[0] if len(parts) else expr,
+            parts[0].value if len(parts) else ""
+        )
         args = ArgList(
             args=[
                 ExprObj(
                     expr, c.Const(f'"{str_const}"'), ctx.ptr_obj
                 ),
                 ExprObj(
-                    expr, c.Const(cstr_len(str_const)), ctx.size_obj
+                    expr, c.Const(str_len), ctx.size_obj
                 )
             ]
         )
@@ -2965,13 +2968,13 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             c_node=c.Id(builder_tmpvar.c_node.name),
             inferred_type=func_desc.rtype_obj
         )
-        full_str = remove_xy_escapes(expr.full_str)
+        full_str, full_str_len = to_cstr(expr, expr.full_str)
         builder_tmpvar.c_node.value = do_compile_fcall(
             expr=expr,
             func_obj=func_desc,
             arg_exprs=ArgList([
                 ConstObj(c_node=c.Const(f'"{full_str}"'), value=""),
-                ConstObj(c_node=c.Const(cstr_len(full_str)), value=0)
+                ConstObj(c_node=c.Const(full_str_len), value=0)
             ]),
             cast=cast,
             cfunc=cfunc,
@@ -2979,13 +2982,13 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
         ).c_node
         for part in parts:
             if is_str_const(part):
-                part_value = remove_xy_escapes(part.value)
+                part_value, part_value_len = to_cstr(part, part.value)
                 append_call = find_and_call(
                     "append",
                     ArgList([
                         builder_tmpvar_id,
                         ExprObj(c_node=c.Const('"' + part_value + '"'), inferred_type=ctx.ptr_obj),
-                        ExprObj(c_node=c.Const(cstr_len(part_value)), inferred_type=ctx.size_obj),
+                        ExprObj(c_node=c.Const(part_value_len), inferred_type=ctx.size_obj),
                     ]),
                     cast,
                     cfunc,
@@ -2997,12 +3000,13 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                 assert isinstance(part, xy.Args)
                 if part.is_introspective:
                     part_str = part.args[0].src.code[part.args[0].coords[0]:part.args[0].coords[1]] + "="
+                    part_str, part_str_len = to_cstr(part, part_str)
                     append_call = find_and_call(
                         "append",
                         ArgList([
                             builder_tmpvar_id,
                             ExprObj(c_node=c.Const('"' + part_str + '"'), inferred_type=ctx.ptr_obj),
-                            ExprObj(c_node=c.Const(cstr_len(part_str)), inferred_type=ctx.size_obj),
+                            ExprObj(c_node=c.Const(part_str_len), inferred_type=ctx.size_obj),
                         ]),
                         cast,
                         cfunc,
@@ -3043,7 +3047,7 @@ def compile_inlinec(expr, parts, cast, cfunc, ctx):
     inlinec = ""
     for p in parts:
         if is_str_const(p):
-            inlinec += remove_xy_escapes(p.value)
+            inlinec += p.value.replace("\\{", "{")
         else:
             assert isinstance(p, xy.Args)
             assert len(p.args) == 1
@@ -3075,19 +3079,79 @@ def ct_isTrue(obj: CompiledObj):
         obj.xy_node
     )
 
-def cstr_len(s: str) -> int:
-    res = 0
-    i = 0
-    while i < len(s):
-        res += 1
-        if s[i] == '\\':
-            i += 2
-        else:
-            i += 1
-    return res
+def to_cstr(xy_node, s: str):
+    c_esc_seq = {'a', 'b', 'f', 'n', 'r', 't', 'v', '\\', '"'}
+    c_esc_codes = {ord(c) for c in c_esc_seq}
 
-def remove_xy_escapes(s: str) -> str:
-    return s.replace("\\{", "{")
+    def allowed_c_char(c):
+        return c >= 32 and c <= 126
+
+    def is_num(c):
+        return c >= ord('0') and c <= ord('9')
+
+    res = []
+    res_len = 0
+    bstr = s.encode("utf-8")
+    i = 0
+    while i < len(bstr):
+        if bstr[i] == ord('\\'):
+            if i+1 >= len(bstr):
+                raise CompilationError("Invalid escape sequence in string", xy_node)
+            if bstr[i+1] in c_esc_codes:
+                res.extend((chr(bstr[i]), chr(bstr[i+1])))
+                res_len += 1
+                i += 2
+            elif bstr[i+1] == ord('{'):
+                res.append(chr(bstr[i+1]))
+                res_len += 1
+                i += 2
+            elif is_num(bstr[i+1]):
+                if not (i+3 < len(bstr) and is_num(bstr[i+1]) and is_num(bstr[i+2])):
+                    raise CompilationError("Invalid escape sequence. Required exactly 3 numbers needed in escape", xy_node)
+                res.extend((chr(bstr[i]), chr(bstr[i+1]), chr(bstr[i+2]), chr(bstr[i+3])))
+                res_len += 1
+                i += 4
+            elif bstr[i+1] == ord("x"):
+                cp = cstr_hexadecimal(xy_node, bstr, i+2, 2)
+                i += 4
+                res.append(byte_to_cstr(cp))
+                res_len += 1
+            elif bstr[i+1] == ord("u"):
+                cp = cstr_hexadecimal(xy_node, bstr, i+2, 4)
+                i += 6
+                res_len += codepoint_to_bytes(cp, res)
+            elif bstr[i+1] == ord("U"):
+                cp = cstr_hexadecimal(xy_node, bstr, i+2, 8)
+                i += 10
+                res_len += codepoint_to_bytes(cp, res)
+            else:
+                raise CompilationError("Invalid escape sequence in string", xy_node)
+        else:
+            if allowed_c_char(bstr[i]):
+                res.append(chr(bstr[i]))
+            else:
+                res.append(byte_to_cstr(bstr[i]))
+            res_len += 1
+            i += 1
+    return "".join(res), res_len
+
+def cstr_hexadecimal(expr, bstr, i, required):
+    if (i + required - 1) >= len(bstr):
+        raise CompilationError("Invalid escape sequence. Required exactly 4 symbols in the range 0-F", expr)
+    hd_str = ""
+    for j in range(required):
+        hd_str = hd_str + chr(bstr[i+j])
+    return int(hd_str, base=16)
+
+def codepoint_to_bytes(cp, res):
+    res_len = 0
+    for byte in chr(cp).encode("utf-8"):
+        res.append(byte_to_cstr(byte))
+        res_len += 1
+    return res_len
+
+def byte_to_cstr(byte):
+    return "\\" + ("00" + oct(byte)[2:])[-3:]
 
 def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
     arg_inferred_types = ArgList(
