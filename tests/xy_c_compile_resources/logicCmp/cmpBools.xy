@@ -3,11 +3,6 @@ def test(a: Bool, b: Bool) {
     d := a != b;
     e := !a;
     f := !!a;
-    g := a > b;
-    h := a >= b;
-    i := a < b;
-    j := a <= b;
     k := a & b;
     l := a | b;
-    m := cmp(a, b);
 }

@@ -3,13 +3,13 @@
 #include <stdbool.h>
 
 int32_t splitNamespaces_abs(int32_t p_a) {
-    int32_t tmp_1 = 0;
+    int32_t tmp_0 = 0;
     if (p_a >= 0) {
-        tmp_1 = p_a;
+        tmp_0 = p_a;
     } else {
-        tmp_1 = -p_a;
+        tmp_0 = -p_a;
     }
-    return tmp_1;
+    return tmp_0;
 }
 
 void splitNamespaces_test(void) {

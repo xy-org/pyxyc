@@ -89,6 +89,7 @@ from xyc.compiler import CompilationError
     "indices/flags/flags",
     "logicCmp/cmpBools",
     "logicCmp/cmpBits",
+    "logicCmp/cmpNums",
     "logicCmp/shortcircuit",
     "ctti/srcLocFuncs",
     "funcs/paramTypeEnum",

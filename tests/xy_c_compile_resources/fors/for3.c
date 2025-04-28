@@ -73,17 +73,17 @@ void for3_double(for3_Array* p_arr1) {
             if (!(tmp_1_iter < p_arr1->m_len)) {
                 abort();
             }
+            float* tmp_3_arg = for3_get(p_arr1, tmp_1_iter);
+            for3_set(p_arr1, tmp_1_iter, 2.0f * *tmp_3_arg);
+            if (!(tmp_1_iter < p_arr1->m_len)) {
+                abort();
+            }
             float* tmp_4_arg = for3_get(p_arr1, tmp_1_iter);
-            for3_set(p_arr1, tmp_1_iter, 2.0f * *tmp_4_arg);
             if (!(tmp_1_iter < p_arr1->m_len)) {
                 abort();
             }
             float* tmp_5_arg = for3_get(p_arr1, tmp_1_iter);
-            if (!(tmp_1_iter < p_arr1->m_len)) {
-                abort();
-            }
-            float* tmp_6_arg = for3_get(p_arr1, tmp_1_iter);
-            for3_set(p_arr1, tmp_1_iter, *tmp_6_arg + *tmp_5_arg);
+            for3_set(p_arr1, tmp_1_iter, *tmp_5_arg + *tmp_4_arg);
         }
     }
 }

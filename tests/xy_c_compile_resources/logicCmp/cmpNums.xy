@@ -1,0 +1,19 @@
+def test(a: (Ushort, Int), b: %a) {
+    c := a == b;
+    d := a != b;
+    e := !a;
+    f := !!a;
+    g := a > b;
+    h := a >= b;
+    i := a < b;
+    j := a <= b;
+}
+
+def test(a: (Float, Double), b: %a) {
+    c := a == b;
+    d := a != b;
+    g := a > b;
+    h := a >= b;
+    i := a < b;
+    j := a <= b;
+}

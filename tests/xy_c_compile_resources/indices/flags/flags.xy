@@ -19,7 +19,7 @@ def set(base: mut OpenFlags, fields: OpenFlags, set: Bool) {
     base.value = (base.value'to(Bits32) | (fields.value * set'to(Int))'to(Bits32))'to(Int);
 }
 
-def cmp(l: OpenFlags, r: OpenFlags) cmp(l.value, r.value);
+def cmpEq(l: OpenFlags, r: OpenFlags) l.value == r.value;
 
 def or(l: OpenFlags, r: OpenFlags) OpenFlags{(l.value'to(Bits32) | r.value'to(Bits32))'to(Int)};
 

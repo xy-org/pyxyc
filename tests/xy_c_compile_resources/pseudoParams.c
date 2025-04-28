@@ -21,13 +21,13 @@ int32_t pseudoParams_func2__Int__Int(int32_t p_x) {
 }
 
 int32_t pseudoParams_func2__Int__Double(int32_t p_x, double p_y) {
-    int32_t tmp_1 = 0;
+    int32_t tmp_0 = 0;
     if (p_y > 0) {
-        tmp_1 = p_x;
+        tmp_0 = p_x;
     } else {
-        tmp_1 = p_x * 2;
+        tmp_0 = p_x * 2;
     }
-    return tmp_1;
+    return tmp_0;
 }
 
 void pseudoParams_test(void) {

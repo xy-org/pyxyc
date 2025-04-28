@@ -21,8 +21,9 @@ int32_t ifs3_helper3(void) {
 int32_t ifs3_test1(void) {
     int32_t tmp_0_arg = ifs3_helper1();
     int32_t tmp_1_arg = ifs3_helper2();
+    int32_t tmp_2_arg = ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3());
     int32_t tmp_3 = 0;
-    if (ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3()) > 0) {
+    if (tmp_2_arg > 0) {
         tmp_3 = 1;
     } else {
         tmp_3 = 0;
@@ -33,13 +34,15 @@ int32_t ifs3_test1(void) {
 int32_t ifs3_test2(void) {
     int32_t tmp_0_arg = ifs3_helper1();
     int32_t tmp_1_arg = ifs3_helper2();
+    int32_t tmp_2_arg = ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3());
     int32_t tmp_3 = 0;
-    if (ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3()) > 0) {
+    if (tmp_2_arg > 0) {
         tmp_3 = 0;
     } else {
         int32_t tmp_4_arg = ifs3_helper3();
         int32_t tmp_5_arg = ifs3_helper2();
-        if (ifs3_compute(tmp_4_arg, tmp_5_arg, ifs3_helper1()) < 0) {
+        int32_t tmp_6_arg = ifs3_compute(tmp_4_arg, tmp_5_arg, ifs3_helper1());
+        if (tmp_6_arg < 0) {
             tmp_3 = 1;
         } else {
             tmp_3 = 2;
@@ -51,13 +54,15 @@ int32_t ifs3_test2(void) {
 int32_t ifs3_test3(void) {
     int32_t tmp_0_arg = ifs3_helper1();
     int32_t tmp_1_arg = ifs3_helper2();
+    int32_t tmp_2_arg = ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3());
     int32_t tmp_3 = 0;
-    if (ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3()) > 0) {
+    if (tmp_2_arg > 0) {
         tmp_3 = 0;
     } else {
         int32_t tmp_4_arg = ifs3_helper3();
         int32_t tmp_5_arg = ifs3_helper2();
-        if (ifs3_compute(tmp_4_arg, tmp_5_arg, ifs3_helper1()) == 0) {
+        int32_t tmp_6_arg = ifs3_compute(tmp_4_arg, tmp_5_arg, ifs3_helper1());
+        if (tmp_6_arg == 0) {
             int32_t tmp_7_arg = ifs3_helper3();
             int32_t tmp_8_arg = ifs3_helper2();
             tmp_3 = ifs3_compute(tmp_7_arg, tmp_8_arg, ifs3_helper1());
@@ -71,8 +76,9 @@ int32_t ifs3_test3(void) {
 void ifs3_test4(void) {
     int32_t tmp_0_arg = ifs3_helper1();
     int32_t tmp_1_arg = ifs3_helper2();
+    int32_t tmp_2_arg = ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3());
     int32_t tmp_5 = 0;
-    if (ifs3_compute(tmp_0_arg, tmp_1_arg, ifs3_helper3()) > 0) {
+    if (tmp_2_arg > 0) {
         int32_t tmp_3_arg = ifs3_helper3();
         int32_t tmp_4_arg = ifs3_helper2();
         tmp_5 = ifs3_compute(tmp_3_arg, tmp_4_arg, ifs3_helper1());

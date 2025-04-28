@@ -3,12 +3,7 @@ def test(a: Bits32, b: Bits32) {
     d := a != b;
     e := !a;
     f := !!a;
-    g := a > b;; == cmp(a, b) > 0 == (a \xor b) > 0 == a \xor b
-    h := a >= b;; == cmp(a, b) >= 0 == (a \xor b) >= 0 == 1s == (a ^ b) | ~0;
-    i := a < b;; == cmp(a, b) < 0 == (a \xor b) < 0 == 0s == (a ^ b) & 0;
-    j := a <= b;; == cmp(a, b) <= 0 == (a \xor b) <= 0 == ~(a \xor b);
     k := a & b;
     l := a | b;
-    m := cmp(a, b);
-    n := a - b;
+    m := a - b;
 }

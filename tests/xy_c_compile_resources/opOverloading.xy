@@ -2,8 +2,12 @@ struct MyInt {
     num: Int;
 }
 
-def cmp(a: MyInt, b: MyInt) -> Int {
-    return (a - b).num;
+def cmpGt(a: MyInt, b: MyInt) -> Bool {
+    return (a - b).num > 0;
+}
+
+def cmpLe(a: MyInt, b: MyInt) -> Bool {
+    return a.num <= b.num;
 }
 
 def add(a: MyInt, b: MyInt) -> MyInt {
@@ -51,8 +55,8 @@ def cmp(p1: MyInt, n: Int) -> Int {
     return p1.num - n;
 }
 
-def cmp(p1: Pair, p2: Pair) -> MyInt {
-    return p1.a - p2.a;
+def cmpGt(p1: Pair, p2: Pair) -> Bool {
+    return p1.a > p2.a;
 }
 
 def cmpPairs() -> Int {

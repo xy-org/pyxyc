@@ -93,15 +93,15 @@ int32_t dtors1_test3(int32_t p_rng, dtors1_Array* _res0) {
         return tmp_1_err;
     }
     dtors1_Array l_arr3 = {0};
-    dtors1_Array tmp_3 = (dtors1_Array){0};
+    dtors1_Array tmp_2 = (dtors1_Array){0};
     if (p_rng == 0) {
-        tmp_3 = l_arr1;
+        tmp_2 = l_arr1;
     } else if (p_rng == 1) {
-        tmp_3 = l_arr2;
+        tmp_2 = l_arr2;
     } else {
-        tmp_3 = l_arr3;
+        tmp_2 = l_arr3;
     }
-    *_res0 = tmp_3;
+    *_res0 = tmp_2;
     dtors1_dtor(l_arr3, true);
     dtors1_dtor(l_arr2, true);
     dtors1_dtor(l_arr1, true);

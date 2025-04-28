@@ -2400,6 +2400,12 @@ def optimize_acc_expr(c_expr):
         return c.Expr(c_expr.arg1, c_expr.arg2.arg2, op=c_expr.arg2.op+"=")
     return c_expr
 
+def optimize_cbinop(c_expr):
+    if (isinstance(c_expr, c.Expr) and c_expr.op == "-" and
+        isinstance(c_expr.arg1, c.Const) and c_expr.arg1.value == 0):
+        return c.UnaryExpr(c_expr.arg2, op="-", prefix=True)
+    return c_expr
+
 def is_tmp_expr(obj: ExprObj):
     return (
         isinstance(obj.c_node, c.Id) and obj.c_node.name.startswith("tmp") and
@@ -3515,16 +3521,6 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             ),
             inferred_type=ctx.void_obj,
         )
-    elif is_builtin_func(func_obj, "cmp"):
-        c_op="-"
-        if arg_exprs[0].inferred_type.name.startswith("Bits"):
-            c_op = "^"
-        res = c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op=c_op)
-        return ExprObj(
-            c_node=res,
-            xy_node=expr,
-            inferred_type=func_obj.rtype_obj
-        )
     elif (is_builtin_func(func_obj, "and") or is_builtin_func(func_obj, "or")) and arg_exprs[0].inferred_type is ctx.bool_obj and arg_exprs[1].inferred_type is ctx.bool_obj:
         redact_code(arg_exprs[1], cast, cfunc, ctx)
         dummy_func = c.Func("dummy")
@@ -3560,6 +3556,16 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 c_node=c.Id(tmp_obj.c_node.name),
                 inferred_type=func_obj.rtype_obj
             )
+    elif is_builtin_func(func_obj, "not"):
+        if not arg_exprs[0].inferred_type.name.startswith("Bits"):
+            c_res = c.UnaryExpr(arg_exprs[0].c_node, op="!", prefix=True)
+        else:
+            c_res = c.UnaryExpr(arg_exprs[0].c_node, op="~", prefix=True)
+        return ExprObj(
+            xy_node=expr,
+            c_node=c_res,
+            inferred_type=func_obj.rtype_obj
+        )
     elif is_builtin_func(func_obj, "ashiftr"):
         signed_ctype = arg_exprs[0].inferred_type.c_node.name[1:]
         c_res = c.Cast(arg_exprs[0].c_node, to=signed_ctype)
@@ -3579,13 +3585,19 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             "and": "&&",
             "shiftl": "<<",
             "shiftr": ">>",
+            "cmpEq": "==",
+            "cmpNe": "!=",
+            "cmpGt": ">",
+            "cmpGe": ">=",
+            "cmpLt": "<",
+            "cmpLe": "<=",
         }
         c_arg1 = arg_exprs[0].c_node
         c_op = func_to_op_map[func_obj.xy_node.name.name]
         if arg_exprs[0].inferred_type.name.startswith("Bits"):
             if c_op == '-':
                 c_op = '^'
-            elif c_op not in {">>", "<<"}:
+            elif c_op in {"&&", "||"}:
                 c_op = c_op[1:]
         res = c.Expr(
             c_arg1, arg_exprs[1].c_node,
@@ -3603,6 +3615,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 inferred_type = copy(inferred_type)
             inferred_type.tags["to"] = arg_exprs[0].inferred_type.tags["to"]
 
+        res = optimize_cbinop(res)
         return ExprObj(
             xy_node=expr,
             c_node=res,
@@ -5233,49 +5246,6 @@ def find_func(fcall, ctx):
     return fspace.find(fcall, ctx)
 
 def compile_binop(binexpr, cast, cfunc, ctx):
-    if binexpr.op in {"==", "!=", ">", "<", "<=", ">="} and \
-        isinstance(binexpr.arg2, xy.Const) and binexpr.arg2.value == 0:
-        arg1_eobj = compile_expr(binexpr.arg1, cast, cfunc, ctx)
-        if isinstance(arg1_eobj.c_node, c.Expr) and arg1_eobj.c_node.op == "-":
-            c_res = c.Expr(
-                arg1=arg1_eobj.c_node.arg1,
-                arg2=arg1_eobj.c_node.arg2,
-                op=binexpr.op
-            )
-            if arg1_eobj.inferred_type is ctx.bool_obj and isinstance(c_res.arg2, c.Const) and c_res.arg2.value == 0:
-                c_res = c.UnaryExpr(
-                    arg=arg1_eobj.c_node.arg1,
-                    op={"==": "!", "!=": "", ">": "", "<": "ERR", "<=": "ERR", ">=": "ERR"}[binexpr.op],
-                    prefix=True
-                )
-            return ExprObj(binexpr, c_res, inferred_type=ctx.bool_obj)
-        if isinstance(arg1_eobj.c_node, c.Expr) and arg1_eobj.c_node.op == "^":
-            # working with bits
-            if binexpr.op in {"==", "<="}:
-                c_res = c.UnaryExpr(arg=arg1_eobj.c_node, op="~", prefix=True)
-            elif binexpr.op in {"!=", ">"}:
-                c_res = arg1_eobj.c_node
-            elif binexpr.op == ">=":
-                c_res = c.Expr(
-                    arg1_eobj.c_node,
-                    c.UnaryExpr(c.Cast(c.Const(0), to=arg1_eobj.inferred_type.c_node.name), op="~", prefix=True),
-                    op="|"
-                )
-            elif binexpr.op  == "<":
-                c_res = c.Expr(arg1_eobj.c_node, c.Const(0), op="&")
-            if isinstance(arg1_eobj.c_node.arg2, c.Const) and arg1_eobj.c_node.arg2.value == 0:
-                c_res.arg = arg1_eobj.c_node.arg1
-            return ExprObj(binexpr, c_res, inferred_type=arg1_eobj.inferred_type)
-        else:
-            tmp_obj = ctx.create_tmp_var(arg1_eobj.inferred_type)
-            ctx.ns[tmp_obj.c_node.name] = arg1_eobj
-            binexpr = xy.BinExpr(
-                arg1=xy.Id(tmp_obj.c_node.name),
-                arg2=binexpr.arg2,
-                op=binexpr.op,
-                src=binexpr.src, coords=binexpr.coords
-            )
-
     fcall = rewrite_op(binexpr, ctx)
     return compile_expr(fcall, cast, cfunc, ctx)
 
@@ -5286,6 +5256,12 @@ operatorToFname = fname = {
     "/": "div",
     "|": "or",
     "&": "and",
+    "==": "cmpEq",
+    "!=": "cmpNe",
+    ">": "cmpGt",
+    ">=": "cmpGe",
+    "<": "cmpLt",
+    "<=": "cmpLe",
 }
 def rewrite_op(binexpr, ctx):
     fname = operatorToFname.get(binexpr.op, None)
@@ -5294,15 +5270,6 @@ def rewrite_op(binexpr, ctx):
             xy.Id(fname, src=binexpr.src, coords=binexpr.coords),
             args=[binexpr.arg1, binexpr.arg2],
             src=binexpr.src, coords=binexpr.coords)
-    elif binexpr.op in {"==", "!=", ">", "<", "<=", ">="}:
-        if binexpr.src is None:
-            import pdb; pdb.set_trace()
-        cmp_call = xy.FuncCall(
-            xy.Id("cmp", src=binexpr.src, coords=binexpr.coords),
-            args=[binexpr.arg1, binexpr.arg2],
-            src=binexpr.src, coords=binexpr.coords)
-        return xy.BinExpr(arg1=cmp_call, arg2=xy.Const(0), op=binexpr.op,
-                          src=binexpr.src, coords=binexpr.coords)
     else:
         raise CompilationError(f"Unrecognized operator '{binexpr.op}'", binexpr)
 
@@ -5311,16 +5278,16 @@ def rewrite_unaryop(expr: xy.UnaryExpr, ctx):
         fname = "inc"
     elif expr.op == "--":
         fname = "dec"
-    elif expr.op == "-":
-        fname = "neg"
     elif expr.op == "!":
+        fname = "not"
+    elif expr.op == "-":
         return xy.BinExpr(
-            arg1=expr.arg,
-            arg2=xy.StructLiteral(
+            arg1=xy.StructLiteral(
                 name=xy.UnaryExpr(expr.arg, op="%", src=expr.src, coords=expr.coords),
                 src=expr.src, coords=expr.coords
             ),
-            op="==",
+            arg2=expr.arg,
+            op="-",
             src=expr.src, coords=expr.coords
         )
     else:

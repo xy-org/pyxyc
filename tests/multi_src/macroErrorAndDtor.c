@@ -33,9 +33,9 @@ void macroErrorAndDtor_test(void) {
         abort();
     }
     {
-        macroErrorAndDtor_module1_Fib tmp_3_iter = tmp_0_res;
-        for (; true; macroErrorAndDtor_module1_next(&tmp_3_iter)) {
+        macroErrorAndDtor_module1_Fib tmp_2_iter = tmp_0_res;
+        for (; true; macroErrorAndDtor_module1_next(&tmp_2_iter)) {
         }
-        macroErrorAndDtor_module1_dtor(tmp_3_iter);
+        macroErrorAndDtor_module1_dtor(tmp_2_iter);
     }
 }

@@ -22,12 +22,12 @@ errors_Error errors_power(int32_t p_x, int32_t p_y, int32_t* _res0) {
         return (errors_Error){1};
     }
     int32_t l_i = 0;
-    int32_t tmp_1_res = 1;
+    int32_t tmp_0_res = 1;
     while (l_i <= p_y) {
-        tmp_1_res *= p_x;
+        tmp_0_res *= p_x;
         l_i++;
     }
-    *_res0 = tmp_1_res;
+    *_res0 = tmp_0_res;
     return (errors_Error){0};
 }
 
@@ -64,9 +64,9 @@ errors_Error errors_callReturningErrorButNoResult(int32_t p_a, int32_t p_b, int3
     if (tmp_0_err.m_errorCode != 0) {
         return tmp_0_err;
     }
-    const errors_Error tmp_2_err = errors_doWork(p_b);
-    if (tmp_2_err.m_errorCode != 0) {
-        return tmp_2_err;
+    const errors_Error tmp_1_err = errors_doWork(p_b);
+    if (tmp_1_err.m_errorCode != 0) {
+        return tmp_1_err;
     }
     return (errors_Error){0};
 }
