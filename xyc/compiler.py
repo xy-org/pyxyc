@@ -3130,8 +3130,12 @@ def to_cstr(xy_node, s: str):
                 cp = cstr_hexadecimal(xy_node, bstr, i+2, 8)
                 i += 10
                 res_len += codepoint_to_bytes(cp, res)
+            elif bstr[i+1] == ord("\n"):
+                res.append("\\\n")
+                i += 2
+                res_len += 2
             else:
-                raise CompilationError("Invalid escape sequence in string", xy_node)
+                raise CompilationError(f"Invalid escape sequence in string '{chr(bstr[i+1])}'", xy_node)
         else:
             if allowed_c_char(bstr[i]):
                 res.append(chr(bstr[i]))

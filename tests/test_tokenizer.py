@@ -280,6 +280,11 @@ from xyc.tokenizer import split_tokens
         ['val', ':', '=', '`', '\\', 'n', '`', ';'],
         None
     ),
+    (
+        'val := f"""\nmulti line\n""";',
+        ['val', ':', '=', 'f', '"""', '\n', 'multi', 'line', '\n', '"""', ';'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)

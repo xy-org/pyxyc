@@ -2925,6 +2925,91 @@ def test_parse_string_literals(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """def main() {
+            str1 := "word 1\\
+                word 2\\
+            ";
+            str2 := "\\
+                word 1\\
+                word 2\\
+            ";
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.VarDecl("str1", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("word 1word 2")],
+                    full_str="word 1\\\n                word 2\\\n            "
+                )),
+                ast.VarDecl("str2", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("word 1word 2")],
+                    full_str="\\\n                word 1\\\n                word 2\\\n            "
+                )),
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            str1 := \"""
+                line 1
+                line 2
+            ";
+            str2 := \"""line 1
+                line 2
+            \";
+            str3 := \"""line 1
+line 2
+  line 3\\
+            ";
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.VarDecl("str1", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("line 1\nline 2\n")],
+                    full_str="\n                line 1\n                line 2\n            "
+                )),
+                ast.VarDecl("str2", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("line 1\n                line 2\n            ")],
+                    full_str="line 1\n                line 2\n            "
+                )),
+                ast.VarDecl("str3", type=None, value=ast.StrLiteral(
+                    parts=[ast.Const("line 1\nline 2\n  line 3")],
+                    full_str="line 1\nline 2\n  line 3\\\n            "
+                )),
+            ]),
+        ]
+    ],
+    [
+        """def main() {
+            str1 := f\"""{expr}
+                line 2
+                line 3
+            ";
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), body=[
+                ast.VarDecl("str1", type=None, value=ast.StrLiteral(
+                    parts=[
+                        ast.Args(
+                            [ast.Id("expr"),],
+                        ),
+                        ast.Const("\n                line 2\n                line 3\n            ")
+                    ],
+                    full_str="{expr}\n                line 2\n                line 3\n            ",
+                    prefix="f",
+                )),
+            ]),
+        ]
+    ],
+])
+def test_parse_multiline_strings(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
 
 @pytest.mark.parametrize("code, exp_ast", [
     [

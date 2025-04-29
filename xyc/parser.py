@@ -715,15 +715,15 @@ def parse_operand(itoken, precedence, op_prec):
             arg1 = Const(token == "true", token, "Bool", src=itoken.src, coords=tk_coords)
         elif "." in token or (token[0] >= '0' and token[0] <= '9'):
             arg1 = parse_num_const(token, tk_coords, itoken)
-        elif token == '"':
-            arg1 = parse_str_literal("", tk_coords[0], itoken)
+        elif token in {'"', '"""'}:
+            arg1 = parse_str_literal("", tk_coords[0], itoken, token == '"""')
         elif token == '`':
             arg1 = parse_char_literal(token, tk_coords, itoken)
-        elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:
+        elif itoken.peak() in {'"', '"""'} and tk_coords[1] == itoken.peak_coords()[0]:
+            multiline = itoken.consume() == '"""'
             if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*', token):
                 raise ParsingError(f"Invalid prefix name '{token}'", itoken)
-            itoken.expect('"')
-            arg1 = parse_str_literal(token, tk_coords[0], itoken)
+            arg1 = parse_str_literal(token, tk_coords[0], itoken, multiline)
         elif token == ":":
             arg1 = None
             itoken.i -= 1
@@ -1057,8 +1057,9 @@ def parse_struct_literal(itoken, struct_expr):
             struct_expr, args, kwargs, src=itoken.src, coords=[start_coords[0], end_coords[1]]
         )
 
-def parse_str_literal(prefix, prefix_start, itoken):
+def parse_str_literal(prefix, prefix_start, itoken, multiline):
     res = StrLiteral(prefix=prefix, src=itoken.src)
+    skip_leading = -1
     itoken.i -= 1 # move back in order to get the " coords
     part_start = itoken.peak_coords()[1]
     itoken.i += 1
@@ -1069,7 +1070,10 @@ def parse_str_literal(prefix, prefix_start, itoken):
         if itoken.check("{"):
             if part_start < part_end:
                 lit = itoken.src.code[part_start:part_end]
+                lit, skip_leading = check_escaped_newline(lit, multiline, skip_leading)
                 res.parts.append(Const(lit))
+            else:
+                skip_leading = 0
 
             if not itoken.check("#"):
                 is_introspective = itoken.check("=")
@@ -1107,6 +1111,8 @@ def parse_str_literal(prefix, prefix_start, itoken):
 
             part_start = itoken.peak_coords()[0] + 1
             itoken.expect("}")
+        elif itoken.peak() == '"""':
+            raise ParsingError("Multiline strings are terminated with one double quotation mark", itoken)
         else:
             itoken.check("\\")
             itoken.consume()
@@ -1116,11 +1122,46 @@ def parse_str_literal(prefix, prefix_start, itoken):
 
     if part_start < part_end:
         lit = itoken.src.code[part_start:part_end]
+        lit, _ = check_escaped_newline(lit, multiline, skip_leading)
         res.parts.append(Const(lit, src=itoken.src, coords=itoken.peak_coords()))
     
     res.coords = (prefix_start, part_end+1)
-    res.full_str = itoken.src.code[prefix_start+len(prefix)+1:part_end]
+    full_str_start = prefix_start + len(prefix) + (1 if not multiline else 3)
+    res.full_str = itoken.src.code[full_str_start:part_end]
     return res
+
+def check_escaped_newline(lit, multiline, skip_leading):
+    res = []
+    i = 0
+    if multiline and skip_leading < 0:
+        if i < len(lit) and lit[i] == "\n":
+            i += 1
+        skip_leading = 0
+        while i < len(lit) and lit[i] == " ":
+            i += 1
+            skip_leading += 1
+    start = i
+    while i < len(lit):
+        if i+1 < len(lit) and lit[i] == "\\" and lit[i+1] == "\n":
+            res.append(lit[start:i])
+            i += 2
+            while i < len(lit) and lit[i] == " ":
+                i += 1
+            start = i
+        elif lit[i] == "\n" and multiline and skip_leading > 0:
+            i += 1
+            j = 0
+            while i + j < len(lit) and j < skip_leading and lit[i+j] == " ":
+                j += 1
+            if j == skip_leading or (i+j) >= len(lit):
+                res.append(lit[start:i])
+                i += j
+                start = i
+        else:
+            i += 1
+    if start < len(lit):
+        res.append(lit[start:])
+    return "".join(res), skip_leading
 
 def parse_char_literal(token, tk_coords, itoken):
     start = tk_coords[1]
