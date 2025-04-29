@@ -721,7 +721,7 @@ def parse_operand(itoken, precedence, op_prec):
             arg1 = parse_char_literal(token, tk_coords, itoken)
         elif itoken.peak() == '"' and tk_coords[1] == itoken.peak_coords()[0]:
             if not re.match(r'[a-zA-Z_][a-zA-Z0-9_]*', token):
-                raise ParsingError(f"Invalid prefix Name", itoken)
+                raise ParsingError(f"Invalid prefix name '{token}'", itoken)
             itoken.expect('"')
             arg1 = parse_str_literal(token, tk_coords[0], itoken)
         elif token == ":":
