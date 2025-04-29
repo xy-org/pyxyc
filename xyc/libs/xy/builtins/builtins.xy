@@ -788,7 +788,7 @@
 
 ;; Convert {a} to Ubyte
 *def to(
-    a: (Bool, Byte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
         Float, Double, Char),
     :Ubyte
 ) -> Ubyte {
@@ -797,7 +797,7 @@
 
 ;; Convert {a} to Byte
 *def to(
-    a: (Bool, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
         Float, Double, Char),
     :Byte
 ) -> Byte {
@@ -806,7 +806,7 @@
 
 ;; Convert {a} to Short
 *def to(
-    a: (Bool, Byte, Ubyte, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
         Float, Double, Char),
     :Short
 ) -> Short {
@@ -815,7 +815,7 @@
 
 ;; Convert {a} to Ushort
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
         Float, Double, Char),
     :Ushort
 ) -> Ushort {
@@ -824,7 +824,7 @@
 
 ;; Convert {a} to Int
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
         Float, Double, Char),
     :Int
 ) -> Int {
@@ -834,7 +834,7 @@
 
 ;; Convert {a} to Uint
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
         Float, Double, Char),
     :Uint
 ) -> Uint {
@@ -843,7 +843,7 @@
 
 ;; Convert {a} to Long
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
         Float, Double, Char),
     :Long
 ) -> Long {
@@ -853,7 +853,7 @@
 
 ;; Convert {a} to Ulong
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
         Float, Double, Char),
     :Ulong
 ) -> Ulong {
@@ -863,7 +863,7 @@
 ;; Convert {a} to Float
 *def to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
-        Double, Char),
+        Float, Double, Char),
     :Float
 ) -> Float {
     # Implemented by the compiler
@@ -872,7 +872,7 @@
 ;; Convert {a} to Double
 *def to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
-        Float, Char),
+        Float, Double, Char),
     :Double
 ) -> Double {
     # Implemented by the compiler
