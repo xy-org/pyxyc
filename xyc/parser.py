@@ -861,6 +861,8 @@ def parse_num_const(token: str, tk_coords, itoken):
                 for i_suffix in suffix_map.keys():
                     if token.lower().endswith(i_suffix):
                         suffix = i_suffix if len(suffix) < len(i_suffix) else suffix
+                if suffix in {'f', 'd'} and base == 16:
+                    suffix = ""
                 prefix_len = 2 if token.startswith("0x") else 1
                 num_str = token[prefix_len:len(token)-len(suffix)]
                 if len(num_str) == 0:

@@ -2496,8 +2496,8 @@ def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerCon
         return do_idx_set(idx_obj, val_obj, cast, cfunc, ctx)
     except CompilationError as e:
         raise CompilationError(
-            f"Cannot set 'in({idx_obj.container.inferred_type.name}) "
-            f"{idx_obj.idx.inferred_type.name}' "\
+            f"Cannot set '{idx_obj.container.inferred_type.name}"
+            f"[{idx_obj.idx.inferred_type.name}]' "\
             f"because: {e.error_message}", e.xy_node,
             notes=e.notes
         )
