@@ -1978,6 +1978,77 @@ def test_expressions(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
+        """def test(s: Struct) {
+            s.a~Tag;
+        }""",
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.AttachTags(
+                    ast.BinExpr(
+                        arg1=ast.Id("s"),
+                        arg2=ast.Id("a"),
+                        op=".",
+                    ),
+                    tags=ast.TagList(
+                        [ast.Id("Tag")]
+                    )
+                )
+            ], params=[
+                ast.VarDecl("s", type=ast.Id("Struct"), is_param=True)
+            ]),
+        ]
+    ],
+    [
+        """def test() {
+            a.b~c~d.e;
+        }""",
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.AttachTags(
+                    ast.BinExpr(arg1=ast.Id("a"), arg2=ast.Id("b"), op="."),
+                    tags=ast.TagList([
+                        ast.BinExpr(
+                            arg1=ast.AttachTags(
+                                ast.Id("c"),
+                                tags=ast.TagList([ast.Id("d")])
+                            ),
+                            arg2=ast.Id("e"),
+                            op=".",
+                        )
+                    ]),
+                )
+            ], params=[]),
+        ]
+    ],
+    [
+        """def test() {
+            a + b~c~d;
+        }""",
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.BinExpr(
+                    ast.Id('a'),
+                    ast.AttachTags(
+                        ast.Id("b"),
+                        tags=ast.TagList([
+                            ast.AttachTags(
+                                ast.Id("c"),
+                                tags=ast.TagList([ast.Id("d")])
+                            )
+                        ])
+                    ),
+                    op="+",
+                )
+            ], params=[]),
+        ]
+    ],
+])
+def test_assigning_tags(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
         """def func() {
             return % ! - - + ^ ' a;
         }""",

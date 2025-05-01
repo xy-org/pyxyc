@@ -200,6 +200,13 @@ def test_invalid_slices(code, err_msg):
         """,
         "No expression in brackets"
     ),
+    (
+        """def main() -> void {
+            s.a{b=d}~Tag;
+        }
+        """,
+        "Only simple positional tags can be chained"
+    ),
 ])
 def test_invalid_expression(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):

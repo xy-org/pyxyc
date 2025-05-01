@@ -508,7 +508,10 @@ def do_parse_expression(
 
             rhs = parse_operand(itoken, precedence, op_prec)
             lookahead = itoken.peak()
-            while (op_prec.get(lookahead, -1) > (op_prec[op] - int(is_right_assoc(lookahead)))):
+            while op_prec.get(lookahead, -1) > (op_prec[op] - int(is_right_assoc(lookahead))):
+                if is_right_assoc(lookahead) and op_prec[lookahead] == op_prec[op] and not is_right_assoc(op):
+                    # horrible if to allow for expressions like a.b~Tag
+                    break
                 plus_one = int(op_prec[lookahead] > op_prec[op])
                 rhs = do_parse_expression(rhs, itoken, op_prec[op] + plus_one, op_prec)
                 lookahead = itoken.peak()
