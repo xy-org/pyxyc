@@ -3,17 +3,21 @@
 ;; the language but left to libraries to implement. So we have these two
 ;; functions that give us access to the raw arguments.
 ;;
-;; I couldn't find a better stop to place these functions. Having them in
+;; I couldn't find a better spot to place these functions. Having them in
 ;; builtins is wrong because builtins is the very basic types and functions
-;; for Any xy program and command line arguments is specific to a particular
+;; for any xy program and command line arguments is specific to a particular
 ;; domain. So I plopped them here.
+
+# TODO replace this with an injected struct
+
+import libc~[CLib{headers=@{}}] in c;
 
 ;; Return number of command line arguments
 *def argc() -> Int {
-    # Implemented by the compiler
+    return c.__xy_sys_argc;
 }
 
-;; Return raw pointers to the command line arguments
-*def argv() -> Ptr~Ptr {
-    # Implemented by the compiler
+;; Return pointers to the command line arguments (as char *)
+*def argv() -> Ptr~Ptr~[c.char] {
+    return c.__xy_sys_argv;
 }
