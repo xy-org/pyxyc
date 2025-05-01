@@ -83,5 +83,4 @@ void ifs3_test4(void) {
         int32_t tmp_4_arg = ifs3_helper2();
         tmp_5 = ifs3_compute(tmp_3_arg, tmp_4_arg, ifs3_helper1());
     }
-    tmp_5;
 }

@@ -1836,7 +1836,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 idx_obj = maybe_deref(expr_obj.idx, True, cast, cfunc, ctx)
                 if idx_obj.c_node is not None and not is_simple_cexpr(idx_obj.c_node):
                     cfunc.body.append(idx_obj.c_node)
-            if expr_obj.c_node is not None:
+            if expr_obj.c_node is not None and not isinstance(expr_obj.c_node, c.Id):
                 cfunc.body.append(expr_obj.c_node)
 
     # call dtors if any
@@ -2382,7 +2382,8 @@ def reset_obj(obj: ExprObj, cast, cfunc, ctx):
             inferred_type=obj.inferred_type
         )
         obj = idx_set(obj, def_value_obj, cast, cfunc, ctx)
-        cfunc.body.append(obj.c_node)
+        if not isinstance(obj.c_node, c.Id):
+            cfunc.body.append(obj.c_node)
     elif isinstance(obj.inferred_type, ArrTypeObj):
         cfor = create_loop_over_array(obj, cast, cfunc, ctx)
         elem_obj = copy(obj)
@@ -2881,8 +2882,8 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         for fname, fval_obj in named_objs.items():
             field = type_obj.fields[fname]
             obj = field_set(tmp_obj, field, fval_obj, cast, cfunc, ctx)
-            cfunc.body.append(obj.c_node)
-
+            if not isinstance(obj.c_node, c.Id):
+                cfunc.body.append(obj.c_node)
 
         if isinstance(tmp_obj, VarObj):
             res = c.Id(tmp_obj.c_node.name)
