@@ -182,7 +182,7 @@ def stringify_body(body, frags, ident=1):
             frags.append(";\n")
         else:
             frags.append(" " * (ident*4))
-            stringify_expr(stmt, frags)
+            stringify_expr(stmt, frags, ident=ident)
             frags.append(";\n")
 
 def stringify_field(field, frags, ident):
@@ -191,7 +191,7 @@ def stringify_field(field, frags, ident):
         frags.extend(('[', ','.join(str(d) for d in field.qtype.type.dims), ']'))
     frags.append(";\n")
 
-def stringify_expr(expr, frags, parent_op_precedence=-10):
+def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
     if isinstance(expr, Const):
         frags.append(str(expr.value))
     elif isinstance(expr, Id):
@@ -271,6 +271,9 @@ def stringify_expr(expr, frags, parent_op_precedence=-10):
         stringify_expr(expr.what, frags, cast_precedence)
         if parent_op_precedence > cast_precedence:
             frags.append(")")
+    elif isinstance(expr, InlineCode):
+        src = ("\n" + " " * (ident * 4)).join(expr.src.splitlines())
+        frags.append(src)
     else:
         raise CGenerationError(f"Unknown expression {type(expr).__name__}")
     

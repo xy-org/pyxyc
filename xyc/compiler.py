@@ -3080,7 +3080,7 @@ def compile_inlinec(expr, parts, cast, cfunc, ctx):
     inlinec = ""
     for p in parts:
         if is_str_const(p):
-            inlinec += p.value.replace("\\{", "{")
+            inlinec += p.value.replace("\\{", "{").replace('\\"', '"')
         else:
             assert isinstance(p, xy.Args)
             assert len(p.args) == 1
@@ -3090,7 +3090,7 @@ def compile_inlinec(expr, parts, cast, cfunc, ctx):
                 raise CompilationError("NYI. Only variabled can be used for inlinec interpolation", p)
             inlinec += obj.c_node.name
 
-    res = c.Id(inlinec)
+    res = c.InlineCode(inlinec)
     return ExprObj(
         c_node=res,
         xy_node=expr,

@@ -72,6 +72,10 @@ class Id:
     name: str
 
 @dataclass
+class InlineCode:
+    src: str
+
+@dataclass
 class Goto:
     label: any = None
 

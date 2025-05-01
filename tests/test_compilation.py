@@ -83,6 +83,7 @@ from xyc.compiler import CompilationError
     "splitNamespaces",
     "cinterop/usingCtypes",
     "cinterop/callFuncOnString",
+    "cinterop/inlinecBlock",
     "bitwiseOperations/bitBasics",
     "bitwiseOperations/bitwiseOps",
     "indices/enums/enums",

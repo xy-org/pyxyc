@@ -1,0 +1,8 @@
+def test(a: Int, b: Double) -> Double {
+    c : Double;
+    inlinec"""
+        printf(\"a=%d b=%f\n\", {a}, {b});
+        {c} = {b} + {a};
+    ";
+    return c;
+}
