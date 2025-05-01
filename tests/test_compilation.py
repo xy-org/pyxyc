@@ -82,6 +82,7 @@ from xyc.compiler import CompilationError
     "move/moveOperators5",
     "splitNamespaces",
     "cinterop/usingCtypes",
+    "cinterop/callFuncOnString",
     "bitwiseOperations/bitBasics",
     "bitwiseOperations/bitwiseOps",
     "indices/enums/enums",

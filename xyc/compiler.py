@@ -868,6 +868,8 @@ class CompilerContext:
                         f"Missing default label for type '{tag_obj.type_obj.xy_node.name}'",
                         xy_tag, notes=[(no_label_msg, None)])
                 label = tag_obj.type_obj.tags["xyTag"].kwargs["label"].as_str()
+            elif isinstance(tag_obj, ExtSymbolObj):
+                raise CompilationError("C Symbols must be attached using an explicit label", xy_tag)
             elif tag_obj.primitive:
                 raise CompilationError("Primitive types have to have an explicit label", xy_tag)
             else:
@@ -2290,18 +2292,21 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_continue(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.AttachTags):
         obj = compile_expr(expr.arg, cast, cfunc, ctx)
+        tag_specs = []
         if isinstance(obj.inferred_type, TypeExprObj):
             obj.inferred_type = copy(obj.inferred_type)
             obj.inferred_type.tags = copy(obj.inferred_type.tags)
+            tag_specs = obj.inferred_type.type_obj.tag_specs
         elif isinstance(obj.inferred_type, TypeObj):
             obj.inferred_type = TypeExprObj(
                 xy_node=expr, c_node=obj.inferred_type.c_node,
                 type_obj=obj.inferred_type, tags=copy(obj.inferred_type.tags)
             )
-        tags_to_attach = ctx.eval_tags(expr.tags)
+            tag_specs = obj.inferred_type.type_obj.tag_specs
+        tags_to_attach = ctx.eval_tags(expr.tags, tag_specs=tag_specs)
         obj.inferred_type.tags.update(tags_to_attach) # tags are attached to the type
         if is_ptr_type(obj.inferred_type, ctx) and "to" in tags_to_attach:
-            obj.c_node = c.Cast(obj.c_node, obj.inferred_type.c_name)
+            obj.c_node = optimize_cast(c.Cast(obj.c_node, obj.inferred_type.c_name))
         return obj
     elif isinstance(expr, xy.SliceExpr):
         # rewrite slice
@@ -2408,6 +2413,16 @@ def optimize_cbinop(c_expr):
     if (isinstance(c_expr, c.Expr) and c_expr.op == "-" and
         isinstance(c_expr.arg1, c.Const) and c_expr.arg1.value == 0):
         return c.UnaryExpr(c_expr.arg2, op="-", prefix=True)
+    return c_expr
+
+def optimize_cast(c_expr):
+    assert isinstance(c_expr, c.Cast)
+    if c_expr.to[-1] == "*" and isinstance(c_expr.what, c.Cast) and c_expr.what.to[-1] == "*":
+        # remove double cast
+        c_expr = c.Cast(c_expr.what.what, c_expr.to)
+    if c_expr.to == "char*" and isinstance(c_expr.what, c.Const) and isinstance(c_expr.what.value, str):
+        # remove cast to char* for string literals
+        c_expr = c_expr.what
     return c_expr
 
 def is_tmp_expr(obj: ExprObj):
