@@ -12,7 +12,7 @@ void* cimport_cstr(void* p_addr, size_t p_size) {
 }
 
 int32_t cimport_main(void) {
-    write(0, cimport_cstr("Hello World\n", 12), 12);
+    write(0, cimport_cstr((int8_t*)"Hello World\n", 12), 12);
     return 0;
 }
 

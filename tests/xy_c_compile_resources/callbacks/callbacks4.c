@@ -25,5 +25,5 @@ void* callbacks4_str(void* p_addr, size_t p_size) {
 }
 
 void callbacks4_test(void) {
-    const callbacks4_FuncDesc l_tests[2] = {(callbacks4_FuncDesc){callbacks4_test1, callbacks4_str("test1", 5)}, (callbacks4_FuncDesc){callbacks4_test2, callbacks4_str("test2", 5)}};
+    const callbacks4_FuncDesc l_tests[2] = {(callbacks4_FuncDesc){callbacks4_test1, callbacks4_str((int8_t*)"test1", 5)}, (callbacks4_FuncDesc){callbacks4_test2, callbacks4_str((int8_t*)"test2", 5)}};
 }

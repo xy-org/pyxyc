@@ -1115,6 +1115,10 @@ def compile_module(builder, module_name, asts, module_path):
         ctx.void_obj = ctx.global_data_ns["void"]
         ctx.bool_obj = ctx.global_data_ns["Bool"]
         ctx.ptr_obj = ctx.global_data_ns["Ptr"]
+        ctx.ptr_to_byte_obj = TypeExprObj(
+            ctx.ptr_obj.xy_node, ctx.ptr_obj.c_node, ctx.ptr_obj,
+            tags={"to": ctx.global_data_ns["Byte"]},
+        )
         ctx.size_obj = ctx.global_data_ns["Size"]
         ctx.tagctor_obj = ctx.global_data_ns["TagCtor"]
         ctx.uint_obj = ctx.global_data_ns["Uint"]
@@ -2957,7 +2961,8 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
         args = ArgList(
             args=[
                 ExprObj(
-                    expr, c.Const(f'"{str_const}"'), ctx.ptr_obj
+                    expr, c.Cast(c.Const(f'"{str_const}"'), to="int8_t*"),
+                    ctx.ptr_to_byte_obj
                 ),
                 ExprObj(
                     expr, c.Const(str_len), ctx.size_obj
@@ -2979,7 +2984,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             expr=expr,
             func_obj=func_desc,
             arg_exprs=ArgList([
-                ConstObj(c_node=c.Const(f'"{full_str}"'), value=""),
+                ConstObj(c_node=c.Cast(c.Const(f'"{full_str}"'), to="int8_t*"), value=""),
                 ConstObj(c_node=c.Const(full_str_len), value=0)
             ]),
             cast=cast,
@@ -2993,7 +2998,10 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                     "append",
                     ArgList([
                         builder_tmpvar_id,
-                        ExprObj(c_node=c.Const('"' + part_value + '"'), inferred_type=ctx.ptr_obj),
+                        ExprObj(
+                            c_node=c.Cast(c.Const('"' + part_value + '"'), to="int8_t*"),
+                            inferred_type=ctx.ptr_to_byte_obj
+                        ),
                         ExprObj(c_node=c.Const(part_value_len), inferred_type=ctx.size_obj),
                     ]),
                     cast,
@@ -3011,7 +3019,10 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                         "append",
                         ArgList([
                             builder_tmpvar_id,
-                            ExprObj(c_node=c.Const('"' + part_str + '"'), inferred_type=ctx.ptr_obj),
+                            ExprObj(
+                                c_node=c.Cast(c.Const('"' + part_str + '"'), to="int8_t*"),
+                                inferred_type=ctx.ptr_to_byte_obj
+                            ),
                             ExprObj(c_node=c.Const(part_str_len), inferred_type=ctx.size_obj),
                         ]),
                         cast,

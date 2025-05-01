@@ -22,9 +22,9 @@ stringCtor_Str stringCtor_str(void* p_addr, size_t p_size) {
 }
 
 void stringCtor_createStrings(void) {
-    const stringCtor_Str l_str = stringCtor_str("", 0);
-    const stringCtor_Str l_str1 = stringCtor_str("abc", 3);
-    const stringCtor_Str l_str2 = stringCtor_str("def", 3);
+    const stringCtor_Str l_str = stringCtor_str((int8_t*)"", 0);
+    const stringCtor_Str l_str1 = stringCtor_str((int8_t*)"abc", 3);
+    const stringCtor_Str l_str2 = stringCtor_str((int8_t*)"def", 3);
 }
 
 size_t stringCtor_strLen(stringCtor_Str p_str) {

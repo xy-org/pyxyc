@@ -8,12 +8,12 @@ void srcLocFuncs_testFunc(void) {
 }
 
 void srcLocFuncs_test(void) {
-    void* const l_a = "testFunc";
-    void* const l_b = "srcLocFuncs";
-    void* const l_c = "srcLocFuncs";
-    void* const l_d = "tests/xy_c_compile_resources/ctti/srcLocFuncs.xy";
+    int8_t* const l_a = (int8_t*)"testFunc";
+    int8_t* const l_b = (int8_t*)"srcLocFuncs";
+    int8_t* const l_c = (int8_t*)"srcLocFuncs";
+    int8_t* const l_d = (int8_t*)"tests/xy_c_compile_resources/ctti/srcLocFuncs.xy";
     const uint32_t l_e = 5;
     const uint32_t l_f = 14;
-    void* const l_g = "tests/xy_c_compile_resources/ctti/srcLocFuncs.xy";
+    int8_t* const l_g = (int8_t*)"tests/xy_c_compile_resources/ctti/srcLocFuncs.xy";
     const uint32_t l_h = 16;
 }
