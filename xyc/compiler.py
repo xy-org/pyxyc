@@ -322,6 +322,7 @@ class NamespaceData:
     type: NamespaceType = None
     continue_label_name: str = None
     loop_name: str = None
+    label_used: bool = False
 
 class IdTable(dict):
     def __init__(self, *args, **kwargs):
@@ -4667,7 +4668,8 @@ def compile_while(xywhile: xy.WhileExpr, cast, cfunc, ctx: CompilerContext):
     if complex_cond:
         # in theory we can simply copy paste the already generate code
         # but that looks too hacky
-        cwhile.body.append(c.Label(loop_data.continue_label_name))
+        if loop_data.label_used:
+            cwhile.body.append(c.Label(loop_data.continue_label_name))
         reeval_cond_obj = compile_expr(xywhile.cond, cast, cwhile, ctx)
         if is_tmp_expr(cond_obj):
             cwhile.body.append(c.Expr(cwhile.cond, reeval_cond_obj.c_node, op="="))
@@ -4983,6 +4985,7 @@ def compile_continue(xycont, cast, cfunc, ctx):
     
     if df.data.continue_label_name is not None:
         c_res = c.Goto(c.Id(df.data.continue_label_name))
+        df.data.label_used = True
     else:
         c_res = c.Continue()
 

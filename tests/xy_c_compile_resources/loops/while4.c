@@ -36,7 +36,6 @@ void while4_test(int32_t* p_x, int32_t* p_y) {
                 while4_dtor(l_a);
                 goto L_0_CONTINUE_;
             }
-        L_1_CONTINUE_:
             if (!(*p_y < *p_x)) {
                 abort();
             }

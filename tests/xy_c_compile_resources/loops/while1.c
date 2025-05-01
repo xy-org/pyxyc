@@ -13,7 +13,6 @@ void while1_test(int32_t* p_x, int32_t* p_y) {
     }
     while (while1_cond(*p_x, *p_y)) {
         (*p_x)--;
-    L_0_CONTINUE_:
         if (!(*p_x >= *p_y)) {
             abort();
         }
