@@ -2,11 +2,11 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct callbacks4_Test callbacks4_Test;
+typedef struct callbacks4__EMPTY_STRUCT_ callbacks4_Test;
 typedef struct callbacks4_FuncDesc callbacks4_FuncDesc;
 typedef void (*xy_fp__void)() ;
 
-struct callbacks4_Test {
+struct callbacks4__EMPTY_STRUCT_ {
     char __empty_structs_are_not_allowed_in_c__;
 };
 struct callbacks4_FuncDesc {

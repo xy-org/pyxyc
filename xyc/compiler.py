@@ -729,6 +729,8 @@ class CompilerContext:
 
     caller_contexts: list['CompilerContext'] = field(default_factory=list)
 
+    empty_struct_name: str | None = None
+
     def __post_init__(self):
         self.data_namespaces = [self.global_data_ns, self.data_ns]
         self.func_namespaces = [self.global_func_ns, self.func_ns]
@@ -1354,7 +1356,8 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     else:
         cstruct = c.Struct(name=mangle_struct(type_obj.xy_node, ctx))
         type_obj.c_node = cstruct
-        cast.type_decls.append(c.Typedef("struct " + cstruct.name, cstruct.name))
+        c_typedef = c.Typedef("struct " + cstruct.name, cstruct.name)
+        cast.type_decls.append(c_typedef)
         target_cast = cast.structs
 
     # finaly compile fields
@@ -1374,12 +1377,28 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     else:
         compile_pseudo = True
         compile_struct_fields(type_obj, ast, cast, ctx)
+        if len(type_obj.fields) == 0:
+            empty_name = ensure_empty_struct(cast, ast, ctx)
+            c_typedef.typename = "struct " + empty_name
+            target_cast = None
 
     if target_cast is not None:
         target_cast.append(type_obj.c_node)
 
     if compile_pseudo:
         compile_pseudo_fields(type_obj, ast, cast, ctx)
+
+def ensure_empty_struct(cast, ast, ctx):
+    if ctx.empty_struct_name:
+        return ctx.empty_struct_name
+    ctx.empty_struct_name = mangle_name("_EMPTY_STRUCT_", ctx.module_name)
+    cast.structs.append(c.Struct(ctx.empty_struct_name, fields=[
+        c.VarDecl(
+            name="__empty_structs_are_not_allowed_in_c__",
+            qtype=c.QualType("char")
+        )
+    ]))
+    return ctx.empty_struct_name
 
 def compile_struct_fields(type_obj, ast, cast, ctx):
     node = type_obj.xy_node
@@ -1442,12 +1461,6 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             type_obj.needs_dtor = type_obj.needs_dtor or field_type_obj.needs_dtor
             cstruct.fields.append(cfield)
     type_obj.fields = fields
-
-    if len(fields) == 0:
-        cstruct.fields.append(c.VarDecl(
-            name="__empty_structs_are_not_allowed_in_c__",
-            qtype=c.QualType("char")
-        ))
 
     all_zeros = all(default_values_zeros)
     c_init_args = [c.Const(0)] if all_zeros else default_values

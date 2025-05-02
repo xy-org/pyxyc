@@ -1,4 +1,5 @@
 struct Data {
+    mem: Ptr;
 }
 
 def get(d: Data, i: Int) -> Float {

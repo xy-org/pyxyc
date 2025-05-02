@@ -1,6 +1,8 @@
 import boundaryExprMultiModule.module;
 
-struct Struct {}
+struct Struct {
+    value: Int;
+}
 
 def rtti(:Struct) -> Rtti {
     return Rtti{};

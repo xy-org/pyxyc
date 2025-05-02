@@ -9,7 +9,7 @@ struct boundaryExpr3_Logger {
     bool m_enabled;
 };
 struct boundaryExpr3_Msg {
-    char __empty_structs_are_not_allowed_in_c__;
+    int64_t m_data;
 };
 
 void boundaryExpr3_info(boundaryExpr3_Logger p_log, bool p_logged) {

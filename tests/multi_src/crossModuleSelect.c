@@ -2,10 +2,10 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct crossModuleSelect_tag_Test crossModuleSelect_tag_Test;
+typedef struct crossModuleSelect_tag__EMPTY_STRUCT_ crossModuleSelect_tag_Test;
 typedef void (*xy_fp__void)() ;
 
-struct crossModuleSelect_tag_Test {
+struct crossModuleSelect_tag__EMPTY_STRUCT_ {
     char __empty_structs_are_not_allowed_in_c__;
 };
 

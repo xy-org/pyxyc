@@ -2,9 +2,9 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct callbacks3_Test1 callbacks3_Test1;
-typedef struct callbacks3_Test2 callbacks3_Test2;
-typedef struct callbacks3_Test3 callbacks3_Test3;
+typedef struct callbacks3__EMPTY_STRUCT_ callbacks3_Test1;
+typedef struct callbacks3__EMPTY_STRUCT_ callbacks3_Test2;
+typedef struct callbacks3__EMPTY_STRUCT_ callbacks3_Test3;
 typedef void (*xy_fp__void)() ;
 
 void callbacks3_test3(void);
@@ -12,13 +12,7 @@ void callbacks3_runTests(xy_fp__void* p_tPtr, size_t p_tLen);
 void callbacks3_special(void);
 void callbacks3_runSpecial(xy_fp__void p_x);
 
-struct callbacks3_Test1 {
-    char __empty_structs_are_not_allowed_in_c__;
-};
-struct callbacks3_Test2 {
-    char __empty_structs_are_not_allowed_in_c__;
-};
-struct callbacks3_Test3 {
+struct callbacks3__EMPTY_STRUCT_ {
     char __empty_structs_are_not_allowed_in_c__;
 };
 

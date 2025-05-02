@@ -5,7 +5,7 @@
 typedef struct refValue_Data refValue_Data;
 
 struct refValue_Data {
-    char __empty_structs_are_not_allowed_in_c__;
+    void* m_mem;
 };
 
 float refValue_get(refValue_Data p_d, int32_t p_i) {

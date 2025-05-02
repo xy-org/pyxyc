@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <time.h>
 
-typedef struct slices_AllSlice slices_AllSlice;
+typedef struct slices__EMPTY_STRUCT_ slices_AllSlice;
 typedef struct slices_IntSlice slices_IntSlice;
 typedef struct slices_Date slices_Date;
 typedef struct slices_DateSlice slices_DateSlice;
@@ -11,7 +11,7 @@ typedef struct slices_DateSlice slices_DateSlice;
 int32_t slices_max__Int(void);
 int64_t slices_max__Long(void);
 
-struct slices_AllSlice {
+struct slices__EMPTY_STRUCT_ {
     char __empty_structs_are_not_allowed_in_c__;
 };
 struct slices_IntSlice {

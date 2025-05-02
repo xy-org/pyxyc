@@ -8,7 +8,7 @@ typedef struct dtors3_Person dtors3_Person;
 void dtors3_dtor__Person(dtors3_Person l_obj);
 
 struct dtors3_Str {
-    char __empty_structs_are_not_allowed_in_c__;
+    int8_t* m_addr;
 };
 struct dtors3_Person {
     int32_t m_age;

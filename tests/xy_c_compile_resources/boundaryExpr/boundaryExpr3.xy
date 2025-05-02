@@ -2,7 +2,9 @@ struct Logger{
     enabled: Bool;
 }
 
-struct Msg {}
+struct Msg {
+    data: Long;
+}
 
 def info(log: Logger, ^msg: Msg, logged : Bool = if (log.enabled) doLog(log, ^msg) else false) {}
 

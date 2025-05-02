@@ -1,4 +1,5 @@
 struct List~[elem: struct, xy_dtor=true] {
+    mem: Ptr;
 }
 
 def push(l: mut List, num: Int) {

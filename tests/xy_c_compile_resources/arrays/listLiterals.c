@@ -5,7 +5,7 @@
 typedef struct listLiterals_List listLiterals_List;
 
 struct listLiterals_List {
-    char __empty_structs_are_not_allowed_in_c__;
+    void* m_mem;
 };
 
 void listLiterals_push(listLiterals_List* p_l, int32_t p_num) {

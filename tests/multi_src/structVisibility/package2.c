@@ -8,16 +8,16 @@ typedef struct package2_module1_Struct1 package2_module1_Struct1;
 typedef struct package2_module1_Struct2 package2_module1_Struct2;
 
 struct package1_module1_Struct1 {
-    char __empty_structs_are_not_allowed_in_c__;
+    int16_t m_data;
 };
 struct package1_module1_Struct2 {
-    char __empty_structs_are_not_allowed_in_c__;
+    int16_t m_data;
 };
 struct package2_module1_Struct1 {
-    char __empty_structs_are_not_allowed_in_c__;
+    int32_t m_data;
 };
 struct package2_module1_Struct2 {
-    char __empty_structs_are_not_allowed_in_c__;
+    int32_t m_data;
 };
 
 void package1_module1_test(void) {

@@ -11,7 +11,7 @@ typedef struct dtors4_Str dtors4_Str;
 void dtors4_dtor__Top(dtors4_Top l_obj);
 
 struct dtors4_Str {
-    char __empty_structs_are_not_allowed_in_c__;
+    int8_t* m_addr;
 };
 struct dtors4_Data {
     dtors4_Str m_s;

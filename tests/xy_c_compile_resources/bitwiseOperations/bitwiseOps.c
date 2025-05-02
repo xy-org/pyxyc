@@ -2,9 +2,9 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct bitwiseOps_Bits bitwiseOps_Bits;
+typedef struct bitwiseOps__EMPTY_STRUCT_ bitwiseOps_Bits;
 
-struct bitwiseOps_Bits {
+struct bitwiseOps__EMPTY_STRUCT_ {
     char __empty_structs_are_not_allowed_in_c__;
 };
 

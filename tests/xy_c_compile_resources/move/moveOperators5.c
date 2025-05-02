@@ -11,7 +11,7 @@ struct moveOperators5_Point {
     int32_t m_w;
 };
 struct moveOperators5_Array {
-    char __empty_structs_are_not_allowed_in_c__;
+    void* m_data;
 };
 
 moveOperators5_Point moveOperators5_testMovingOutInout(moveOperators5_Point* p_p) {

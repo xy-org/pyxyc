@@ -7,13 +7,13 @@ typedef struct boundaryExprMultiModule_module_Struct boundaryExprMultiModule_mod
 typedef struct boundaryExprMultiModule_Struct boundaryExprMultiModule_Struct;
 
 struct boundaryExprMultiModule_module_Rtti {
-    char __empty_structs_are_not_allowed_in_c__;
+    int32_t m_data;
 };
 struct boundaryExprMultiModule_module_Struct {
-    char __empty_structs_are_not_allowed_in_c__;
+    int32_t m_data;
 };
 struct boundaryExprMultiModule_Struct {
-    char __empty_structs_are_not_allowed_in_c__;
+    int32_t m_value;
 };
 
 void boundaryExprMultiModule_module_print(boundaryExprMultiModule_module_Rtti p_rtti) {

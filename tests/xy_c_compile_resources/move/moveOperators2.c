@@ -5,7 +5,7 @@
 typedef struct moveOperators2_IntList moveOperators2_IntList;
 
 struct moveOperators2_IntList {
-    char __empty_structs_are_not_allowed_in_c__;
+    void* m_data;
 };
 
 int32_t* moveOperators2_get(moveOperators2_IntList p_arr, int32_t p_i) {

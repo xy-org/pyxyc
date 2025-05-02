@@ -15,7 +15,7 @@ struct Data {
 }
 
 struct Str {
-    # ...
+    addr: Ptr~Byte;
 }
 
 def dtor(s: Str) {

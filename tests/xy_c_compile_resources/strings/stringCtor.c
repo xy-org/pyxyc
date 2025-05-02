@@ -2,19 +2,16 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct stringCtor_Utf8 stringCtor_Utf8;
+typedef struct stringCtor__EMPTY_STRUCT_ stringCtor_Utf8;
 typedef struct stringCtor_Str stringCtor_Str;
-typedef struct stringCtor_Ascii stringCtor_Ascii;
+typedef struct stringCtor__EMPTY_STRUCT_ stringCtor_Ascii;
 
-struct stringCtor_Utf8 {
+struct stringCtor__EMPTY_STRUCT_ {
     char __empty_structs_are_not_allowed_in_c__;
 };
 struct stringCtor_Str {
     void* m_addr;
     size_t m_size;
-};
-struct stringCtor_Ascii {
-    char __empty_structs_are_not_allowed_in_c__;
 };
 
 stringCtor_Str stringCtor_str(void* p_addr, size_t p_size) {

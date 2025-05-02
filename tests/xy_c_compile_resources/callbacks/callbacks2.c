@@ -2,12 +2,12 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct callbacks2_Test callbacks2_Test;
+typedef struct callbacks2__EMPTY_STRUCT_ callbacks2_Test;
 typedef void (*xy_fp__void)() ;
 
 void callbacks2_test3(void);
 
-struct callbacks2_Test {
+struct callbacks2__EMPTY_STRUCT_ {
     char __empty_structs_are_not_allowed_in_c__;
 };
 
