@@ -3,7 +3,7 @@
 #include <stdbool.h>
 
 typedef struct callbacks2__EMPTY_STRUCT_ callbacks2_Test;
-typedef void (*xy_fp__void)() ;
+typedef void (*xy_fp__void)(void) ;
 
 void callbacks2_test3(void);
 

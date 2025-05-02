@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef void (*xy_fp__void)() ;
+typedef void (*xy_fp__void)(void) ;
 
 void srcLocFuncs_testFunc(void) {
 }

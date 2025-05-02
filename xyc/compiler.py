@@ -3716,7 +3716,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             cast.consts.append(
                 c.Excerpt(
                     "#ifndef __XY_ALIGNOF\n" \
-                    "#define __XY_ALIGNOF(type) offsetof (struct { char c; type member; }, member)\n" \
+                    "#define __XY_ALIGNOF(type) ((size_t)&((struct { char c; type d; } *)0)->d)\n" \
                     "#endif"
                 )
             )
@@ -4143,7 +4143,7 @@ def decompose_obj_in_prints(obj, fmt, args, ctx: CompilerContext):
     if type_obj.builtin:
         specifier = {
             "Int": "%d",
-            "Size": "%zd",
+            "Size": "%zu",
             "Ptr": "%p",
             "Uint": "%u",
             "Bool": "%d",
@@ -5178,8 +5178,11 @@ def create_fptr_type(param_objs: list[VarObj], rtype_obj: TypeObj, cast, ctx: Co
     c_typename = mangle_fptr(param_objs, rtype_obj, ctx)
     if c_typename not in ctx.defined_c_symbols:
         ctx.defined_c_symbols.add(c_typename)
+        param_types = ', '.join(p.type_desc.c_name for p in param_objs)
+        if len(param_types) == 0:
+            param_types = "void"
         c_typedef = c.Typedef(
-            f"{rtype_obj.c_name} (*{c_typename})({', '.join(p.type_desc.c_name for p in param_objs)})",
+            f"{rtype_obj.c_name} (*{c_typename})({param_types})",
             "",
             unique_name=c_typename
         )

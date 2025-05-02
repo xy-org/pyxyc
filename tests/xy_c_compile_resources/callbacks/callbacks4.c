@@ -4,7 +4,7 @@
 
 typedef struct callbacks4__EMPTY_STRUCT_ callbacks4_Test;
 typedef struct callbacks4_FuncDesc callbacks4_FuncDesc;
-typedef void (*xy_fp__void)() ;
+typedef void (*xy_fp__void)(void) ;
 
 struct callbacks4__EMPTY_STRUCT_ {
     char __empty_structs_are_not_allowed_in_c__;

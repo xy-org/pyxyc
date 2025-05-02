@@ -5,7 +5,7 @@
 typedef struct callbacks3__EMPTY_STRUCT_ callbacks3_Test1;
 typedef struct callbacks3__EMPTY_STRUCT_ callbacks3_Test2;
 typedef struct callbacks3__EMPTY_STRUCT_ callbacks3_Test3;
-typedef void (*xy_fp__void)() ;
+typedef void (*xy_fp__void)(void) ;
 
 void callbacks3_test3(void);
 void callbacks3_runTests(xy_fp__void* p_tPtr, size_t p_tLen);
