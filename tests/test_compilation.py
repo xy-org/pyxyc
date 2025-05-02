@@ -85,6 +85,7 @@ from xyc.compiler import CompilationError
     "cinterop/usingCtypes",
     "cinterop/callFuncOnString",
     "cinterop/inlinecBlock",
+    "cinterop/defines",
     "bitwiseOperations/bitBasics",
     "bitwiseOperations/bitwiseOps",
     "indices/enums/enums",

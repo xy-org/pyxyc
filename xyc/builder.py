@@ -161,7 +161,7 @@ class Builder:
 
     def run_cc(self, files, output):
         cc_proc = subprocess.run(
-            ["clang", "-std=c99", "-D_DEFAULT_SOURCE",
+            ["clang", "-std=c99",
              "-Wall", "-pedantic", "-Wno-format-pedantic", "-Wformat",
              "-Wno-unused-variable", "-Wno-unused-but-set-variable",
              "-Werror", *files, "-o", output],

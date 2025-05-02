@@ -5403,12 +5403,20 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
     if "xyc.lib" in compiled_tags:
         obj = compiled_tags["xyc.lib"]
         # TODO assert obj.xy_node.name.name == "CLib"
-        headers = obj.kwargs["headers"]
+        headers = obj.kwargs.get("headers", ArrayObj())
         for header_obj in headers.elems:
             # TODO what if header_obj is an expression
             if len(header_obj.prefix) > 0:
                 raise CompilationError("Only unprefixed strings are recognized", header_obj.xy_node)
             cast.includes.append(c.Include(header_obj.parts[0].value))
+        
+        defines = obj.kwargs.get("defines", ArrayObj())
+        for def_obj in defines.elems:
+            code: str = def_obj.parts[0].value
+            name_idx = code.find("=")
+            if name_idx > 0:
+                code = code[0:name_idx] + " " + code[name_idx+1:]
+            cast.defines.append(c.Define(code))
         import_obj.is_external = True
     else:
         if imprt.lib in ctx.imported_modules:

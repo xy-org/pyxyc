@@ -166,6 +166,7 @@ class Excerpt:
 
 @dataclass
 class Ast:
+    defines: list[Define] = field(default_factory=list)
     includes: list[Include] = field(default_factory=list)
     type_decls: list[Struct] = field(default_factory=list)
     func_decls: list[Func] = field(default_factory=list)
@@ -174,6 +175,8 @@ class Ast:
     funcs: list[Struct] = field(default_factory=list)
 
     def merge(self, other: 'Ast'):
+        self.defines.extend(other.defines)
+
         already_included = {inc.path for inc in self.includes}
         for ink in other.includes:
             if ink.path not in already_included:

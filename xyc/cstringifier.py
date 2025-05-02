@@ -22,6 +22,10 @@ cast_precedence = 11
 
 def stringify(ast: Ast):
     frags = []
+
+    for node in ast.defines:
+        stringify_def(node, frags)
+
     for inc in ast.includes:
         frags.append("#include ")
         if inc.internal:
@@ -45,15 +49,7 @@ def stringify(ast: Ast):
 
     for node in ast.consts:
         if isinstance(node, Define):
-            frags.extend(("#define ", node.name))
-            if len(node.params) > 0:
-                frags.append("(")
-                frags.append(", ".join([p.name for p in node.params]))
-                frags.append(")")
-            if node.value is not None:
-                frags.append(' ')
-                stringify_expr(node.value, frags)
-            frags.append("\n")
+            stringify_def(node, frags)
         elif isinstance(node, Excerpt):
             frags.append(node.excerpt)
             frags.append("\n")
@@ -83,6 +79,17 @@ def stringify(ast: Ast):
         frags.pop()  # Remove double new line at end of file
     
     return "".join(frags)
+
+def stringify_def(node, frags):
+    frags.extend(("#define ", node.name))
+    if len(node.params) > 0:
+        frags.append("(")
+        frags.append(", ".join([p.name for p in node.params]))
+        frags.append(")")
+    if node.value is not None:
+        frags.append(' ')
+        stringify_expr(node.value, frags)
+    frags.append("\n")
 
 def stringify_func_decl(func, frags):
     frags.extend((func.rtype, " ", func.name, "("))
