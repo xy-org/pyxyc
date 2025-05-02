@@ -23,6 +23,7 @@ from xyc.compiler import CompilationError
     "ifs/ifs",
     "ifs/ifs2",
     "ifs/ifs3",
+    "ifs/ifs4",
     "loops/whiles",
     "loops/while1",
     "loops/while2",

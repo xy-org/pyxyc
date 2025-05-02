@@ -2427,6 +2427,19 @@ def optimize_cast(c_expr):
         c_expr = c_expr.what
     return c_expr
 
+def optimize_if(c_if: c.If):
+    if is_c_false(c_if.cond):
+        return c_if.else_body
+    elif is_c_true(c_if.cond):
+        return c_if.body
+    return c_if
+
+def is_c_false(c_node):
+    return isinstance(c_node, c.Const) and c_node.value == "false"
+
+def is_c_true(c_node):
+    return isinstance(c_node, c.Const) and c_node.value == "true"
+
 def is_tmp_expr(obj: ExprObj):
     return (
         isinstance(obj.c_node, c.Id) and obj.c_node.name.startswith("tmp") and
@@ -4544,7 +4557,6 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         c_res = c.Id(var_obj.c_node.name)
 
     # compile if body
-    cfunc.body.append(c_if)
     if if_exp_obj is None:
         compile_body(ifexpr.block.body, cast, c_if, ctx)
     elif inferred_type is not ctx.void_obj:
@@ -4597,6 +4609,13 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         # TODO compare types
         next_c_if.else_body.body.append(res_assign)
     ctx.pop_ns()
+
+    c_if = optimize_if(c_if)
+    if c_if is not None:
+        if isinstance(c_if, list):
+            cfunc.body.extend(c_if)
+        else:
+            cfunc.body.append(c_if)
 
     return ExprObj(
         xy_node=ifexpr,
