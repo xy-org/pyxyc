@@ -5148,7 +5148,8 @@ def create_fptr_type(param_objs: list[VarObj], rtype_obj: TypeObj, cast, ctx: Co
         ctx.defined_c_symbols.add(c_typename)
         c_typedef = c.Typedef(
             f"{rtype_obj.c_name} (*{c_typename})({', '.join(p.type_desc.c_name for p in param_objs)})",
-            ""
+            "",
+            unique_name=c_typename
         )
         cast.type_decls.append(c_typedef)
     return c_typename

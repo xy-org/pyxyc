@@ -158,6 +158,7 @@ class Define:
 class Typedef:
     typename: str = None
     name: str = None
+    unique_name: str = None  # set if the same typedef may repeat
 
 @dataclass
 class Excerpt:
@@ -179,7 +180,15 @@ class Ast:
                 self.includes.append(ink)
                 already_included.add(ink.path)
 
-        self.type_decls.extend(other.type_decls)
+        def decl_name(decl):
+            return getattr(decl, 'unique_name', None)
+        already_defined = set(decl_name(decl) for decl in self.type_decls)
+        for decl in other.type_decls:
+            name = decl_name(decl)
+            if name is None or name not in already_defined:
+                already_defined.add(name)
+                self.type_decls.append(decl)
+
         self.func_decls.extend(other.func_decls)
         self.consts.extend(other.consts)
         self.structs.extend(other.structs)
