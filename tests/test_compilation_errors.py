@@ -438,6 +438,19 @@ src.xy:3:20: error: Cannot do arithmetic with untagged pointers
                      ^^^^^
 """
     ),
+    (
+        """
+        def func() break "Don't call me";
+        def main() {
+            return func();
+        }
+        """,
+        """\
+src.xy:4:20: error: Don't call me
+|             return func();
+                     ^^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
@@ -455,7 +468,7 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
     err_msg = str(err.value)
     err_msg = err_msg.replace(input_fn[:-len("src.xy")], "")
     assert err_msg == exp_err_msg, f"Error\n{err_msg}\n"\
-           f"Doesnt match pattern:\n {exp_err_msg}"
+           f"Doesn't match pattern:\n {exp_err_msg}"
 
 @pytest.mark.parametrize("package, exp_err_msg", [
     ("moduleVis", r".*Cannot find function 'func\(\)'.*"),

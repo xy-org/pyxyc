@@ -3976,8 +3976,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
     macro_expr_obj = None
     if func_obj.is_macro:
+        body = func_obj.xy_node.body
+        if isinstance(body, xy.Break):
+            handle_static_break(expr, body, cast, cfunc, ctx)
         try:
-            macro_expr_obj = compile_expr(func_obj.xy_node.body, cast, cfunc, callee_ctx, deref=False)
+            macro_expr_obj = compile_expr(body, cast, cfunc, callee_ctx, deref=False)
         except CompilationError as e:
             raise CompilationError(
                 f"Failed to call macro '{ctx.eval_to_id(func_obj.xy_node.name)}'", expr,
@@ -4501,6 +4504,12 @@ def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx):
 
 def is_builtin_func(func_obj, name):
     return func_obj.builtin and func_obj.xy_node.name.name == name
+
+def handle_static_break(expr, brk, cast, cfunc, ctx):
+    if isinstance(brk.loop_name, xy.StrLiteral):
+        raise CompilationError(brk.loop_name.full_str, expr)
+    else:
+        raise CompilationError("Invalid 'break' expression. If you want to break compilation use a string", expr)
 
 def typeEqs(expr, arg_exprs, cast, cfunc, ctx):
     assert len(arg_exprs) == 2

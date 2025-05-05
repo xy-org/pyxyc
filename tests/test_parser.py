@@ -2545,6 +2545,27 @@ def test_func_def_with_tags(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        def func() break "I will break compilation";
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("func"),
+                body=ast.Break(ast.StrLiteral(
+                    parts=[ast.Const("I will break compilation")],
+                    full_str="I will break compilation"
+                ))
+            )
+        ]
+    ],
+])
+def test_static_expr(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
