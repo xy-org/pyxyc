@@ -451,6 +451,30 @@ src.xy:4:20: error: Don't call me
                      ^^^^
 """
     ),
+    (
+        """
+        def test(a: Uint, b: Byte) -> Uint {
+            return a + b;
+        }
+        """,
+        """\
+src.xy:3:20: error: Mixed signedness arithmetic (Uint, Byte). Please cast one of the operands to a suitable type.
+|             return a + b;
+                     ^^^^^
+"""
+    ),
+    (
+        """
+        def test(a: Uint, b: Int) -> Uint {
+            return a + b;
+        }
+        """,
+        """\
+src.xy:3:20: error: Mixed signedness arithmetic (Uint, Int). Please cast one of the operands to a suitable type.
+|             return a + b;
+                     ^^^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

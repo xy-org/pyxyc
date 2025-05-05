@@ -64,7 +64,7 @@ int32_t indices_select__PointCloud__Int(indices_PointCloud p_pc, int32_t p_i) {
 }
 
 indices_Point* indices_get__PointCloud__Int(indices_PointCloud p_pc, int32_t p_i) {
-    return (int8_t*)p_pc.m_mem + p_i * sizeof(indices_Point);
+    return (int8_t*)p_pc.m_mem + (size_t)p_i * sizeof(indices_Point);
 }
 
 void indices_set__PointCloud__Int__Point(indices_PointCloud* p_pc, int32_t p_i, indices_Point p_p) {

@@ -9,7 +9,9 @@
 
 # Primitive bool type
 
-;; 8-bit true/false type
+;; 1-bit true/false type
+;; The sizeof(Bool) is 0 as sizeof doesn't support sub-byte sizes
+;; Pointers to Bool are not possible as pointers point to bytes
 *struct Bool {
     # Implemented by the compiler
 }
@@ -139,22 +141,22 @@
 ## Byte
 
 ;; Addition
-*def add(a: Byte, b: (Byte, Short, Int, Long)) -> %b {
+*def add(a: Byte, b: (Byte, Short, Int, Long, Float, Double)) -> %b {
     # Implemented by the compiler
 }
 
 ;; Subtraction
-*def sub(a: Byte, b: (Byte, Short, Int, Long)) -> %b {
+*def sub(a: Byte, b: (Byte, Short, Int, Long, Float, Double)) -> %b {
     # Implemented by the compiler
 }
 
 ;; Multiplication
-*def mul(a: Byte, b: (Byte, Short, Int, Long)) -> %b {
+*def mul(a: Byte, b: (Byte, Short, Int, Long, Float, Double)) -> %b {
     # Implemented by the compiler
 }
 
 ;; Integer division
-*def div(a: Byte, b: (Byte, Short, Int, Long)) -> %b {
+*def div(a: Byte, b: (Byte, Short, Int, Long, Float, Double)) -> %b {
     # Implemented by the compiler
 }
 
@@ -190,23 +192,23 @@
 
 ## Ubyte
 
-*def add(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> %b {
+*def add(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def sub(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> %b {
+*def sub(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def mul(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> %b {
+*def mul(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def div(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> %b {
+*def div(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def cmpEq(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpEq(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
@@ -232,35 +234,35 @@
 
 ## Short
 
-*def add(a: Short, b: (Byte, Ubyte, Short)) -> Short {
+*def add(a: Short, b: (Byte, Ubyte)) -> Short {
     # Implemented by the compiler
 }
 
-*def add(a: Short, b: (Ushort, Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def add(a: Short, b: (Short, Int, Long, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
-*def sub(a: Short, b: (Byte, Ubyte, Short)) -> Short {
+*def sub(a: Short, b: (Byte, Ubyte)) -> Short {
     # Implemented by the compiler
 }
 
-*def sub(a: Short, b: (Ushort, Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def sub(a: Short, b: (Short, Int, Long, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
-*def mul(a: Short, b: (Byte, Ubyte, Short)) -> Short {
+*def mul(a: Short, b: (Byte, Ubyte)) -> Short {
     # Implemented by the compiler
 }
 
-*def mul(a: Short, b: (Ushort, Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def mul(a: Short, b: (Short, Int, Long, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
-*def div(a: Short, b: (Byte, Ubyte, Short)) -> Short {
+*def div(a: Short, b: (Byte, Ubyte)) -> Short {
     # Implemented by the compiler
 }
 
-*def div(a: Short, b: (Ushort, Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def div(a: Short, b: (Short, Int, Long, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
@@ -290,35 +292,35 @@
 
 ## Ushort
 
-*def add(a: Ushort, b: (Byte, Ubyte, Short, Ushort)) -> Ushort {
+*def add(a: Ushort, b: (Ubyte, Ushort)) -> Ushort {
     # Implemented by the compiler
 }
 
-*def add(a: Ushort, b: (Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def add(a: Ushort, b: (Int, Uint, Long, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def sub(a: Ushort, b: (Byte, Ubyte, Short, Ushort)) -> Ushort {
+*def sub(a: Ushort, b: (Ubyte, Ushort)) -> Ushort {
     # Implemented by the compiler
 }
 
-*def sub(a: Ushort, b: (Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def sub(a: Ushort, b: (Int, Uint, Long, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def mul(a: Ushort, b: (Byte, Ubyte, Short, Ushort)) -> Ushort {
+*def mul(a: Ushort, b: (Ubyte, Ushort)) -> Ushort {
     # Implemented by the compiler
 }
 
-*def mul(a: Ushort, b: (Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def mul(a: Ushort, b: (Int, Uint, Long, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def div(a: Ushort, b: (Byte, Ubyte, Short, Ushort)) -> Ushort {
+*def div(a: Ushort, b: (Ubyte, Ushort)) -> Ushort {
     # Implemented by the compiler
 }
 
-*def div(a: Ushort, b: (Int, Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def div(a: Ushort, b: (Int, Uint, Long, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
@@ -352,7 +354,7 @@
     # Implemented by the compiler
 }
 
-*def add(a: Int, b: (Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def add(a: Int, b: (Long, Double)) -> %b {
     # Implemented by the compiler
 }
 
@@ -360,7 +362,7 @@
     # Implemented by the compiler
 }
 
-*def sub(a: Int, b: (Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def sub(a: Int, b: (Long, Double)) -> %b {
     # Implemented by the compiler
 }
 
@@ -368,7 +370,7 @@
     # Implemented by the compiler
 }
 
-*def mul(a: Int, b: (Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def mul(a: Int, b: (Long, Double)) -> %b {
     # Implemented by the compiler
 }
 
@@ -376,7 +378,7 @@
     # Implemented by the compiler
 }
 
-*def div(a: Int, b: (Uint, Long, Ulong, Size, Double, Float)) -> %b {
+*def div(a: Int, b: (Long, Double)) -> %b {
     # Implemented by the compiler
 }
 
@@ -427,35 +429,35 @@
 
 ## Uint
 
-*def add(a: Uint, b: (Byte, Ubyte, Short, Ushort, Int, Uint)) -> Uint {
+*def add(a: Uint, b: (Ubyte, Ushort, Uint)) -> Uint {
     # Implemented by the compiler
 }
 
-*def add(a: Uint, b: (Long, Ulong, Size, Double, Float)) -> %b {
+*def add(a: Uint, b: (Long, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def sub(a: Uint, b: (Byte, Ubyte, Short, Ushort, Int, Uint)) -> Uint {
+*def sub(a: Uint, b: (Ubyte, Ushort, Uint)) -> Uint {
     # Implemented by the compiler
 }
 
-*def sub(a: Uint, b: (Long, Ulong, Size, Double, Float)) -> %b {
+*def sub(a: Uint, b: (Long, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def mul(a: Uint, b: (Byte, Ubyte, Short, Ushort, Int, Uint)) -> Uint {
+*def mul(a: Uint, b: (Ubyte, Ushort, Uint)) -> Uint {
     # Implemented by the compiler
 }
 
-*def mul(a: Uint, b: (Long, Ulong, Size, Double, Float)) -> %b {
+*def mul(a: Uint, b: (Long, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
-*def div(a: Uint, b: (Byte, Ubyte, Short, Ushort, Int, Uint)) -> Uint {
+*def div(a: Uint, b: (Ubyte, Ushort, Uint)) -> Uint {
     # Implemented by the compiler
 }
 
-*def div(a: Uint, b: (Long, Ulong, Size, Double, Float)) -> %b {
+*def div(a: Uint, b: (Long, Ulong, Size)) -> %b {
     # Implemented by the compiler
 }
 
@@ -489,7 +491,7 @@
     # Implemented by the compiler
 }
 
-*def add(a: Long, b: (Ulong, Size, Double, Float)) -> %b {
+*def add(a: Long, b: (Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
@@ -497,7 +499,7 @@
     # Implemented by the compiler
 }
 
-*def sub(a: Long, b: (Ulong, Size, Double, Float)) -> %b {
+*def sub(a: Long, b: (Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
@@ -505,7 +507,7 @@
     # Implemented by the compiler
 }
 
-*def mul(a: Long, b: (Ulong, Size, Double, Float)) -> %b {
+*def mul(a: Long, b: (Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
@@ -513,7 +515,7 @@
     # Implemented by the compiler
 }
 
-*def div(a: Long, b: (Ulong, Size, Double, Float)) -> %b {
+*def div(a: Long, b: (Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
@@ -543,35 +545,35 @@
 
 ## Ulong
 
-*def add(a: Ulong, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong)) -> Ulong {
+*def add(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong)) -> Ulong {
     # Implemented by the compiler
 }
 
-*def add(a: Ulong, b: (Double, Float)) -> %b {
+*def add(a: Ulong, b: (Size, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
-*def sub(a: Ulong, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong)) -> Ulong {
+*def sub(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong)) -> Ulong {
     # Implemented by the compiler
 }
 
-*def sub(a: Ulong, b: (Double, Float)) -> %b {
+*def sub(a: Ulong, b: (Size, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
-*def mul(a: Ulong, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong)) -> Ulong {
+*def mul(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong)) -> Ulong {
     # Implemented by the compiler
 }
 
-*def mul(a: Ulong, b: (Double, Float)) -> %b {
+*def mul(a: Ulong, b: (Size, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
-*def div(a: Ulong, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong)) -> Ulong {
+*def div(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong)) -> Ulong {
     # Implemented by the compiler
 }
 
-*def div(a: Ulong, b: (Double, Float)) -> %b {
+*def div(a: Ulong, b: (Size, Double, Float)) -> %b {
     # Implemented by the compiler
 }
 
@@ -601,7 +603,7 @@
 
 ## Float
 
-*def add(a: Float, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float)) -> Float {
+*def add(a: Float, b: (Byte, Ubyte, Short, Ushort, Float)) -> Float {
     # Implemented by the compiler
 }
 
@@ -609,7 +611,7 @@
     # Implemented by the compiler
 }
 
-*def sub(a: Float, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float)) -> Float {
+*def sub(a: Float, b: (Byte, Ubyte, Short, Ushort, Float)) -> Float {
     # Implemented by the compiler
 }
 
@@ -617,7 +619,7 @@
     # Implemented by the compiler
 }
 
-*def mul(a: Float, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float)) -> Float {
+*def mul(a: Float, b: (Byte, Ubyte, Short, Ushort, Float)) -> Float {
     # Implemented by the compiler
 }
 
@@ -625,7 +627,7 @@
     # Implemented by the compiler
 }
 
-*def div(a: Float, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float)) -> Float {
+*def div(a: Float, b: (Byte, Ubyte, Short, Ushort, Float)) -> Float {
     # Implemented by the compiler
 }
 
@@ -659,19 +661,19 @@
 
 ## Double
 
-*def add(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float, Double)) -> Double {
+*def add(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Float, Double)) -> Double {
     # Implemented by the compiler
 }
 
-*def sub(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float, Double)) -> Double {
+*def sub(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Float, Double)) -> Double {
     # Implemented by the compiler
 }
 
-*def mul(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float, Double)) -> Double {
+*def mul(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Float, Double)) -> Double {
     # Implemented by the compiler
 }
 
-*def div(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Float, Double)) -> Double {
+*def div(a: Double, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Float, Double)) -> Double {
     # Implemented by the compiler
 }
 
@@ -701,19 +703,19 @@
 
 ## Size
 
-*def add(a: Size, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Size {
+*def add(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Size {
     # Implemented by the compiler
 }
 
-*def sub(a: Size, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Size {
+*def sub(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Size {
     # Implemented by the compiler
 }
 
-*def mul(a: Size, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Size {
+*def mul(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Size {
     # Implemented by the compiler
 }
 
-*def div(a: Size, b: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)) -> Size {
+*def div(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Size {
     # Implemented by the compiler
 }
 
@@ -759,19 +761,27 @@
     # Implemented by the compiler
 }
 
-
+;; Logic not
 *def not(a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Bool)) -> Bool {
     # Implemented by the compiler
 }
 
+;; Operator ++
 *def inc(a: mut Int) -> void {
     # Implemented by the compiler
 }
 
+;; Operator ++
 *def inc(a: mut Uint) -> void {
     # Implemented by the compiler
 }
 
+;; Operator ++
+*def inc(a: mut Size) -> void {
+    # Implemented by the compiler
+}
+
+;; Operator --
 *def dec(a: mut Int) -> void {
     # Implemented by the compiler
 }
@@ -780,8 +790,100 @@
     # Implemented by the compiler
 }
 
-*def inc(a: mut Size) -> void {
-    # Implemented by the compiler
+# Mixed signedness arithmetics
+
+def signednessError() break "Mixed signedness arithmetic. Please cast one of the operands to a suitable type.";
+
+;; Mixed signedness arithmetic
+*def add(a: Byte, b: (Ubyte, Ushort, Uint, Ulong, Size)) signednessError();
+*def add(a: Short, b: (Ushort, Uint, Ulong, Size)) signednessError();
+*def add(a: Long, b: (Ulong, Size)) signednessError();
+*def sub(a: Byte, b: (Ubyte, Ushort, Uint, Ulong, Size)) signednessError();
+*def sub(a: Short, b: (Ushort, Uint, Ulong, Size)) signednessError();
+*def sub(a: Long, b: (Ulong, Size)) signednessError();
+*def mul(a: Byte, b: (Ubyte, Ushort, Uint, Ulong, Size)) signednessError();
+*def mul(a: Short, b: (Ushort, Uint, Ulong, Size)) signednessError();
+*def mul(a: Long, b: (Ulong, Size)) signednessError();
+*def div(a: Byte, b: (Ubyte, Ushort, Uint, Ulong, Size)) signednessError();
+*def div(a: Short, b: (Ushort, Uint, Ulong, Size)) signednessError();
+*def div(a: Long, b: (Ulong, Size)) signednessError();
+
+;; ...
+*def add(a: Ubyte, b: Byte) signednessError();
+*def add(a: Ushort, b: (Byte, Short)) signednessError();
+*def add(a: Uint, b: (Byte, Short)) signednessError();
+*def add(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def add(a: Size, b: (Byte, Short, Long)) signednessError();
+*def sub(a: Ubyte, b: Byte) signednessError();
+*def sub(a: Ushort, b: (Byte, Short)) signednessError();
+*def sub(a: Uint, b: (Byte, Short)) signednessError();
+*def sub(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def sub(a: Size, b: (Byte, Short, Long)) signednessError();
+*def mul(a: Ubyte, b: Byte) signednessError();
+*def mul(a: Ushort, b: (Byte, Short)) signednessError();
+*def mul(a: Uint, b: (Byte, Short)) signednessError();
+*def mul(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def mul(a: Size, b: (Byte, Short, Long)) signednessError();
+*def div(a: Ubyte, b: Byte) signednessError();
+*def div(a: Ushort, b: (Byte, Short)) signednessError();
+*def div(a: Uint, b: (Byte, Short)) signednessError();
+*def div(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def div(a: Size, b: (Byte, Short, Long)) signednessError();
+
+;; Compute mixed signedness operation only if {b} is a constant
+*def add(a: (Uint, Ulong, Size, Float), b: Int) -> %a
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def sub(a: (Uint, Ulong, Size, Float), b: Int) -> %a
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def mul(a: (Uint, Ulong, Size, Float), b: Int) -> %a
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def div(a: (Uint, Ulong, Size, Float), b: Int) -> %a
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+;; Compute mixed signedness operation only if {a} is a constant
+*def add(a: Int, b: (Uint, Ulong, Size, Float)) -> %b
+>> isConst(^a)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def sub(a: Int, b: (Uint, Ulong, Size, Float)) -> %b
+>> isConst(^a)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def mul(a: Int, b: (Uint, Ulong, Size, Float)) -> %b
+>> isConst(^a)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def div(a: Int, b: (Uint, Ulong, Size, Float)) -> %b
+>> isConst(^a)
+{
+    # implemented by the compiler
 }
 
 # Conversion between types
@@ -857,6 +959,15 @@
         Float, Double, Char),
     :Ulong
 ) -> Ulong {
+    # Implemented by the compiler
+}
+
+;; Convert {a} to Size
+*def to(
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+        Float, Double, Char),
+    :Size
+) -> Size {
     # Implemented by the compiler
 }
 

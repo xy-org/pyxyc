@@ -36,7 +36,7 @@ def mix(arr1: Array, arr2: Array) -> Float
 >> arr1'len == arr2'len
 {
     return for(i in :, e1 in arr1, e2 in arr2) -> (res: Float) {
-        res += i * e1 * e2;
+        res += i'to(Float) * e1 * e2;
     };
 }
 

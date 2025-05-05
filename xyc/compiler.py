@@ -739,6 +739,11 @@ class CompilerContext:
         if isinstance(type_obj,TypeExprObj):
             type_obj = type_obj.base_type_obj
         return type_obj in self.prim_int_objs
+    
+    def is_int(self, type_obj):
+        if isinstance(type_obj,TypeExprObj):
+            type_obj = type_obj.base_type_obj
+        return type_obj is self.int_obj
 
     def push_ns(self, ns_type=None):
         table = IdTable()
@@ -1139,6 +1144,7 @@ def compile_module(builder, module_name, asts, module_path):
             ctx.global_data_ns["Ulong"],
             ctx.global_data_ns["Size"],
         )
+        ctx.signedness_error_brk = ctx.global_func_ns["signednessError"]._funcs[0].xy_node.body
 
     ctx.compiling_header = True
     fobjs = compile_header(ctx, asts, res)
@@ -1664,7 +1670,7 @@ def compile_ret_err_types(node, cast, cfunc, ctx):
     else:
         rtype_compiled = ctx.void_obj
 
-    has_calltime_tags = remove_calltime_tags(rtype_compiled)
+    has_calltime_tags = remove_calltime_tags(rtype_compiled) if rtype_compiled is not None else False
 
     ctx.eval_calltime_exprs = eval_stored_value
 
@@ -3634,6 +3640,14 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=func_obj.rtype_obj
         )
     elif func_obj.builtin and len(arg_exprs) == 2:
+        if isinstance(func_obj.xy_node.body, xy.FuncCall) and func_obj.xy_node.body.name.name == "signednessError":
+            report_mixed_signed(expr, arg_exprs, ctx)
+        if len(func_obj.xy_node.in_guards) > 0:
+            ## the only ones with in guards are the exceptions for Int
+            if ctx.is_int(arg_exprs[0].inferred_type) and not isinstance(arg_exprs[0].c_node, c.Const):
+                report_mixed_signed(expr, arg_exprs, ctx)
+            if ctx.is_int(arg_exprs[1].inferred_type) and not isinstance(arg_exprs[1].c_node, c.Const):
+                report_mixed_signed(expr, arg_exprs, ctx)
         func_to_op_map = {
             "add": '+',
             "sub": '-',
@@ -4510,6 +4524,13 @@ def handle_static_break(expr, brk, cast, cfunc, ctx):
         raise CompilationError(brk.loop_name.full_str, expr)
     else:
         raise CompilationError("Invalid 'break' expression. If you want to break compilation use a string", expr)
+    
+def report_mixed_signed(expr, arg_exprs, ctx):
+    msg = "Mixed signedness arithmetic ("
+    msg += arg_exprs[0].inferred_type.name
+    msg += ", " + arg_exprs[1].inferred_type.name
+    msg += "). Please cast one of the operands to a suitable type."
+    raise CompilationError(msg, expr)
 
 def typeEqs(expr, arg_exprs, cast, cfunc, ctx):
     assert len(arg_exprs) == 2

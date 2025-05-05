@@ -56,7 +56,7 @@ float for3_mix(for3_Array p_arr1, for3_Array p_arr2) {
                 abort();
             }
             float* tmp_5_arg = for3_get(&p_arr2, tmp_3_iter);
-            l_res += i * *tmp_4_arg * *tmp_5_arg;
+            l_res += (float)i * *tmp_4_arg * *tmp_5_arg;
         }
     }
     return l_res;

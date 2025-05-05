@@ -162,8 +162,10 @@ class Builder:
     def run_cc(self, files, output):
         cc_proc = subprocess.run(
             ["clang", "-std=c99",
-             "-Wall", "-pedantic", "-Wno-format-pedantic", "-Wformat",
-             "-Wno-unused-variable", "-Wno-unused-but-set-variable",
+             "-Wall", "-pedantic", "-Wformat",
+             # "-Wsign-conversion", "-Wtautological-unsigned-zero-compare",
+             "-Wno-format-pedantic", "-Wno-unused-variable",
+             "-Wno-unused-but-set-variable",
              "-Werror", *files, "-o", output],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )

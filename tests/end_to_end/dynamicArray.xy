@@ -57,7 +57,7 @@ def get(
     arr: Array, i: Int,
     elemSize : Size = ctti.sizeof(arr..elemType)
 ) -> arr[ Ptr~[^arr..elemType] ] {
-    return arr.mem.addr + i * elemSize;
+    return arr.mem.addr + i'to(Size) * elemSize;
 }
 
 struct ArrayIter {
@@ -90,7 +90,7 @@ def main~EntryPoint() -> Int {
     points: Array~Point;
     for (i in :100) {
         ints'push(i);
-        points'push(Point{ints[ints'len -1 -i] + i, ints[i]});
+        points'push(Point{ints[ints'len -1 -i'to(Size)] + i, ints[i]});
     }
 
     print(f"len={ints'len}\n");
