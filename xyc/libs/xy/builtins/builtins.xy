@@ -1154,6 +1154,25 @@ struct FuncSelection {
     # implemented by the compiler
 }
 
+;; Expanding or truncating bits
+
+*def to(a: (Bits8, Bits16, Bits32, Bits64), :Bits8) -> Bits8 {
+    # implemented by the compiler
+}
+
+*def to(a: (Bits8, Bits16, Bits32, Bits64), :Bits16) -> Bits16 {
+    # implemented by the compiler
+}
+
+*def to(a: (Bits8, Bits16, Bits32, Bits64), :Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+*def to(a: (Bits8, Bits16, Bits32, Bits64), :Bits64) -> Bits64 {
+    # implemented by the compiler
+}
+
+
 ;; Bitwise and
 *def and(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
     # implemented by the compiler

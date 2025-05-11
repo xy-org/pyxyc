@@ -2049,7 +2049,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
 
         return ExprObj(
             xy_node=expr,
-            c_node=c.Const(value),
+            c_node=c.Const(value=expr.value, value_str=value),
             inferred_type=ctx.get_compiled_type(xy.Id(
                 expr.type, src=expr.src, coords=expr.coords
             ))
@@ -2454,10 +2454,10 @@ def optimize_if(c_if: c.If):
     return c_if
 
 def is_c_false(c_node):
-    return isinstance(c_node, c.Const) and c_node.value == "false"
+    return isinstance(c_node, c.Const) and not c_node.value
 
 def is_c_true(c_node):
-    return isinstance(c_node, c.Const) and c_node.value == "true"
+    return isinstance(c_node, c.Const) and c_node.value
 
 def is_tmp_expr(obj: ExprObj):
     return (
@@ -3136,6 +3136,10 @@ def escape_str(s: str):
 def is_str_const(node: xy.Node) -> bool:
     return isinstance(node, xy.Const) and isinstance(node.value, str)
 
+def get_c_int_val(c_node) -> int:
+    if isinstance(c_node, c.Const) and isinstance(c_node.value, int):
+        return c_node.value
+    return None
 
 def ct_isTrue(obj: CompiledObj):
     if isinstance(obj, ConstObj) and isinstance(obj.value, bool):
@@ -3633,7 +3637,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     elif is_builtin_func(func_obj, "ashiftr"):
         signed_ctype = arg_exprs[0].inferred_type.c_node.name[1:]
         c_res = c.Cast(arg_exprs[0].c_node, to=signed_ctype)
-        c_res = c.Expr(c_res, arg_exprs[1].c_node, op=">>")
+
+        bit_len = int(arg_exprs[0].inferred_type.name[len("Bits"):])
+        c_arg2_val = get_c_int_val(arg_exprs[1].c_node)
+        if c_arg2_val is None or c_arg2_val < 0 or c_arg2_val >= bit_len:
+            c_arg2 = c.Expr(arg_exprs[1].c_node, c.Const(hex(bit_len-1)), op='&')
+        else:
+            c_arg2 = arg_exprs[1].c_node
+
+        c_res = c.Expr(c_res, c_arg2, op=">>")
         return ExprObj(
             xy_node=expr,
             c_node=c_res,
@@ -3665,15 +3677,20 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             "cmpLe": "<=",
         }
         c_arg1 = arg_exprs[0].c_node
+        c_arg2 = arg_exprs[1].c_node
         c_op = func_to_op_map[func_obj.xy_node.name.name]
         if arg_exprs[0].inferred_type.name.startswith("Bits"):
             if c_op == '-':
                 c_op = '^'
             elif c_op in {"&&", "||"}:
                 c_op = c_op[1:]
+            elif c_op in {"<<", ">>"}:
+                bit_len = int(arg_exprs[0].inferred_type.name[len("Bits"):])
+                c_arg2_val = get_c_int_val(c_arg2)
+                if c_arg2_val is None or c_arg2_val < 0 or c_arg2_val >= bit_len:
+                    c_arg2 = c.Expr(c_arg2, c.Const(hex(bit_len-1)), op='&')
         res = c.Expr(
-            c_arg1, arg_exprs[1].c_node,
-            op=c_op,
+            c_arg1, c_arg2, op=c_op,
         )
 
         inferred_type = func_obj.rtype_obj

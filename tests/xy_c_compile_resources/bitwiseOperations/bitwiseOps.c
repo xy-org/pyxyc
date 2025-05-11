@@ -9,11 +9,11 @@ struct bitwiseOps__EMPTY_STRUCT_ {
 };
 
 bool bitwiseOps_get__Bits64__Int(uint64_t p_b, int32_t p_i) {
-    return (int64_t)(p_b & (uint64_t)1 << p_i) != 0;
+    return (int64_t)(p_b & (uint64_t)1 << (p_i & 0x3f)) != 0;
 }
 
 int32_t bitwiseOps_set__Bits64__Int__Bool(uint64_t* p_b, int32_t p_i, bool p_val) {
-    *p_b |= (uint64_t)p_val << p_i;
+    *p_b |= (uint64_t)p_val << (p_i & 0x3f);
     return p_i;
 }
 

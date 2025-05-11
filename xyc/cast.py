@@ -82,6 +82,7 @@ class Goto:
 @dataclass
 class Const:
     value: str | int | float
+    value_str: str | None = None
 
 @dataclass
 class InitList:

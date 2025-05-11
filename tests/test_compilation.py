@@ -87,6 +87,7 @@ from xyc.compiler import CompilationError
     "cinterop/inlinecBlock",
     "cinterop/defines",
     "bitwiseOperations/bitBasics",
+    "bitwiseOperations/bitShifts",
     "bitwiseOperations/bitwiseOps",
     "indices/enums/enums",
     "indices/enums/enums2",

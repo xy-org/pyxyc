@@ -200,7 +200,7 @@ def stringify_field(field, frags, ident):
 
 def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
     if isinstance(expr, Const):
-        frags.append(str(expr.value))
+        frags.append(expr.value_str if expr.value_str else str(expr.value))
     elif isinstance(expr, Id):
         frags.append(expr.name)
     elif isinstance(expr, Expr):
