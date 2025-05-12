@@ -3629,6 +3629,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_res = c.UnaryExpr(arg_exprs[0].c_node, op="!", prefix=True)
         else:
             c_res = c.UnaryExpr(arg_exprs[0].c_node, op="~", prefix=True)
+            bit_len = int(arg_exprs[0].inferred_type.name[len("Bits"):])
+            if bit_len < 32:
+                c_res = c.Cast(c_res, func_obj.rtype_obj.c_name)
         return ExprObj(
             xy_node=expr,
             c_node=c_res,
@@ -3638,14 +3641,19 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         signed_ctype = arg_exprs[0].inferred_type.c_node.name[1:]
         c_res = c.Cast(arg_exprs[0].c_node, to=signed_ctype)
 
+        # try to remove the & if a constant
         bit_len = int(arg_exprs[0].inferred_type.name[len("Bits"):])
         c_arg2_val = get_c_int_val(arg_exprs[1].c_node)
         if c_arg2_val is None or c_arg2_val < 0 or c_arg2_val >= bit_len:
             c_arg2 = c.Expr(arg_exprs[1].c_node, c.Const(hex(bit_len-1)), op='&')
         else:
             c_arg2 = arg_exprs[1].c_node
-
         c_res = c.Expr(c_res, c_arg2, op=">>")
+        
+        # Always explicitly cast back to the unsigned type in order to avoid
+        # the c-compiler mistakingly thinking its a siged type
+        c_res = c.Cast(c_res, func_obj.rtype_obj.c_name)
+
         return ExprObj(
             xy_node=expr,
             c_node=c_res,
@@ -3679,6 +3687,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         c_arg1 = arg_exprs[0].c_node
         c_arg2 = arg_exprs[1].c_node
         c_op = func_to_op_map[func_obj.xy_node.name.name]
+        bit_len = None
         if arg_exprs[0].inferred_type.name.startswith("Bits"):
             if c_op == '-':
                 c_op = '^'
@@ -3692,6 +3701,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         res = c.Expr(
             c_arg1, c_arg2, op=c_op,
         )
+        if bit_len is not None and bit_len < 32:
+            res = c.Cast(res, func_obj.rtype_obj.c_name)
 
         inferred_type = func_obj.rtype_obj
         if is_ptr_type(arg_exprs[0].inferred_type, ctx):

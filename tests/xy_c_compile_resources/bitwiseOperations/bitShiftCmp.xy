@@ -1,0 +1,14 @@
+;; When shifting a type less than int it will get extended to int
+;; So we want to check the compiler inserts the necessary casts
+
+def testCmp1(bits: (Bits8, Bits16, Bits32, Bits64)) -> Bool {
+    return (bits \shiftr 3) == (bits \shiftl 5);
+}
+
+def testCmp2(bits: (Bits8, Bits16, Bits32, Bits64)) -> Bool {
+    return (bits \ashiftr 3) == (bits \shiftl 5);
+}
+
+def testCmpNot(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> Bool {
+    return !a == b;
+}

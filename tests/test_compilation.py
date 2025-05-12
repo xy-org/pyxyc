@@ -88,6 +88,7 @@ from xyc.compiler import CompilationError
     "cinterop/defines",
     "bitwiseOperations/bitBasics",
     "bitwiseOperations/bitShifts",
+    "bitwiseOperations/bitShiftCmp",
     "bitwiseOperations/bitwiseOps",
     "indices/enums/enums",
     "indices/enums/enums2",
