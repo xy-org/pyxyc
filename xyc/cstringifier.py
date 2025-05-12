@@ -1,8 +1,8 @@
 from xyc.cast import *
 
 op_precedence = {
-    '.': 12, '->': 12,
-    '!': 11, '~': 11, '++': 11, '--': 11,
+    'post++': 12, 'post--': 12, '.': 12, '->': 12,
+    'pre*': 11, 'pre&': 11, 'pre!': 11, 'pre~': 11, 'pre++': 11, 'pre--': 11, 'pre+': 11, 'pre-': 11,
     '*': 10, '/': 10, '%': 10,
     '+': 9, '-': 9,
     '<<': 8, '>>': 8,
@@ -216,12 +216,16 @@ def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
         if parent_op_precedence > op_prec:
             frags.append(")")
     elif isinstance(expr, UnaryExpr):
-        op_prec = op_precedence[expr.op]
+        op_prec = op_precedence[("pre" if expr.prefix else "post") + expr.op]
         if parent_op_precedence > op_prec:
             frags.append("(")
         if expr.prefix:
             frags.append(expr.op)
+        operand_idx = len(frags)
         stringify_expr(expr.arg, frags, op_prec)
+        if expr.op in {"-", "+"} and frags[operand_idx].startswith(expr.op):
+            # guard against a unary - and a constant
+            frags[operand_idx] = " " + frags[operand_idx]
         if parent_op_precedence > op_prec:
             frags.append(")")
         if not expr.prefix:
