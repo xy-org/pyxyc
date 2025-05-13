@@ -198,6 +198,14 @@ def stringify_field(field, frags, ident):
         frags.extend(('[', ','.join(str(d) for d in field.qtype.type.dims), ']'))
     frags.append(";\n")
 
+def parentheses_required(op, parent_op_precedence):
+    # the check for the binary & and | is needed just to keep -Wall happy
+    # but also generate more readable code
+    return (
+        parent_op_precedence > op_precedence[op] or
+        op == "&" and parent_op_precedence == op_precedence["|"]
+    )
+
 def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
     if isinstance(expr, Const):
         frags.append(expr.value_str if expr.value_str else str(expr.value))
@@ -205,7 +213,8 @@ def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
         frags.append(expr.name)
     elif isinstance(expr, Expr):
         op_prec = op_precedence[expr.op]
-        if parent_op_precedence > op_prec:
+        parentheses = parentheses_required(expr.op, parent_op_precedence)
+        if parentheses:
             frags.append("(")
         stringify_expr(expr.arg1, frags, op_prec)
         if expr.op not in {".", "->"}:
@@ -213,7 +222,7 @@ def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
         else:
             frags.append(expr.op)
         stringify_expr(expr.arg2, frags, op_prec)
-        if parent_op_precedence > op_prec:
+        if parentheses:
             frags.append(")")
     elif isinstance(expr, UnaryExpr):
         op_prec = op_precedence[("pre" if expr.prefix else "post") + expr.op]
