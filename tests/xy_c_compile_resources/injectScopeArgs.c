@@ -30,6 +30,6 @@ void injectScopeArgs_test3(float p_b, injectScopeArgs_MyStruct p_c, int32_t p_a)
 
 void injectScopeArgs_test5(double p_d, injectScopeArgs_MyStruct p_c) {
     const int32_t l_a = p_c.m_a;
-    const float l_b = (float)p_c.m_b;
+    const float l_b = p_c.m_b;
     injectScopeArgs_func(l_a, l_b, p_c);
 }

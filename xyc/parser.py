@@ -822,7 +822,7 @@ def parse_operator(arg1, itoken, precedence, op_prec):
 def parse_num_const(token: str, tk_coords, itoken):
     suffix_map = {
         "f": "Float", "d": "Double", 
-        "l": "Long", "ul": "Ulong", "i": "Int", "u": "Uint", "ui": "Uint",
+        "l": "Long", "ul": "Ulong", "u": "Uint",
         "s": "Short", "us": "Ushort", "b": "Byte", "ub": "Ubyte", "z": "Size"
     }
 
@@ -888,7 +888,8 @@ def parse_num_const(token: str, tk_coords, itoken):
             else: res.value_str = num_str
         if res.value not in {0, 1}:
             if suffix == "l": res.value_str += "ll"
-            if suffix == "ul": res.value_str += "ull"
+            elif suffix == "ul": res.value_str += "ull"
+            elif suffix == "u" and base != 10: res.value_str += "u"
         if suffix in suffix_map:
             res.type = suffix_map[suffix]
         elif suffix != "":

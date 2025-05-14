@@ -96,6 +96,7 @@ from xyc.compiler import CompilationError
     "logicCmp/cmpBools",
     "logicCmp/cmpBits",
     "logicCmp/cmpNums",
+    "logicCmp/cmpNumConsts",
     "logicCmp/shortcircuit",
     "ctti/srcLocFuncs",
     "funcs/paramTypeEnum",

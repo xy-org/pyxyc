@@ -193,6 +193,7 @@ def test_parse_comments(code, exp_ast):
             g := 0Cafe(16)s;
             h := 0d;
             i := 0xF;
+            j := 0xFFu;
         }
         """,
         [
@@ -208,6 +209,7 @@ def test_parse_comments(code, exp_ast):
                     ast.VarDecl("g", value=ast.Const(0xCAFE, type="Short", value_str="0xCafe")),
                     ast.VarDecl("h", value=ast.Const(0, type="Double", value_str="0")),
                     ast.VarDecl("i", value=ast.Const(0xF, type="Int", value_str="0xF")),
+                    ast.VarDecl("j", value=ast.Const(0xFF, type="Uint", value_str="0xFFu")),
                 ]
             )
         ]

@@ -1999,8 +1999,12 @@ def compile_vardecl(node, cast, cfunc, ctx):
         else:
             cvar.value = type_desc.init_value
 
+    # remove repeated type in case of struct literals or casts
     if isinstance(cvar.value, c.CompoundLiteral):
         cvar.value = c.InitList(elems=cvar.value.args)
+    elif isinstance(cvar.value, c.Cast) and cvar.value.to == res_obj.type_desc.c_name and not cvar.value.to.endswith("*"):
+        # the not cvar.value.to.endswith("*") is purely a matter or personal preference
+        cvar.value = cvar.value.what
 
     return res_obj
 
@@ -2031,7 +2035,11 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
 
 def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
     if isinstance(expr, xy.Const):
+        rtype_obj = ctx.get_compiled_type(xy.Id(
+            expr.type, src=expr.src, coords=expr.coords
+        ))
         value = expr.value_str
+        type_cast = None
         if expr.type == "Char":
             # chars need escaping and conversion to unicode
             value = value.replace("\\`", "`")
@@ -2046,13 +2054,17 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                     value = f"'{value}'"
             else:
                 value = f"'{value}'"
+        elif expr.type in {"Short", "Ushort", "Byte", "Ubyte"}:
+            type_cast = rtype_obj.c_name
+
+        c_res = c.Const(value=expr.value, value_str=value)
+        if type_cast:
+            c_res = c.Cast(c_res, type_cast)
 
         return ExprObj(
             xy_node=expr,
-            c_node=c.Const(value=expr.value, value_str=value),
-            inferred_type=ctx.get_compiled_type(xy.Id(
-                expr.type, src=expr.src, coords=expr.coords
-            ))
+            c_node=c_res,
+            inferred_type=rtype_obj,
         )
     elif isinstance(expr, xy.BinExpr):
         if expr.op not in {'.', '=', '.=', '..', '=<', '+=', '-=', '*=', '/='}:
