@@ -2036,37 +2036,7 @@ def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj
 
 def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
     if isinstance(expr, xy.Const):
-        rtype_obj = ctx.get_compiled_type(xy.Id(
-            expr.type, src=expr.src, coords=expr.coords
-        ))
-        value = expr.value_str
-        type_cast = None
-        if expr.type == "Char":
-            # chars need escaping and conversion to unicode
-            value = value.replace("\\`", "`")
-            expected_len = 1 if not value.startswith('\\') else 2
-            if len(value) != expected_len:
-                raise CompilationError("Invalid char literal", expr)
-            if not value.startswith('\\'):
-                codepoint = ord(value)
-                if codepoint > 127:
-                    value = format(codepoint, "#06x")
-                else:
-                    value = f"'{value}'"
-            else:
-                value = f"'{value}'"
-        elif expr.type in {"Short", "Ushort", "Byte", "Ubyte"}:
-            type_cast = rtype_obj.c_name
-
-        c_res = c.Const(value=expr.value, value_str=value)
-        if type_cast:
-            c_res = c.Cast(c_res, type_cast)
-
-        return ExprObj(
-            xy_node=expr,
-            c_node=c_res,
-            inferred_type=rtype_obj,
-        )
+        return compile_const(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.BinExpr):
         if expr.op not in {'.', '=', '.=', '..', '=<', '+=', '-=', '*=', '/='}:
             return compile_binop(expr, cast, cfunc, ctx)
@@ -2367,6 +2337,65 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_caller_context_expr(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
+    
+def compile_const(expr, cast, cfunc, ctx):
+    rtype_obj = ctx.get_compiled_type(xy.Id(
+        expr.type, src=expr.src, coords=expr.coords
+    ))
+    value = expr.value_str
+    type_cast = None
+    if expr.type == "Char":
+        # chars need escaping and conversion to unicode
+        value = value.replace("\\`", "`")
+        expected_len = 1 if not value.startswith('\\') else 2
+        if len(value) != expected_len:
+            raise CompilationError("Invalid char literal", expr)
+        if not value.startswith('\\'):
+            codepoint = ord(value)
+            if codepoint > 127:
+                value = format(codepoint, "#06x")
+            else:
+                value = f"'{value}'"
+        else:
+            value = f"'{value}'"
+    elif expr.type in {"Short", "Ushort", "Byte", "Ubyte"}:
+        type_cast = rtype_obj.c_name
+
+    c_val = expr.value
+    type_limits = {
+        "Byte": (-2**7, 2**7-1),
+        "Short": (-2**15, 2**15-1),
+        "Int": (-2**31, 2**31-1),
+        "Long": (-2**63, 2**63-1),
+        "Ubyte": (0, 2**8-1),
+        "Ushort": (0, 2**16-1),
+        "Uint": (0, 2**32-1),
+        "Ulong": (0, 2**64-1),
+        "Size": (0, 2**64-1),  # TODO what about 32-bit archs
+    }
+    if expr.type in type_limits:
+        min_lim, max_lim = type_limits[expr.type]
+        if expr.value_str.startswith("0x") and c_val > 0 and min_lim < 0:
+            # special case of 0x which is not quite base-16 but allows to specify bytes
+            max_lim += -min_lim
+            min_lim = 0
+        error = None
+        if c_val < min_lim:
+            error = "underflows"
+        elif c_val > max_lim:
+            error = "overflows"
+        if error:
+            raise CompilationError(f"Integer constant {error} type '{expr.type}'", expr)
+
+    c_res = c.Const(value=c_val, value_str=value)
+    if type_cast:
+        c_res = c.Cast(c_res, type_cast)
+
+    return ExprObj(
+        xy_node=expr,
+        c_node=c_res,
+        inferred_type=rtype_obj,
+    )
 
 def compile_assign(dest_obj, value_obj, cast, cfunc, ctx, expr_node, is_move=False):
     check_type_compatibility(expr_node, dest_obj, value_obj, ctx)

@@ -475,6 +475,18 @@ src.xy:3:20: error: Mixed signedness arithmetic (Uint, Int). Please cast one of 
                      ^^^^^
 """
     ),
+    (
+        """
+        def test() {
+            a := 128b;
+        }
+        """,
+        """\
+src.xy:3:18: error: Integer constant overflows type 'Byte'
+|             a := 128b;
+                   ^^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
