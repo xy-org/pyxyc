@@ -1295,8 +1295,9 @@ def fill_missing_dtors(type_obj: TypeObj, all_fobjs, asts, cast, ctx):
     return False
 
 keywords = {
-    "if", "for", "while", "Any", "def", "struct", "in", "inout", "outin", "out",
-    "ref", "macro", "yield"
+    "if", "ef", "else", "for", "while", "Any", "def", "struct", "in", "inout",
+    "outin", "out", "ref", "macro", "yield", "do", "switch", "continue",
+    "break", "goto",
 }
 
 def validate_name(node: xy.Node, ctx: CompilerContext):

@@ -26,6 +26,6 @@ def func() -> void {
     c := (a \myadd b)'transform;
     d := ctorPair();
     e := 1 + 1.1718d;
-    ef := 2.1718f;
+    efp := 2.1718f;
     pi := 1 + 1.0d + 1.14f;
 }
