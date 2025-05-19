@@ -728,31 +728,23 @@
 }
 
 ;; Logic not
-*def not(a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Bool)) -> Bool {
+*def not(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Bool)
+) -> Bool {
     # Implemented by the compiler
 }
 
 ;; Operator ++
-*def inc(a: mut Int) -> void {
-    # Implemented by the compiler
-}
-
-;; Operator ++
-*def inc(a: mut Uint) -> void {
-    # Implemented by the compiler
-}
-
-;; Operator ++
-*def inc(a: mut Size) -> void {
+*def inc(
+    a: mut (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+) -> void {
     # Implemented by the compiler
 }
 
 ;; Operator --
-*def dec(a: mut Int) -> void {
-    # Implemented by the compiler
-}
-
-*def dec(a: mut Size) -> void {
+*def dec(
+    a: mut (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+) -> void {
     # Implemented by the compiler
 }
 
