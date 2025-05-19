@@ -477,6 +477,18 @@ src.xy:3:20: error: Mixed signedness arithmetic (Uint, Int). Please cast one of 
     ),
     (
         """
+        def test(a: Uint, b: Int) -> Bool {
+            return a > b;
+        }
+        """,
+        """\
+src.xy:3:20: error: Mixed signedness arithmetic (Uint, Int). Please cast one of the operands to a suitable type.
+|             return a > b;
+                     ^^^^^
+"""
+    ),
+    (
+        """
         def test() {
             a := 128o;
         }

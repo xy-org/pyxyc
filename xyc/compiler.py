@@ -32,7 +32,7 @@ class TypeObj(CompiledObj):
 
     def get_base_type(self):
         return self if self.base_type_obj is None else self.base_type_obj
-    
+
     @property
     def name(self):
         if self.xy_node is not None:
@@ -49,13 +49,13 @@ class TypeObj(CompiledObj):
         if self.c_node is not None:
             return self.c_node.name
         return None
-    
+
     @property
     def visibility(self):
         if hasattr(self.xy_node, 'visibility'):
             return self.xy_node.visibility
         return xy.PackageVisibility
-    
+
 @dataclass
 class TypeExprObj(CompiledObj):
     type_obj: TypeObj = None
@@ -67,15 +67,15 @@ class TypeExprObj(CompiledObj):
             to_obj = self.tags["to"]
             return to_obj.c_name + "*"
         return self.type_obj.c_name
-    
+
     @property
     def name(self):
         return self.type_obj.name
-    
+
     @property
     def fields(self):
         return self.type_obj.fields
-    
+
     @property
     def module_header(self):
         return self.type_obj.module_header
@@ -83,11 +83,11 @@ class TypeExprObj(CompiledObj):
     @property
     def base_type_obj(self):
         return self.type_obj
-    
+
     @property
     def needs_dtor(self):
         return self.type_obj.needs_dtor
-    
+
     @needs_dtor.setter
     def needs_dtor(self, needs_dtor):
         self.type_obj.needs_dtor = needs_dtor
@@ -95,15 +95,15 @@ class TypeExprObj(CompiledObj):
     @property
     def has_explicit_dtor(self):
         return self.type_obj.has_explicit_dtor
-    
+
     @has_explicit_dtor.setter
     def has_explicit_dtor(self, val):
         self.type_obj.has_explicit_dtor = val
-    
+
     @property
     def has_auto_dtor(self):
         return self.type_obj.has_auto_dtor
-    
+
     @has_auto_dtor.setter
     def has_auto_dtor(self, val):
         self.type_obj.has_auto_dtor = val
@@ -111,22 +111,22 @@ class TypeExprObj(CompiledObj):
     @property
     def visibility(self):
         return self.type_obj.visibility
-    
+
     @property
     def init_value(self):
         return self.type_obj.init_value
-    
+
     @property
     def builtin(self):
         return self.type_obj.builtin
-    
+
     @property
     def is_init_value_zeros(self):
         return self.type_obj.is_init_value_zeros
-    
+
     def get_base_type(self):
         return self.type_obj
-    
+
 @dataclass
 class ArrTypeObj(TypeObj):
     dims : list = field(default_factory=list)
@@ -147,7 +147,7 @@ class FuncTypeObj(TypeObj):
     @property
     def c_name(self):
         return self.c_typename
-    
+
     @property
     def name(self):
         res = "("
@@ -158,7 +158,7 @@ class FuncTypeObj(TypeObj):
         res += ")"
         res += "->" + self.func_obj.rtype_obj.name
         return res
-    
+
 @dataclass
 class TypeInferenceError:
     msg: str = ""
@@ -189,7 +189,7 @@ class InstanceObj(CompiledObj):
     @property
     def inferred_type(self):
         return self.type_obj
-    
+
     @property
     def compiled_obj(self):
         return None
@@ -213,7 +213,7 @@ class FuncObj(CompiledObj):
         if self.c_node is not None:
             return self.c_node.name
         return None
-    
+
     @property
     def visibility(self):
         if hasattr(self.xy_node, 'visibility'):
@@ -262,11 +262,11 @@ class ExtSymbolObj(CompiledObj):
     @property
     def symbol(self):
         return self.c_node.name
-    
+
     @property
     def c_name(self):
         return self.c_node.name
-    
+
 def ext_symbol_to_type(ext_obj):
     return TypeObj(
         xy_node=ext_obj.xy_node,
@@ -274,11 +274,11 @@ def ext_symbol_to_type(ext_obj):
         builtin=False,
         fully_compiled=True,
     )
-    
+
 @dataclass
 class NameAmbiguity:
     modules: list[str] = field(default_factory=list)
-    
+
 any_type_obj = TypeObj(xy_node=xy.Id("Any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 any_struct_type_obj = TypeObj(xy_node=xy.Id("Any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 fieldarray_type_obj = TypeObj(xy_node=xy.Id("FieldArray"), builtin=True, c_node=c.Id("FIELD_TYPE_ARRAY_REPORT_IF_YOU_SEE_ME"))
@@ -304,13 +304,13 @@ class ArgList:
             return self.args[key]
         else:
             return self.kwargs[key]
-        
+
     def __setitem__(self, key, value):
         if isinstance(key, int):
             self.args[key] = value
         else:
             self.kwargs[key] = value
-        
+
     def __len__(self):
         return len(self.args) + len(self.kwargs)
 
@@ -359,12 +359,12 @@ class FuncSpace:
 
     def __len__(self):
         return len(self._funcs)
-    
+
     def append(self, fdesc: FuncObj):
         self._funcs.append(fdesc)
 
     def __getitem__(self, i):
-        return self._funcs[i]        
+        return self._funcs[i]
 
     def report_multiple_matches(self, candidate_fobjs, node, args_inferred_types, ctx):
         fsig = ctx.eval_to_id(node.name) + "(" + \
@@ -379,7 +379,7 @@ class FuncSpace:
             err_msg, node,
             notes=[(f"Candidates are:\n    {candidates}", None)]
         )
-    
+
     def report_no_matches(self, candidate_fobjs, node, args_inferred_types, ctx):
         if hasattr(node.name, 'name'):
             fname = node.name.name
@@ -405,7 +405,7 @@ class FuncSpace:
             err_msg, node,
             notes=[(f"Candidates are:\n{candidates}", None)]
         )
-    
+
     def find(self, node, args_inferred_types, ctx, partial_matches=False, return_no_matches=False):
         candidate_fobjs = self.findAll(node, args_inferred_types, ctx, partial_matches)
         if len(candidate_fobjs) > 1:
@@ -437,7 +437,7 @@ class FuncSpace:
             for desc in self._funcs:
                 if cmp_call_def(args_inferred_types, desc, partial_matches, ctx):
                     candidate_fobjs.append(desc)
-            
+
             return candidate_fobjs
         else:
             assert isinstance(node, xy.FuncDef)
@@ -445,7 +445,7 @@ class FuncSpace:
                 if desc.xy_node == node:
                     return [desc]
             raise "Cannot find func"
-     
+
 class ExtSpace(FuncSpace):
     def __init__(self, ext_name: str):
         self.ext_name = ext_name
@@ -461,7 +461,7 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx)
         return False
     if fobj.builtin and fobj.xy_node.name.name in {"sizeof", "addrof", "typeEqs"}:
         return fobj
-    
+
     # check visibility
     if not is_obj_visible(fobj, ctx):
         return False
@@ -518,7 +518,7 @@ def cmp_arg_param_types(arg_type, param_type):
         for i in range(len(arg_type.dims)):
             if arg_type.dims[i] != param_type.dims[i]:
                 return False
-            
+
     if isinstance(arg_type, FuncTypeObj) and isinstance(param_type, FuncTypeObj):
         return True  # XXX
 
@@ -526,7 +526,7 @@ def cmp_arg_param_types(arg_type, param_type):
     param_type_module = param_type.module_header.module_name if param_type.module_header is not None else ""
     if not (arg_type_module == param_type_module and arg_type.get_base_type().xy_node.name == param_type.get_base_type().xy_node.name):
         return False
-    
+
     return True
 
 def compatible_types(src_type, dst_type):
@@ -546,13 +546,13 @@ def compatible_types(src_type, dst_type):
         for i in range(len(arg_type.dims)):
             if arg_type.dims[i] != param_type.dims[i]:
                 return False
-            
+
     if isinstance(src_type, FuncTypeObj) and isinstance(dst_type, FuncTypeObj):
         return True  # XXX
 
     if src_type.get_base_type() is not dst_type.get_base_type():
         return False
-    
+
     return True
 
 def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node, fcall_rules=False):
@@ -574,7 +574,7 @@ def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node, fcall_rules
         for i in range(len(arg_type.dims)):
             if arg_type.dims[i] != param_type.dims[i]:
                 return False
-            
+
     if isinstance(src_type, FuncTypeObj) and isinstance(dst_type, FuncTypeObj):
         return []  # XXX
 
@@ -583,7 +583,7 @@ def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node, fcall_rules
 
     if not (src_type.get_base_type().xy_node.name == dst_type.get_base_type().xy_node.name and src_type.get_base_type().c_name == dst_type.get_base_type().c_name):
         return [(f"Incompatible types {fmt_type(src_type.get_base_type())} and {fmt_type(dst_type.get_base_type())}", xy_node)]
-    
+
 
     for tag_name, tag in dst_type.tags.items():
         other_tag = src_type.tags.get(tag_name, None)
@@ -598,7 +598,7 @@ def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node, fcall_rules
                 (f"Left tag attached here", other_tag.xy_node),
                 (f"Right tag attached here", tag.xy_node),
             ]
-    
+
     return []
 
 def ct_equals(tag, other_tag):
@@ -682,7 +682,7 @@ class TmpNames:
         tmp_name = f"tmp_{self.tmp_var_i}{'_' if name_hint else ''}{name_hint}"
         self.tmp_var_i += 1
         return tmp_name
-    
+
     def enter_block(self):
         pass
 
@@ -739,7 +739,7 @@ class CompilerContext:
         if isinstance(type_obj,TypeExprObj):
             type_obj = type_obj.base_type_obj
         return type_obj in self.prim_int_objs
-    
+
     def is_int(self, type_obj):
         if isinstance(type_obj,TypeExprObj):
             type_obj = type_obj.base_type_obj
@@ -777,7 +777,7 @@ class CompilerContext:
                 (f"Previous definition of '{name.name}'", candidate.xy_node)
             ]
         )
-    
+
     def eval_to_fspace(self, name: xy.Node, msg=None):
         space = self.eval(name, is_func=True, msg=msg)
         if space is None:
@@ -791,7 +791,7 @@ class CompilerContext:
             # TODO add notes here
             raise CompilationError(f"Not a function.", name)
         return space
-    
+
     def eval_to_var(self, name: xy.Node):
         var_obj = self.eval(name)
         if var_obj is None:
@@ -800,7 +800,7 @@ class CompilerContext:
         if not isinstance(var_obj, VarObj):
             raise CompilationError(f"Not a variable.", name)
         return var_obj
-    
+
     def eval_to_type(self, name: xy.Node, msg = None):
         obj = self.eval(name, msg=msg)
         if obj is None:
@@ -812,7 +812,7 @@ class CompilerContext:
         if not is_obj_visible(obj, self):
             raise CompilationError(f"Struct '{obj.name}' is not visible", name)
         return obj
-    
+
     def eval_to_id(self, name: xy.Node):
         if isinstance(name, xy.CallerContextExpr):
             name = name.arg
@@ -825,7 +825,7 @@ class CompilerContext:
     def get_compiled_type(self, name: xy.Id | str):
         res = self.eval_to_type(name if not isinstance(name, str) else xy.Id(name))
         return res
-    
+
     def split_and_eval_tags(self, tags: xy.TagList, cast, ast):
         kw_tags = copy(tags.kwargs)
         open_tags = []
@@ -847,7 +847,7 @@ class CompilerContext:
         remaining_args = tags.args[after_open:]
         return tag_specs, self.eval_tags(xy.TagList(remaining_args, kw_tags), cast=cast, ast=ast)
 
-    
+
     def eval_tags(self, tags: xy.TagList, tag_specs: list[VarObj] = [], cast=None, ast=None):
         res = {}
         no_label_msg = "Please associate default label by adding the TagCtor tag" \
@@ -882,7 +882,7 @@ class CompilerContext:
                 raise CompilationError("Primitive types have to have an explicit label", xy_tag)
             else:
                 raise CompilationError("Cannot determine label for tag", xy_tag)
-            
+
             if label in res:
                 raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
             res[label] = tag_obj
@@ -905,7 +905,7 @@ class CompilerContext:
             if name in ns:
                 return ns[name]
         return None
-    
+
     def eval(self, node, msg=None, is_func=False):
         res = self.do_eval(node, msg=msg, is_func=is_func)
         if isinstance(res, NameAmbiguity):
@@ -917,7 +917,7 @@ class CompilerContext:
                 )
             )
         return res
-    
+
     def print_data_namespaces(self):
         self.print_namespaces(self.data_namespaces)
 
@@ -1035,7 +1035,7 @@ class CompilerContext:
             raise CompilationError(
                 "Cannot evaluate at compile time.",
                 node)
-        
+
     def create_tmp_var(self, type_obj, name_hint="", xy_node=None) -> VarObj:
         tmp_var_name = self.gen_tmp_name(name_hint)
 
@@ -1058,7 +1058,7 @@ class CompilerContext:
         res = VarObj(dummy_xy_node, c_tmp, type_obj, needs_dtor=type_needs_dtor(type_obj))
         self.ns[tmp_var_name] = res
         return res
-    
+
     def compile_tmp_var(self, value_expr, cast, cfunc, name_hint="") -> VarObj:
         tmp_var_name = self.gen_tmp_name(name_hint)
         tmp = xy.VarDecl(
@@ -1068,15 +1068,15 @@ class CompilerContext:
         obj = compile_vardecl(tmp, cast, cfunc, self)
         cfunc.body.append(obj.c_node)
         return obj
-    
+
     def gen_tmp_name(self, name_hint="") -> str:
         return self.tmp_names.gen_tmp_name(name_hint=name_hint)
-    
+
     def gen_tmp_label_name(self, name_hint="") -> str:
         res = f"L_{self.next_label_idx}_CONTINUE_{name_hint}"
         self.next_label_idx += 1
         return res
-    
+
     def enter_block(self):
         self.tmp_names.enter_block()
 
@@ -1100,13 +1100,13 @@ class CompilerContext:
             c_node=c.Const("false"),
             inferred_type=self.bool_obj
         )
-    
+
     def has_caller_context(self):
         return len(self.caller_contexts) > 0
-    
+
     def get_caller_context(self):
         return self.caller_contexts[-1]
-    
+
     def push_caller_context(self, caller_ctx):
         self.caller_contexts.append(caller_ctx)
 
@@ -1149,10 +1149,10 @@ def compile_module(builder, module_name, asts, module_path):
     ctx.compiling_header = True
     fobjs = compile_header(ctx, asts, res)
     ctx.compiling_header = False
-    
+
     for fobj in fobjs:
         compile_func(fobj, res, ctx)
-    
+
     # maybe_add_main(ctx, res)
 
     mh = ModuleHeader(
@@ -1203,7 +1203,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                     c_node=cdef,
                 )
                 cast.consts.append(cdef)
-                
+
 
     compile_structs(ctx, asts, cast)
 
@@ -1344,7 +1344,7 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     if type_obj.fully_compiled:
         return
     type_obj.fully_compiled = True
-    
+
     tag_specs, tag_objs = ctx.split_and_eval_tags(type_obj.xy_node.tags, cast, ast)
     type_obj.tags.update(tag_objs)
     type_obj.tag_specs = tag_specs
@@ -1550,7 +1550,7 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     fobj.has_calltime_tags = has_calltime_tags
 
     if fobj.is_macro:
-        # Macros have boundary expressions as body so the type may very depending on the 
+        # Macros have boundary expressions as body so the type may very depending on the
         # arguments.
         rtype_compiled = macro_type_obj
 
@@ -1631,7 +1631,7 @@ def compile_params(params, cast, cfunc, ctx):
                 c_type = c_type + "*"
         else:
             raise CompilationError("Compiler Error: Cannot infer type of param", param)
-        
+
         if param_obj.type_desc is any_struct_type_obj:
             raise CompilationError("function parameters cannot be of type struct.", param)
 
@@ -1707,7 +1707,7 @@ def fill_param_default_values(fobj, cast, ctx):
                     "Only pseudo params are allowed to have a length not known "
                     "at compile time", pobj.xy_node
                 )
-            
+
     return fobj
 
 def remove_calltime_tags(obj: CompiledObj):
@@ -1724,7 +1724,7 @@ def remove_calltime_tags(obj: CompiledObj):
         for label, tag in tags.items():
             if tag is not calltime_expr_obj:
                 obj.tags[label] = tag
-    
+
     for tag in obj.tags.values():
         any_removed = remove_calltime_tags(tag)
         has_any = has_any or any_removed
@@ -1817,7 +1817,7 @@ def compile_func(fdesc, cast, ctx):
     if isinstance(node.body, list):
         ctx.enter_func()
         compile_body(node.body, cast, cfunc, ctx, is_func_body=True)
- 
+
     ctx.current_fobj = None
 
     if not fdesc.is_macro:
@@ -1971,13 +1971,13 @@ def compile_vardecl(node, cast, cfunc, ctx):
         err_msg = ("Compiler bug! Report to devs at TBD" if type_desc is None
                    else "Not a type")
         raise CompilationError(err_msg, err_node)
-    
+
     if isinstance(type_desc, FuncTypeObj):
         # XXX Hack to corrent the name of the function that should be called
         type_desc = copy(type_desc)
         type_desc.func_obj = copy(type_desc.func_obj)
         type_desc.func_obj.c_node = cvar
-    
+
     needs_dtor = type_needs_dtor(type_desc)
 
     res_obj = VarObj(node, cvar, type_desc, needs_dtor=needs_dtor)
@@ -2337,7 +2337,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_caller_context_expr(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
-    
+
 def compile_const(expr, cast, cfunc, ctx):
     rtype_obj = ctx.get_compiled_type(xy.Id(
         expr.type, src=expr.src, coords=expr.coords
@@ -2506,7 +2506,7 @@ def is_tmp_expr(obj: ExprObj):
         isinstance(obj.c_node, c.Id) and obj.c_node.name.startswith("tmp") and
         '_' in obj.c_node.name
     )
-    
+
 def maybe_deref(obj: CompiledObj, deref: bool, cast, cfunc, ctx):
     if not deref:
         return obj
@@ -2545,7 +2545,7 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
             inferred_type=idx_obj.idx.type_desc,
             compiled_obj=idx_obj
         )
-    
+
     # ptr's get simply dereferenced
     if is_ptr_type(idx_obj.idx.inferred_type, ctx):
         idx_to_obj = idx_obj.idx.inferred_type.tags.get("to", None)
@@ -2605,7 +2605,7 @@ def do_idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: Compiler
             inferred_type=idx_obj.idx.type_desc,
             compiled_obj=idx_obj
         )
-    
+
     if is_ptr_type(idx_obj.idx.inferred_type, ctx):
         return ExprObj(
             c_node=c.Expr(
@@ -2782,7 +2782,7 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
             xy_node=val.xy_node,
         )
         return idx_set(idx_obj, val, cast, cfunc, ctx)
-    
+
 def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerContext):
     if field_obj.xy_node.is_pseudo:
         idx_obj = IdxObj(
@@ -2826,7 +2826,7 @@ def tag_get(expr, obj, tag_label, ctx):
     else:
         obj = obj.inferred_type
 
-    
+
     if tag_label not in obj.tags:
         available_tags = "Available Tags:" + "    \n".join(obj.tags.keys())
         if len(obj.tags) == 0:
@@ -2873,7 +2873,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
 
     if len(expr_args) > len(field_objs):
         raise CompilationError(
-            f"Too many positional value in struct literal. Provided '{len(expr_args)}' but type has only '{len(field_objs)}' fields", 
+            f"Too many positional value in struct literal. Provided '{len(expr_args)}' but type has only '{len(field_objs)}' fields",
             expr
         )
 
@@ -2940,7 +2940,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
                 args=c_args,
             )
         else:
-            tmp_obj.c_node.value = type_obj.init_value       
+            tmp_obj.c_node.value = type_obj.init_value
 
     if tmp_obj is None:
         # creating a new struct
@@ -2972,7 +2972,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
             res = val
         else:
             res = c.Cast(val, res.name)
-    
+
     return ExprObj(
         xy_node=expr,
         c_node=res,
@@ -2984,7 +2984,7 @@ def should_pass_by_ref(param: xy.VarDecl):
 
 def c_deref(c_node, field=None):
     if isinstance(c_node, c.UnaryExpr) and c_node.op == "*" and c_node.prefix:
-        return c.Expr(c_node.arg, field, op='->') 
+        return c.Expr(c_node.arg, field, op='->')
     return c.Expr(c_node, field, op='.')
 
 def c_getref(arg: ExprObj):
@@ -3006,7 +3006,7 @@ def do_infer_type(expr, cast, ctx):
             f"Cannot infer type because: {e.error_message}", e.xy_node,
             notes=e.notes
         )
-    
+
 def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
     parts = []
     for p in expr.parts:
@@ -3043,7 +3043,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                 f"Interpolation is not enabled for prefix \"{expr.prefix}\"",
                 expr
             )
-    
+
     if not interpolation:
         str_const, str_len = to_cstr(
             parts[0] if len(parts) else expr,
@@ -3131,7 +3131,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                 )
                 append_call = compile_fcall(gen_fcall, cast, cfunc, ctx)
                 cfunc.body.append(append_call.c_node)
-        
+
         to_obj = func_desc.tags["xyStr"].kwargs.get("to", None)
         if to_obj is not None:
             return find_and_call(
@@ -3150,7 +3150,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             )
         else:
             return builder_tmpvar_id
-        
+
 def compile_inlinec(expr, parts, cast, cfunc, ctx):
     inlinec = ""
     for p in parts:
@@ -3333,7 +3333,7 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
             compiled_obj=res_objs,
             inferred_type=fselection_type_obj,
         )
-    
+
 def has_required_tags(base_tags, required_tags):
     for tag_name, tag_value in required_tags.items():
         if tag_value != base_tags.get(tag_name, None):
@@ -3380,7 +3380,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             if expr_to_move_idx is not None:
                 tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, cfunc, ctx)
                 arg_exprs[expr_to_move_idx] = tmp_obj
-            
+
             if type_needs_dtor(obj.inferred_type):
                 # immediatelly move if a dtor is required
                 obj = maybe_move_to_temp(obj, cast, cfunc, ctx)
@@ -3416,7 +3416,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     if fspace is None:
         call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_inferred_types, expr.inject_args)
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
-    
+
     if isinstance(fspace, ExtSymbolObj):
         fspace = ExtSpace(fspace.symbol)
 
@@ -3428,7 +3428,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             assert_has_type(arg)
         for arg in arg_exprs.kwargs.values():
             assert_has_type(arg)
-        
+
     if isinstance(fspace, (FuncSpace, ExtSpace)):
         if ctx.compiling_header:
             for fobj in fspace._funcs:
@@ -3444,7 +3444,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             func_obj.c_node = fspace.c_node
         else:
             raise CompilationError("Not a function or callback", expr)
-        
+
 
     if expr_to_move_idx is not None and func_obj.move_args_to_temps and not is_builtin_func(func_obj, "to"):
         # the not is_builtin_func(func_obj, "to") is simply an optimization to produce slighly better code
@@ -3469,7 +3469,7 @@ def maybe_move_to_temp(expr_obj, cast, cfunc, ctx):
         return move_to_temp(expr_obj, cast, cfunc, ctx)
     else:
         return expr_obj
-    
+
 def move_to_temp(expr_obj, cast, cfunc, ctx):
     original_expr_obj = expr_obj
     if isinstance(expr_obj, IdxObj):
@@ -3485,12 +3485,12 @@ def move_to_temp(expr_obj, cast, cfunc, ctx):
             get_obj.c_node = c.UnaryExpr(arg=c.Id(tmp_obj.c_node.name), op="*", prefix=True)
             get_obj.compiled_obj = expr_obj
             return get_obj
-        
+
     res = copy_to_temp(expr_obj, cast, cfunc, ctx)
     # XXX we need a way to preserve the history of that object even if it is the result of moving to a temp of another one
     res.compiled_obj = original_expr_obj if original_expr_obj.compiled_obj is None else original_expr_obj.compiled_obj
     return res
-        
+
 def copy_to_temp(expr_obj, cast, cfunc, ctx):
     if isinstance(expr_obj, IdxObj):
         # TODO not tested
@@ -3532,8 +3532,8 @@ def is_simple_cexpr(expr):
         return is_simple_cexpr(expr.expr) and is_simple_cexpr(expr.index)
     if isinstance(expr, c.Cast):
        return is_simple_cexpr(expr.what)
-    return False 
-    
+    return False
+
 
 def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     fobj = find_func_obj(name, arg_objs, cast, cfunc, ctx, xy_node)
@@ -3691,7 +3691,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         else:
             c_arg2 = arg_exprs[1].c_node
         c_res = c.Expr(c_res, c_arg2, op=">>")
-        
+
         # Always explicitly cast back to the unsigned type in order to avoid
         # the c-compiler mistakingly thinking its a siged type
         c_res = c.Cast(c_res, func_obj.rtype_obj.c_name)
@@ -3705,7 +3705,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         if isinstance(func_obj.xy_node.body, xy.FuncCall) and func_obj.xy_node.body.name.name == "signednessError":
             report_mixed_signed(expr, arg_exprs, ctx)
         if len(func_obj.xy_node.in_guards) > 0:
-            ## the only ones with in guards are the exceptions for Int
+            ## the only builtin funcs with in-guards are the exceptions for Int
             if ctx.is_int(arg_exprs[0].inferred_type) and not isinstance(arg_exprs[0].c_node, c.Const):
                 report_mixed_signed(expr, arg_exprs, ctx)
             if ctx.is_int(arg_exprs[1].inferred_type) and not isinstance(arg_exprs[1].c_node, c.Const):
@@ -4005,7 +4005,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     )
             else:
                 value_obj = arg_exprs.kwargs[pobj.xy_node.name]
-            
+
             check_type_compatibility(value_obj.xy_node, pobj, value_obj, ctx, fcall_rules=True)
             args_list.append(value_obj)
             args_writable.append(False)
@@ -4184,7 +4184,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 def gen_guard_failed_code(expr, guard, func_obj: FuncObj, cast, cbody, ctx: CompilerContext):
     if not ctx.builder.rich_errors:
         return
-    
+
     cast.includes.append(c.Include("stdio.h"))
     fn = os.path.relpath(guard.src.filename)
     cbody.append(c.FuncCall("fprintf", args=[
@@ -4380,7 +4380,7 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
         raise CompilationError("List Comprehension with more than one loop is NYI", expr.loop)
     if isinstance(expr.loop.block.body, list):
         raise CompilationError("Array Comprehension expressions must have a single inlined expression as body")
-    
+
     # determine len
     container_node = expr.loop.over[0].arg2
     iter_var_name = expr.loop.over[0].arg1
@@ -4573,7 +4573,7 @@ def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
 def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx):
     if isinstance(arg_obj.compiled_obj, VarObj) and arg_obj.compiled_obj.c_node is not None:
         # Pointers in xy don't have any constness attached to them so
-        # any const variables must be made non-const 
+        # any const variables must be made non-const
         arg_obj.compiled_obj.c_node.qtype.is_const = False
     type_obj = arg_obj.inferred_type
     if isinstance(type_obj, ArrTypeObj):
@@ -4594,7 +4594,7 @@ def handle_static_break(expr, brk, cast, cfunc, ctx):
         raise CompilationError(brk.loop_name.full_str, expr)
     else:
         raise CompilationError("Invalid 'break' expression. If you want to break compilation use a string", expr)
-    
+
 def report_mixed_signed(expr, arg_exprs, ctx):
     msg = "Mixed signedness arithmetic ("
     msg += arg_exprs[0].inferred_type.name
@@ -4607,27 +4607,27 @@ def typeEqs(expr, arg_exprs, cast, cfunc, ctx):
     for i in range(len(arg_exprs)):
         if not isinstance(arg_exprs[i].compiled_obj, TypeObj):
             raise CompilationError("Expected type", arg_exprs[i].xy_node)
-    
+
     t1 = arg_exprs[0].compiled_obj
     t2 = arg_exprs[1].compiled_obj
     if t1 is t2:
         return ctx.trueObj(expr)
-    
+
     if type(t1) is not type(t2):
         return ctx.falseObj(expr)
-    
+
     if not typeEqs([t1.base_type_obj, t2.base_type_obj], cast, cfunc, ctx):
         return ctx.falseObj(expr)
-    
+
     if t1.tags.keys() != t2.tags.keys():
         return ctx.falseObj(expr)
 
     if isinstance(t1, ArrTypeObj):
         if t1.dims != t2.dims:
             return ctx.falseObj(expr)
-        
+
     return ctx.trueObj(expr)
-            
+
 def is_ct_true(obj):
     return isinstance(obj.c_node, c.Const) and obj.c_node.value == "true"
 
@@ -4637,8 +4637,8 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     cond_obj = compile_expr(ifexpr.cond, cast, cfunc, ctx)
     # TODO check type is bool
     c_if.cond = cond_obj.c_node
-    
-    # the first if in an if chain is handled seperately becase it should 
+
+    # the first if in an if chain is handled seperately becase it should
     # provide the return type for the entire chain
     inferred_type = None
     c_res = None
@@ -4925,7 +4925,7 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
                         iter_type = ctx.uint_obj
 
                     # compile start
-                    start_value = start_obj.c_node if start_obj is not None else iter_type.init_value 
+                    start_value = start_obj.c_node if start_obj is not None else iter_type.init_value
                     iter_var_decl = c.VarDecl(iter_name, c.QualType(iter_type.c_name, is_const=False), value=start_value)
                     ctx.ns[iter_name] = VarObj(xy_node=iter_node, c_node=iter_var_decl, type_desc=iter_type)
                     if for_outer_block is None and ctx.ns[iter_name].needs_dtor:
@@ -5114,7 +5114,7 @@ def compile_continue(xycont, cast, cfunc, ctx):
 
     if df is None:
         raise CompilationError("Continue outside of a loop is not permited", xycont)
-    
+
     if df.data.continue_label_name is not None:
         c_res = c.Goto(c.Id(df.data.continue_label_name))
         df.data.label_used = True
@@ -5190,7 +5190,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
             c_node=ret,
             inferred_type=None
         )
-    
+
 def assert_rtype_match(value_obj, fobj, ctx: CompilerContext):
     c_expr = isinstance(value_obj.inferred_type, TypeInferenceError) or value_obj.inferred_type is None
     if not c_expr and not compatible_types(value_obj.inferred_type, fobj.rtype_obj):
@@ -5198,12 +5198,12 @@ def assert_rtype_match(value_obj, fobj, ctx: CompilerContext):
             return
         return_type_node = fobj.xy_node.returns[0] if len(fobj.xy_node.returns) else fobj.xy_node
         raise CompilationError(
-            f"Return type mismatch. Tyring to return '{fmt_type(value_obj.inferred_type)}'", value_obj.xy_node, 
+            f"Return type mismatch. Tyring to return '{fmt_type(value_obj.inferred_type)}'", value_obj.xy_node,
             notes=[
                 (f"From function returning '{fmt_type(fobj.rtype_obj)}'", return_type_node)
             ]
         )
-    
+
 def implicit_zero_conversion(value_obj, dest_type, ctx: CompilerContext):
     return (
         isinstance(value_obj.xy_node, xy.Const) and value_obj.xy_node.value == 0
@@ -5353,7 +5353,7 @@ def fmt_err_msg(msg, node):
     fn = node.src.filename
     if fn.startswith(cwd):
         fn = fn[len(cwd)+1:]
-    
+
     src_line = node.src.code[line_loc:line_end].replace("\t", " ")
     fmt_msg = f"{fn}:{line_num}:{loc - line_loc + 1}: {msg}\n"
     if loc >= 0:
@@ -5389,7 +5389,7 @@ def find_type(texpr, cast, ctx, required=True):
 
         c_typename = create_fptr_type(param_objs, rtype_obj, cast, ctx)
         return FuncTypeObj(
-            c_typename=c_typename, xy_node=texpr, 
+            c_typename=c_typename, xy_node=texpr,
             func_obj=FuncObj(
                 param_objs=param_objs,
                 rtype_obj=rtype_obj,
@@ -5509,7 +5509,7 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
             if len(header_obj.prefix) > 0:
                 raise CompilationError("Only unprefixed strings are recognized", header_obj.xy_node)
             cast.includes.append(c.Include(header_obj.parts[0].value))
-        
+
         defines = obj.kwargs.get("defines", ArrayObj())
         for def_obj in defines.elems:
             code: str = def_obj.parts[0].value
@@ -5534,7 +5534,7 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
                 # str ctors are not sticky
                 if ctor_obj.module_header.module_name == module_header.module_name:
                     ctx.str_prefix_reg[str_prefix] = ctor_obj
-    
+
     if imprt.in_name:
         ctx.data_ns[imprt.in_name] = import_obj
 
@@ -5606,5 +5606,5 @@ def fmt_comment(comment):
                     i += 1
         else:
             res += comment[i]
-            i += 1 
+            i += 1
     return res

@@ -67,7 +67,7 @@
 
 ;; Integer type as large as the addressable memory space on the target
 ;; architecture. This type is (by definition) platform dependant. It is
-;; provided for interfacing with native libraries and for building libraries. 
+;; provided for interfacing with native libraries and for building libraries.
 ;; Size is always unsigned. For error handling use xy error-handling mechanisms.
 *struct Size {
     # Implemented by the compiler
@@ -212,23 +212,23 @@
     # Implemented by the compiler
 }
 
-*def cmpNe(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpNe(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGt(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGt(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGe(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGe(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLt(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLt(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLe(a: Ubyte, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLe(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
@@ -324,27 +324,27 @@
     # Implemented by the compiler
 }
 
-*def cmpEq(a: Ushort, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpEq(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpNe(a: Ushort, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpNe(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGt(a: Ushort, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGt(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGe(a: Ushort, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGe(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLt(a: Ushort, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLt(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLe(a: Ushort, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLe(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
@@ -385,45 +385,27 @@
 ;; Compare for equality.
 ;; If {b} has a smaller type that {a} than it is extended to the type of {a}.
 ;; Otherwise {a} is extended to the type of {b}
-*def cmpEq(
-    a: Int,
-    b: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Double, Float)
-) -> Bool {
+*def cmpEq(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpNe(
-    a: Int,
-    b: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Double, Float)
-) -> Bool {
+*def cmpNe(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGt(
-    a: Int,
-    b: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Double, Float)
-) -> Bool {
+*def cmpGt(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGe(
-    a: Int,
-    b: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Double, Float)
-) -> Bool {
+*def cmpGe(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLt(
-    a: Int,
-    b: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Double, Float)
-) -> Bool {
+*def cmpLt(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLe(
-    a: Int,
-    b: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Double, Float)
-) -> Bool {
+*def cmpLe(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
     # Implemented by the compiler
 }
 
@@ -461,27 +443,27 @@
     # Implemented by the compiler
 }
 
-*def cmpEq(a: Uint, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpEq(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpNe(a: Uint, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpNe(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGt(a: Uint, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGt(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGe(a: Uint, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGe(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLt(a: Uint, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLt(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLe(a: Uint, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLe(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
@@ -561,27 +543,27 @@
     # Implemented by the compiler
 }
 
-*def cmpEq(a: Ulong, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpEq(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpNe(a: Ulong, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpNe(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGt(a: Ulong, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGt(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGe(a: Ulong, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGe(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLt(a: Ulong, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLt(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLe(a: Ulong, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLe(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
@@ -703,27 +685,27 @@
     # Implemented by the compiler
 }
 
-*def cmpEq(a: Size, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpEq(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpNe(a: Size, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpNe(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGt(a: Size, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGt(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpGe(a: Size, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpGe(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLt(a: Size, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLt(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
-*def cmpLe(a: Size, b: (Ubyte, Ushort, Int, Uint, Ulong, Size)) -> Bool {
+*def cmpLe(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
     # Implemented by the compiler
 }
 
@@ -814,6 +796,78 @@ def signednessError() break "Mixed signedness arithmetic. Please cast one of the
 *def div(a: Ulong, b: (Byte, Short, Long)) signednessError();
 *def div(a: Size, b: (Byte, Short, Long)) signednessError();
 
+;; ...
+*def cmpEq(a: Ubyte, b: (Byte, Short, Long)) signednessError();
+*def cmpEq(a: (Byte, Short, Long), b: Ubyte) signednessError();
+*def cmpEq(a: Ushort, b: (Byte, Short, Long)) signednessError();
+*def cmpEq(a: (Byte, Short, Long), b: Ushort) signednessError();
+*def cmpEq(a: Uint, b: (Byte, Short, Long)) signednessError();
+*def cmpEq(a: (Byte, Short, Long), b: Uint) signednessError();
+*def cmpEq(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def cmpEq(a: (Byte, Short, Long), b: Ulong) signednessError();
+*def cmpEq(a: Size, b: (Byte, Short, Long)) signednessError();
+*def cmpEq(a: (Byte, Short, Long), b: Size) signednessError();
+
+;; ...
+*def cmpNe(a: Ubyte, b: (Byte, Short, Long)) signednessError();
+*def cmpNe(a: (Byte, Short, Long), b: Ubyte) signednessError();
+*def cmpNe(a: Ushort, b: (Byte, Short, Long)) signednessError();
+*def cmpNe(a: (Byte, Short, Long), b: Ushort) signednessError();
+*def cmpNe(a: Uint, b: (Byte, Short, Long)) signednessError();
+*def cmpNe(a: (Byte, Short, Long), b: Uint) signednessError();
+*def cmpNe(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def cmpNe(a: (Byte, Short, Long), b: Ulong) signednessError();
+*def cmpNe(a: Size, b: (Byte, Short, Long)) signednessError();
+*def cmpNe(a: (Byte, Short, Long), b: Size) signednessError();
+
+;; ...
+*def cmpGt(a: Ubyte, b: (Byte, Short, Long)) signednessError();
+*def cmpGt(a: (Byte, Short, Long), b: Ubyte) signednessError();
+*def cmpGt(a: Ushort, b: (Byte, Short, Long)) signednessError();
+*def cmpGt(a: (Byte, Short, Long), b: Ushort) signednessError();
+*def cmpGt(a: Uint, b: (Byte, Short, Long)) signednessError();
+*def cmpGt(a: (Byte, Short, Long), b: Uint) signednessError();
+*def cmpGt(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def cmpGt(a: (Byte, Short, Long), b: Ulong) signednessError();
+*def cmpGt(a: Size, b: (Byte, Short, Long)) signednessError();
+*def cmpGt(a: (Byte, Short, Long), b: Size) signednessError();
+
+;; ...
+*def cmpGe(a: Ubyte, b: (Byte, Short, Long)) signednessError();
+*def cmpGe(a: (Byte, Short, Long), b: Ubyte) signednessError();
+*def cmpGe(a: Ushort, b: (Byte, Short, Long)) signednessError();
+*def cmpGe(a: (Byte, Short, Long), b: Ushort) signednessError();
+*def cmpGe(a: Uint, b: (Byte, Short, Long)) signednessError();
+*def cmpGe(a: (Byte, Short, Long), b: Uint) signednessError();
+*def cmpGe(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def cmpGe(a: (Byte, Short, Long), b: Ulong) signednessError();
+*def cmpGe(a: Size, b: (Byte, Short, Long)) signednessError();
+*def cmpGe(a: (Byte, Short, Long), b: Size) signednessError();
+
+;; ...
+*def cmpLt(a: Ubyte, b: (Byte, Short, Long)) signednessError();
+*def cmpLt(a: (Byte, Short, Long), b: Ubyte) signednessError();
+*def cmpLt(a: Ushort, b: (Byte, Short, Long)) signednessError();
+*def cmpLt(a: (Byte, Short, Long), b: Ushort) signednessError();
+*def cmpLt(a: Uint, b: (Byte, Short, Long)) signednessError();
+*def cmpLt(a: (Byte, Short, Long), b: Uint) signednessError();
+*def cmpLt(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def cmpLt(a: (Byte, Short, Long), b: Ulong) signednessError();
+*def cmpLt(a: Size, b: (Byte, Short, Long)) signednessError();
+*def cmpLt(a: (Byte, Short, Long), b: Size) signednessError();
+
+;; ...
+*def cmpLe(a: Ubyte, b: (Byte, Short, Long)) signednessError();
+*def cmpLe(a: (Byte, Short, Long), b: Ubyte) signednessError();
+*def cmpLe(a: Ushort, b: (Byte, Short, Long)) signednessError();
+*def cmpLe(a: (Byte, Short, Long), b: Ushort) signednessError();
+*def cmpLe(a: Uint, b: (Byte, Short, Long)) signednessError();
+*def cmpLe(a: (Byte, Short, Long), b: Uint) signednessError();
+*def cmpLe(a: Ulong, b: (Byte, Short, Long)) signednessError();
+*def cmpLe(a: (Byte, Short, Long), b: Ulong) signednessError();
+*def cmpLe(a: Size, b: (Byte, Short, Long)) signednessError();
+*def cmpLe(a: (Byte, Short, Long), b: Size) signednessError();
+
 ;; Compute mixed signedness operation only if {b} is a constant
 *def add(a: (Uint, Ulong, Size, Float), b: Int) -> %a
 >> isConst(^b)
@@ -842,6 +896,43 @@ def signednessError() break "Mixed signedness arithmetic. Please cast one of the
     # implemented by the compiler
 }
 
+;; ...
+*def cmpEq(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+*def cmpNe(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+*def cmpLt(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+*def cmpLe(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+*def cmpGt(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+*def cmpGe(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
+>> isConst(^b)
+{
+    # implemented by the compiler
+}
+
 ;; Compute mixed signedness operation only if {a} is a constant
 *def add(a: Int, b: (Uint, Ulong, Size, Float)) -> %b
 >> isConst(^a)
@@ -865,6 +956,48 @@ def signednessError() break "Mixed signedness arithmetic. Please cast one of the
 
 ;; ...
 *def div(a: Int, b: (Uint, Ulong, Size, Float)) -> %b
+>> isConst(^a)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def cmpEq(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
+>> isConst(^a)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def cmpNe(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
+>> isConst(^a)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def cmpLt(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
+>> isConst(^a)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def cmpGt(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
+>> isConst(^a)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def cmpLe(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
+>> isConst(^a)
+{
+    # implemented by the compiler
+}
+
+;; ...
+*def cmpGe(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
 >> isConst(^a)
 {
     # implemented by the compiler
