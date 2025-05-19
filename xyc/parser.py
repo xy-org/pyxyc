@@ -16,15 +16,15 @@ class TokenIter:
 
     def has_more(self):
         return self.i < self.num_tokens
-    
+
     def peak(self):
         return self.tokens[self.i]
-    
+
     def peakn(self, n: int):
         if self.i + n >= len(self.tokens):
             raise ParsingError("Unexpected end of file", self)
         return self.tokens[self.i:self.i+n]
-    
+
     def peak_coords(self):
         if not self.has_more():
             return (len(self.src.code), len(self.src.code))
@@ -32,14 +32,14 @@ class TokenIter:
             self.token_pos[self.i],
             self.token_pos[self.i] + len(self.peak())
         )
-    
+
     def consume(self, n=1):
         if not self.has_more():
             raise ParsingError("Unexpected end of file", self)
         res = self.tokens[self.i] if n==1 else self.tokens[self.i:self.i+n]
         self.i += n
         return res
-    
+
     def expect(self, token, msg=None):
         if self.peak() != token:
             if msg:
@@ -62,16 +62,16 @@ class TokenIter:
 
     def peak_eol(self):
         return not self.has_more() or self.peak() == "\n"
-    
+
     def check(self, exp):
         if self.has_more() and self.peak() == exp:
             self.i += 1
             return True
         return False
-    
+
     def check_semicolon(self):
         return self.check(";") or self.peak() == ";;"
-    
+
     def skip_until(self, delim):
         while self.has_more() and self.consume() != delim:
             pass
@@ -351,7 +351,7 @@ def parse_params(itoken):
         param = parse_expression(itoken)
         if not isinstance(param, VarDecl):
             raise ParsingError("Invalid parameter. Proper syntax is 'name : Type = value'", itoken)
-        
+
         if not itoken.check(","):
             # no , - better be the last param
             itoken.skip_empty_lines()
@@ -376,7 +376,7 @@ def parse_params(itoken):
     itoken.skip_empty_lines()
     itoken.expect(")")
     return res
-    
+
 def parse_toplevel_type_expr(itoken):
     # this new map is here purely to provide better error messages in cases like
     # def func() -> MyType{} {...}
@@ -476,7 +476,7 @@ def do_parse_expression(
         else:
             op = itoken.consume() # the operator
 
-            # check for postfix operator 
+            # check for postfix operator
             if op == "=>":
                 arg1 = UnaryExpr(arg1, op=op)
                 return arg1
@@ -737,7 +737,7 @@ def parse_operand(itoken, precedence, op_prec):
             raise ParsingError("Expected operand found operator", itoken)
         else:
             arg1 = Id(token, src=itoken.src, coords=tk_coords)
-    
+
     return arg1
 
 def parse_operator(arg1, itoken, precedence, op_prec):
@@ -821,9 +821,11 @@ def parse_operator(arg1, itoken, precedence, op_prec):
 
 def parse_num_const(token: str, tk_coords, itoken):
     suffix_map = {
-        "f": "Float", "d": "Double", 
+        "f": "Float", "d": "Double",
         "l": "Long", "ul": "Ulong", "u": "Uint",
-        "s": "Short", "us": "Ushort", "b": "Byte", "ub": "Ubyte", "z": "Size"
+        "s": "Short", "us": "Ushort",
+        "o": "Byte", "uo": "Ubyte",  # 'o' stands for octet
+        "z": "Size"
     }
 
     if "." in token:
@@ -857,7 +859,7 @@ def parse_num_const(token: str, tk_coords, itoken):
                 closing_idx = token.find(')', bracket_idx)
                 if closing_idx < 0:
                     raise ParsingError("Ill-formatted number literal", itoken)
-                base = int(token[bracket_idx+1:closing_idx])
+                base = parse_int(token[bracket_idx+1:closing_idx], 10, itoken)
                 suffix = token[closing_idx+1:]
             else:
                 base = 16 if token.startswith("0x") else 8
@@ -878,8 +880,11 @@ def parse_num_const(token: str, tk_coords, itoken):
                     suffix = i_suffix if len(suffix) < len(i_suffix) else suffix
             num_str = token[:len(token)-len(suffix)]
 
-        res = Const(int(num_str, base=base), token[:len(token)-len(suffix)], "Int",
-                    src=itoken.src, coords=tk_coords)
+        res = Const(
+            parse_int(num_str, base, itoken),
+            token[:len(token)-len(suffix)],
+            "Int", src=itoken.src, coords=tk_coords
+        )
         if base not in {10, 16, 8}:
             res.value_str = str(res.value)
         elif explicit_base:
@@ -894,8 +899,16 @@ def parse_num_const(token: str, tk_coords, itoken):
             res.type = suffix_map[suffix]
         elif suffix != "":
             raise ParsingError("Unknown number suffix", itoken)
-        
+
     return res
+
+def parse_int(str: str, base, token):
+    if base < 2 or base > 36:
+        raise ParsingError("Invalid base", token)
+    try:
+        return int(str, base)
+    except ValueError:
+        raise ParsingError(f"Invalid character in base-{base} number", token)
 
 def parse_var_decl(itoken, name_token, precedence, op_prec):
     decl = VarDecl(src=itoken.src, coords=name_token.coords if name_token else itoken.peak_coords())
@@ -917,7 +930,7 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
 
     if itoken.peak() in var_qualifiers:
         raise ParsingError("Only one variable qualifier is allowed.", itoken)
-    
+
     if not is_end_of_expr(itoken) and itoken.peak() != "=":
         decl.type = expr_to_type(
             parse_expression(itoken, precedence+1, op_prec=op_prec)
@@ -1130,7 +1143,7 @@ def parse_str_literal(prefix, prefix_start, itoken, multiline):
         lit = itoken.src.code[part_start:part_end]
         lit, _ = check_escaped_newline(lit, multiline, skip_leading)
         res.parts.append(Const(lit, src=itoken.src, coords=itoken.peak_coords()))
-    
+
     res.coords = (prefix_start, part_end+1)
     full_str_start = prefix_start + len(prefix) + (1 if not multiline else 3)
     res.full_str = itoken.src.code[full_str_start:part_end]
@@ -1198,7 +1211,7 @@ def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False, accept_inject=
         return positional, named, inject_args
     else:
         return positional, named
-    
+
 
 def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False, accept_inject=False):
     res = []
@@ -1384,7 +1397,7 @@ def parse_tags(itoken):
                 "These long chains of tags get very ambiguous. Please be explicit and seprate the tags in square brackets.",
                 itoken
             )
-        
+
         res.args = [tag]
     return res
 

@@ -9,4 +9,5 @@ void cmpNumConsts_test(void) {
     const bool l_d = 0xFAu == (uint8_t)0xFA;
     const bool l_e = (uint8_t)0xFA == (uint16_t)0xFAB;
     const bool l_f = (uint32_t)-1 == 0xFFFFFFFFu;
+    const bool l_g = 0x55BB == (int16_t)0x55BB;
 }

@@ -245,8 +245,14 @@ def test_param_lists(code, err_msg):
         }""",
         "Invalid floating point literal"
     ),
+    (
+        """def func() {
+            a := 0xABv;
+        }""",
+        "Invalid character in base-16 number"
+    ),
 ])
-def test_invalid_floats(code, err_msg):
+def test_invalid_num_consts(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
 

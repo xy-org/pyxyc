@@ -202,7 +202,7 @@ src.xy:4:22: error: Cannot find tag
         def fun(a: Int, b:Long = 0) a;
         def fun(a: Int, b:Short = 0) b;
         def fun(a: Double) a;
-     
+
         def main() {
             fun(0);
         }
@@ -375,7 +375,7 @@ src.xy:2:39: error: Cannot set value for pseudo field `field`. Pseudo fields can
     (
         """struct MyStruct {
         }
-        
+
         def f() {
             s := MyStruct{5};
         }
@@ -389,7 +389,7 @@ src.xy:5:27: error: Too many positional value in struct literal. Provided '1' bu
     (
         """struct MyStruct {
         }
-        
+
         def f() {
             s := MyStruct{missing=5};
         }
@@ -478,13 +478,25 @@ src.xy:3:20: error: Mixed signedness arithmetic (Uint, Int). Please cast one of 
     (
         """
         def test() {
-            a := 128b;
+            a := 128o;
         }
         """,
         """\
 src.xy:3:18: error: Integer constant overflows type 'Byte'
-|             a := 128b;
+|             a := 128o;
                    ^^^^
+"""
+    ),
+    (
+        """
+        def test() {
+            a := 0x55bbo;
+        }
+        """,
+        """\
+src.xy:3:18: error: Integer constant overflows type 'Byte'
+|             a := 0x55bbo;
+                   ^^^^^^^
 """
     ),
 ])
@@ -531,7 +543,7 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
 
     ("failedGet.xy", r".*Cannot decay.*Cannot find function.*"),
     ("failedSet.xy", r".*Cannot set.*Can neither set nor decay MyStruct[Flag]*"),
-    
+
     ("tags/mismatchedTags1.xy", r".*Cannot discard tag 'tag2'(.|\n)*mismatchedTags1.xy:8:20: note: Tag attached here.*"),
     ("tags/mismatchedTags2.xy", r".*Cannot discard tag 'tag2'.*"),
     ("tags/mismatchedTags3.xy", r".*Values for tag 'tag2' differ"),
