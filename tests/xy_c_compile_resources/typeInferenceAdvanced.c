@@ -32,5 +32,5 @@ void typeInferenceAdvanced_func(void) {
     const typeInferenceAdvanced_Pair l_d = typeInferenceAdvanced_ctorPair();
     const double l_e = 1 + 1.1718;
     const float l_efp = 2.1718f;
-    const double l_pi = 1 + 1.0 + 1.14f;
+    const double l_pi = 1 + 1.0 + 1.14;
 }

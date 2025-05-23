@@ -55,7 +55,7 @@ int64_t slices_max__Long(void) {
 
 void slices_testDataSlices(void) {
     const slices_Date l_today = {time(NULL)};
-    const slices_Date l_tomorrow = {(slices_Date){time(NULL)}.m_unixtime + 24 * 60 * 60};
+    const slices_Date l_tomorrow = {(slices_Date){time(NULL)}.m_unixtime + 24ll * 60 * 60};
     const slices_DateSlice l_a = {l_today, l_tomorrow, (slices_Date){1}};
     const slices_DateSlice l_b = {l_tomorrow, l_today, (slices_Date){-1}};
     const slices_DateSlice l_d = {(slices_Date){0}, l_tomorrow, (slices_Date){1}};

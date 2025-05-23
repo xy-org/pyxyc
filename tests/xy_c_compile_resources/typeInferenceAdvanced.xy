@@ -27,5 +27,5 @@ def func() -> void {
     d := ctorPair();
     e := 1 + 1.1718d;
     efp := 2.1718f;
-    pi := 1 + 1.0d + 1.14f;
+    pi := 1 + 1.0d + 1.14d;
 }
