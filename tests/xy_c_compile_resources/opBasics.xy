@@ -1,0 +1,30 @@
+def test1(x: Int, y: %x) {
+    a := x + y;
+    b := x - y;
+    c := x * y;
+    d := x / y;
+    e := x \mod y;
+}
+
+def test2(x: Byte, y: %x) {
+    a := x + y;
+    b := x - y;
+    c := x * y;
+    d := x / y;
+    e := x \mod y;
+}
+
+def test3(x: Ushort, y: %x) {
+    a := x + y;
+    b := x - y;
+    c := x * y;
+    d := x / y;
+    e := x \mod y;
+}
+
+def test4(x: Float, y: %x) {
+    a := x + y;
+    b := x - y;
+    c := x * y;
+    d := x / y;
+}

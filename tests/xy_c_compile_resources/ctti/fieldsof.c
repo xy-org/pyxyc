@@ -42,5 +42,5 @@ void fieldsof_test2(void) {
 void fieldsof_test3(void) {
     const fieldsof_MyStruct l_s = {0};
     fieldsof_FieldDesc tmp_0_arg[3] = {(fieldsof_FieldDesc){sizeof(l_s.m_a)}, (fieldsof_FieldDesc){sizeof(l_s.m_b)}, (fieldsof_FieldDesc){sizeof(l_s.m_c)}};
-    fieldsof_printFields(tmp_0_arg, 3);
+    fieldsof_printFields(tmp_0_arg, (size_t)3);
 }

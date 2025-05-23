@@ -8,4 +8,6 @@ def test() {
     s3 := "\u0041\u0120\x00";
     s4 := "\U0001F63B\U0001F498\U0001FAE0";
     s5 := "😻爱💘";
+    s6 := "\U+1F63B\U+7231\U+1F498";; equivalent to the string above
+    s7 := "\U+1F63BXYZ";; \U+ will parse at most 6 hex digits
 }

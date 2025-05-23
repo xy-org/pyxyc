@@ -17,7 +17,7 @@ void dtors2_test(void) {
     dtors2_Array l_arr2 = {0};
     dtors2_Array l_arr3 = {0};
     dtors2_Array l_arr4 = {0};
-    const dtors2_Array l_arr5 = {0, 10};
+    const dtors2_Array l_arr5 = {0, (size_t)10};
     dtors2_dtor(&l_arr5);
     dtors2_dtor(&l_arr4);
     dtors2_dtor(&l_arr3);

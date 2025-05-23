@@ -24,9 +24,9 @@ void callbacks3_test2(void) {
 
 void callbacks3_invokeTests(void) {
     xy_fp__void l_tests[2] = {callbacks3_test1, callbacks3_test3};
-    callbacks3_runTests(l_tests, 2);
+    callbacks3_runTests(l_tests, (size_t)2);
     xy_fp__void l_moreTests[1] = {callbacks3_test2};
-    callbacks3_runTests(l_moreTests, 1);
+    callbacks3_runTests(l_moreTests, (size_t)1);
     const xy_fp__void l_specialTest = callbacks3_special;
     callbacks3_runSpecial(l_specialTest);
 }

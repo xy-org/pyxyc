@@ -42,6 +42,7 @@ from xyc.compiler import CompilationError
     "pseudoParams",
     "errors",
     "nameCollisions",
+    "opBasics",
     "opOverloading",
     "globalConstants",
     "funcs/funcs",
@@ -97,6 +98,7 @@ from xyc.compiler import CompilationError
     "logicCmp/cmpBits",
     "logicCmp/cmpNums",
     "logicCmp/cmpNumConsts",
+    "logicCmp/minMax",
     "logicCmp/shortcircuit",
     "ctti/srcLocFuncs",
     "funcs/paramTypeEnum",
@@ -147,7 +149,7 @@ code_ast = [
     def func(x: Int, y: Int) -> Int {
         return x + y;
     }
-     
+
 
     def main() -> void {
         x : Long = 0;
