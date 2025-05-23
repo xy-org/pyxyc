@@ -1,0 +1,3 @@
+def test(a: (Int, Size), b: %a) -> %a {
+    return a + max(a, b) / 2 + min(a, b) / 3;
+}

@@ -582,7 +582,7 @@ def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node, fcall_rules
         return []
 
     if not (src_type.get_base_type().xy_node.name == dst_type.get_base_type().xy_node.name and src_type.get_base_type().c_name == dst_type.get_base_type().c_name):
-        return [(f"Incompatible types {fmt_type(src_type.get_base_type())} and {fmt_type(dst_type.get_base_type())}", xy_node)]
+        return [(f"Type mismatch in assignment: {fmt_type(src_type.get_base_type())} and {fmt_type(dst_type.get_base_type())}", xy_node)]
 
 
     for tag_name, tag in dst_type.tags.items():
@@ -2059,7 +2059,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 field_name = expr.arg2.name
                 struct_obj = arg1_obj.inferred_type
                 if field_name not in struct_obj.fields:
-                    raise CompilationError(f"No such field in struct {struct_obj.xy_node.name}", expr.arg2)
+                    raise CompilationError(f"No such field in struct {struct_obj.name}", expr.arg2)
                 is_field_of_type = isinstance(arg1_obj.compiled_obj, TypeObj)
                 if not is_field_of_type:
                     # normal get of an object
@@ -2358,7 +2358,7 @@ def compile_const(expr, cast, cfunc, ctx):
                 value = f"'{value}'"
         else:
             value = f"'{value}'"
-    elif expr.type in {"Short", "Ushort", "Byte", "Ubyte"}:
+    elif expr.type in {"Short", "Ushort", "Byte", "Ubyte", "Size"}:
         type_cast = rtype_obj.c_name
 
     c_val = expr.value
@@ -3233,9 +3233,14 @@ def to_cstr(xy_node, s: str):
                 i += 6
                 res_len += codepoint_to_bytes(cp, res)
             elif bstr[i+1] == ord("U"):
-                cp = cstr_hexadecimal(xy_node, bstr, i+2, 8)
-                i += 10
-                res_len += codepoint_to_bytes(cp, res)
+                if i+2 < len(bstr) and bstr[i+2] == ord("+"):
+                    cp, n_parsed = cstr_varlen_hexadecimal(xy_node, bstr, i+3, 6)
+                    i += 3 + n_parsed
+                    res_len += codepoint_to_bytes(cp, res)
+                else:
+                    cp = cstr_hexadecimal(xy_node, bstr, i+2, 8)
+                    i += 10
+                    res_len += codepoint_to_bytes(cp, res)
             elif bstr[i+1] == ord("\n"):
                 res.append("\\\n")
                 i += 2
@@ -3253,11 +3258,30 @@ def to_cstr(xy_node, s: str):
 
 def cstr_hexadecimal(expr, bstr, i, required):
     if (i + required - 1) >= len(bstr):
-        raise CompilationError("Invalid escape sequence. Required exactly 4 symbols in the range 0-F", expr)
+        raise CompilationError(f"Invalid escape sequence. Required exactly {required} symbols in the range 0-F", expr)
     hd_str = ""
     for j in range(required):
         hd_str = hd_str + chr(bstr[i+j])
     return int(hd_str, base=16)
+
+def cstr_varlen_hexadecimal(expr, bstr, i, max_digits):
+    if i >= len(bstr):
+        raise CompilationError(f"Atleast one hex digit needed to specify a code point")
+    hd_str = ""
+    for j in range(max_digits):
+        if i + j >= len(bstr):
+            break
+        bt = bstr[i+j]
+        valid_hex = (
+            bt >= ord('0') and bt <= ord('9') or
+            bt >= ord('A') and bt <= ord('F') or
+            bt >= ord('a') and bt <= ord('f')
+        )
+        if not valid_hex:
+            break
+        hd_str = hd_str + chr(bstr[i+j])
+    return int(hd_str, base=16), j
+
 
 def codepoint_to_bytes(cp, res):
     res_len = 0
@@ -3701,6 +3725,17 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=c_res,
             inferred_type=func_obj.rtype_obj
         )
+    elif len(arg_exprs) == 2 and (is_builtin_func(func_obj, "min") or is_builtin_func(func_obj, "max")):
+        op = '<' if func_obj.xy_node.name.name == "min" else '>'
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.TernaryExpr(
+                c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op=op),
+                arg_exprs[0].c_node,
+                arg_exprs[1].c_node,
+            ),
+            inferred_type=func_obj.rtype_obj,
+        )
     elif func_obj.builtin and len(arg_exprs) == 2:
         if isinstance(func_obj.xy_node.body, xy.FuncCall) and func_obj.xy_node.body.name.name == "signednessError":
             report_mixed_signed(expr, arg_exprs, ctx)
@@ -3768,7 +3803,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         if len(dims) == 0:
             raise CompilationError("Cannot determine array size", expr)
         size = dims[0]
-        res = c.Const(size)
+        res = c.Cast(c.Const(size), to="size_t")
         return ExprObj(
             c_node=res,
             xy_node=expr,

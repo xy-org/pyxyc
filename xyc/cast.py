@@ -15,7 +15,7 @@ class Type:
     @property
     def is_array(self):
         return len(self.dims) > 0
-    
+
     @property
     def is_ptr(self):
         return self.name is not None and len(self.name) > 0 and self.name[-1] == "*"
@@ -29,7 +29,7 @@ class QualType:
 
     def __post_init__(self):
         if isinstance(self.type, str):
-            self.type = Type(self.type) 
+            self.type = Type(self.type)
 
 @dataclass
 class VarDecl:
@@ -66,6 +66,12 @@ class UnaryExpr:
     arg: any = None
     op: str = ""
     prefix: bool = False
+
+@dataclass
+class TernaryExpr:
+    cond: any = None
+    arg1: any = None
+    arg2: any = None
 
 @dataclass
 class Id:

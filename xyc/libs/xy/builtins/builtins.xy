@@ -160,6 +160,13 @@
     # Implemented by the compiler
 }
 
+*def mod(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
+    b: %a
+) -> %a {
+    # implemented by the compiler
+}
+
 ;; Equal
 *def cmpEq(a: Byte, b: (Byte, Short, Int, Long)) -> Bool {
     # Implemented by the compiler
@@ -727,6 +734,16 @@
     # Implemented by the compiler
 }
 
+## Char
+
+*def cmpEq(a: Char, b: Char) -> Bool {
+    # implemented by the compiler
+}
+
+*def cmpNe(a: Char, b: Char) -> Bool {
+    # implemented by the compiler
+}
+
 ;; Logic not
 *def not(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Bool)
@@ -746,6 +763,22 @@
     a: mut (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
 ) -> void {
     # Implemented by the compiler
+}
+
+;; Min of two numbers
+*def min(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    b: %a
+) -> %a {
+    # implemented by the compiler
+}
+
+;; Max of two numbers
+*def max(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    b: %a
+) -> %a {
+    # implemented by the compiler
 }
 
 # Mixed signedness arithmetics
@@ -1104,6 +1137,14 @@ def signednessError() break "Mixed signedness arithmetic. Please cast one of the
         Float, Double, Char),
     :Bool
 ) -> Bool {
+    # Implemented by the compiler
+}
+
+;; Convert {a} to Char
+*def to(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
+    :Char
+) -> Char {
     # Implemented by the compiler
 }
 

@@ -13,7 +13,7 @@ op_precedence = {
     '|': 3,
     '&&': 2,
     '||': 1,
-    # ?:
+    '?:': 0.5,
     '=': 0, '+=': 0, '-=': 0, '*=': 0, '/=': 0, '%=': 0, '<<=': 0, '>>=': 0,
     '&=': 0, '^=': 0, '|=': 0,
     ',': -1
@@ -77,7 +77,7 @@ def stringify(ast: Ast):
         frags.append("\n")
     if len(ast.funcs) > 0:
         frags.pop()  # Remove double new line at end of file
-    
+
     return "".join(frags)
 
 def stringify_def(node, frags):
@@ -239,6 +239,17 @@ def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
             frags.append(")")
         if not expr.prefix:
             frags.append(expr.op)
+    elif isinstance(expr, TernaryExpr):
+        parentheses = parentheses_required("?:", parent_op_precedence)
+        if parentheses:
+            frags.append("(")
+        stringify_expr(expr.cond, frags, op_precedence["?:"])
+        frags.append(" ? ")
+        stringify_expr(expr.arg1, frags, op_precedence["?:"])
+        frags.append(" : ")
+        stringify_expr(expr.arg2, frags, op_precedence["?:"])
+        if parentheses:
+            frags.append(")")
     elif isinstance(expr, FuncCall):
         if isinstance(expr.name, str):
             frags.extend((expr.name, "("))
@@ -296,7 +307,7 @@ def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
         frags.append(src)
     else:
         raise CGenerationError(f"Unknown expression {type(expr).__name__}")
-    
+
 def stringify_var_decl(stmt, frags):
     if stmt.qtype.is_const and not stmt.qtype.type.is_ptr:
         frags.append("const ")
