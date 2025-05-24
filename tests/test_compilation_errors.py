@@ -458,7 +458,7 @@ src.xy:4:20: error: Don't call me
         }
         """,
         """\
-src.xy:3:20: error: Mixed signedness arithmetic (Uint, Byte). Please cast one of the operands to a suitable type.
+src.xy:3:20: error: Cannot find function 'add(Uint, Byte)'; Mixed signedness arithmetic is not allowed.
 |             return a + b;
                      ^^^^^
 """

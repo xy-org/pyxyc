@@ -39,7 +39,7 @@ int32_t callbacks1_cb(int32_t p_a) {
 
 int32_t callbacks1_funnyFun(int32_t p_a, double p_b) {
     int32_t tmp_0 = 0;
-    if (p_b < 2 * p_a) {
+    if (p_b < (double)(2 * p_a)) {
         tmp_0 = p_a;
     } else {
         tmp_0 = -p_a;

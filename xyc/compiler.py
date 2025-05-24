@@ -401,9 +401,16 @@ class FuncSpace:
             if not is_obj_visible(cfobj, ctx):
                 candidates += ";; not visible"
 
+        notes = [(f"Candidates are:\n{candidates}", None)]
+        if (fname in {"add", "sub", "div", "mul"} and len(args_inferred_types) == 2 and
+            args_inferred_types[0] is not args_inferred_types[1] and
+            args_inferred_types[0].builtin and args_inferred_types[0].builtin):
+            err_msg += "; Mixed signedness arithmetic is not allowed."
+            notes = None
+
         raise CompilationError(
             err_msg, node,
-            notes=[(f"Candidates are:\n{candidates}", None)]
+            notes=notes
         )
 
     def find(self, node, args_inferred_types, ctx, partial_matches=False, return_no_matches=False):
@@ -758,7 +765,6 @@ class CompilerContext:
             data_ns["Ulong"],
             data_ns["Size"],
         )
-        self.signedness_error_brk = func_ns["signednessError"]._funcs[0].xy_node.body
 
     def is_prim_int(self, type_obj):
         if isinstance(type_obj,TypeExprObj):
@@ -3740,8 +3746,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=func_obj.rtype_obj,
         )
     elif is_builtin_func(func_obj, "cmp"):
-        if len(func_obj.xy_node.in_guards) > 0:
-            ## the only builtin funcs with in-guards are the exceptions for Int
+        if arg_exprs[0].inferred_type is not arg_exprs[1].inferred_type:
+            ## nice error message for mixed type comparison
             if ctx.is_int(arg_exprs[0].inferred_type) and not isinstance(arg_exprs[0].c_node, c.Const):
                 report_mixed_signed(expr, arg_exprs, ctx)
             if ctx.is_int(arg_exprs[1].inferred_type) and not isinstance(arg_exprs[1].c_node, c.Const):
@@ -3760,8 +3766,6 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=func_obj.rtype_obj,
         )
     elif func_obj.builtin and len(arg_exprs) == 2 and arg_exprs[0].inferred_type.builtin and arg_exprs[1].inferred_type.builtin:
-        if isinstance(func_obj.xy_node.body, xy.FuncCall) and func_obj.xy_node.body.name.name == "signednessError":
-            report_mixed_signed(expr, arg_exprs, ctx)
         if len(func_obj.xy_node.in_guards) > 0:
             ## the only builtin funcs with in-guards are the exceptions for Int
             if ctx.is_int(arg_exprs[0].inferred_type) and not isinstance(arg_exprs[0].c_node, c.Const):
@@ -3788,6 +3792,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         c_arg1 = arg_exprs[0].c_node
         c_arg2 = arg_exprs[1].c_node
         c_op = func_to_op_map[func_obj.xy_node.name.name]
+
         bit_len = None
         if arg_exprs[0].inferred_type.name.startswith("Bits"):
             if c_op == '-':
@@ -3817,6 +3822,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     inferred_type = copy(inferred_type)
                 inferred_type.tags["to"] = arg_exprs[0].inferred_type.tags["to"]
         else:
+            if arg_exprs[0].inferred_type is not arg_exprs[1].inferred_type:
+                if ctx.is_int(arg_exprs[0].inferred_type) and not isinstance(arg_exprs[0].c_node, c.Const):
+                    report_mixed_signed(expr, arg_exprs, ctx)
+                if ctx.is_int(arg_exprs[1].inferred_type) and not isinstance(arg_exprs[1].c_node, c.Const):
+                    report_mixed_signed(expr, arg_exprs, ctx)
             inferred_type = ctx.bool_obj
 
         res = optimize_cbinop(res)

@@ -18,5 +18,5 @@ def cb~Callback(a: Int) -> Int {
 }
 
 def funnyFun(a:Int, b: Double) -> Int {
-    return if (b < 2*a) a else -a;
+    return if (b < (2*a)'to(Double)) a else -a;
 }
