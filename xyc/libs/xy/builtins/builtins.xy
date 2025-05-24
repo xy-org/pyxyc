@@ -126,20 +126,6 @@
 
 # Arithmetic operations
 
-## Bool
-
-;; Compare {a} and {b} for equality a.k.a. logic xnor
-*def cmpEq(a: Bool, b: Bool) -> Bool {
-    # Implemented by the compiler
-}
-
-;; Compare {a} and {b} for inequality a.k.a. logic xor
-*def cmpNe(a: Bool, b: Bool) -> Bool {
-    # Implemented by the compiler
-}
-
-## Byte
-
 ;; Addition
 *def add(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
@@ -180,297 +166,32 @@
     # implemented by the compiler
 }
 
-;; Equal
-*def cmpEq(a: Byte, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
+## Comparison operators
 
-;; Not equal
-*def cmpNe(a: Byte, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
+;; Compare {a} and {b}
+*def cmpEq(a: Any, b: Any) ^cmp(a, b) == 0;
 
-;; Greater than
-*def cmpGt(a: Byte, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
+;; Compare {a} and {b} for inequality
+*def cmpNe(a: Any, b: Any) ^cmp(a, b) != 0;
 
-;; Greater or equal than
-*def cmpGe(a: Byte, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
+;; True if {a} > {b}
+*def cmpGt(a: Any, b: Any) ^cmp(a, b) > 0;
 
-;; Less than
-*def cmpLt(a: Byte, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
+;; True if {a} >= {b}
+*def cmpGe(a: Any, b: Any) ^cmp(a, b) >= 0;
 
-;; Less or equal than
-*def cmpLe(a: Byte, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
+;; True if {a} < {b}
+*def cmpLt(a: Any, b: Any) ^cmp(b, a) > 0;
 
-## Ubyte
+;; True if {a} < {b}
+*def cmpLe(a: Any, b: Any) ^cmp(b, a) >= 0;
 
-*def cmpEq(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Ubyte, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-## Short
-
-*def cmpEq(a: Short, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Short, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Short, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Short, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Short, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Short, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-## Ushort
-
-*def cmpEq(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Ushort, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-## Int
-
-;; Compare for equality.
-;; If {b} has a smaller type that {a} than it is extended to the type of {a}.
-;; Otherwise {a} is extended to the type of {b}
-*def cmpEq(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Int, b: (Byte, Short, Int, Long, Double, Float)) -> Bool {
-    # Implemented by the compiler
-}
-
-## Uint
-
-*def cmpEq(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Uint, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-## Long
-
-*def cmpEq(a: Long, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Long, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Long, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Long, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Long, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Long, b: (Byte, Short, Int, Long)) -> Bool {
-    # Implemented by the compiler
-}
-
-## Ulong
-
-*def cmpEq(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Ulong, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-## Float
-
-*def cmpEq(a: Float, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Float, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Float, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Float, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Float, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Float, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-## Double
-
-*def cmpEq(a: Double, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Double, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Double, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Double, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Double, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Double, b: (Int, Float, Double)) -> Bool {
-    # Implemented by the compiler
-}
-
-## Size
-
-*def cmpEq(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpNe(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGt(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpGe(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLt(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
-}
-
-*def cmpLe(a: Size, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool {
-    # Implemented by the compiler
+;; Return 1 if {a} > {b}, 0 if {a} == {b}, -1 if {a} < {b} or there is no order
+*def cmp(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double, Char),
+    b: %a
+) -> Int {
+    # implemented by the compiler
 }
 
 ## Ptr
@@ -489,23 +210,11 @@
     # implemented by the compiler
 }
 
-*def cmpEq(a: Ptr, b: Ptr) -> Bool {
+*def cmp(a: Ptr, b: Ptr) -> Int {
     # Implemented by the compiler
 }
 
-*def cmpNe(a: Ptr, b: Ptr) -> Bool {
-    # Implemented by the compiler
-}
-
-## Char
-
-*def cmpEq(a: Char, b: Char) -> Bool {
-    # implemented by the compiler
-}
-
-*def cmpNe(a: Char, b: Char) -> Bool {
-    # implemented by the compiler
-}
+## Logic Operations
 
 ;; Logic not
 *def not(
@@ -697,37 +406,7 @@ def signednessError() break "Mixed signedness arithmetic. Please cast one of the
 }
 
 ;; ...
-*def cmpEq(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
->> isConst(^b)
-{
-    # implemented by the compiler
-}
-
-*def cmpNe(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
->> isConst(^b)
-{
-    # implemented by the compiler
-}
-
-*def cmpLt(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
->> isConst(^b)
-{
-    # implemented by the compiler
-}
-
-*def cmpLe(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
->> isConst(^b)
-{
-    # implemented by the compiler
-}
-
-*def cmpGt(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
->> isConst(^b)
-{
-    # implemented by the compiler
-}
-
-*def cmpGe(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Bool
+*def cmp(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Int
 >> isConst(^b)
 {
     # implemented by the compiler
@@ -762,42 +441,7 @@ def signednessError() break "Mixed signedness arithmetic. Please cast one of the
 }
 
 ;; ...
-*def cmpEq(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
->> isConst(^a)
-{
-    # implemented by the compiler
-}
-
-;; ...
-*def cmpNe(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
->> isConst(^a)
-{
-    # implemented by the compiler
-}
-
-;; ...
-*def cmpLt(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
->> isConst(^a)
-{
-    # implemented by the compiler
-}
-
-;; ...
-*def cmpGt(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
->> isConst(^a)
-{
-    # implemented by the compiler
-}
-
-;; ...
-*def cmpLe(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
->> isConst(^a)
-{
-    # implemented by the compiler
-}
-
-;; ...
-*def cmpGe(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Bool
+*def cmp(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Int
 >> isConst(^a)
 {
     # implemented by the compiler
@@ -1135,12 +779,7 @@ struct FuncSelection {
 }
 
 ;; Compare for equality
-*def cmpEq(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> Bool {
-    # implemented by the compiler
-}
-
-;; Compare for equality
-*def cmpNe(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> Bool {
+*def cmp(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> Bool {
     # implemented by the compiler
 }
 

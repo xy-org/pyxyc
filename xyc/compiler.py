@@ -735,6 +735,31 @@ class CompilerContext:
         self.data_namespaces = [self.global_data_ns, self.data_ns]
         self.func_namespaces = [self.global_func_ns, self.func_ns]
 
+    def fill_builtin_objs(self, data_ns, func_ns):
+        self.void_obj = data_ns["void"]
+        self.bool_obj = data_ns["Bool"]
+        self.ptr_obj = data_ns["Ptr"]
+        self.ptr_to_byte_obj = TypeExprObj(
+            self.ptr_obj.xy_node, self.ptr_obj.c_node, self.ptr_obj,
+            tags={"to": data_ns["Byte"]},
+        )
+        self.size_obj = data_ns["Size"]
+        self.tagctor_obj = data_ns["TagCtor"]
+        self.uint_obj = data_ns["Uint"]
+        self.int_obj = data_ns["Int"]
+        self.prim_int_objs = (
+            data_ns["Byte"],
+            data_ns["Ubyte"],
+            data_ns["Short"],
+            data_ns["Ushort"],
+            data_ns["Int"],
+            data_ns["Uint"],
+            data_ns["Long"],
+            data_ns["Ulong"],
+            data_ns["Size"],
+        )
+        self.signedness_error_brk = func_ns["signednessError"]._funcs[0].xy_node.body
+
     def is_prim_int(self, type_obj):
         if isinstance(type_obj,TypeExprObj):
             type_obj = type_obj.base_type_obj
@@ -1122,29 +1147,7 @@ def compile_module(builder, module_name, asts, module_path):
         ctx.global_data_ns["c"] = ImportObj(is_external=True)
     else:
         compile_import(xy.Import(lib="xy.builtins"), ctx, asts, res)
-        ctx.void_obj = ctx.global_data_ns["void"]
-        ctx.bool_obj = ctx.global_data_ns["Bool"]
-        ctx.ptr_obj = ctx.global_data_ns["Ptr"]
-        ctx.ptr_to_byte_obj = TypeExprObj(
-            ctx.ptr_obj.xy_node, ctx.ptr_obj.c_node, ctx.ptr_obj,
-            tags={"to": ctx.global_data_ns["Byte"]},
-        )
-        ctx.size_obj = ctx.global_data_ns["Size"]
-        ctx.tagctor_obj = ctx.global_data_ns["TagCtor"]
-        ctx.uint_obj = ctx.global_data_ns["Uint"]
-        ctx.int_obj = ctx.global_data_ns["Int"]
-        ctx.prim_int_objs = (
-            ctx.global_data_ns["Byte"],
-            ctx.global_data_ns["Ubyte"],
-            ctx.global_data_ns["Short"],
-            ctx.global_data_ns["Ushort"],
-            ctx.global_data_ns["Int"],
-            ctx.global_data_ns["Uint"],
-            ctx.global_data_ns["Long"],
-            ctx.global_data_ns["Ulong"],
-            ctx.global_data_ns["Size"],
-        )
-        ctx.signedness_error_brk = ctx.global_func_ns["signednessError"]._funcs[0].xy_node.body
+        ctx.fill_builtin_objs(ctx.global_data_ns, ctx.global_func_ns)
 
     ctx.compiling_header = True
     fobjs = compile_header(ctx, asts, res)
@@ -1176,6 +1179,9 @@ def compile_module(builder, module_name, asts, module_path):
             if isinstance(obj, FuncSpace):
                 for func_obj in obj._funcs:
                     func_obj.builtin = True
+
+    if module_name == "xy.builtins":
+        ctx.fill_builtin_objs(ctx.data_ns, ctx.func_ns)
 
     return mh, res
 
@@ -2562,7 +2568,6 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
     arg_objs = ArgList(idx_chain)
     get_fobj = maybe_find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
     if get_fobj is None:
-        # import pdb; pdb.set_trace()
         shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
         if shortened_idx is None:
             # call find_func_obj just to generate a nice error message
@@ -2570,7 +2575,6 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
             raise CompilationError("Should not be reached", idx_obj.xy_node)
         return idx_get(shortened_idx, cast, cfunc, ctx)
     else:
-        # import pdb; pdb.set_trace()
         args_prepared = ArgList([
             maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
         ])
@@ -2629,7 +2633,6 @@ def do_idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: Compiler
             raise CompilationError("Cannot set index", idx_obj.xy_node)
         return idx_set(shortened_idx, val_obj, cast, cfunc, ctx)
     else:
-        # import pdb; pdb.set_trace()
         args_prepared = ArgList([
             maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
         ])
@@ -3736,7 +3739,27 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             ),
             inferred_type=func_obj.rtype_obj,
         )
-    elif func_obj.builtin and len(arg_exprs) == 2:
+    elif is_builtin_func(func_obj, "cmp"):
+        if len(func_obj.xy_node.in_guards) > 0:
+            ## the only builtin funcs with in-guards are the exceptions for Int
+            if ctx.is_int(arg_exprs[0].inferred_type) and not isinstance(arg_exprs[0].c_node, c.Const):
+                report_mixed_signed(expr, arg_exprs, ctx)
+            if ctx.is_int(arg_exprs[1].inferred_type) and not isinstance(arg_exprs[1].c_node, c.Const):
+                report_mixed_signed(expr, arg_exprs, ctx)
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.TernaryExpr(
+                c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op='>'),
+                c.Const(1),
+                c.TernaryExpr(
+                    c.Expr(arg_exprs[0].c_node, arg_exprs[1].c_node, op='=='),
+                    c.Const(0),
+                    c.Const(-1),
+                ),
+            ),
+            inferred_type=func_obj.rtype_obj,
+        )
+    elif func_obj.builtin and len(arg_exprs) == 2 and arg_exprs[0].inferred_type.builtin and arg_exprs[1].inferred_type.builtin:
         if isinstance(func_obj.xy_node.body, xy.FuncCall) and func_obj.xy_node.body.name.name == "signednessError":
             report_mixed_signed(expr, arg_exprs, ctx)
         if len(func_obj.xy_node.in_guards) > 0:
@@ -3782,16 +3805,19 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         if bit_len is not None and bit_len < 32:
             res = c.Cast(res, func_obj.rtype_obj.c_name)
 
-        inferred_type = func_obj.rtype_obj
-        if is_ptr_type(arg_exprs[0].inferred_type, ctx):
-            to_type = arg_exprs[0].inferred_type.tags.get("to", None)
-            if to_type is None:
-                raise CompilationError("Cannot do arithmetic with untagged pointers", expr)
-            if isinstance(inferred_type, TypeObj):
-                inferred_type = TypeExprObj(inferred_type.xy_node, inferred_type.c_node, inferred_type)
-            else:
-                inferred_type = copy(inferred_type)
-            inferred_type.tags["to"] = arg_exprs[0].inferred_type.tags["to"]
+        if not func_obj.xy_node.name.name.startswith("cmp"):
+            inferred_type = func_obj.rtype_obj
+            if is_ptr_type(arg_exprs[0].inferred_type, ctx):
+                to_type = arg_exprs[0].inferred_type.tags.get("to", None)
+                if to_type is None:
+                    raise CompilationError("Cannot do arithmetic with untagged pointers", expr)
+                if isinstance(inferred_type, TypeObj):
+                    inferred_type = TypeExprObj(inferred_type.xy_node, inferred_type.c_node, inferred_type)
+                else:
+                    inferred_type = copy(inferred_type)
+                inferred_type.tags["to"] = arg_exprs[0].inferred_type.tags["to"]
+        else:
+            inferred_type = ctx.bool_obj
 
         res = optimize_cbinop(res)
         return ExprObj(

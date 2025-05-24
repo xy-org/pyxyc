@@ -1,0 +1,17 @@
+struct Struct {
+    val1: Long;
+    val2: Long;
+}
+
+def cmp(a: Struct, b: Struct) -> Int {
+    if (a.val1 > b.val2) return 1;
+    if (a.val1 == b.val2) return 0;
+    return cmp(a.val2, b.val1);
+}
+
+
+def test(x: Struct, y: Struct) {
+    a := x < y;
+    b := x == y;
+    c := x >= y;
+}

@@ -7,6 +7,7 @@ def test(a: (Ushort, Int), b: %a) {
     h := a >= b;
     i := a < b;
     j := a <= b;
+    k := cmp(a, b);
 }
 
 def test(a: (Float, Double), b: %a) {
@@ -16,4 +17,5 @@ def test(a: (Float, Double), b: %a) {
     h := a >= b;
     i := a < b;
     j := a <= b;
+    k := cmp(a, b);
 }
