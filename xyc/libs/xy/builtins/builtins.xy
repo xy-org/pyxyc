@@ -680,7 +680,6 @@ struct FuncSelection {
 ;; * 0x0F - for Bits16 i.e. force a range of 0-15
 ;; * 0x1F - for Bits32 i.e. force a range of 0-31
 ;; * 0x3F - for Bits64 i.e. force a range of 0-61
-;; is applied to {times} before the actual shift is performed
 *def shiftl(
     a: (Bits8, Bits16, Bits32, Bits64),
     times: (Byte, Ubyte, Short, Ushort, Int, Uint)
