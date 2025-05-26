@@ -399,7 +399,7 @@ class FuncSpace:
                 prev_module_name = module_name
             candidates += "        " + func_sig(cfobj, include_ret=True)
             if not is_obj_visible(cfobj, ctx):
-                candidates += ";; not visible"
+                candidates += f";; not visible from {ctx.module_name}"
 
         notes = [(f"Candidates are:\n{candidates}", None)]
         if (fname in {"add", "sub", "div", "mul"} and len(args_inferred_types) == 2 and
@@ -3466,8 +3466,12 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         if ctx.compiling_header:
             for fobj in fspace._funcs:
                 compile_func_prototype(fobj, cast, ctx)
-
-        func_obj = fspace.find(expr, arg_inferred_types, ctx, partial_matches=expr.inject_args)
+        caller_ctx = ctx
+        if isinstance(expr.name, xy.CallerContextExpr):
+            # if we have a func space from a parent  space then we do the
+            # func selection as if we are in that context
+            caller_ctx = ctx.get_caller_context()
+        func_obj = fspace.find(expr, arg_inferred_types, caller_ctx, partial_matches=expr.inject_args)
     else:
         if isinstance(fspace, (VarObj, ExprObj)):
             inferred_type = fspace.inferred_type if isinstance(fspace, ExprObj) else fspace.type_desc
