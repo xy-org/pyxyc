@@ -30,7 +30,7 @@ from xyc.compiler import CompilationError
     "loops/while3",
     "loops/while4",
     "loops/dowhile1",
-    #"loops/dowhile2",
+    "loops/dowhile2",
     #"loops/dowhile3",
     "slices",
     "fors/for1",

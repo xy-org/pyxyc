@@ -4899,6 +4899,9 @@ def compile_while(xywhile: xy.WhileExpr, cast, cfunc, ctx: CompilerContext):
 
 def compile_dowhile(xydowhile, cast, cfunc, ctx):
     cdowhile = c.DoWhile()
+    loop_data = ctx.push_ns(NamespaceType.Loop).data
+    if xydowhile.name:
+        loop_data.loop_name = ctx.eval_to_id(xydowhile.name)
 
     # determine return type if any
     inferred_type = None
@@ -4920,16 +4923,12 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
             cfunc.body.append(tmp_obj.c_node)
             res_c = c.Id(tmp_obj.c_node.name)
 
-    if xydowhile.block.is_embedded:
-        update_expr_obj = compile_expr(xydowhile.block.body, cast, cdowhile, ctx)
-        inferred_type = update_expr_obj.inferred_type
-
     # create tmp var if needed
     if inferred_type is None:
         inferred_type = ctx.void_obj
 
+    name_hint = None
     if inferred_type is not ctx.void_obj and res_c is None:
-        name_hint = None
         if isinstance(xydowhile.block, xy.Block):
             name_hint = xydowhile.block.returns[0].name
         if name_hint is None:
@@ -4939,17 +4938,29 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
         cfunc.body.append(tmp_obj.c_node)
         res_c = c.Id(tmp_obj.c_node.name)
 
+    # compile body
+    if not xydowhile.block.is_embedded:
+        compile_body(xydowhile.block.body, cast, cdowhile, ctx)
+
+    # gen continue label
+    loop_data.continue_label_name = ctx.gen_tmp_label_name(name_hint or "")
+    cdowhile.body.append(c.Label(loop_data.continue_label_name))
+    cnt_label_idx = len(cdowhile.body) - 1
+
     # compile cond
-    cond_obj = compile_expr(xydowhile.cond, cast, cfunc, ctx)
+    if xydowhile.block.is_embedded:
+        update_expr_obj = compile_expr(xydowhile.block.body, cast, cdowhile, ctx)
+        inferred_type = update_expr_obj.inferred_type
+
+    cond_obj = compile_expr(xydowhile.cond, cast, cdowhile, ctx)
     cdowhile.cond = cond_obj.c_node
 
-    # finaly compile body
-    if update_expr_obj is None:
-        compile_body(xydowhile.block.body, cast, cdowhile, ctx)
-    else:
-        cdowhile.body.append(update_expr_obj.c_node)
+    # Remove the label if it hasn't been used
+    if not loop_data.label_used:
+        cdowhile.body[cnt_label_idx] = c.Empty()
 
     cfunc.body.append(cdowhile)
+    ctx.pop_ns()
 
     return ExprObj(
         xy_node=xydowhile,
