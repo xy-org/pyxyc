@@ -20,6 +20,7 @@ class LazyObj(CompiledObj):
 class TypeObj(CompiledObj):
     tag_specs: list['VarObj'] = field(default_factory=list)
     builtin : bool = False
+    is_external: bool = False
     fields: dict[str, 'VarObj'] = field(default_factory=dict)
     init_value: any = None
     is_init_value_zeros: bool = True
@@ -273,6 +274,7 @@ def ext_symbol_to_type(ext_obj):
         c_node=ext_obj.c_node,
         builtin=False,
         fully_compiled=True,
+        is_external=True
     )
 
 @dataclass
@@ -1454,7 +1456,11 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             default_values_zeros.append(isinstance(dv_cnode, c.Const) and dv_cnode.value == 0)
         else:
             fully_compile_type(field_type_obj, cast, ast, ctx)
-            assert field_type_obj.init_value is not None
+            if field_type_obj.init_value is None:
+                if field_type_obj.is_external:
+                    raise CompilationError("Fields with external types must have an explicit default value", field)
+                else:
+                    raise CompilationError("COMPILER BUG! Missing init value for type", field)
             default_value_obj = InstanceObj(type_obj=field_type_obj, xy_node=field)
             default_values.append(field_type_obj.init_value)
             default_values_zeros.append(field_type_obj.is_init_value_zeros)
