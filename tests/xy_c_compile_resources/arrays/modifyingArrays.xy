@@ -1,0 +1,6 @@
+def test(arr: mut @Float[3]) {
+    brr := @Float[3]{1.0, 2.0, 3.0};
+    for (i in :3) {
+        arr[i] += brr[i];
+    }
+}

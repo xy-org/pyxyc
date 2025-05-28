@@ -1626,7 +1626,7 @@ def compile_params(params, cast, cfunc, ctx):
     for param in params:
         if param.name is not None:
             validate_name(param, ctx)
-        param_obj = VarObj(xy_node=param, passed_by_ref=should_pass_by_ref(param))
+        param_obj = VarObj(xy_node=param)
 
         if param.value is not None:
             any_default_value_params = True
@@ -1642,6 +1642,8 @@ def compile_params(params, cast, cfunc, ctx):
             param_obj.type_desc = ptype_obj
         else:
             param_obj.type_desc = do_infer_type(param.value, cast, ctx)
+
+        param_obj.passed_by_ref=should_pass_by_ref(param, param_obj.type_desc)
 
         if param_obj.type_desc:
             c_type = param_obj.type_desc.c_name
@@ -2994,8 +2996,10 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         inferred_type=type_obj
     )
 
-def should_pass_by_ref(param: xy.VarDecl):
-    return param.mutable
+def should_pass_by_ref(param: xy.VarDecl, type_obj):
+    if isinstance(type_obj, TypeExprObj):
+        type_obj = type_obj.type_obj
+    return not isinstance(type_obj, ArrTypeObj) and param.mutable
 
 def c_deref(c_node, field=None):
     if isinstance(c_node, c.UnaryExpr) and c_node.op == "*" and c_node.prefix:
