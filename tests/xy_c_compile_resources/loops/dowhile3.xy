@@ -1,7 +1,7 @@
 def cond1(a: Int, b: Int) -> Bool
 >> a >= b
 {
-    return true;
+    return a >= b * 2;
 }
 
 def cond2(a: Int, b: Int) -> Bool
@@ -22,15 +22,16 @@ def test(x: mut Int, y: mut Int) {
     do {
         a := TypeWithDtor{-1};
         x--;
-        while inner(cond2(y, x)) {
+        do {
+            b := TypeWithDtor{-2};
             y++;
             if (y > 0) {
                 continue outer;
             }
             elif (y < -500) {
-                break inner;
+                break;
             }
-        }
+        } while inner(cond2(y, x));
         y--;
     } while outer(cond1(x, y));
 }
