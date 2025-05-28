@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 bool boundaryExpr4_cond1(int32_t p_a, int32_t p_b) {
-    return true;
+    return p_a >= p_b * 10;
 }
 
 bool boundaryExpr4_cond2(int32_t p_b) {

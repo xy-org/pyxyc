@@ -3684,7 +3684,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         c_op = "&&" if is_builtin_func(func_obj, "and") else "||"
         non_empty_body_nodes = [n for n in dummy_func.body if not isinstance(n, c.Empty)]
         if len(non_empty_body_nodes) == 0:
-            cfunc.body.extend(dummy_func.body)
+            cfunc.body.extend(dummy_func.body)  # TODO really?
             res = c.Expr(arg_exprs[0].c_node, defered_expr.c_node, op=c_op)
             return ExprObj(
                 xy_node=expr,
@@ -4025,11 +4025,16 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
             args_list.append(arg)
             args_writable.append(False)
-            callee_ctx.ns[pobj.xy_node.name] = arg
             caller_ctx.ns[pobj.xy_node.name] = LazyObj(
                 xy_node=arg.xy_node, tags=arg.tags, compiled_obj=arg, inferred_type=arg.inferred_type
             )
+            callee_ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_callerContext:
+                callee_ctx.ns[pobj.xy_node.name] = LazyObj(
+                    xy_node=xy.CallerContextExpr(arg.xy_node, src=arg.xy_node.src, coords=arg.xy_node.coords),
+                    tags=arg.tags,
+                    compiled_obj=arg, inferred_type=arg.inferred_type
+                )
                 redact_code(arg, cast, cfunc, ctx)
             check_type_compatibility(arg.xy_node, pobj, arg, ctx, fcall_rules=True)
             if pobj.xy_node.is_pseudo:

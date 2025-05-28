@@ -68,7 +68,7 @@ from xyc.compiler import CompilationError
     "boundaryExpr/boundaryExpr1",
     "boundaryExpr/boundaryExpr2",
     "boundaryExpr/boundaryExpr3",
-    #"boundaryExpr/boundaryExpr4",
+    "boundaryExpr/boundaryExpr4",
     # TODO "properties",
     "exitWithError",
     "ctti/fieldsof",

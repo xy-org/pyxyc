@@ -1,7 +1,7 @@
 def cond1(a: Int, b: Int) -> Bool
 >> a >= b
 {
-    return true;
+    return a >= b * 10;
 }
 
 def cond2(^a: Int, b: Int) -> Bool
