@@ -489,25 +489,19 @@ struct StrCtor {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-*def get(arr: pseudo @Any[], index: Int) -> arr[ Ptr ] {
-    # Implemented by the compiler
-}
-
-*def get(arr: pseudo @Any[], index: Uint) -> arr[ Ptr ] {
-    # Implemented by the compiler
-}
-
-*def get(arr: pseudo @Any[], index: Size) -> arr[ Ptr ] {
+*def get(
+    arr: pseudo @Any[],
+    index: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+) -> arr[ Ptr ] {
     # Implemented by the compiler
 }
 
 ;; Set element at position {index} of the array {arr}
-*def set(arr: pseudo @Any[], index: Uint, val: pseudo Any) -> void {
-    # Implemented by the compiler
-}
-
-;; Set element at position {index} of the array {arr}
-*def set(arr: pseudo @Any[], index: Size, val: pseudo Any) -> void {
+*def set(
+    arr: pseudo @Any[],
+    index: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
+    val: pseudo Any
+) -> void {
     # Implemented by the compiler
 }
 
