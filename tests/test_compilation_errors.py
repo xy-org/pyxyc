@@ -57,8 +57,14 @@ note: Candidates are:
         *get(Ptr, Long) -> Ptr
         *get(Ptr, Ulong) -> Ptr
         *get(Ptr, Size) -> Ptr
+        *get(Any[], Byte) -> Ptr
+        *get(Any[], Ubyte) -> Ptr
+        *get(Any[], Short) -> Ptr
+        *get(Any[], Ushort) -> Ptr
         *get(Any[], Int) -> Ptr
         *get(Any[], Uint) -> Ptr
+        *get(Any[], Long) -> Ptr
+        *get(Any[], Ulong) -> Ptr
         *get(Any[], Size) -> Ptr
 """),
     ("""

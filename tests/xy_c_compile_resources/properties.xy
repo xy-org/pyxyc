@@ -1,86 +1,30 @@
-struct Point {
-    coords: Float[3];
+struct Vec2 {
+    x: pseudo = 0;
+    y: pseudo = 1;
 
-    x: pseudo = XField{};
-    y: pseudo = YField{};
-    z: pseudo = ZField{};
+    xx: pseudo = Pair{0, 0};
+    xy: pseudo = Pair{0, 1};
+    yx: pseudo = Pair{1, 0};
+    yy: pseudo = Pair{1, 1};
 
-    xy: pseudo = XYField{};
-    xz: pseudo = XZField{};
-    yx: pseudo = YXField{};
-    yz: pseudo = YZField{};
-    zx: pseudo = ZXField{};
-    zy: pseudo = ZYField{};
-
-    xyz: pseudo = XYZField{};
-    xzy: pseudo = XZYField{};
-    yxz: pseudo = YXZField{};
-    yzx: pseudo = YZXField{};
-    zxy: pseudo = ZXYField{};
-    zyx: pseudo = ZYXField{};
+    coords: @Float[2];
 }
 
-struct XField {}
-struct YField {}
-struct ZField {}
+struct Pair {i: Int; j: Int;}
 
-struct XYField {}
-struct XZField {}
-struct YXField {}
-struct YZField {}
-struct ZXField {}
-struct ZYField {}
+def get(p: Vec2, idx: Int) = p.coords[idx];
+def set(p: Vec2, idx: Int, v: Float) p.coords[idx] = v;
 
-struct XYZField {}
-struct XZYField {}
-struct YXZField {}
-struct YZXField {}
-struct ZXYField {}
-struct ZYXField {}
+def get(p: Vec2, idx: Pair) = Vec2{p[idx.i], p[idx.j]};
+def set(p: Vec2, idx: Pair, v: Float) = p.coords[0] = p.coords[0] = v;
 
-def get(p: Point, idx: pseudo XField) = p.coords[0]
-def set(p: Point, idx: pseudo XField, v: Float) = p.coords[0] = v
-def get(p: Point, idx: pseudo YField) = p.coords[1]
-def set(p: Point, idx: pseudo YField, v: Float) = p.coords[1] = v
-def get(p: Point, idx: pseudo ZField) = p.coords[2]
-def set(p: Point, idx: pseudo ZField, v: Float) = p.coords[2] = v
-
-def get(p: Point, idx: pseudo XYField) = [p.coords[0], p.coords[1]]
-def set(p: Point, idx: pseudo XYField, v: Float) = p.coords[0] = p.coords[1] = v
-def get(p: Point, idx: pseudo XZField) = [p.coords[0], p.coords[2]]
-def set(p: Point, idx: pseudo XZField, v: Float) = p.coords[0] = p.coords[2] = v
-def get(p: Point, idx: pseudo YXField) = [p.coords[1], p.coords[0]]
-def set(p: Point, idx: pseudo YXField, v: Float) = p.coords[0] = p.coords[0] = v
-def get(p: Point, idx: pseudo YZField) = [p.coords[1], p.coords[2]]
-def set(p: Point, idx: pseudo YZField, v: Float) = p.coords[1] = p.coords[2] = v
-def get(p: Point, idx: pseudo ZXField) = [p.coords[2], p.coords[0]]
-def set(p: Point, idx: pseudo ZXField, v: Float) = p.coords[2] = p.coords[0] = v
-def get(p: Point, idx: pseudo ZYField) = [p.coords[2], p.coords[1]]
-def set(p: Point, idx: pseudo ZYField, v: Float) = p.coords[2] = p.coords[1] = v
-
-def get(p: Point, idx: pseudo XYZField) = p
-def get(p: Point, idx: pseudo XZYField) = Point{p.coords[0], p.coords[2], p.coords[1]}
-def get(p: Point, idx: pseudo YXZField) = Point{p.coords[1], p.coords[0], p.coords[2]}
-def get(p: Point, idx: pseudo YZXField) = Point{p.coords[1], p.coords[2], p.coords[0]}
-def get(p: Point, idx: pseudo ZXYField) = Point{p.coords[2], p.coords[0], p.coords[1]}
-def get(p: Point, idx: pseudo ZYXField) = Point{p.coords[2], p.coords[1], p.coords[0]}
-
-def set(p: Point, idx: pseudo XYZField, v: Float[3]) = p.coords = v
-def set(p: Point, idx: pseudo XZYField, v: Float[3]) = p.coords = [v[0], v[2], v[1]]
-def set(p: Point, idx: pseudo YXZField, v: Float[3]) = p.coords = [v[1], v[0], v[2]]
-def set(p: Point, idx: pseudo YZXField, v: Float[3]) = p.coords = [v[1], v[2], v[0]]
-def set(p: Point, idx: pseudo ZXYField, v: Float[3]) = p.coords = [v[2], v[0], v[1]]
-def set(p: Point, idx: pseudo ZYXField, v: Float[3]) = p.coords = [v[2], v[1], v[0]]
-
-def dot(p1: Point, p2: Point) = p1.x * p2.x + p1.y * p2.y + p1.z * p2.z
+def dot(p1: Vec2, p2: Vec2) = p1.x * p2.x + p1.y * p2.y;
 
 def test() {
-    p1 : mut = Point{.23, .92};
-    p2 : mut = Point{.4837, .127, -0.314};
-    p3 : Point;
-    p1.x = p2.z;
+    p1 : mut = Vec2{.23, .92};
+    p2 : mut = Vec2{.4837, .127};
+    p3 := p1.yx;
+    p1.x = p2.y;
     p2.y = .0;
-    p3.zx = Point{p1.x + p2.y, p1 \dot p2};
-    p3 = p3.zyx;
+    mix := (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p3.y) * (p1.y - p3.y);
 }
-
