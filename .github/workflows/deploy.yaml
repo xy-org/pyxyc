@@ -8,7 +8,7 @@ permissions:
 on:
   workflow_run:
     workflows: ["CI"]
-    types: 
+    types:
       - completed
 
   # Allows you to run this workflow manually from the Actions tab
@@ -43,4 +43,4 @@ jobs:
         with:
           files: xyc-*.tar.gz
           name: Continuous
-          tag_name: master
+          tag_name: continuous
