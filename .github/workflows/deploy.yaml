@@ -43,4 +43,4 @@ jobs:
         with:
           files: xyc-*.tar.gz
           name: Continuous
-          tag_name: continuous
+          tag_name: master
