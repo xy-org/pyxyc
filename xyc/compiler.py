@@ -463,6 +463,8 @@ class ExtSpace(FuncSpace):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
 def fmt_type(obj: CompiledObj):
+    if isinstance(obj, TypeInferenceError):
+        return "???"
     return obj.name
 
 def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx):
@@ -3567,7 +3569,7 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
     )
 
 def is_simple_cexpr(expr):
-    if isinstance(expr, (c.Id, c.Const)):
+    if isinstance(expr, (c.Id, c.Const, c.InlineCode)):
         return True
     if isinstance(expr, c.Expr):
         return is_simple_cexpr(expr.arg1) and is_simple_cexpr(expr.arg2)
