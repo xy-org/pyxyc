@@ -1224,6 +1224,11 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False
         if itoken.peak() != "...":
             if itoken.peak() == "<<":
                 raise ParsingError("Guards are allowed only on new lines", itoken)
+            comment_node = None
+            if itoken.check(";;"):
+                comment_node = parse_ml_comment(itoken)
+                if is_end_of_expr(itoken):
+                    raise ParsingError("Doc comment is not followed by anything", itoken)
             introspective = itoken.check("=")
             expr = parse_expression(itoken, is_toplevel=is_toplevel)
             if introspective:
@@ -1232,7 +1237,8 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False
                 expr = BinExpr(
                     expr, expr, op="=", src=expr.src, coords=expr.coords
                 )
-
+            if comment_node is not None:
+                expr.comment = comment_node.comment
             res.append(expr)
         else:
             if accept_inject:

@@ -176,6 +176,28 @@ def main(i: int) -> int {
             ])
         ],
     ],
+    [
+        """
+        def func() {
+            arr := @{
+                ;; comment 1
+                "Line 1",
+                ;; comment 2
+                "Line 2",
+                "Line 3",
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("func"), body=[
+                ast.VarDecl("arr", value=ast.ArrayLit(elems=[
+                    ast.SimpleStr("Line 1", comment=";; comment 1"),
+                    ast.SimpleStr("Line 2", comment=";; comment 2"),
+                    ast.SimpleStr("Line 3"),
+                ]))
+            ])
+        ],
+    ],
 ])
 def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)

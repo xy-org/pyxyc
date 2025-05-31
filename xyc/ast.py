@@ -118,8 +118,8 @@ class StrLiteral(Node):
     parts: list[Node] = field(default_factory=list)
     full_str: str = ""
 
-def SimpleStr(value):
-    return StrLiteral(parts=[Const(value)], full_str=value)
+def SimpleStr(value, *args, **kwargs):
+    return StrLiteral(parts=[Const(value)], full_str=value, *args, **kwargs)
 
 def SimpleRType(name):
     return [VarDecl(type=Id(name))]

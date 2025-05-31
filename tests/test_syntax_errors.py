@@ -393,3 +393,19 @@ def test_struct_errors(code, err_msg):
 def test_if_errors(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):
         parse_code(code)
+
+@pytest.mark.parametrize("code, err_msg", [
+    (
+        """def test() {
+            arr := @{
+                "Line 1",
+                ;; comment 1
+            };
+        }
+        """,
+        "Doc comment is not followed by anything"
+    ),
+])
+def test_doc_comments(code, err_msg):
+    with pytest.raises(ParsingError, match=err_msg):
+        parse_code(code)
