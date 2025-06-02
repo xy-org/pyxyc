@@ -1295,7 +1295,7 @@ def fill_missing_dtors(type_obj: TypeObj, all_fobjs, asts, cast, ctx):
     if type_obj.needs_dtor:
         type_obj.has_auto_dtor = True
         dtor_node = xy.FuncDef(
-            xy.Id("dtor"), type_obj.xy_node.visibility,
+            xy.Id("dtor"), xy.PublicVisibility,
             params=[xy.VarDecl("obj", xy.Id(type_obj.xy_node.name))],
             body=[],
         )
@@ -4775,6 +4775,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     next_if = ifexpr.else_node
     next_c_if = c_if
     while isinstance(next_if, xy.IfExpr):
+        ctx.push_ns()
         gen_if = c.If()
         next_c_if.else_body = c.Block()
         gen_if.cond = compile_expr(next_if.cond, cast, next_c_if.else_body, ctx).c_node
@@ -4793,6 +4794,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
             next_c_if.else_body = gen_if
         next_c_if = gen_if
         next_if = next_if.else_node
+        ctx.pop_ns()
 
     ctx.pop_ns()
 
