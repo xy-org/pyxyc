@@ -189,8 +189,13 @@ def stringify_body(body, frags, ident=1):
             frags.append(";\n")
         else:
             frags.append(" " * (ident*4))
+            if isinstance(stmt, InlineCode):
+                frags.append(f";\n{' ' * ident * 4}")
             stringify_expr(stmt, frags, ident=ident)
-            frags.append(";\n")
+            if isinstance(stmt, InlineCode):
+                frags.append(f"\n{' ' * ident * 4};\n")
+            else:
+                frags.append(";\n")
 
 def stringify_field(field, frags, ident):
     frags.extend((" " * ident * 4, field.qtype.type.name, " ", field.name))
