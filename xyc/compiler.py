@@ -4763,6 +4763,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         c_res = c.Id(var_obj.c_node.name)
 
     # compile if body
+    ctx.push_ns()
     if if_exp_obj is None:
         compile_body(ifexpr.block.body, cast, c_if, ctx)
     elif inferred_type is not ctx.void_obj:
@@ -4770,6 +4771,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
         c_if.body.append(res_assign)
     else:
         c_if.body.append(if_exp_obj.c_node)
+    ctx.pop_ns()
 
     # subsequent ifs
     next_if = ifexpr.else_node
