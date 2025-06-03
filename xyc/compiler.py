@@ -5629,7 +5629,11 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
 
         defines = obj.kwargs.get("defines", ArrayObj())
         for def_obj in defines.elems:
+            if len(def_obj.parts) == 0:
+                raise CompilationError("Empty define", def_obj.xy_node)
             code: str = def_obj.parts[0].value
+            if len(code.strip()) == 0:
+                raise CompilationError("Empty define", def_obj.xy_node)
             name_idx = code.find("=")
             if name_idx > 0:
                 code = code[0:name_idx] + " " + code[name_idx+1:]
