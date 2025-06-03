@@ -1965,6 +1965,15 @@ def compile_vardecl(node, cast, cfunc, ctx):
         value_obj = move_out(value_obj, cast, cfunc, ctx)
     if isinstance(value_obj, IdxObj):
         value_obj = idx_get(value_obj, cast, None, ctx)
+
+    if value_obj is not None and value_obj.compiled_obj is not None:
+        if isinstance(value_obj.compiled_obj, (TypeObj, TypeExprObj)):
+            raise CompilationError(
+                "Cannot assign a type to a variable. Did you forget to instantiate it?", node
+            )
+        if isinstance(value_obj.compiled_obj, ImportObj):
+            raise CompilationError("Invalid value for variable", node)
+
     type_desc = find_type(node.type, cast, ctx) if node.type is not None else None
     if type_desc is None:
         if value_obj is None:

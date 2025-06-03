@@ -517,6 +517,18 @@ src.xy:3:18: error: Integer constant overflows type 'Byte'
                    ^^^^^^^
 """
     ),
+    (
+        """
+        def test() {
+            a := Int;
+        }
+        """,
+        """\
+src.xy:3:13: error: Cannot assign a type to a variable. Did you forget to instantiate it?
+|             a := Int;
+              ^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

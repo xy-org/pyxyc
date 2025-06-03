@@ -13,7 +13,7 @@ struct Person {
 }
 
 def test1() {
-    p := Person;
+    p := Person{};
     # ...
 }
 
