@@ -885,6 +885,8 @@ def parse_num_const(token: str, tk_coords, itoken):
             token[:len(token)-len(suffix)],
             "Int", src=itoken.src, coords=tk_coords
         )
+        res.value_str = res.value_str.replace("_", "")
+
         if base not in {10, 16, 8}:
             res.value_str = str(res.value)
         elif explicit_base:

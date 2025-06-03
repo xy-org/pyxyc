@@ -236,6 +236,26 @@ def test_parse_comments(code, exp_ast):
             )
         ]
     ],
+    [
+        """def test() {
+            a := 10_000;
+            b := 0xCA_FE;
+            c := 0xCa_feUS;
+            d := 0I_Like_Tea(36)ul;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl("a", value=ast.Const(10_000, type="Int", value_str="10000")),
+                    ast.VarDecl("b", value=ast.Const(0xCAFE, type="Int", value_str="0xCAFE")),
+                    ast.VarDecl("c", value=ast.Const(0xCAFE, type="Ushort", value_str="0xCafe")),
+                    ast.VarDecl("d", value=ast.Const(1457390057554, type="Ulong", value_str="1457390057554ull")),
+                ]
+            )
+        ]
+    ],
 ])
 def test_parse_num_literals(code, exp_ast):
     act_ast = parse_code(code)

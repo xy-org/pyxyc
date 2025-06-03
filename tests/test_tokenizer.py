@@ -285,6 +285,11 @@ from xyc.tokenizer import split_tokens
         ['val', ':', '=', 'f', '"""', '\n', 'multi', 'line', '\n', '"""', ';'],
         None
     ),
+    (
+        '10_000 0xAA_BB 0_733 0x_AF(16)',
+        ['10_000', '0xAA_BB', '0_733', '0x_AF(16)'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)
