@@ -1,4 +1,4 @@
-import libc~[CLib{headers=@{"time.h"}}] in c;
+import libc~[Clib{headers=@{"time.h"}}] in c;
 
 
 def timeFunc() -> c.clock_t {

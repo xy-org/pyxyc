@@ -1,4 +1,4 @@
-import libc~[CLib{headers=@{"string.h"}}] in c;
+import libc~[Clib{headers=@{"string.h"}}] in c;
 
 struct Str {
     addr: Ptr;

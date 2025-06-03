@@ -534,7 +534,7 @@ struct EntryPoint {
 # External libraries
 
 ;; Use this struct to mark external libraries
-struct CLib {
+struct Clib {
     # Implemented by the compiler
 }
 

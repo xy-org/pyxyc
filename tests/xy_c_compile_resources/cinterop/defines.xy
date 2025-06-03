@@ -1,4 +1,4 @@
-import libc~[CLib{headers=@{"stdio.h"}, defines=@{"MY_PI=3.14", "MY_DEF"}}] in c;
+import libc~[Clib{headers=@{"stdio.h"}, defines=@{"MY_PI=3.14", "MY_DEF"}}] in c;
 
 def test() {
     return c.MY_PI;

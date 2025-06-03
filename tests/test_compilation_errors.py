@@ -173,7 +173,7 @@ src.xy:6:60: error: Cannot infer type because: Cannot get fields of an unknown t
                                                              ^^^^^^^^
 """),
     ("""
-        import libc~[CLib{headers=@{"string.h", "stdio.h"}}] in c;
+        import libc~[Clib{headers=@{"string.h", "stdio.h"}}] in c;
         def func(a: Int) a;
         def test() {
             func(c.external());
@@ -184,7 +184,7 @@ src.xy:5:18: error: Cannot determine type of expression
                    ^^^^^^^^^^
 """),
     ("""
-        import libc~[CLib{headers=@{"string.h", "stdio.h"}}] in c;
+        import libc~[Clib{headers=@{"string.h", "stdio.h"}}] in c;
         def func(a: Int) a;
         def test() {
             func(c.argc);
@@ -531,23 +531,23 @@ src.xy:3:13: error: Cannot assign a type to a variable. Did you forget to instan
     ),
     (
         """
-        import c~[CLib{defines=@{""}}] in c;
+        import c~[Clib{defines=@{""}}] in c;
         def test() {}
         """,
         """\
 src.xy:2:34: error: Empty define
-|         import c~[CLib{defines=@{""}}] in c;
+|         import c~[Clib{defines=@{""}}] in c;
                                    ^^
 """
     ),
     (
         """
-        import c~[CLib{defines=@{" "}}] in c;
+        import c~[Clib{defines=@{" "}}] in c;
         def test() {}
         """,
         """\
 src.xy:2:34: error: Empty define
-|         import c~[CLib{defines=@{" "}}] in c;
+|         import c~[Clib{defines=@{" "}}] in c;
                                    ^^^
 """
     ),

@@ -23,11 +23,11 @@ code_ast = [
         ],
     ],
     [
-        "import libc~[CLib{headers=@{c\"unistd.h\"}}] in c;",
+        "import libc~[Clib{headers=@{c\"unistd.h\"}}] in c;",
         [
             ast.Import(lib="libc", in_name="c", tags=ast.TagList(
                 args=[ast.StructLiteral(
-                    ast.Id("CLib"),
+                    ast.Id("Clib"),
                     kwargs={
                         "headers": ast.ArrayLit([
                             ast.StrLiteral(

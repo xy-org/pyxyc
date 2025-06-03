@@ -1799,7 +1799,7 @@ def compile_builtins(builder, module_name, asts, module_path):
                 "StrCtor": "xyStr",
                 "EntryPoint": "xy.entrypoint",
                 "IterCtor": "xyIter",
-                "CLib": "xyc.lib",
+                "Clib": "xyc.lib",
             }
             if obj.xy_node.name in default_tag_label_map:
                 label = default_tag_label_map[obj.xy_node.name]
@@ -5619,7 +5619,7 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
     import_obj = ImportObj(name=imprt.lib)
     if "xyc.lib" in compiled_tags:
         obj = compiled_tags["xyc.lib"]
-        # TODO assert obj.xy_node.name.name == "CLib"
+        # TODO assert obj.xy_node.name.name == "Clib"
         headers = obj.kwargs.get("headers", ArrayObj())
         for header_obj in headers.elems:
             # TODO what if header_obj is an expression

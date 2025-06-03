@@ -164,7 +164,7 @@ code_ast = [
     """,
     "Cannot find function"),
     ("""
-    import posix~[CLib{headers=@{"errno.h"}}] in c;
+    import posix~[Clib{headers=@{"errno.h"}}] in c;
 
     def main() -> Int {
         x := c.errno;

@@ -10,7 +10,7 @@
 
 # TODO replace this with an injected struct
 
-import libc~[CLib{headers=@{}}] in c;
+import libc~[Clib{headers=@{}}] in c;
 
 ;; Return number of command line arguments
 *def argc() -> Int {
