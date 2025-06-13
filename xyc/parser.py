@@ -407,7 +407,6 @@ operator_precedence = {
 }
 MIN_PRECEDENCE=2
 UNARY_PRECEDENCE=10
-MAX_PRECEDENCE=12
 
 @dataclass
 class Empty(Node):
