@@ -1427,6 +1427,7 @@ def parse_struct(itoken: TokenIter):
     while itoken.peak() != "}":
         if itoken.check(";;"):
             comment = parse_ml_comment(itoken).comment
+            itoken.skip_empty_lines()
         field = parse_expression(itoken, is_struct=True)
         if not isinstance(field, VarDecl):
             raise ParsingError("Unexpected expression in struct definition. Only variable declarations are valid.", itoken)

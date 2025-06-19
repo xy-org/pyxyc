@@ -198,6 +198,23 @@ def main(i: int) -> int {
             ])
         ],
     ],
+    [
+        """
+        struct Struct {
+            ;; First field
+
+            field := 0;
+        }
+        """,
+        [
+            ast.StructDef("Struct", fields=[
+                ast.VarDecl(
+                    name='field', value=ast.Const(0),
+                    comment=';; First field',
+                )
+            ])
+        ],
+    ],
 ])
 def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)
