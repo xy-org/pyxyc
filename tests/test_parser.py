@@ -3976,6 +3976,97 @@ def test_global_constants(code, exp_ast):
             )
         ]
     ],
+    [
+        """
+        struct Status {
+            start : Bool;
+            pending : Bool;
+            end : Bool;
+        }
+
+        struct Struct {
+            st1 : Status;
+            st2 : Status;
+        }
+
+        def test() {
+            .a.st1.end;
+        }
+        """,
+        [
+            ast.StructDef(
+                "Status",
+                fields=[
+                    ast.VarDecl("start", type=ast.Id("Bool")),
+                    ast.VarDecl("pending", type=ast.Id("Bool")),
+                    ast.VarDecl("end", type=ast.Id("Bool")),
+                ]
+            ),
+            ast.StructDef(
+                "Struct",
+                fields=[
+                    ast.VarDecl("st1", type=ast.Id("Status")),
+                    ast.VarDecl("st2", type=ast.Id("Status")),
+                ]
+            ),
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.BinExpr(
+                        arg1=ast.BinExpr(
+                            ast.BinExpr(
+                                ast.Id("a"), ast.Id("st1"), op="."
+                            ),
+                            ast.Id("end"),
+                            op=".",
+                        ),
+                        arg2=ast.Const(True),
+                        op="=",
+                    )
+                ]
+            ),
+        ]
+    ],
+    [
+        """
+        def test() {
+            a : mut = Struct{st1=Status{.pending}, .st2.end};
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl(
+                        "a",
+                        mutable=True,
+                        value=ast.StructLiteral(
+                            ast.Id("Struct"),
+                            args=[
+                                ast.BinExpr(
+                                    ast.BinExpr(
+                                        ast.Id("st2"),
+                                        ast.Id("end"),
+                                        op="."
+                                    ),
+                                    ast.Const(True),
+                                    op="=",
+                                )
+                            ],
+                            kwargs={
+                                "st1": ast.StructLiteral(
+                                    ast.Id("Status"),
+                                    kwargs={
+                                        "pending": ast.Const(True),
+                                    }
+                                )
+                            },
+                        )
+                    )
+                ]
+            ),
+        ]
+    ],
 ])
 def test_toggles(code, exp_ast):
     act_ast = parse_code(code)

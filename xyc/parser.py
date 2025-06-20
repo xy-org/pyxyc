@@ -544,9 +544,6 @@ def combine_op(op, arg1, rhs, my_slice, itoken):
             decl.name = arg1.start.name
         decl.is_move = op == "=<"
         arg1 = decl
-    elif op == "." and arg1 is None:
-        coords = rhs.coords
-        arg1 = BinExpr(rhs, Const(True, src=rhs.src, coords=rhs.coords), op="=")
     elif op == '~':
         arg1 = AttachTags(arg1, TagList([rhs]))
     elif op == "@" and isinstance(rhs, StructLiteral):
@@ -686,14 +683,15 @@ def parse_operand(itoken, precedence, op_prec):
     elif itoken.peak() in {"++", "--"}:
         raise ParsingError("Prefix increment and decrement are not supported. "
                         "More infor at TBD", itoken)
-    elif itoken.peak() == ".":
-        return None  # unary "."
-    elif itoken.peak() in {"+", "-", "!", "&", "%"}:
+    elif itoken.peak() in {"+", "-", "!", "&", "%", "."}:
         coords = itoken.peak_coords()
         op = itoken.consume()
         # NOTE no precedence + 1 in order to allow for chaining unary operators
         arg1 = parse_expression(itoken, UNARY_PRECEDENCE, op_prec=op_prec)
-        if op != '!' and isinstance(arg1, Const) and arg1.type != "str":
+        if op == ".":
+            # unary '.' aka. toggle
+            arg1 = BinExpr(arg1, Const(True, src=arg1.src, coords=arg1.coords), op="=")
+        elif op != '!' and isinstance(arg1, Const) and arg1.type != "str":
             if op == '-':
                 arg1.value = -arg1.value
                 arg1.value_str = f'-{arg1.value_str}'
