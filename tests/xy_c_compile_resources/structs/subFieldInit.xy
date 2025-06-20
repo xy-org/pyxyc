@@ -1,0 +1,24 @@
+struct Color {
+    red: Ubyte;
+    green: Ubyte;
+    blue: Ubyte;
+    alpha: Ubyte;
+}
+
+struct Formatting {
+    bg: Color;
+    fg: Color;
+    fontSize: Uint;
+    effects: Effects;
+}
+
+struct Effects {
+    underline: Bool;
+    bold: Bool;
+}
+
+def test() {
+    #a := Formatting{fontSize=12, bg.red=255uo, fg.green=255uo, .effects.bold};
+    #b : mut = a{!.effects.bold, .effects.underline};
+    #b .= {!.effects.bold, fontSize=15};
+}

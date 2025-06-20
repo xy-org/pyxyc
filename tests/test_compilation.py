@@ -72,7 +72,7 @@ from xyc.compiler import CompilationError
     "boundaryExpr/boundaryExpr2",
     "boundaryExpr/boundaryExpr3",
     "boundaryExpr/boundaryExpr4",
-    "properties",
+    "structs/properties",
     "exitWithError",
     "ctti/fieldsof",
     "injectScopeArgs",
@@ -107,6 +107,7 @@ from xyc.compiler import CompilationError
     "logicCmp/shortcircuit",
     "ctti/srcLocFuncs",
     "funcs/paramTypeEnum",
+    "structs/subFieldInit",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
