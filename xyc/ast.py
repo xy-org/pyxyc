@@ -110,7 +110,6 @@ class Select(Node):
 class StructLiteral(Node):
     name: Node | None
     args: list[Node] = field(default_factory=list)
-    kwargs: dict[str, Node] = field(default_factory=dict)
 
 @dataclass
 class StrLiteral(Node):

@@ -998,14 +998,18 @@ class CompilerContext:
             if instance_type is None:
                 raise CompilationError(f"Cannot find name '{self.eval_to_id(node.name)}'", node.name)
             obj = InstanceObj(type_obj=instance_type, xy_node=node)
-            if len(node.args) > 0:
-                for (fname, fobj), xy_arg in zip(instance_type.fields.items(), node.args):
-                    obj.kwargs[fname] = self.eval(xy_arg)
-            for name, value in node.kwargs.items():
-                ct_value = self.eval(value)
-                if ct_value is None:
-                    raise CompilationError("Cannot eval at compile-time", value)
-                obj.kwargs[name] = ct_value
+            pos_to_name = list(instance_type.fields.keys())
+            for i, arg in enumerate(node.args):
+                if isinstance(arg, xy.BinExpr) and arg.op=="=":
+                    # named field
+                    fname = arg.arg1.name
+                    obj.kwargs[fname] = self.eval(arg.arg2)
+                else:
+                    # positional field
+                    fname = pos_to_name[i]
+                    obj.kwargs[fname] = self.eval(arg)
+                if obj.kwargs[fname] is None:
+                    raise CompilationError("Cannot eval at compile-time", arg)
             return obj
         elif isinstance(node, xy.ArrayLit):
             return ArrayObj(
@@ -1508,8 +1512,9 @@ def compile_pseudo_fields(type_obj, ast, cast, ctx):
 
         if field.value is None:
             raise CompilationError("All pseudo fields must have an explicit value")
+        dvo_c_node = compile_expr(field.value, cast, None, ctx).c_node
         default_value_obj = ctx.eval(field.value)
-        default_value_obj.c_node = compile_expr(field.value, cast, None, ctx).c_node
+        default_value_obj.c_node = dvo_c_node
         if field_type_obj is None:
             field_type_obj = default_value_obj.inferred_type
         elif field_type_obj is not default_value_obj.inferred_type:
@@ -2886,7 +2891,6 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
     fully_compile_type(type_obj, cast, None, ctx)
 
     expr_args = expr.args
-    expr_kwargs = copy(expr.kwargs)
 
     # map positional and named fields
     name_to_pos = {}
@@ -2899,40 +2903,44 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
     named_objs = {}
     field_objs = list(type_obj.fields.values())
 
-    if len(expr_args) > len(field_objs):
-        raise CompilationError(
-            f"Too many positional value in struct literal. Provided '{len(expr_args)}' but type has only '{len(field_objs)}' fields",
-            expr
-        )
-
+    any_named = False
     any_pseudos = False
     for i, arg in enumerate(expr_args):
-        val_obj = compile_expr(arg, cast, cfunc, ctx)
-        named_objs[field_objs[i].xy_node.name] = val_obj
-        field_obj = field_objs[i]
+        if isinstance(arg, xy.BinExpr) and arg.op=="=":
+            # named field
+            any_named = True
+            name = arg.arg1.name
+            if name not in type_obj.fields:
+                raise CompilationError(f"No field named '{name}'", arg.arg1)
+            if name in named_objs:
+                raise CompilationError(f"Field {name} already set", arg.arg1)
+            val_obj = compile_expr(arg.arg2, cast, cfunc, ctx)
+            named_objs[name] = val_obj
+            field_obj = type_obj.fields[name]
+            field_i = name_to_pos.get(name, -1)
+        else:
+            # positional field
+            if any_named:
+                raise CompilationError("Cannot mix named and positional arguments", arg)
+            if i >= len(field_objs):
+                raise CompilationError(
+                    f"Too many positional value in struct literal. Provided '{len(expr_args)}' but type has only '{len(field_objs)}' fields",
+                    arg
+                )
+            val_obj = compile_expr(arg, cast, cfunc, ctx)
+            named_objs[field_objs[i].xy_node.name] = val_obj
+            field_obj = field_objs[i]
+            field_i = i
+
         if field_obj.type_desc is recursive_pseudo_field_type_obj:
             raise CompilationError(f"Cannot set value for pseudo field `{field_objs[i].xy_node.name}`. Pseudo fields cannot initialize other pseudo fields.", expr)
         if not field_obj.xy_node.is_pseudo:
             check_type_compatibility(arg, field_obj, val_obj, ctx)
         else:
             any_pseudos = True
-        if not any_pseudos:
-            pos_objs[i] = val_obj
 
-    for name, arg in expr_kwargs.items():
-        if name not in type_obj.fields:
-            raise CompilationError(f"No field named '{name}'", expr)
-        if name in named_objs:
-            raise CompilationError(f"Field {name} already set", arg)
-        named_objs[name] = compile_expr(arg, cast, cfunc, ctx)
-        field_obj = type_obj.fields[name]
-        if field_obj.type_desc is recursive_pseudo_field_type_obj:
-            raise CompilationError(f"Cannot set value for pseudo field `{name}`. Pseudo fields cannot initialize other pseudo fields.", expr)
-        if field_obj.xy_node.is_pseudo:
-            any_pseudos = True
         if not any_pseudos:
-            i = name_to_pos[name]
-            pos_objs[i] = named_objs[name]
+            pos_objs[field_i] = val_obj
 
     # create tmp if needed
     injected_tmp = False

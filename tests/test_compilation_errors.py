@@ -389,7 +389,7 @@ src.xy:2:39: error: Cannot set value for pseudo field `field`. Pseudo fields can
         """\
 src.xy:5:27: error: Too many positional value in struct literal. Provided '1' but type has only '0' fields
 |             s := MyStruct{5};
-                            ^^^
+                            ^
 """
     ),
     (
@@ -403,7 +403,7 @@ src.xy:5:27: error: Too many positional value in struct literal. Provided '1' bu
         """\
 src.xy:5:27: error: No field named 'missing'
 |             s := MyStruct{missing=5};
-                            ^^^^^^^^^^^
+                            ^^^^^^^
 """
     ),
     (

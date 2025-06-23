@@ -28,14 +28,18 @@ code_ast = [
             ast.Import(lib="libc", in_name="c", tags=ast.TagList(
                 args=[ast.StructLiteral(
                     ast.Id("Clib"),
-                    kwargs={
-                        "headers": ast.ArrayLit([
-                            ast.StrLiteral(
-                                prefix="c", parts=[ast.Const("unistd.h")],
-                                full_str="unistd.h"
-                            )
-                        ])
-                    }
+                    args=[
+                        ast.BinExpr(
+                            ast.Id("headers"),
+                            ast.ArrayLit([
+                                ast.StrLiteral(
+                                    prefix="c", parts=[ast.Const("unistd.h")],
+                                    full_str="unistd.h"
+                                )
+                            ]),
+                            op="=",
+                        ),
+                    ]
                 )]
             )),
         ],
@@ -2467,18 +2471,20 @@ def test_parse_struct(code, exp_ast):
                                     tags=ast.TagList([
                                         ast.StructLiteral(
                                             ast.Id("Type3"),
-                                            kwargs={"val": ast.StructLiteral(
-                                                ast.Id("Type4"),
-                                                kwargs={
-                                                    "val": ast.Const(5)
-                                                }
-                                            )}
+                                            args=[
+                                                ast.BinExpr(ast.Id("val"), ast.StructLiteral(
+                                                    ast.Id("Type4"),
+                                                    args=[
+                                                        ast.BinExpr(ast.Id("val"), ast.Const(5), op="="),
+                                                    ],
+                                                ), op="="),
+                                            ]
                                         )
                                     ])
                                 ),
-                                kwargs={
-                                    "val": ast.Const(1)
-                                }
+                                args=[
+                                    ast.BinExpr(ast.Id("val"), ast.Const(1), op="="),
+                                ]
                             ),
                         ])
                     )
@@ -2517,15 +2523,15 @@ def test_parse_struct(code, exp_ast):
                     name="argStr",
                     value=ast.StructLiteral(
                         name=ast.Id("Str"),
-                        kwargs={
-                            "addr": ast.Select(ast.Id("argv"), ast.Args([ast.Id("i")])),
-                            "len": ast.FuncCall(
+                        args=[
+                            ast.BinExpr(ast.Id("addr"), ast.Select(ast.Id("argv"), ast.Args([ast.Id("i")])), op="="),
+                            ast.BinExpr(ast.Id("len"), ast.FuncCall(
                                 ast.Id("strlen"),
                                 args=[
                                     ast.Select(ast.Id("argv"), ast.Args([ast.Id("i")]))
                                 ],
-                            ),
-                        }
+                            ), op="="),
+                        ]
                     ),
                 )
             ]),
@@ -2544,10 +2550,10 @@ def test_parse_struct(code, exp_ast):
                 ],
                 body=ast.StructLiteral(
                     ast.Id("Str"),
-                    kwargs={
-                        "addr": ast.Id("addr"),
-                        "len": ast.Id("len"),
-                    }
+                    args=[
+                        ast.BinExpr(ast.Id("addr"), ast.Id("addr"), op="="),
+                        ast.BinExpr(ast.Id("len"), ast.Id("len"), op="="),
+                    ]
                 )
             ),
         ],
@@ -2577,9 +2583,9 @@ def test_struct_literals(code, exp_ast):
                 tags=ast.TagList(args=[
                     ast.StructLiteral(
                         name=ast.Id("Tag"),
-                        kwargs={
-                            "val": ast.Const(1)
-                        }
+                        args=[
+                            ast.BinExpr(ast.Id("val"), ast.Const(1), op="="),
+                        ]
                     )
                 ])
             ),
@@ -2588,14 +2594,14 @@ def test_struct_literals(code, exp_ast):
                 tags=ast.TagList(args=[
                     ast.StructLiteral(
                         name=ast.Id("Tag"),
-                        kwargs={
-                            "val": ast.StructLiteral(
+                        args=[
+                            ast.BinExpr(ast.Id("val"), ast.StructLiteral(
                                 name=ast.Id("Tag2"),
-                                kwargs={
-                                    "val2": ast.Const(2)
-                                }
-                            ),
-                        }
+                                args=[
+                                    ast.BinExpr(ast.Id("val2"), ast.Const(2), op="="),
+                                ],
+                            ), op="="),
+                        ]
                     )
                 ])
             ),
@@ -2952,9 +2958,9 @@ def test_ambiguous_tags(code, err_msg):
                         ast.Args([], {
                             "arg": ast.StructLiteral(
                                 name=ast.Id("MyStruct"),
-                                kwargs={
-                                    "field": ast.Const(10)
-                                }
+                                args=[
+                                    ast.BinExpr(ast.Id("field"), ast.Const(10), op="="),
+                                ]
                             )
                         }),
                     ],
@@ -3967,9 +3973,9 @@ def test_global_constants(code, exp_ast):
                         "b",
                         value=ast.StructLiteral(
                             name=ast.Id("Status"),
-                            kwargs={
-                                "end": ast.Const(True),
-                            }
+                            args=[
+                                ast.BinExpr(ast.Id("end"), ast.Const(True), op="="),
+                            ],
                         )
                     )
                 ]
@@ -4044,6 +4050,16 @@ def test_global_constants(code, exp_ast):
                             ast.Id("Struct"),
                             args=[
                                 ast.BinExpr(
+                                    ast.Id("st1"),
+                                    ast.StructLiteral(
+                                        ast.Id("Status"),
+                                        args=[
+                                            ast.BinExpr(ast.Id("pending"), ast.Const(True), op="="),
+                                        ]
+                                    ),
+                                    op="=",
+                                ),
+                                ast.BinExpr(
                                     ast.BinExpr(
                                         ast.Id("st2"),
                                         ast.Id("end"),
@@ -4053,14 +4069,6 @@ def test_global_constants(code, exp_ast):
                                     op="=",
                                 )
                             ],
-                            kwargs={
-                                "st1": ast.StructLiteral(
-                                    ast.Id("Status"),
-                                    kwargs={
-                                        "pending": ast.Const(True),
-                                    }
-                                )
-                            },
                         )
                     )
                 ]

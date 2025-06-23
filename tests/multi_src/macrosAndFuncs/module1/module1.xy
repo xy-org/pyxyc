@@ -5,7 +5,7 @@ struct Struct {
 
 def macro1(s: Struct) = s.a;
 def macro2(s1: Struct, s2: Struct) = macro1(s1) < macro1(s2);
-*def macro3(s: Struct) = macro2(s{func1(func2(), func3())}, s{b=0});
+*def macro3(s: Struct) = macro2(s{func1(func2(), func3())}, s{b=.0});
 
 def func1(a: Int, b: Int) -> Int{
     return a * b;

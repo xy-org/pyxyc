@@ -1064,15 +1064,14 @@ def expr_to_param(expr, itoken):
 
 def parse_struct_literal(itoken, struct_expr):
     start_coords = itoken.peak_coords()
-    args, kwargs = parse_args_kwargs(itoken)
+    args = parse_expr_list(itoken, ignore_eols=True, accept_inject=False)
     itoken.expect("}")
     end_coords = itoken.peak_coords()
     if isinstance(struct_expr, ArrayType):
-        assert len(kwargs) == 0
         return ArrayLit(elems=args, base=struct_expr, src=itoken.src, coords=[start_coords[0], end_coords[1]])
     else:
         return StructLiteral(
-            struct_expr, args, kwargs, src=itoken.src, coords=[start_coords[0], end_coords[1]]
+            struct_expr, args, src=itoken.src, coords=[start_coords[0], end_coords[1]]
         )
 
 def parse_str_literal(prefix, prefix_start, itoken, multiline):

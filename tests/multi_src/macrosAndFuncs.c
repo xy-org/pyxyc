@@ -42,7 +42,7 @@ int32_t macrosAndFuncs_test(void) {
     int32_t tmp_2_arg = macrosAndFuncs_module1_func2();
     tmp_1.m_a = macrosAndFuncs_module1_func1(tmp_2_arg, macrosAndFuncs_module1_func3());
     macrosAndFuncs_module1_Struct tmp_3 = l_my;
-    tmp_3.m_b = 0;
+    tmp_3.m_b = .0f;
     const bool l_x = tmp_1.m_a < tmp_3.m_a;
     int32_t tmp_4_arg = macrosAndFuncs_func2();
     const int32_t l_b = macrosAndFuncs_func1(tmp_4_arg, macrosAndFuncs_func2());

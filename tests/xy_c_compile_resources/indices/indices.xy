@@ -77,5 +77,5 @@ def testPointCloud(m0: mut PointCloud, m1: PointCloud) {
 
     ms[2] = m0[2];
     ms[2].x = m0[0].y;
-    ms[4] .= {x=5, y=10};
+    ms[4] .= {x=5.0f, y=10.0f};
 }

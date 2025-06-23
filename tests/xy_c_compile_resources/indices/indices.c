@@ -87,7 +87,7 @@ void indices_testPointCloud(indices_PointCloud* p_m0, indices_PointCloud p_m1) {
     indices_Point* tmp_5_arg = indices_get__PointCloud__Int(l_ms, 2);
     tmp_5_arg->m_x = tmp_4_arg->m_y;
     indices_Point* tmp_6_arg = indices_get__PointCloud__Int(l_ms, 4);
-    tmp_6_arg->m_x = 5;
+    tmp_6_arg->m_x = 5.0f;
     indices_Point* tmp_7_arg = indices_get__PointCloud__Int(l_ms, 4);
-    tmp_7_arg->m_y = 10;
+    tmp_7_arg->m_y = 10.0f;
 }
