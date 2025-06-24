@@ -2090,22 +2090,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                     inferred_type=c_symbol_type
                 )
             else:
-                if not isinstance(expr.arg2, xy.Id):
-                    raise CompilationError("The right hand side of '.' must be an identifier", expr.arg2)
-                field_name = expr.arg2.name
-                struct_obj = arg1_obj.inferred_type
-                if field_name not in struct_obj.fields:
-                    raise CompilationError(f"No such field in struct {struct_obj.name}", expr.arg2)
-                is_field_of_type = isinstance(arg1_obj.compiled_obj, TypeObj)
-                if not is_field_of_type:
-                    # normal get of an object
-                    fget_obj = field_get(arg1_obj, struct_obj.fields[field_name], cast, cfunc, ctx)
-                    fget_obj.xy_node = expr
-                    return maybe_deref(fget_obj, deref, cast, cfunc, ctx)
-                else:
-                    # getting a field of a type
-                    field_obj = struct_obj.fields[field_name]
-                    return field_obj.default_value_obj
+                return do_compile_field_get(arg1_obj, expr.arg2, cast, cfunc, ctx, deref=deref, expr=expr)
         elif expr.op in {'+=', '-=', '*=', '/=', '&=', '|='}:
             val_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
             acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
@@ -2899,25 +2884,27 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         if not fobj.xy_node.is_pseudo:
             name_to_pos[fname] = num_real_fields
             num_real_fields += 1
-    pos_objs = [None] * num_real_fields
-    named_objs = {}
     field_objs = list(type_obj.fields.values())
 
+    # loop once in order to see if there are any non-trivial args and
+    # do early error checking
+    already_set_fields = set()
     any_named = False
-    any_pseudos = False
+    first_non_trivial_idx = len(expr_args)
     for i, arg in enumerate(expr_args):
         if isinstance(arg, xy.BinExpr) and arg.op=="=":
             # named field
             any_named = True
-            name = arg.arg1.name
-            if name not in type_obj.fields:
-                raise CompilationError(f"No field named '{name}'", arg.arg1)
-            if name in named_objs:
-                raise CompilationError(f"Field {name} already set", arg.arg1)
-            val_obj = compile_expr(arg.arg2, cast, cfunc, ctx)
-            named_objs[name] = val_obj
-            field_obj = type_obj.fields[name]
-            field_i = name_to_pos.get(name, -1)
+            name = None
+            if isinstance(arg.arg1, xy.Id):
+                # just for error handling
+                name = arg.arg1.name
+                if name not in type_obj.fields:
+                    raise CompilationError(f"No field named '{name}'", arg.arg1)
+                if name in already_set_fields:
+                    raise CompilationError(f"Field {name} already set", arg.arg1)
+                already_set_fields.add(name)
+            field_obj = type_obj.fields.get(name, None)
         else:
             # positional field
             if any_named:
@@ -2927,24 +2914,41 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
                     f"Too many positional value in struct literal. Provided '{len(expr_args)}' but type has only '{len(field_objs)}' fields",
                     arg
                 )
+            already_set_fields.add(field_objs[i].xy_node.name)
+            field_obj = field_objs[i]
+
+        if field_obj is not None and field_obj.type_desc is recursive_pseudo_field_type_obj:
+            raise CompilationError(f"Cannot set value for pseudo field `{field_objs[i].xy_node.name}`. Pseudo fields cannot initialize other pseudo fields.", expr)
+        
+        if (field_obj is None or field_obj.xy_node.is_pseudo):
+            first_non_trivial_idx = min(first_non_trivial_idx, i)
+
+    # iterate a second time to compute values
+    pos_objs = [None] * num_real_fields
+    expr_objs = []
+    for i, arg in enumerate(expr_args):
+        if isinstance(arg, xy.BinExpr) and arg.op=="=":
+            # named field
+            name = getattr(arg.arg1, 'name', None)
+            val_obj = compile_expr(arg.arg2, cast, cfunc, ctx)
+            expr_objs.append((arg.arg1, val_obj))
+            field_obj = type_obj.fields.get(name, None)
+            field_i = name_to_pos.get(name, -1)
+        else:
             val_obj = compile_expr(arg, cast, cfunc, ctx)
-            named_objs[field_objs[i].xy_node.name] = val_obj
+            expr_objs.append((xy.Id(field_objs[i].xy_node.name, src=arg.src, coords=arg.coords), val_obj))
             field_obj = field_objs[i]
             field_i = i
 
-        if field_obj.type_desc is recursive_pseudo_field_type_obj:
-            raise CompilationError(f"Cannot set value for pseudo field `{field_objs[i].xy_node.name}`. Pseudo fields cannot initialize other pseudo fields.", expr)
-        if not field_obj.xy_node.is_pseudo:
+        if field_obj is not None and not field_obj.xy_node.is_pseudo:
             check_type_compatibility(arg, field_obj, val_obj, ctx)
-        else:
-            any_pseudos = True
 
-        if not any_pseudos:
+        if i < first_non_trivial_idx:
             pos_objs[field_i] = val_obj
 
     # create tmp if needed
     injected_tmp = False
-    if tmp_obj is None and any_pseudos:
+    if tmp_obj is None and first_non_trivial_idx < len(expr_args):
         tmp_obj = ctx.create_tmp_var(type_obj)
         cfunc.body.append(tmp_obj.c_node)
         injected_tmp = True
@@ -2966,9 +2970,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
                 c_args.append(field_objs[i].type_desc.init_value)
 
     if injected_tmp:
-        pos_to_name = list(name_to_pos.keys())
-        for i in range(len(c_args)):
-            del named_objs[pos_to_name[i]]
+        expr_objs = expr_objs[first_non_trivial_idx:]
 
         if len(c_args) > 0:
             tmp_obj.c_node.value = c.CompoundLiteral(
@@ -2989,17 +2991,26 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         else:
             res = type_obj.init_value
     else:
-        # craeting a new struct from an existing one
-        for fname, fval_obj in named_objs.items():
-            field = type_obj.fields[fname]
-            obj = field_set(tmp_obj, field, fval_obj, cast, cfunc, ctx)
-            if not isinstance(obj.c_node, c.Id):
-                cfunc.body.append(obj.c_node)
-
-        if isinstance(tmp_obj, VarObj):
+        # creating a new struct from an existing one
+        tmp_expr_obj = tmp_obj
+        if isinstance(tmp_expr_obj, VarObj):
             res = c.Id(tmp_obj.c_node.name)
+            tmp_expr_obj = ExprObj(
+                xy_node=tmp_expr_obj.xy_node,
+                c_node=res,
+                inferred_type=type_obj
+            )
         else:
             res = tmp_obj.c_node
+
+        for expr, fval_obj in expr_objs:
+            if isinstance(expr, xy.Id):
+                obj = field_set(tmp_obj, type_obj.fields[expr.name], fval_obj, cast, cfunc, ctx)
+            else:
+                f_obj = do_compile_field_get_rec(tmp_expr_obj, expr, cast, cfunc, ctx)
+                obj = idx_set(f_obj, fval_obj, cast, cfunc, ctx)
+            if not isinstance(obj.c_node, c.Id):
+                cfunc.body.append(obj.c_node)
 
     # optimize the resulting expression
     if type_obj.builtin and isinstance(res, c.CompoundLiteral) and len(res.args) == 1:
@@ -4290,6 +4301,32 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     caller_ctx.pop_ns()
 
     return res_obj
+
+def do_compile_field_get_rec(obj, compound_expr, cast, cfunc, ctx):
+    res = obj
+    if isinstance(compound_expr, xy.BinExpr) and  compound_expr.op == ".":
+        res = do_compile_field_get_rec(res, compound_expr.arg1, cast, cfunc, ctx)
+        compound_expr = compound_expr.arg2
+    assert isinstance(compound_expr, xy.Id)
+    return do_compile_field_get(res, compound_expr, cast, cfunc, ctx)
+
+def do_compile_field_get(obj, field_node, cast, cfunc, ctx, deref=False, expr=None):
+    if not isinstance(field_node, xy.Id):
+        raise CompilationError("The right hand side of '.' must be an identifier", field_node)
+    field_name = field_node.name
+    struct_obj = obj.inferred_type
+    if field_name not in struct_obj.fields:
+        raise CompilationError(f"No such field in struct {struct_obj.name}", field_node)
+    is_field_of_type = isinstance(obj.compiled_obj, TypeObj)
+    if not is_field_of_type:
+        # normal get of an object
+        fget_obj = field_get(obj, struct_obj.fields[field_name], cast, cfunc, ctx)
+        fget_obj.xy_node = expr or field_node
+        return maybe_deref(fget_obj, deref, cast, cfunc, ctx)
+    else:
+        # getting a field of a type
+        field_obj = struct_obj.fields[field_name]
+        return field_obj.default_value_obj
 
 def gen_guard_failed_code(expr, guard, func_obj: FuncObj, cast, cbody, ctx: CompilerContext):
     if not ctx.builder.rich_errors:

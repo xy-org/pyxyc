@@ -18,7 +18,8 @@ struct Effects {
 }
 
 def test() {
-    #a := Formatting{fontSize=12, bg.red=255uo, fg.green=255uo, .effects.bold};
-    #b : mut = a{!.effects.bold, .effects.underline};
-    #b .= {!.effects.bold, fontSize=15};
+    a := Formatting{fontSize=12u, .effects.bold};
+    b : mut = Formatting{fontSize=13u, bg.red=255uo, fg.green=255uo, .effects.bold};
+    c : mut = b{effects.bold=false, .effects.underline};
+    b .= {.effects.bold, fontSize=15u, bg.red=a.bg.red};
 }
