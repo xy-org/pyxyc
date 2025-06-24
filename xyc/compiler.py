@@ -2961,13 +2961,13 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
             break
     pos_objs = pos_objs[:last_non_zero_idx]
 
-    c_args = []
+    c_args = copy(type_obj.init_value.args) if not type_obj.is_init_value_zeros else []
+    for i in range(len(c_args), len(pos_objs)):
+        c_args.append(field_objs[i].type_desc.init_value)
     if tmp_obj is None or injected_tmp:
         for i, obj in enumerate(pos_objs):
             if obj is not None:
-                c_args.append(obj.c_node)
-            else:
-                c_args.append(field_objs[i].type_desc.init_value)
+                c_args[i] = obj.c_node
 
     if injected_tmp:
         expr_objs = expr_objs[first_non_trivial_idx:]

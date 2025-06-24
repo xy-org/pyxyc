@@ -27,7 +27,7 @@ moveOperators5_Point moveOperators5_testMovingSimple(void) {
     moveOperators5_Point tmp_0_arg = l_p1;
     l_p1 = (moveOperators5_Point){0, 0, 1};
     l_p2 = tmp_0_arg;
-    return (moveOperators5_Point){l_p1.m_x, l_p2.m_y};
+    return (moveOperators5_Point){l_p1.m_x, l_p2.m_y, 1};
 }
 
 void moveOperators5_dtor(moveOperators5_Array p_arr) {

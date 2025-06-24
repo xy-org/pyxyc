@@ -107,6 +107,7 @@ from xyc.compiler import CompilationError
     "logicCmp/shortcircuit",
     "ctti/srcLocFuncs",
     "funcs/paramTypeEnum",
+    "structs/fieldInit",
     "structs/subFieldInit",
 ])
 def test_c_compilation(resource_dir, filename):
