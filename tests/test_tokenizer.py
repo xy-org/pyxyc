@@ -286,8 +286,8 @@ from xyc.tokenizer import split_tokens
         None
     ),
     (
-        '10_000 0xAA_BB 0_733 0x_AF(16)',
-        ['10_000', '0xAA_BB', '0_733', '0x_AF(16)'],
+        '10_000 0xAA_BB 0_733 0x_AF(16) 0x_AF()b',
+        ['10_000', '0xAA_BB', '0_733', '0x_AF(16)', '0x_AF()b'],
         None
     ),
 ])

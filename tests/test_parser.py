@@ -263,6 +263,9 @@ def test_parse_comments(code, exp_ast):
             b := 0xCA_FE;
             c := 0xCa_feUS;
             d := 0I_Like_Tea(36)ul;
+            e := 0xBBb;
+            f := 0xBB_b;
+            g := 0xBBub;
         }
         """,
         [
@@ -273,6 +276,25 @@ def test_parse_comments(code, exp_ast):
                     ast.VarDecl("b", value=ast.Const(0xCAFE, type="Int", value_str="0xCAFE")),
                     ast.VarDecl("c", value=ast.Const(0xCAFE, type="Ushort", value_str="0xCafe")),
                     ast.VarDecl("d", value=ast.Const(1457390057554, type="Ulong", value_str="1457390057554ull")),
+                    ast.VarDecl("e", value=ast.Const(0xBBb, type="Int", value_str="0xBBb")),
+                    ast.VarDecl("f", value=ast.Const(0xBBb, type="Int", value_str="0xBBb")),
+                    ast.VarDecl("g", value=ast.Const(0xBB, type="Ubyte", value_str="0xBB")),
+                ]
+            )
+        ]
+    ],
+    [
+        """def test() {
+            a := 0xBB()b;
+            b := 0xBB()ub;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl("a", value=ast.Const(0xBB, type="Byte", value_str="0xBB")),
+                    ast.VarDecl("b", value=ast.Const(0xBB, type="Ubyte", value_str="0xBB")),
                 ]
             )
         ]

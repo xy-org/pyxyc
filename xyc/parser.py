@@ -818,11 +818,12 @@ def parse_operator(arg1, itoken, precedence, op_prec):
     return arg1
 
 def parse_num_const(token: str, tk_coords, itoken):
+    itoken.i -= 1  # for better error messages
     suffix_map = {
         "f": "Float", "d": "Double",
         "l": "Long", "ul": "Ulong", "u": "Uint",
         "s": "Short", "us": "Ushort",
-        "o": "Byte", "uo": "Ubyte",  # 'o' stands for octet
+        "b": "Byte", "ub": "Ubyte",
         "z": "Size"
     }
 
@@ -848,23 +849,27 @@ def parse_num_const(token: str, tk_coords, itoken):
         base = 10
         num_str = ""
         suffix = ""
-        explicit_base = False
+        bracket_idx = None
         if token.startswith("0"):
             bracket_idx = token.find('(')
             if bracket_idx > 0:
-                explicit_base = True
                 num_str = token[1:bracket_idx]
                 closing_idx = token.find(')', bracket_idx)
                 if closing_idx < 0:
                     raise ParsingError("Ill-formatted number literal", itoken)
-                base = parse_int(token[bracket_idx+1:closing_idx], 10, itoken)
+                if closing_idx - bracket_idx > 1:
+                    base = parse_int(token[bracket_idx+1:closing_idx], 10, itoken)
+                else:
+                    base = 16 if token.startswith("0x") else 8
+                    if base == 16:
+                        num_str = num_str[1:]
                 suffix = token[closing_idx+1:]
             else:
                 base = 16 if token.startswith("0x") else 8
                 for i_suffix in suffix_map.keys():
                     if token.lower().endswith(i_suffix):
                         suffix = i_suffix if len(suffix) < len(i_suffix) else suffix
-                if suffix in {'f', 'd'} and base == 16:
+                if suffix in {'f', 'd', 'b'} and base == 16:
                     suffix = ""
                 prefix_len = 2 if token.startswith("0x") else 1
                 num_str = token[prefix_len:len(token)-len(suffix)]
@@ -880,17 +885,16 @@ def parse_num_const(token: str, tk_coords, itoken):
 
         res = Const(
             parse_int(num_str, base, itoken),
-            token[:len(token)-len(suffix)],
+            num_str,
             "Int", src=itoken.src, coords=tk_coords
         )
         res.value_str = res.value_str.replace("_", "")
 
         if base not in {10, 16, 8}:
             res.value_str = str(res.value)
-        elif explicit_base:
-            if base == 16: res.value_str = "0x" + num_str
-            elif base == 8: res.value_str = "0" + num_str
-            else: res.value_str = num_str
+        elif base == 16: res.value_str = "0x" + res.value_str
+        elif base == 8: res.value_str = "0" + res.value_str
+
         if res.value not in {0, 1}:
             if suffix == "l": res.value_str += "ll"
             elif suffix == "ul": res.value_str += "ull"
@@ -900,6 +904,7 @@ def parse_num_const(token: str, tk_coords, itoken):
         elif suffix != "":
             raise ParsingError("Unknown number suffix", itoken)
 
+    itoken.i += 1
     return res
 
 def parse_int(str: str, base, token):

@@ -496,25 +496,25 @@ src.xy:3:20: error: Mixed signedness arithmetic (Uint, Int). Please cast one of 
     (
         """
         def test() {
-            a := 128o;
+            a := 128b;
         }
         """,
         """\
 src.xy:3:18: error: Integer constant overflows type 'Byte'
-|             a := 128o;
+|             a := 128b;
                    ^^^^
 """
     ),
     (
         """
         def test() {
-            a := 0x55bbo;
+            a := 0x55bb()b;
         }
         """,
         """\
 src.xy:3:18: error: Integer constant overflows type 'Byte'
-|             a := 0x55bbo;
-                   ^^^^^^^
+|             a := 0x55bb()b;
+                   ^^^^^^^^^
 """
     ),
     (
