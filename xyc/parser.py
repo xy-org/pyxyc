@@ -686,12 +686,13 @@ def parse_operand(itoken, precedence, op_prec):
     elif itoken.peak() in {"+", "-", "!", "&", "%", "."}:
         coords = itoken.peak_coords()
         op = itoken.consume()
+        switch_off = op == "!" and itoken.check(".")
         # NOTE no precedence + 1 in order to allow for chaining unary operators
         arg1 = parse_expression(itoken, UNARY_PRECEDENCE, op_prec=op_prec)
-        if op == ".":
+        if switch_off or op == ".":
             # unary '.' aka. toggle
-            arg1 = BinExpr(arg1, Const(True, src=arg1.src, coords=arg1.coords), op="=")
-        elif op != '!' and isinstance(arg1, Const) and arg1.type != "str":
+            arg1 = BinExpr(arg1, Const(not switch_off, src=arg1.src, coords=arg1.coords), op="=")
+        elif op in {'-', '+'} and isinstance(arg1, Const) and arg1.type != "str":
             if op == '-':
                 arg1.value = -arg1.value
                 arg1.value_str = f'-{arg1.value_str}'

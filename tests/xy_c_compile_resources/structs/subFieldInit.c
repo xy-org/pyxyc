@@ -36,7 +36,7 @@ void subFieldInit_test(void) {
     tmp_2.m_effects.m_bold = false;
     tmp_2.m_effects.m_underline = true;
     subFieldInit_Formatting l_c = tmp_2;
-    l_b.m_effects.m_bold = true;
+    l_b.m_effects.m_bold = false;
     l_b.m_fontSize = 15;
     l_b.m_bg.m_red = l_a.m_bg.m_red;
 }

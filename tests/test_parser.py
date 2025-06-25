@@ -4075,6 +4075,39 @@ def test_global_constants(code, exp_ast):
             ),
         ]
     ],
+    [
+        """
+        def test() {
+            a : mut = Struct{};
+            !.a.field.toggle;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl(
+                        "a",
+                        mutable=True,
+                        value=ast.StructLiteral(
+                            ast.Id("Struct"),
+                        )
+                    ),
+                    ast.BinExpr(
+                        ast.BinExpr(
+                            ast.BinExpr(
+                                ast.Id("a"), ast.Id("field"), op="."
+                            ),
+                            ast.Id("toggle"),
+                            op="."
+                        ),
+                        ast.Const(False),
+                        op="=",
+                    ),
+                ]
+            ),
+        ]
+    ],
 ])
 def test_toggles(code, exp_ast):
     act_ast = parse_code(code)

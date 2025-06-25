@@ -21,5 +21,5 @@ def test() {
     a := Formatting{fontSize=12u, .effects.bold};
     b : mut = Formatting{fontSize=13u, bg.red=255uo, fg.green=255uo, .effects.bold};
     c : mut = b{effects.bold=false, .effects.underline};
-    b .= {.effects.bold, fontSize=15u, bg.red=a.bg.red};
+    b .= {!.effects.bold, fontSize=15u, bg.red=a.bg.red};
 }
