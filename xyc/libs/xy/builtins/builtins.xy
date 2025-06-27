@@ -716,6 +716,6 @@ struct FuncSelection {
 ;; It is not global in the sense of other programming langauges like C.
 ;; {a} must be a variable and the newly created etry on the stack is
 ;; auto popped when {a} goes out of scope
-def set(a: pseudo Global, val: pseudo Any) -> void {
+*def set(a: pseudo Global, val: pseudo Any) -> void {
     # implemented by the compiler
 }

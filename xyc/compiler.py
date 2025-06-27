@@ -229,6 +229,7 @@ class VarObj(CompiledObj):
     default_value_obj: CompiledObj = None
     needs_dtor: bool = False
     fieldof_obj: TypeObj | None = None # set to the type this varobj is a field of
+    is_stored_global: bool = False
 
     @property
     def inferred_type(self):
@@ -1941,6 +1942,9 @@ def call_dtor(obj, cast, cfunc, ctx):
 def call_dtors(ns, cast, cfunc, ctx):
     for obj in reversed(ns.values()):
         if isinstance(obj, VarObj) and obj.needs_dtor and not obj.xy_node.is_param:
+            if obj.is_stored_global:
+                restore_global(obj, cast, cfunc, ctx)
+                continue
             expr = ExprObj(
                 xy_node=obj.xy_node,
                 c_node=c.Id(obj.c_node.name),
@@ -3667,6 +3671,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         else:
             return compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "set"):
+        if len(arg_exprs) == 2 and is_global_type(arg_exprs[0].inferred_type, ctx):
+            return compile_global_set(expr, func_obj, arg_exprs, cast, cfunc, ctx)
         assert len(arg_exprs) == 3
         get_obj = compile_builtin_get(
             expr, func_obj, ArgList(args=arg_exprs.args[:2]), cast, cfunc, ctx
@@ -4148,7 +4154,10 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             args_list.append(value_obj)
             args_writable.append(False)
             if not pobj.xy_node.is_pseudo:
-                res.args.append(value_obj.c_node)
+                if pobj.passed_by_ref:
+                    res.args.append(c_getref(value_obj))
+                else:
+                    res.args.append(value_obj.c_node)
             callee_ctx.ns[pobj.xy_node.name] = value_obj
 
     # all arguments have been processed let's now check aliasing rules
@@ -4784,6 +4793,47 @@ def compile_global_get(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         ),
         inferred_type=to_type,  # TODO what about tags
     )
+
+def compile_global_set(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx: CompilerContext):
+    val_obj = arg_exprs[1]
+    new_cval = val_obj.c_node
+    if not isinstance(new_cval, c.Id):
+        new_cval = move_to_temp(val_obj, cast, cfunc, ctx).c_node
+
+    stored_type = TypeExprObj(expr, type_obj=ctx.ptr_obj, tags={"to": val_obj.inferred_type})
+    stored_obj = ctx.create_tmp_var(stored_type, "gstack", expr)
+    stored_obj.needs_dtor = True
+    stored_obj.is_stored_global = True
+    stored_obj.c_node.value = c.Index(
+        c.Expr(c.Id("g__xy_global"), c.Id("stack"), op="->"),
+        c.Id(mangle_type_id(val_obj.inferred_type)),
+    )
+    cfunc.body.append(stored_obj.c_node)
+
+    c_node = c.Expr(
+        c.Index(
+            c.Expr(c.Id("g__xy_global"), c.Id("stack"), op="->"),
+            c.Id(mangle_type_id(val_obj.inferred_type)),
+        ),
+        c.UnaryExpr(new_cval, op="&", prefix=True),
+        op="=",
+    )
+    return ExprObj(
+        expr,
+        c_node,
+        ctx.void_obj,
+    )
+
+def restore_global(stored_obj, cast, cfunc, ctx):
+    c_node = c.Expr(
+        c.Index(
+            c.Expr(c.Id("g__xy_global"), c.Id("stack"), op="->"),
+            c.Id(mangle_type_id(stored_obj.inferred_type.tags["to"])),
+        ),
+        c.Id(stored_obj.c_node.name),
+        op="=",
+    )
+    cfunc.body.append(c_node)
 
 def is_builtin_func(func_obj, name):
     return func_obj.builtin and func_obj.xy_node.name.name == name

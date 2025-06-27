@@ -1,0 +1,30 @@
+struct Struct {
+    val := 10;
+}
+
+def main~EntryPoint() -> Int {
+    a := test1();
+
+    intVal := [Global~Struct].val;
+    s : mut = Struct{intVal*2};
+    [Global~Struct] = s;
+
+    b := test1();
+
+    s.val++;
+    c := test2();
+
+    return a + b + c;
+}
+
+def test1() -> Int {
+    return [Global~Struct].val;
+}
+
+def test2() -> Int {
+    return func();
+}
+
+def func(s : mut = [Global~Struct]) -> Int {
+    return s.val;
+}

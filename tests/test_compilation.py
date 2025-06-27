@@ -110,6 +110,7 @@ from xyc.compiler import CompilationError
     "structs/fieldInit",
     "structs/subFieldInit",
     "globals/globals1",
+    "globals/globals2",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
