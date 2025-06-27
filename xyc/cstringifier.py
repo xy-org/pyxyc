@@ -69,6 +69,19 @@ def stringify(ast: Ast):
     if len(ast.structs) > 0:
         frags.append("\n")
 
+    for node in ast.globals:
+        if isinstance(node, Define):
+            stringify_def(node, frags)
+        elif isinstance(node, Excerpt):
+            frags.append(node.excerpt)
+            frags.append("\n")
+        else:
+            assert isinstance(node, VarDecl)
+            stringify_var_decl(node, frags)
+            frags.append(";\n")
+    if len(ast.globals) > 0:
+        frags.append("\n")
+
     for func in ast.funcs:
         stringify_func_decl(func, frags)
         frags.append(" {\n")
@@ -314,6 +327,8 @@ def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
         raise CGenerationError(f"Unknown expression {type(expr).__name__}")
 
 def stringify_var_decl(stmt, frags):
+    if stmt.qtype.is_threadLocal:
+        frags.append("__thread ")
     if stmt.qtype.is_const and not stmt.qtype.type.is_ptr:
         frags.append("const ")
     frags.extend([stmt.qtype.type.name, " "])

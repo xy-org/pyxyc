@@ -698,3 +698,24 @@ struct FuncSelection {
 ) -> %a {
     # implemented by the compiler
 }
+
+;; Global Stack Functionality
+
+;; Used just to descriminate other types
+*struct Global~[type:struct] {}
+
+;; Get the global variable with type {a..type} from the global stack.
+;; This function is guaranteed to return a reference to a valid object
+;; even if not values has been explicitly set
+*def get(a: pseudo Global) -> [ Ptr~[^a..type] ] {
+    # implemented by the compiler
+}
+
+;; Push {a} onto the global stack.
+;; The global stack despite being called global is per execution unit.
+;; It is not global in the sense of other programming langauges like C.
+;; {a} must be a variable and the newly created etry on the stack is
+;; auto popped when {a} goes out of scope
+def set(a: pseudo Global, val: pseudo Any) -> void {
+    # implemented by the compiler
+}

@@ -722,6 +722,8 @@ class CompilerContext:
     current_fobj: FuncObj | None = None
     tmp_names: TmpNames = field(default_factory=TmpNames)
 
+    global_types: list[TypeObj] = field(default_factory=list)
+
     entrypoint_obj: any = None
     entrypoint_priority: int = 0
     void_obj: any = None
@@ -750,6 +752,7 @@ class CompilerContext:
         self.void_obj = data_ns["void"]
         self.bool_obj = data_ns["Bool"]
         self.ptr_obj = data_ns["Ptr"]
+        self.global_obj = data_ns["Global"]
         self.ptr_to_byte_obj = TypeExprObj(
             self.ptr_obj.xy_node, self.ptr_obj.c_node, self.ptr_obj,
             tags={"to": data_ns["Byte"]},
@@ -889,7 +892,10 @@ class CompilerContext:
         ": ~[TagCtor{label=\"default-label\"}] " \
         "or add a positional tag to the struct"
         for i, xy_tag in enumerate(tags.args):
-            tag_obj = self.eval(xy_tag, msg="Cannot find tag")
+            try:
+                tag_obj = self.eval(xy_tag, msg="Cannot find tag")
+            except NoCallerContextError:
+                tag_obj = calltime_expr_obj
             if i < len(tag_specs):
                 spec = tag_specs[i]
                 label = spec.xy_node.name
@@ -922,7 +928,10 @@ class CompilerContext:
                 raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
             res[label] = tag_obj
         for label, xy_tag in tags.kwargs.items():
-            tag_obj = self.eval(xy_tag)
+            try:
+                tag_obj = self.eval(xy_tag)
+            except NoCallerContextError:
+                tag_obj = calltime_expr_obj
             if label in res:
                 raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
             if isinstance(tag_obj, TypeObj):
@@ -952,6 +961,9 @@ class CompilerContext:
                 )
             )
         return res
+    
+    def register_global_type(self, type_obj):
+        self.global_types.append(type_obj)
 
     def print_data_namespaces(self):
         self.print_namespaces(self.data_namespaces)
@@ -1039,10 +1051,7 @@ class CompilerContext:
                 else:
                     raise CompilationError("Cannot evaluate", node)
             elif node.op == "..":
-                try:
-                    base = self.eval(node.arg1, is_func=is_func)
-                except NoCallerContextError:
-                    return calltime_expr_obj
+                base = self.eval(node.arg1, is_func=is_func)
                 return tag_get(node, base, node.arg2.name, self)
             assert False
         elif isinstance(node, xy.AttachTags):
@@ -2831,6 +2840,11 @@ def is_ptr_type(type_obj, ctx):
         type_obj = type_obj.type_obj
     return type_obj is ctx.ptr_obj or type_obj.base_type_obj is ctx.ptr_obj
 
+def is_global_type(type_obj, ctx):
+    if isinstance(type_obj, TypeExprObj):
+        type_obj = type_obj.type_obj
+    return type_obj is ctx.global_obj or type_obj.base_type_obj is ctx.global_obj
+
 def ptr_type_to(type_obj, ctx):
     ptr_type = copy(ctx.ptr_obj)
     ptr_type.base_type_obj = ctx.ptr_obj
@@ -3648,7 +3662,10 @@ def find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
 
 def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if is_builtin_func(func_obj, "get"):
-        return compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+        if is_global_type(arg_exprs[0].inferred_type, ctx):
+            return compile_global_get(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+        else:
+            return compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "set"):
         assert len(arg_exprs) == 3
         get_obj = compile_builtin_get(
@@ -4733,6 +4750,41 @@ def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx):
         inferred_type=ptr_type_to(type_obj, ctx)
     )
 
+def compile_global_get(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    arg_obj = arg_exprs[0]
+    to_type = arg_obj.inferred_type.tags.get("type", None)
+    if not isinstance(to_type, (TypeObj, TypeExprObj)):
+        raise CompilationError("Argument to 'global' must be a type", expr)
+    ctx.register_global_type(to_type)
+
+    ptr_type = TypeExprObj(
+        xy_node=func_obj.xy_node.returns[0],
+        c_node=func_obj.rtype_obj.c_node,
+        type_obj=func_obj.rtype_obj.type_obj,
+        tags={
+            "to":  to_type,
+        }
+    )
+
+    c_res = c.Cast(
+        c.Index(
+            c.Expr(c.Id("g__xy_global"), c.Id("stack"), op="->"),
+            c.Id(mangle_type_id(to_type)),
+        ),
+        to=to_type.c_name + "*"
+    )
+
+    return IdxObj(
+        xy_node=expr,
+        container=global_memory,
+        idx=ExprObj(
+            c_node=c_res,
+            xy_node=expr,
+            inferred_type=ptr_type,
+        ),
+        inferred_type=to_type,  # TODO what about tags
+    )
+
 def is_builtin_func(func_obj, name):
     return func_obj.builtin and func_obj.xy_node.name.name == name
 
@@ -5475,6 +5527,9 @@ def mangle_define(name: str, module_name: str):
 def mangle_name(name: str, module_name: str):
     return module_name.replace(".", "_") + "_" + name
 
+def mangle_type_id(type_obj: TypeExprObj):
+    return "XY_" + type_obj.c_node.name.upper() + "__ID"
+
 
 class CompilationError(Exception):
     def __init__(self, msg, node, notes=None):
@@ -5713,7 +5768,7 @@ def assert_has_type(obj: ExprObj):
 global_argc_name = "__xy_sys_argc"
 global_argv_name = "__xy_sys_argv"
 
-def maybe_add_main(ctx: CompilerContext, cast):
+def maybe_add_main(ctx: CompilerContext, cast, has_global=False):
     if ctx.entrypoint_obj is not None:
         main = c.Func(
             name="main", rtype="int",
@@ -5725,6 +5780,16 @@ def maybe_add_main(ctx: CompilerContext, cast):
                 c.Expr(c.Id(global_argv_name), c.Id("argv"), op="="),
             ]
         )
+        if has_global:
+            main.body.insert(0, c.FuncCall("xy_global_init", args=[
+                c.UnaryExpr(c.Id("g__xy_globalInstance"), op="&", prefix=True),
+                c.UnaryExpr(c.Id("g__xy_globalInitData"), op="&", prefix=True),
+            ]))
+            main.body.insert(1, c.Expr(
+                c.Id("g__xy_global"),
+                c.UnaryExpr(c.Id("g__xy_globalInstance"), op="&", prefix=True),
+                op="="),
+            )
         ctx.current_fobj = FuncObj(
             xy_node=ctx.entrypoint_obj.xy_node,
             c_node=main,
@@ -5745,6 +5810,62 @@ def maybe_add_main(ctx: CompilerContext, cast):
         cast.consts.append(c.VarDecl(global_argc_name, c.QualType("int", False)))
         cast.consts.append(c.VarDecl(global_argv_name, c.QualType("char**", False)))
         cast.funcs.append(main)
+
+def gen_global_stack(global_type_reg, cast: c.Ast):
+    initDataStruct = c.Struct("xy_GlobalInitData")
+
+    for i, type_obj in enumerate(global_type_reg.values()):
+        cdef = c.Define("XY_" + type_obj.c_name.upper() + "__ID", value=c.Const(i))
+        cast.consts.append(cdef)
+
+        initDataStruct.fields.append(
+            c.VarDecl(f"field{i}", qtype=c.QualType(c.Type(type_obj.c_name)))
+        )
+
+    cast.type_decls.append(c.Typedef("struct " + initDataStruct.name, initDataStruct.name))
+    cast.structs.append(initDataStruct)
+
+    xyGlobalStruct = c.Struct(
+        "xy_Global",
+        fields=[
+            c.VarDecl("stack", c.QualType(c.Type("void*", dims=[len(global_type_reg)])))
+        ]
+    )
+    cast.structs.append(xyGlobalStruct)
+    cast.type_decls.append(c.Typedef("struct " + xyGlobalStruct.name, xyGlobalStruct.name))
+
+    cast.globals.append(c.VarDecl(
+       "g__xy_globalInitData", c.QualType(c.Type("xy_GlobalInitData"), is_const=False, is_threadLocal=True),
+       value=c.InitList([
+           type_obj.init_value for type_obj in global_type_reg.values()
+       ])
+    ))
+    cast.globals.append(c.VarDecl(
+        "g__xy_globalInstance", c.QualType(c.Type("xy_Global"), is_const=False, is_threadLocal=True)
+    ))
+    cast.globals.append(c.VarDecl(
+        "g__xy_global", c.QualType(c.Type("xy_Global*"), is_const=False, is_threadLocal=True)
+    ))
+
+    init_func = c.Func(
+        "xy_global_init", rtype="void",
+        params=[
+            c.VarDecl("global", c.QualType(c.Type("xy_Global*"))),
+            c.VarDecl("data", c.QualType(c.Type("xy_GlobalInitData*")))
+        ], body=[
+            c.Expr(
+                c.Index(c.Expr(c.Id("global"), c.Id("stack"), op="->"), c.Const(i)),
+                c.UnaryExpr(
+                    c.Expr(c.Id("data"), c.Id(f"field{i}"), op="->"),
+                    op="&", prefix=True,
+                ),
+                op="=",
+            )
+            for i in range(len(global_type_reg))
+        ]
+    )
+    cast.funcs.append(init_func)
+    cast.func_decls.append(init_func)
 
 def fmt_comment(comment):
     if len(comment) < 2:

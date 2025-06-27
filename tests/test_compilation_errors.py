@@ -66,6 +66,7 @@ note: Candidates are:
         *get(Any[], Long) -> Ptr
         *get(Any[], Ulong) -> Ptr
         *get(Any[], Size) -> Ptr
+        *get(Global) -> Ptr
 """),
     ("""
         def func1(x: Int) = x*2;

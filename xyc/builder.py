@@ -4,7 +4,7 @@ from os import path
 import subprocess
 from xyc.ast import Source
 from xyc.parser import parse_code
-from xyc.compiler import compile_module, compile_ctti, compile_builtins, maybe_add_main, CompilationError
+from xyc.compiler import compile_module, compile_ctti, compile_builtins, maybe_add_main, gen_global_stack, CompilationError
 import xyc.cstringifier as cstringifier
 from dataclasses import dataclass
 import xyc.cast as c
@@ -49,6 +49,8 @@ class Builder:
 
         self.module_import_stack = []
         self.module_import_index = {}
+
+        self.global_type_reg = dict()
 
     def build(self):
         module_name = path.basename(self.input)
@@ -134,6 +136,7 @@ class Builder:
                 self.entrypoint_priority = header.ctx.entrypoint_priority
             elif header.ctx.entrypoint_priority == self.entrypoint_priority:
                 self.entrypoint_module_names.append(module_name)
+        self.add_global_types(header.ctx.global_types)
         return header, c_srcs
     
     def locate_module(self, module_name: str):
@@ -147,9 +150,14 @@ class Builder:
     def do_build(self):
         if len(self.entrypoint_module_names) == 1:
             module = self.module_cache[self.entrypoint_module_names[0]]
-            maybe_add_main(module.header.ctx, module.source)
+            maybe_add_main(module.header.ctx, module.source, len(self.global_type_reg) > 0)
         elif len(self.entrypoint_module_names) > 0:
             raise ValueError("Multiple entry points found")
+        
+        if len(self.global_type_reg) > 0:
+            dummy_ast = c.Ast()
+            gen_global_stack(self.global_type_reg, dummy_ast)
+            self.module_cache["__XY__GLOBAL_STACK_AST"] = CompiledModule(None, dummy_ast)
 
         if self.compile_only:
             self.write_output(list(self.module_cache.values()), self.output)
@@ -186,6 +194,11 @@ class Builder:
         with open(output, "wt") as f:
             f.write(c_src)
 
+    def add_global_types(self, global_types):
+        for type in global_types:
+            if type.c_name not in self.global_type_reg:
+                self.global_type_reg[type.c_name] = type
+
 def parse_module(input, module_name):
     # TODO remove the dict format
     if not path.exists(input):
@@ -220,13 +233,19 @@ def compile_project(project, module_path, rich_errors=False, abort_on_unhandled=
         builder.module_cache[module_name] = CompiledModule(header, c_srcs)
         if header.ctx.entrypoint_obj is not None:
             builder.entrypoint_module_names.append(module_name)
+        builder.add_global_types(header.ctx.global_types)
 
     if len(builder.entrypoint_module_names) == 1:
         module = builder.module_cache[builder.entrypoint_module_names[0]]
-        maybe_add_main(module.header.ctx, module.source)
+        maybe_add_main(module.header.ctx, module.source, len(builder.global_type_reg) > 0)
     elif len(builder.entrypoint_module_names) > 0:
         raise ValueError("Multiple entry points found")
     
+    if len(builder.global_type_reg) > 0:
+        dummy_ast = c.Ast()
+        gen_global_stack(builder.global_type_reg, dummy_ast)
+        builder.module_cache["__XY__GLOBAL_STACK_AST"] = CompiledModule(None, dummy_ast)
+
     big_ast = c.Ast()
     for module in builder.module_cache.values():
         big_ast.merge(module.source)

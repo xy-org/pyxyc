@@ -26,6 +26,7 @@ class QualType:
     is_const: bool = True
     is_volatile: bool = False
     is_restricted: bool = False
+    is_threadLocal: bool = False
 
     def __post_init__(self):
         if isinstance(self.type, str):
@@ -179,6 +180,7 @@ class Ast:
     func_decls: list[Func] = field(default_factory=list)
     consts: list[VarDecl | Define | Excerpt] = field(default_factory=list)
     structs: list[Struct] = field(default_factory=list)
+    globals: list[VarDecl] = field(default_factory=list)
     funcs: list[Struct] = field(default_factory=list)
 
     def merge(self, other: 'Ast'):
@@ -202,5 +204,6 @@ class Ast:
         self.func_decls.extend(other.func_decls)
         self.consts.extend(other.consts)
         self.structs.extend(other.structs)
+        self.globals.extend(other.globals)
         self.funcs.extend(other.funcs)
 

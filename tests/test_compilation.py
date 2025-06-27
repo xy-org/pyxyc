@@ -109,6 +109,7 @@ from xyc.compiler import CompilationError
     "funcs/paramTypeEnum",
     "structs/fieldInit",
     "structs/subFieldInit",
+    "globals/globals1",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
