@@ -1,9 +1,9 @@
 ;; The commmand line arguments as given to main() cannot be easily converted to
 ;; a format suitable for a xy EntryPoint as arrays and strings are not part of
-;; the language but left to libraries to implement. So we have these two
-;; functions that give us access to the raw arguments.
+;; the language but left to libraries to implement. So the language exposes
+;; them by pushing the raw argc and argv onto the global stack.
 ;;
-;; I couldn't find a better spot to place these functions. Having them in
+;; I couldn't find a better spot to place this struct. Having it in
 ;; builtins is wrong because builtins is the very basic types and functions
 ;; for any xy program and command line arguments is specific to a particular
 ;; domain. So I plopped them here.
@@ -12,12 +12,9 @@
 
 import libc~[Clib{headers=@{}}] in c;
 
-;; Return number of command line arguments
-*def argc() -> Int {
-    return c.__xy_sys_argc;
-}
-
-;; Return pointers to the command line arguments (as char *)
-*def argv() -> Ptr~Ptr~[c.char] {
-    return c.__xy_sys_argv;
+;; Hold the raw arguments as given to the program by the OS.
+;; Just pop this struct from the global stack to access them.
+struct CmdArgs {
+    argc: Int;; size of {argv}
+    argv: Ptr~Ptr~[c.char];; pointers to the command line arguments
 }

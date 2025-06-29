@@ -11,8 +11,6 @@ int32_t globals2_test2(void);
 int32_t globals2_func(globals2_Struct* p_s);
 void xy_global_init(xy_Global* global, xy_GlobalInitData* data);
 
-int __xy_sys_argc;
-char** __xy_sys_argv;
 #define XY_GLOBALS2_STRUCT__ID 0
 
 struct globals2_Struct {
@@ -58,8 +56,6 @@ int32_t globals2_func(globals2_Struct* p_s) {
 int main(int argc, char** argv) {
     xy_global_init(&g__xy_globalInstance, &g__xy_globalInitData);
     g__xy_global = &g__xy_globalInstance;
-    __xy_sys_argc = argc;
-    __xy_sys_argv = argv;
     globals2_main();
     return 0;
 }

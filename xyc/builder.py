@@ -150,7 +150,7 @@ class Builder:
     def do_build(self):
         if len(self.entrypoint_module_names) == 1:
             module = self.module_cache[self.entrypoint_module_names[0]]
-            maybe_add_main(module.header.ctx, module.source, len(self.global_type_reg) > 0)
+            maybe_add_main(module.header.ctx, module.source, len(self.global_type_reg) > 0, "xy.sys" in self.module_cache)
         elif len(self.entrypoint_module_names) > 0:
             raise ValueError("Multiple entry points found")
         
@@ -237,7 +237,7 @@ def compile_project(project, module_path, rich_errors=False, abort_on_unhandled=
 
     if len(builder.entrypoint_module_names) == 1:
         module = builder.module_cache[builder.entrypoint_module_names[0]]
-        maybe_add_main(module.header.ctx, module.source, len(builder.global_type_reg) > 0)
+        maybe_add_main(module.header.ctx, module.source, len(builder.global_type_reg) > 0, "xy.sys" in builder.module_cache)
     elif len(builder.entrypoint_module_names) > 0:
         raise ValueError("Multiple entry points found")
     

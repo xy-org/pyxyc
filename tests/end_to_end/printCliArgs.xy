@@ -1,12 +1,12 @@
 import libc~[Clib{headers=@{"string.h", "stdio.h"}}] in c;
-import xy.sys in sys;
+import xy.sys;
 import libxy.string;
 import libxy.stdio;
 import libxy.memory;
 
 def main~EntryPoint() {
-    argc := sys.argc();
-    argv := sys.argv();
+    argc := [Global~CmdArgs].argc;
+    argv := [Global~CmdArgs].argv;
     for (i in 1:argc) {
         argStr := Str~MemExt {
             addr=argv[i]~Byte,

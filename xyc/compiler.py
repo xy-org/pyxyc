@@ -5815,31 +5815,33 @@ def assert_has_type(obj: ExprObj):
     if isinstance(obj.inferred_type, TypeInferenceError):
         raise CompilationError(obj.inferred_type.msg, obj.xy_node)
 
-global_argc_name = "__xy_sys_argc"
-global_argv_name = "__xy_sys_argv"
-
-def maybe_add_main(ctx: CompilerContext, cast, has_global=False):
+def maybe_add_main(ctx: CompilerContext, cast, has_global=False, uses_sys=False):
     if ctx.entrypoint_obj is not None:
         main = c.Func(
             name="main", rtype="int",
             params=[
                 c.VarDecl("argc", c.QualType("int",)),
                 c.VarDecl("argv", c.QualType("char**"))
-            ], body=[
-                c.Expr(c.Id(global_argc_name), c.Id("argc"), op="="),
-                c.Expr(c.Id(global_argv_name), c.Id("argv"), op="="),
-            ]
+            ], body=[]
         )
         if has_global:
-            main.body.insert(0, c.FuncCall("xy_global_init", args=[
+            main.body.append(c.FuncCall("xy_global_init", args=[
                 c.UnaryExpr(c.Id("g__xy_globalInstance"), op="&", prefix=True),
                 c.UnaryExpr(c.Id("g__xy_globalInitData"), op="&", prefix=True),
             ]))
-            main.body.insert(1, c.Expr(
+            main.body.append(c.Expr(
                 c.Id("g__xy_global"),
                 c.UnaryExpr(c.Id("g__xy_globalInstance"), op="&", prefix=True),
                 op="="),
             )
+        if has_global and uses_sys:
+            main.body.append(
+                c.InlineCode("((xy_sys_CmdArgs*)g__xy_global->stack[XY_XY_SYS_CMDARGS__ID])->m_argc = argc;")
+            )
+            main.body.append(
+                c.InlineCode("((xy_sys_CmdArgs*)g__xy_global->stack[XY_XY_SYS_CMDARGS__ID])->m_argv = argv;")
+            )
+
         ctx.current_fobj = FuncObj(
             xy_node=ctx.entrypoint_obj.xy_node,
             c_node=main,
@@ -5857,8 +5859,6 @@ def maybe_add_main(ctx: CompilerContext, cast, has_global=False):
             main.body.append(fcall_obj.c_node)
         main.body.append(c.Return(c.Const(0)))
 
-        cast.consts.append(c.VarDecl(global_argc_name, c.QualType("int", False)))
-        cast.consts.append(c.VarDecl(global_argv_name, c.QualType("char**", False)))
         cast.funcs.append(main)
 
 def gen_global_stack(global_type_reg, cast: c.Ast):
