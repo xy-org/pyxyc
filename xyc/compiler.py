@@ -4026,18 +4026,6 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             xy_node=expr,
             inferred_type=func_obj.rtype_obj
         )
-    elif is_builtin_func(func_obj, "argc"):
-        return ExprObj(
-            c_node=c.Id(global_argc_name),
-            xy_node=expr,
-            inferred_type=func_obj.rtype_obj,
-        )
-    elif is_builtin_func(func_obj, "argv"):
-        return ExprObj(
-            c_node=c.Id(global_argv_name),
-            xy_node=expr,
-            inferred_type=func_obj.rtype_obj,
-        )
 
     ensure_func_decl(func_obj, cast, cfunc, ctx)
 
