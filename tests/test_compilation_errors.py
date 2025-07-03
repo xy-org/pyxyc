@@ -201,7 +201,7 @@ src.xy:5:18: error: The types of c symbols cannot be inferred. Please be explici
             s := Str~Missing{};
         }
 """, """\
-src.xy:4:22: error: Cannot find tag
+src.xy:4:22: error: Cannot find symbol
 |             s := Str~Missing{};
                        ^^^^^^^
 """),
@@ -227,7 +227,7 @@ note: Candidates are:
             s := Str~Missing{};
         }
      """, """\
-src.xy:4:22: error: Cannot find tag
+src.xy:4:22: error: Cannot find symbol
 |             s := Str~Missing{};
                        ^^^^^^^
 """),

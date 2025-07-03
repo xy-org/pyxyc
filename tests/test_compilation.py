@@ -44,7 +44,7 @@ from xyc.compiler import CompilationError
     "loops/continue",
     "pointers",
     "pseudoParams",
-    "errors",
+    "errors/errors",
     "nameCollisions",
     "opBasics",
     "opOverloading",

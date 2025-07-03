@@ -894,7 +894,7 @@ class CompilerContext:
         "or add a positional tag to the struct"
         for i, xy_tag in enumerate(tags.args):
             try:
-                tag_obj = self.eval(xy_tag, msg="Cannot find tag")
+                tag_obj = self.eval(xy_tag, msg="Cannot find symbol")
             except NoCallerContextError:
                 tag_obj = calltime_expr_obj
             if i < len(tag_specs):
