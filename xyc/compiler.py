@@ -3970,6 +3970,10 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         return compile_fileof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "lineof"):
         return compile_lineof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+    elif is_builtin_func(func_obj, "srcof"):
+        return compile_srcof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+    elif is_builtin_func(func_obj, "srclineof"):
+        return compile_srclineof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "commentof"):
         comment = ""
         if arg_exprs[0].compiled_obj is not None:
@@ -4256,8 +4260,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 call_all_dtors(cast, check_if, ctx)
                 check_if.body.append(c.Return(c.Id(err_obj.c_node.name)))
             else:
-                cast.includes.append(c.Include("stdlib.h"))
-                check_if.body.append(c.FuncCall("abort"))
+                # call unhandled
+                do_compile_unhandled_code(expr, err_expr_obj, cast, check_if, caller_ctx, callee_ctx)
             cfunc.body.append(check_if)
 
         else:
@@ -4535,6 +4539,43 @@ def find_linesrc(node):
     while j < len(node.src.code) and node.src.code[j] != "\n":
         j += 1
     return node.src.code[i+1:j]
+
+def compile_srcof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    if len(arg_exprs) > 0:
+        redact_code(arg_exprs[0], cast, cfunc, ctx)
+        obj = arg_exprs[0].compiled_obj
+        if obj is None:
+            obj = arg_exprs[0]
+        xy_node = obj.xy_node
+    else:
+        xy_node = expr
+    src = xy_node.src.code[xy_node.coords[0]:xy_node.coords[1]]
+    src = escape_str(src)
+    return compile_expr(
+        xy.StrLiteral(
+            parts=[xy.Const(src)], full_str=src,
+            src=expr.src, coords=expr.coords,
+        ),
+        cast, cfunc, ctx
+    )
+
+def compile_srclineof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    if len(arg_exprs) > 0:
+        redact_code(arg_exprs[0], cast, cfunc, ctx)
+        obj = arg_exprs[0].compiled_obj
+        if obj is None:
+            obj = arg_exprs[0]
+        xy_node = obj.xy_node
+    else:
+        xy_node = expr
+    line = escape_str(find_linesrc(xy_node))
+    return compile_expr(
+        xy.StrLiteral(
+            parts=[xy.Const(line)], full_str=line,
+            src=expr.src, coords=expr.coords,
+        ),
+        cast, cfunc, ctx
+    )
 
 def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: CompilerContext):
     if len(expr.loop.over) != 1:
@@ -5470,10 +5511,11 @@ def compile_error(xyerror, cast, cfunc, ctx: CompilerContext):
     if ctx.current_fobj.etype_obj is None or \
         ctx.current_fobj.etype_obj is not value_obj.inferred_type:
         # error in function not returing an error
-        ret = compile_unhandled_error(xyerror, value_obj, cast, cfunc, ctx)
+        value_obj = maybe_move_to_temp(value_obj, cast, cfunc, ctx)
+        do_compile_unhandled_code(xyerror, value_obj, cast, cfunc, ctx, None)
         return ExprObj(
             xy_node=xyerror,
-            c_node=ret,
+            c_node=c.Empty(),
             inferred_type=value_obj.inferred_type
         )
 
@@ -5486,11 +5528,29 @@ def compile_error(xyerror, cast, cfunc, ctx: CompilerContext):
         inferred_type=value_obj.inferred_type
     )
 
-def compile_unhandled_error(xyerror, value_obj, cast, cfunc, ctx):
-    if not ctx.stdlib_included:
+def do_compile_unhandled_code(expr, err_obj, cast, cfunc, caller_ctx, callee_ctx):
+    unhandled_args = ArgList(args=[err_obj])
+    unhandled_ctx = caller_ctx
+    unhandled_fobj = maybe_find_func_obj(
+        "unhandled", unhandled_args, cast, cfunc, unhandled_ctx, expr
+    )
+    if unhandled_fobj is None and callee_ctx is not None:
+        unhandled_ctx = callee_ctx
+        unhandled_fobj = maybe_find_func_obj(
+            "unhandled", unhandled_args, cast, cfunc, callee_ctx, expr
+        )
+    if unhandled_fobj is not None:
+        unhandled_call_obj = do_compile_fcall(expr, unhandled_fobj, unhandled_args, cast, cfunc, unhandled_ctx)
+        cfunc.body.append(unhandled_call_obj.c_node)
+
+    if not caller_ctx.stdlib_included:
         cast.includes.append(c.Include("stdlib.h"))
-        ctx.stdlib_included = True
-    return c.FuncCall("abort")
+        caller_ctx.stdlib_included = True
+
+    if caller_ctx.builder.abort_on_unhandled:
+        cfunc.body.append(c.FuncCall("abort"))
+    else:
+        cfunc.body.append(c.FuncCall("exit", args=[c.Const(200)]))
 
 def get_c_type(type_expr, cast, ctx):
     id_desc = find_type(type_expr, cast, ctx, required=True)

@@ -54,6 +54,16 @@ struct StrLit {
     # Implemented by the compiler
 }
 
+;; Return the source code that was compiled into {expr}
+*def srcof(^expr: Any) -> StrLit {
+    # Implemented by the compiler
+}
+
+;; Return the line of code where {expr}'s src is located
+*def srclineof(^expr: Any) -> StrLit {
+    # Implemented by the compiler
+}
+
 ;; Compares two types. Returns true if types are identical including tags.
 ;; TODO should be renamed to cmp or something. Maybe don't use.
 *def typeEqs(a: pseudo Any, b: pseudo Any) -> Bool {
