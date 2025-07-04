@@ -45,12 +45,12 @@ struct StrLit {
 }
 
 ;; Return the line {arg} is defined on
-*def lineof(^arg: Any) -> Uint {
+*def linenoof(^arg: Any) -> Uint {
     # Implemented by the compiler
 }
 
 ;; Return line number where the function is called
-*def lineof() -> Uint {
+*def linenoof() -> Uint {
     # Implemented by the compiler
 }
 

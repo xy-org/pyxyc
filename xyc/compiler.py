@@ -3968,8 +3968,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         return compile_packageof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "fileof"):
         return compile_fileof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
-    elif is_builtin_func(func_obj, "lineof"):
-        return compile_lineof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+    elif is_builtin_func(func_obj, "linenoof"):
+        return compile_linenoof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "srcof"):
         return compile_srcof(expr, func_obj, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "srclineof"):
@@ -4504,7 +4504,7 @@ def compile_fileof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         cast, cfunc, ctx
     )
 
-def compile_lineof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+def compile_linenoof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if len(arg_exprs) > 0:
         redact_code(arg_exprs[0], cast, cfunc, ctx)
         obj = arg_exprs[0].compiled_obj

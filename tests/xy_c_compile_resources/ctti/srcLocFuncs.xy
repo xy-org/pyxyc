@@ -10,8 +10,8 @@ def test() {
     b := $testFunc()'packageof;
     c := packageof(testFunc());
     d := $testFunc()'fileof;
-    e := $testFunc()'lineof;
-    f := lineof(1 + 1);
+    e := $testFunc()'linenoof;
+    f := linenoof(1 + 1);
     g := 'fileof;
-    h := 'lineof;
+    h := 'linenoof;
 }
