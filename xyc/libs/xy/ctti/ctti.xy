@@ -64,6 +64,11 @@ struct StrLit {
     # Implemented by the compiler
 }
 
+;; Return the line of code where this function was called
+*def srclineof() -> StrLit {
+    # Implemented by the compiler
+}
+
 ;; Compares two types. Returns true if types are identical including tags.
 ;; TODO should be renamed to cmp or something. Maybe don't use.
 *def typeEqs(a: pseudo Any, b: pseudo Any) -> Bool {

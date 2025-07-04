@@ -14,4 +14,7 @@ def test() {
     f := linenoof(1 + 1);
     g := 'fileof;
     h := 'linenoof;
+    i := (1 * 10 + 20)'srcof;
+    j := (1 * 10 + 20)'srclineof;
+    k := 'srclineof;
 }
