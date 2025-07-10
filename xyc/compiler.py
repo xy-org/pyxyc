@@ -2744,7 +2744,9 @@ def idx_setup(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
         # calling a callback is easy to know the return type
         idx_obj.inferred_type = idx_obj.idx.inferred_type.func_obj.rtype_obj
     else:
-        idx_obj.container = maybe_move_to_temp(idx_obj.container, cast, cfunc, ctx)
+        # Don't decay container if it is already an idx obj allowing for long idx chians
+        if not isinstance(idx_obj.container, IdxObj):
+            idx_obj.container = maybe_move_to_temp(idx_obj.container, cast, cfunc, ctx)
         idx_obj.idx = maybe_move_to_temp(idx_obj.idx, cast, cfunc, ctx)
 
         tmp_names = ctx.tmp_names
@@ -5570,7 +5572,7 @@ def mangle_def(fdef: xy.FuncDef, param_objs: list[VarObj], ctx, expand=False):
                 mangled.append(dim)
                 mangled.append(param_obj.type_desc.xy_node.base.name)
             else:
-                mangled.append(param_obj.type_desc.xy_node.name)
+                mangled.append(param_obj.type_desc.name)
         mangled = "".join(mangled)
     return mangled
 
