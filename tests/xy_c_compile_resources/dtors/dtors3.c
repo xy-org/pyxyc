@@ -20,7 +20,7 @@ void dtors3_dtor(dtors3_Str p_s) {
 }
 
 void dtors3_test1(void) {
-    const dtors3_Person l_p = {0};
+    dtors3_Person l_p = {0};
     dtors3_dtor__Person(l_p);
 }
 

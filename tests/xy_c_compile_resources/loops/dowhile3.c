@@ -22,10 +22,10 @@ void dowhile3_dtor(dowhile3_TypeWithDtor p_resource) {
 
 void dowhile3_test(int32_t* p_x, int32_t* p_y) {
     do {
-        const dowhile3_TypeWithDtor l_a = {-1};
+        dowhile3_TypeWithDtor l_a = {-1};
         (*p_x)--;
         do {
-            const dowhile3_TypeWithDtor l_b = {-2};
+            dowhile3_TypeWithDtor l_b = {-2};
             (*p_y)++;
             if (*p_y > 0) {
                 dowhile3_dtor(l_b);

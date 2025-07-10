@@ -25,7 +25,7 @@ void while4_test(int32_t* p_x, int32_t* p_y) {
         abort();
     }
     while (while4_cond1(*p_x, *p_y)) {
-        const while4_TypeWithDtor l_a = {-1};
+        while4_TypeWithDtor l_a = {-1};
         (*p_x)--;
         if (!(*p_y < *p_x)) {
             abort();

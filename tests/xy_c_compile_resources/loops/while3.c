@@ -34,9 +34,9 @@ void while3_test(int32_t* p_x, int32_t* p_y) {
     }
     while (tmp_2_shortcircuit) {
         (*p_x)--;
-        const while3_TypeWithDtor l_a = {-1};
+        while3_TypeWithDtor l_a = {-1};
         if (*p_x == 10) {
-            const while3_TypeWithDtor l_b = {-1};
+            while3_TypeWithDtor l_b = {-1};
             if (*p_y < 20) {
                 while3_dtor(l_b);
                 while3_dtor(l_a);

@@ -2022,6 +2022,9 @@ def compile_vardecl(node, cast, cfunc, ctx):
                    else "Not a type")
         raise CompilationError(err_msg, err_node)
 
+    if type_desc.needs_dtor:
+        cvar.qtype.is_const = False
+
     if isinstance(type_desc, FuncTypeObj):
         # XXX Hack to corrent the name of the function that should be called
         type_desc = copy(type_desc)

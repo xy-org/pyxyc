@@ -30,7 +30,7 @@ void dtors4_dtor(dtors4_Str p_s) {
 }
 
 void dtors4_test(void) {
-    const dtors4_Top l_t = {0};
+    dtors4_Top l_t = {0};
     dtors4_dtor__Top(l_t);
 }
 
