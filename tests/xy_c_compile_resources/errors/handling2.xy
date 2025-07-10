@@ -1,0 +1,22 @@
+struct Error {
+    code: Int;
+}
+
+def to(err: Error, :Bool) err.code != 0;
+
+def errorProne(num: Int) -> Int || Error {
+    if (num > 10_000) {
+        error Error{num};
+    }
+    return num * 2;
+}
+
+def test(x: Int) -> Int {
+    a := errorProne(x + 1);
+    b := errorProne(x + 2);
+    |e: Error| {
+        printError(e);
+    }
+    c := a + errorProne(x + 3) + b;
+    return c;
+}

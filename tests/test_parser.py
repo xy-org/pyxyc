@@ -4134,3 +4134,112 @@ def test_global_constants(code, exp_ast):
 def test_toggles(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
+        def test() {
+            a := func() || value;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl(
+                        "a", mutable=False, value=ast.BinExpr(
+                            arg1=ast.FuncCall(ast.Id("func")),
+                            arg2=ast.Id("value"),
+                            op="||",
+                        )
+                    ),
+                ]
+            )
+        ]
+    ],
+    [
+        """
+        def test() {
+            a := func();
+            |e: Error| {
+                reportError();
+            }
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl(
+                        "a", mutable=False, value=ast.FuncCall(ast.Id("func")),
+                    ),
+                    ast.ErrorBlock(
+                        param=ast.VarDecl("e", type=ast.Id("Error"), is_param=True),
+                        body=[
+                            ast.FuncCall(ast.Id("reportError"))
+                        ]
+                    )
+                ]
+            )
+        ]
+    ],
+    [
+        """
+        def test() {
+            a := func();
+            || {
+                reportError();
+            }
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl(
+                        "a", mutable=False, value=ast.FuncCall(ast.Id("func"))
+                    ),
+                    ast.ErrorBlock(
+                        body=[
+                            ast.FuncCall(ast.Id("reportError"))
+                        ]
+                    )
+                ]
+            )
+        ]
+    ],
+    [
+        """
+        def test() {
+            a := func() || |e: Error| -> (res: Int) {
+                log(e);
+                res = -1;
+            };
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl(
+                        "a", mutable=False, value=ast.BinExpr(
+                            arg1=ast.FuncCall(ast.Id("func")),
+                            arg2=ast.ErrorBlock(
+                                param=ast.VarDecl("e", type=ast.Id("Error"), is_param=True),
+                                returns=[ast.VarDecl("res", type=ast.Id("Int"), mutable=True)],
+                                body=[
+                                    ast.FuncCall(ast.Id("log"), args=[ast.Id("e")]),
+                                    ast.BinExpr(ast.Id("res"), ast.Const(-1), op="="),
+                                ],
+                            ),
+                            op="||",
+                        )
+                    ),
+                ]
+            )
+        ]
+    ],
+])
+def test_error_handling_constructs(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast

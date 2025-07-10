@@ -340,22 +340,29 @@ def parse_block(itoken, accept_early_return=False):
 
     return block
 
-def parse_params(itoken):
+def parse_params(itoken, is_error_block=False):
     res = []
-    itoken.expect("(", msg="Missing param list")
+    term_bracket = "|" if is_error_block else ")"
+    itoken.expect("|" if is_error_block else "(", msg="Missing param list")
     itoken.skip_empty_lines()
     comment = ""
-    while itoken.peak() not in {")", "]", "}", ";"}:
+    while itoken.peak() not in {")", "]", "}", ";", "|"}:
         if itoken.check(";;"):
             comment = parse_ml_comment(itoken).comment
-        param = parse_expression(itoken)
+        if not is_error_block:
+            param = parse_expression(itoken)
+        else:
+            # needs some special handling for the terminating |
+            toplevel_precedence_map = {**operator_precedence}
+            del toplevel_precedence_map["|"]
+            param = parse_expression(itoken, op_prec=toplevel_precedence_map)
         if not isinstance(param, VarDecl):
             raise ParsingError("Invalid parameter. Proper syntax is 'name : Type = value'", itoken)
 
         if not itoken.check(","):
             # no , - better be the last param
             itoken.skip_empty_lines()
-            if itoken.peak() != ")":
+            if itoken.peak() != term_bracket:
                 raise ParsingError("Missing comma at end of parameter", itoken)
 
         if param.name is None:
@@ -374,7 +381,7 @@ def parse_params(itoken):
         itoken.skip_empty_lines()
 
     itoken.skip_empty_lines()
-    itoken.expect(")")
+    itoken.expect(term_bracket)
     return res
 
 def parse_toplevel_type_expr(itoken):
@@ -674,6 +681,9 @@ def parse_operand(itoken, precedence, op_prec):
         # announomous struct literal
         itoken.consume()
         arg1 = parse_struct_literal(itoken, None)
+    elif itoken.peak() == "|":
+        # inline error block
+        arg1 = parse_error_block(itoken)
     elif itoken.peak() == "$":
         arg1 = parse_func_select(itoken)
     elif itoken.peak() == "^":
@@ -1320,6 +1330,8 @@ def parse_stmt_list(itoken: TokenIter):
                 "Empty statements are not allowed. Please remove the semicolon.",
                 itoken
             )
+        elif itoken.peak() in {"|", "||"}:
+            node = parse_error_block(itoken)
         else:
             first_expr_token_idx = itoken.i
             node = parse_expression(itoken)
@@ -1378,6 +1390,20 @@ def parse_error(itoken):
         raise ParsingError("Only one error can be issued", itoken)
     node = Error(exprs[0], src=itoken.src, coords=coords)
     return node
+
+def parse_error_block(itoken):
+    res = ErrorBlock(src=itoken.src, coords=itoken.peak_coords())
+    if not itoken.check("||"):
+        params = parse_params(itoken, is_error_block=True)
+        if len(params) > 1:
+            raise ParsingError("Error blocks can have only one argument", itoken)
+        res.param = params[0]
+    res.coords = (res.coords[0], itoken.peak_coords()[0])
+    
+    block = parse_block(itoken)
+    res.returns = block.returns
+    res.body = block.body
+    return res
 
 def fuzzy_cmp(str1, str2):
     return SM(None, str1, str2).ratio()

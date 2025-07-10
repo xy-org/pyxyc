@@ -112,6 +112,7 @@ from xyc.compiler import CompilationError
     "globals/globals1",
     "globals/globals2",
     "errors/handling1",
+    #"errors/handling2",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)

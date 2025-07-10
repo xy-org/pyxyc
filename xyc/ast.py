@@ -267,6 +267,10 @@ def param(*args, **kwargs):
     return res
 
 @dataclass
+class ErrorBlock(Block):
+    param: VarDecl | None = None
+
+@dataclass
 class SliceExpr(Node):
     start: Node | None = None
     end: Node | None = None
