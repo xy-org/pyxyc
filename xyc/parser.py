@@ -422,6 +422,7 @@ def parse_expression(
 
     if (precedence == MIN_PRECEDENCE and isinstance(arg1, SliceExpr)
         and arg1.step is None and arg1.end is not None
+        and not isinstance(arg1.end, Const)
         and is_toplevel):
         # it's actually a var decl
         decl = VarDecl(mutable=not is_struct, src=arg1.src, coords=arg1.coords)
