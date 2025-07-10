@@ -1414,7 +1414,8 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     else:
         compile_pseudo = True
         compile_struct_fields(type_obj, ast, cast, ctx)
-        if len(type_obj.fields) == 0:
+        num_non_pseudo_fields = sum(int(not f.is_pseudo) for f in type_obj.fields.values())
+        if num_non_pseudo_fields == 0:
             empty_name = ensure_empty_struct(cast, ast, ctx)
             c_typedef.typename = "struct " + empty_name
             target_cast = None
