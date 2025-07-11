@@ -14,7 +14,7 @@ def errorProne(num: Int) -> Int | Error {
 def test(x: Int) -> Int {
     a := errorProne(x + 1);
     b := errorProne(x + 2);
-    |e: Error| {
+    ||e: Error|| {
         printError(e);
     }
     c := a + errorProne(x + 3) + b;
