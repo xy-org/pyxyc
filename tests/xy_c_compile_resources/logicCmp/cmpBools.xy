@@ -3,6 +3,6 @@ def test(a: Bool, b: Bool) {
     d := a != b;
     e := !a;
     f := !!a;
-    k := a & b;
-    l := a | b;
+    k := a && b;
+    l := a || b;
 }

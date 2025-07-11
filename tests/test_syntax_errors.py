@@ -31,7 +31,7 @@ from xyc.parser import parse_code, ParsingError
     ),
     (
         """
-        def func() -> int || Error {
+        def func() -> int | Error {
             err Error{0};
         }
         """,
@@ -53,13 +53,13 @@ def test_misplaced_semicolon(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def double(x: int) -> int || Error {
+        """def double(x: int) -> int | Error {
             error;
         }""",
         "Missing value for \"error\" statement"
     ),
     (
-        """def double(x: int) -> int || Error {
+        """def double(x: int) -> int | Error {
             error Error{code=1}, Error{code=2};
         }""",
         "Only one error can be issued"

@@ -2108,7 +2108,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 )
             else:
                 return do_compile_field_get(arg1_obj, expr.arg2, cast, cfunc, ctx, deref=deref, expr=expr)
-        elif expr.op in {'+=', '-=', '*=', '/=', '&=', '|='}:
+        elif expr.op in {'+=', '-=', '*=', '/=', '&&=', '||='}:
             val_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
             acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             acc_tmp = maybe_move_to_temp(acc_obj, cast, cfunc, ctx)
@@ -5745,8 +5745,8 @@ operatorToFname = fname = {
     "-": "sub",
     "*": "mul",
     "/": "div",
-    "|": "or",
-    "&": "and",
+    "||": "or",
+    "&&": "and",
     "==": "cmpEq",
     "!=": "cmpNe",
     ">": "cmpGt",

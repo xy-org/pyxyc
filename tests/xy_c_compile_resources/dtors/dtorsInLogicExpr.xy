@@ -25,5 +25,5 @@ def startswith(str: Str, prefix: Str) -> Bool {
 }
 
 def test(s1: Str, s2: Str) -> Bool {
-    return createStr1()'copy'startswith(s1) | createStr2()'copy'startswith(s2);
+    return createStr1()'copy'startswith(s1) || createStr2()'copy'startswith(s2);
 }

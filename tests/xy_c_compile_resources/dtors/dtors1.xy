@@ -20,7 +20,7 @@ def update(arr: mut Array) {
     # ...
 }
 
-def errorProne(arr: Array) -> void || Int {
+def errorProne(arr: Array) -> void | Int {
     # ...
 }
 
@@ -46,7 +46,7 @@ def test1() {
     errorProne(funcReturningAnObjectWithDtor(10));
 }
 
-def test2(rng: Int) -> void || Int {
+def test2(rng: Int) -> void | Int {
     arr1: mut Array;
     errorProne(arr1);
 
@@ -56,7 +56,7 @@ def test2(rng: Int) -> void || Int {
     arr3: mut Array;
 }
 
-def test3(rng: Int) -> Array || Int {
+def test3(rng: Int) -> Array | Int {
     arr1: mut Array;
     errorProne(arr1);
 
@@ -68,7 +68,7 @@ def test3(rng: Int) -> Array || Int {
     return if (rng == 0) arr1 elif (rng == 1) arr2 else arr3;
 }
 
-def test4(rng: Int) -> Array || Int {
+def test4(rng: Int) -> Array | Int {
     arr1: mut Array;
     errorProne(arr1);
 

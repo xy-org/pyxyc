@@ -6,7 +6,7 @@ def to(err: Error, :Bool) err.errorCode != 0;
 
 ;; Simple Error Issuing
 
-def power(x: Int, y: Int) -> Int || Error {
+def power(x: Int, y: Int) -> Int | Error {
     if (y < 0) {
         error Error{1};
     }
@@ -19,20 +19,20 @@ def power(x: Int, y: Int) -> Int || Error {
 
 ;; Error Propagation
 
-def errorPropagation(x: Int, y: Int) -> Int || Error {
+def errorPropagation(x: Int, y: Int) -> Int | Error {
     return power(x, y) - 1;
 }
 
-def doWork(x: Int) -> void || Error {
+def doWork(x: Int) -> void | Error {
     y := power(x, x);
     print(y);
 }
 
 def print(a: Int) -> void {}
 
-def doNothing() -> void || Error {}
+def doNothing() -> void | Error {}
 
-def callReturningErrorButNoResult(a: Int, b: Int) -> Int || Error {
+def callReturningErrorButNoResult(a: Int, b: Int) -> Int | Error {
     doWork(a);
     doWork(b);
 }
@@ -52,7 +52,7 @@ struct Error2 {
     b: Int;
 }
 
-def errorInFuncThatIssuesDifferentKindOfError(x: Int, y: Int) -> Int || Error2 {
+def errorInFuncThatIssuesDifferentKindOfError(x: Int, y: Int) -> Int | Error2 {
     if (x > 2*y) {
         error Error{1};
     }

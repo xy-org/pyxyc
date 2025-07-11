@@ -290,6 +290,11 @@ from xyc.tokenizer import split_tokens
         ['10_000', '0xAA_BB', '0_733', '0x_AF(16)', '0x_AF()b'],
         None
     ),
+    (
+        'a && b || c',
+        ['a', '&&', 'b', '||', 'c'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)

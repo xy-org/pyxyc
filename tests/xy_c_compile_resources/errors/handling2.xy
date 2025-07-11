@@ -4,7 +4,7 @@ struct Error {
 
 def to(err: Error, :Bool) err.code != 0;
 
-def errorProne(num: Int) -> Int || Error {
+def errorProne(num: Int) -> Int | Error {
     if (num > 10_000) {
         error Error{num};
     }

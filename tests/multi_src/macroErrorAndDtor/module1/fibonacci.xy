@@ -15,7 +15,7 @@ def dtor(f: Fib) {
 
 def fibonacci~IterCtor() mkFib();
 
-def mkFib~IterCtor()-> [ Fib ] || Error {
+def mkFib~IterCtor()-> [ Fib ] | Error {
     return Fib{};
 }
 

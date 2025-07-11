@@ -1,11 +1,11 @@
 def oneBit(:Bits64) 1l'to(Bits64);
 
 def get(b: Bits64, i: Int) -> Bool {
-    return (b & (b'oneBit \shiftl i))'to(Long) != 0;
+    return (b && (b'oneBit \shiftl i))'to(Long) != 0;
 }
 
 def set(b: mut Bits64, i: Int, val: Bool) -> b[ Int ] {
-    b = b | (val'to(Ulong)'to(Bits64) \shiftl i);
+    b = b || (val'to(Ulong)'to(Bits64) \shiftl i);
     return i;
 }
 
@@ -13,7 +13,7 @@ def testBitGetSet(i: Int) -> Bits64 {
     b: Bits64;
     b[0] = true;
     b[1] = b[i];
-    b[10] = b[0] | b[12];
+    b[10] = b[0] || b[12];
     return b;
 }
 
@@ -49,8 +49,8 @@ def testMixing() {
     a'bits[10] = b'bits[10];
     a'bits[11] = !a'bits[11];
 
-    c := (a'bits | b'bits);
-    d := (a'bits & b'bits)'to(Long);
+    c := (a'bits || b'bits);
+    d := (a'bits && b'bits)'to(Long);
     e := (a'bits != b'bits)'to(Long);
     f := (a'bits - b'bits)'to(Long);
 

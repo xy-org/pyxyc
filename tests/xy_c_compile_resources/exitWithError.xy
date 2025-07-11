@@ -1,3 +1,3 @@
-def main~EntryPoint() -> void || Int {
+def main~EntryPoint() -> void | Int {
     error 2;
 }

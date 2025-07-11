@@ -19,7 +19,7 @@ def dtor(resource: TypeWithDtor) {
 }
 
 def test(x: mut Int, y: mut Int) {
-    while (cond1(x, y) & cond2(y, x)) {
+    while (cond1(x, y) && cond2(y, x)) {
         x--;
         a := TypeWithDtor{-1};
         if (x == 10) {

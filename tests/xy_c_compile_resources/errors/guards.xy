@@ -26,7 +26,7 @@ def to(ec: ErrorCode, :Bool) -> Bool {
     return ec.code != 0;
 }
 
-def guards4(a: Int, b: Int) -> (c: Int) || ErrorCode
+def guards4(a: Int, b: Int) -> (c: Int) | ErrorCode
 >> a < b
 << b > c
 {

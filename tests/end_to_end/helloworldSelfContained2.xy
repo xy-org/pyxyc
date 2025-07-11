@@ -25,7 +25,7 @@ def to(err: ErrnoError, :Bool) -> Bool {
 }
 
 ;; Writes `msg` to `f`
-def write(f: File, msg: Str) -> void || ErrnoError {
+def write(f: File, msg: Str) -> void | ErrnoError {
     total : mut Size;
     while (total < msg.len) {
         written : Size = c.write(

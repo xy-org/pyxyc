@@ -359,7 +359,7 @@ def test_parse_num_literals(code, exp_ast):
     ],
     [
         """
-        def main~EntryPoint(a: int, b: long) -> int || Error
+        def main~EntryPoint(a: int, b: long) -> int | Error
         >> a > b
         {
             return a+b;
@@ -630,7 +630,7 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def func(x: int) -> void || Error {
+        def func(x: int) -> void | Error {
             error Error{x};
         }
         """,
@@ -802,7 +802,7 @@ def test_parse_advanced_funcs(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def func(input: Int) -> Int || Error {
+        """def func(input: Int) -> Int | Error {
               if (input < 0) return 0;
               return 100;
            }
@@ -826,7 +826,7 @@ def test_parse_advanced_funcs(code, exp_ast):
         ]
     ],
     [
-        """def func(input: Int) -> Int || Error {
+        """def func(input: Int) -> Int | Error {
               if (input < 0) error Error{-1};
               return 100;
            }
@@ -1735,7 +1735,7 @@ def test_simple_expressions(code, exp_ast):
             plusone := +1;
             addneg := a + -5;
             negadd := -b + a*-c;
-            notOp := !a & !true & !b | !(c & d);
+            notOp := !a && !true && !b || !(c && d);
             doubleNeg := !!b;
             doubleMinus := -b - -c;
             a := b~Tag-c;
@@ -1759,11 +1759,11 @@ def test_simple_expressions(code, exp_ast):
                     )
                 )),
                 ast.VarDecl("notOp", value=ast.BinExpr(
-                    op='|',
+                    op='||',
                     arg1=ast.BinExpr(
-                        op='&',
+                        op='&&',
                         arg1=ast.BinExpr(
-                            op='&',
+                            op='&&',
                             arg1=ast.UnaryExpr(op='!', arg=ast.Id("a")),
                             arg2=ast.UnaryExpr(
                                 op='!', arg=ast.Const(True, "true", "Bool")
@@ -1772,7 +1772,7 @@ def test_simple_expressions(code, exp_ast):
                         arg2=ast.UnaryExpr(op='!', arg=ast.Id("b")),
                     ),
                     arg2=ast.UnaryExpr(op='!', arg=ast.BinExpr(
-                        op='&',
+                        op='&&',
                         arg1=ast.Id("c"),
                         arg2=ast.Id("d"),
                     )),
@@ -2224,9 +2224,9 @@ def test_weird_expressions(code, exp_ast):
     [
         """def test() -> void {
             cb1: (:int)->int;
-            cb2: (a:int, b:int)->void||Error;
+            cb2: (a:int, b:int)->void|Error;
             cb3: (:mut int)->void;
-            cb4: Ptr~[()->Str||Error];
+            cb4: Ptr~[()->Str|Error];
         }
         """,
         [
@@ -4139,7 +4139,7 @@ def test_toggles(code, exp_ast):
     [
         """
         def test() {
-            a := func() || value;
+            a := func() | value;
         }
         """,
         [
@@ -4150,7 +4150,7 @@ def test_toggles(code, exp_ast):
                         "a", mutable=False, value=ast.BinExpr(
                             arg1=ast.FuncCall(ast.Id("func")),
                             arg2=ast.Id("value"),
-                            op="||",
+                            op="|",
                         )
                     ),
                 ]
@@ -4161,7 +4161,7 @@ def test_toggles(code, exp_ast):
         """
         def test() {
             a := func();
-            |e: Error| {
+            ||e: Error|| {
                 reportError();
             }
         }
@@ -4187,7 +4187,7 @@ def test_toggles(code, exp_ast):
         """
         def test() {
             a := func();
-            || {
+            || || {
                 reportError();
             }
         }
@@ -4211,7 +4211,7 @@ def test_toggles(code, exp_ast):
     [
         """
         def test() {
-            a := func() || |e: Error| -> (res: Int) {
+            a := func() | ||e: Error|| -> (res: Int) {
                 log(e);
                 res = -1;
             };
@@ -4232,7 +4232,7 @@ def test_toggles(code, exp_ast):
                                     ast.BinExpr(ast.Id("res"), ast.Const(-1), op="="),
                                 ],
                             ),
-                            op="||",
+                            op="|",
                         )
                     ),
                 ]

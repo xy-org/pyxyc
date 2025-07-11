@@ -4,13 +4,13 @@ def test() -> Uint {
     a: mut = 0xABCDu'to(Bits32);
     b: mut = 0x1234u'to(Bits32);
 
-    c := a | b;
-    d := a & b;
+    c := a || b;
+    d := a && b;
     e := a - b;
 
     f := (d \shiftl 4) - (e \shiftr 5);
 
-    g := !(c | f & e);
+    g := !(c || f && e);
 
     h := g \ashiftr 10;
 

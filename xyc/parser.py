@@ -286,7 +286,7 @@ def parse_block(itoken, accept_early_return=False):
         else:
             args = [parse_toplevel_type_expr(itoken)]
 
-        if itoken.check("||"):
+        if itoken.check("|"):
             block.etype = parse_toplevel_type_expr(itoken)
 
     for expr in args:
@@ -342,11 +342,11 @@ def parse_block(itoken, accept_early_return=False):
 
 def parse_params(itoken, is_error_block=False):
     res = []
-    term_bracket = "|" if is_error_block else ")"
-    itoken.expect("|" if is_error_block else "(", msg="Missing param list")
+    itoken.expect("||" if is_error_block else "(", msg="Missing param list")
+    term_bracket = "||" if is_error_block else ")"
     itoken.skip_empty_lines()
     comment = ""
-    while itoken.peak() not in {")", "]", "}", ";", "|"}:
+    while itoken.peak() not in {")", "]", "}", ";", "||"}:
         if itoken.check(";;"):
             comment = parse_ml_comment(itoken).comment
         if not is_error_block:
@@ -354,7 +354,7 @@ def parse_params(itoken, is_error_block=False):
         else:
             # needs some special handling for the terminating |
             toplevel_precedence_map = {**operator_precedence}
-            del toplevel_precedence_map["|"]
+            del toplevel_precedence_map["||"]
             param = parse_expression(itoken, op_prec=toplevel_precedence_map)
         if not isinstance(param, VarDecl):
             raise ParsingError("Invalid parameter. Proper syntax is 'name : Type = value'", itoken)
@@ -390,6 +390,7 @@ def parse_toplevel_type_expr(itoken):
     # or
     # def func() -> Type1 || Type2 || Type3 {...}
     toplevel_precedence_map = {**operator_precedence}
+    del toplevel_precedence_map["|"]
     del toplevel_precedence_map["||"]
     del toplevel_precedence_map["{"]
     del toplevel_precedence_map["="]
@@ -408,8 +409,8 @@ operator_precedence = {
     "+": 7, "-": 7,
     "<": 6, "<=": 6, ">=": 6, ">": 6, ":": 6, "+:": 6, "*:": 6, "-:": 6,
     "==": 5, "!=": 5, "in": 5,
-    "&": 4,
-    "|": 3, "||": 3,
+    "&&": 4,
+    "||": 3, "|": 3,
     "=": 2, '+=': 2, '-=': 2, "|=": 2, "&=": 2, '*=': 2, '/=': 2, ".=": 2, "=<": 2, "=>": 2, # right assoc
 }
 MIN_PRECEDENCE=2
@@ -620,7 +621,7 @@ def parse_operand(itoken, precedence, op_prec):
             else:
                 ret_args = [parse_toplevel_type_expr(itoken)]
 
-            if itoken.check("||"):
+            if itoken.check("|"):
                 arg1.etype = parse_toplevel_type_expr(itoken)
 
             for expr in ret_args:
@@ -681,7 +682,7 @@ def parse_operand(itoken, precedence, op_prec):
         # announomous struct literal
         itoken.consume()
         arg1 = parse_struct_literal(itoken, None)
-    elif itoken.peak() == "|":
+    elif itoken.peak() == "||":
         # inline error block
         arg1 = parse_error_block(itoken)
     elif itoken.peak() == "$":
@@ -1330,8 +1331,6 @@ def parse_stmt_list(itoken: TokenIter):
                 "Empty statements are not allowed. Please remove the semicolon.",
                 itoken
             )
-        elif itoken.peak() in {"|", "||"}:
-            node = parse_error_block(itoken)
         else:
             first_expr_token_idx = itoken.i
             node = parse_expression(itoken)
@@ -1393,11 +1392,11 @@ def parse_error(itoken):
 
 def parse_error_block(itoken):
     res = ErrorBlock(src=itoken.src, coords=itoken.peak_coords())
-    if not itoken.check("||"):
-        params = parse_params(itoken, is_error_block=True)
-        if len(params) > 1:
-            raise ParsingError("Error blocks can have only one argument", itoken)
-        res.param = params[0]
+    assert itoken.peak() == "||"
+    params = parse_params(itoken, is_error_block=True)
+    if len(params) > 1:
+        raise ParsingError("Error blocks can have only one argument", itoken)
+    res.param = params[0] if len(params) > 0 else None
     res.coords = (res.coords[0], itoken.peak_coords()[0])
     
     block = parse_block(itoken)
@@ -1409,6 +1408,8 @@ def fuzzy_cmp(str1, str2):
     return SM(None, str1, str2).ratio()
 
 def should_have_semicolon_after_expr(node):
+    if isinstance(node, ErrorBlock):
+        return False
     if not isinstance(node, (IfExpr, ForExpr, WhileExpr)):
         return True
     return node.block.is_embedded and should_have_semicolon_after_expr(node.block.body)
