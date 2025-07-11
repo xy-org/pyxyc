@@ -321,6 +321,13 @@ class NamespaceType:
     Loop = 1
 
 @dataclass
+class CatchFrame:
+    var_name: str
+    err_label: str
+    inferred_type: TypeExprObj = None
+    ref_count: int = 0
+
+@dataclass
 class NamespaceData:
     type: NamespaceType = None
     continue_label_name: str = None
@@ -725,6 +732,8 @@ class CompilerContext:
 
     global_types: list[TypeObj] = field(default_factory=list)
 
+    catch_frames: list[CatchFrame] = field(default_factory=list)
+
     entrypoint_obj: any = None
     entrypoint_priority: int = 0
     void_obj: any = None
@@ -790,6 +799,12 @@ class CompilerContext:
             table.data.type = ns_type
         self.data_namespaces.append(table)
         return table
+    
+    def push_catch_frame(self, cf: CatchFrame):
+        self.catch_frames.append(cf)
+
+    def pop_catch_frame(self):
+        self.catch_frames.pop()
 
     @property
     def ns(self):
@@ -1882,6 +1897,8 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
         elif isinstance(node, xy.VarDecl):
             validate_name(node, ctx)
             vardecl_obj = compile_vardecl(node, cast, cfunc, ctx)
+            if len(cfunc.body) > 0 and isinstance(cfunc.body[-1], c.Label):
+                cfunc.body.append(c.InlineCode(""))  # don't generate a label to a definition which is c23 specific
             cfunc.body.append(vardecl_obj.c_node)
         else:
             expr_obj = compile_expr(node, cast, cfunc, ctx, deref=False)
@@ -2240,6 +2257,40 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             )
         else:
             raise CompilationError("Invalid expression", expr)
+    elif isinstance(expr, xy.CatchExpr):
+        catch_var_name = ctx.gen_tmp_name("catch")
+        catch_err_label = ctx.gen_tmp_label_name("catch")
+        frame = CatchFrame(catch_var_name, catch_err_label)
+        c_vardecl = c.VarDecl(catch_var_name)
+        cfunc.body.append(c_vardecl)
+
+        ctx.push_catch_frame(frame)
+        expr_obj = compile_expr(expr.expr, cast, cfunc, ctx, deref)
+        ctx.pop_catch_frame()
+
+        if not is_simple_cexpr(expr_obj.c_node):
+            cfunc.body.append(expr_obj.c_node)
+
+        # optimizations for cleaner code
+        if not (
+            frame.ref_count <= 1 and len(cfunc.body) > 0 and isinstance(cfunc.body[-1], c.If) and
+            len(cfunc.body[-1].body) == 1 and isinstance(cfunc.body[-1].body[0], c.Goto) and
+            cfunc.body[-1].body[0].label.name == catch_err_label
+        ):
+            cfunc.body.append(c.Label(catch_err_label))
+        else:
+            cfunc.body.pop()
+
+        if frame.inferred_type is None:
+            raise CompilationError("Expression doesn't produce any errors", expr)
+        c_vardecl.value = frame.inferred_type.init_value
+        c_vardecl.qtype = c.QualType(c.Type(frame.inferred_type.c_name), is_const=False)
+
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.Id(catch_var_name),
+            inferred_type=frame.inferred_type,
+        )
     elif isinstance(expr, xy.FuncCall):
         return maybe_deref(
             compile_fcall(expr, cast, cfunc, ctx),
@@ -4236,10 +4287,22 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
         if func_obj.etype_obj is not None:
             # error handling
-            err_obj = ctx.create_tmp_var(func_obj.etype_obj, name_hint="err")
-            err_obj.c_node.qtype.is_const = True
-            err_obj.c_node.value = res
-            cfunc.body.append(err_obj.c_node)
+
+            # first get the catch frame if any
+            cf: CatchFrame = ctx.catch_frames[-1] if len(ctx.catch_frames) > 0 else None
+
+            if cf is None:
+                err_obj = ctx.create_tmp_var(func_obj.etype_obj, name_hint="err")
+                err_obj.c_node.qtype.is_const = True
+                err_obj.c_node.value = res
+                cfunc.body.append(err_obj.c_node)
+                err_obj_c_name = err_obj.c_node.name
+            else:
+                cf.ref_count += 1
+                cfunc.body.append(c.Expr(
+                    c.Id(cf.var_name), res, op="="
+                ))
+                err_obj_c_name = cf.var_name
 
             # TODO firgure out a way to remove this two expr_objs
             bool_expr_obj = ExprObj(
@@ -4250,7 +4313,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             )
             err_expr_obj = ExprObj(
                 xy_node=expr,
-                c_node=c.Id(err_obj.c_node.name),
+                c_node=c.Id(err_obj_c_name),
                 inferred_type=func_obj.etype_obj
             )
             check_error_fcall = find_and_call(
@@ -4262,9 +4325,12 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             check_if = c.If(
                 cond=check_error_fcall.c_node,
             )
-            if func_obj.etype_obj is ctx.current_fobj.etype_obj:
+            if cf is not None:
+                cf.inferred_type = func_obj.etype_obj
+                check_if.body.append(c.Goto(c.Id(cf.err_label)))
+            elif func_obj.etype_obj is ctx.current_fobj.etype_obj:
                 call_all_dtors(cast, check_if, ctx)
-                check_if.body.append(c.Return(c.Id(err_obj.c_node.name)))
+                check_if.body.append(c.Return(c.Id(err_obj_c_name)))
             else:
                 # call unhandled
                 do_compile_unhandled_code(expr, err_expr_obj, cast, check_if, caller_ctx, callee_ctx)

@@ -682,6 +682,16 @@ def parse_operand(itoken, precedence, op_prec):
         # announomous struct literal
         itoken.consume()
         arg1 = parse_struct_literal(itoken, None)
+    elif itoken.peak() == "|":
+        # catch expression
+        arg1 = CatchExpr(src=itoken.src, coords=itoken.peak_coords())
+        itoken.consume()
+        toplevel_precedence_map = {**operator_precedence}
+        del toplevel_precedence_map["|"]
+        expr = parse_expression(itoken, op_prec=toplevel_precedence_map)
+        arg1.expr = expr
+        arg1.coords = (arg1.coords[0], itoken.peak_coords()[1])
+        itoken.expect("|")
     elif itoken.peak() == "||":
         # inline error block
         arg1 = parse_error_block(itoken)

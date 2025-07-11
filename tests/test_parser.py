@@ -4239,6 +4239,25 @@ def test_toggles(code, exp_ast):
             )
         ]
     ],
+    [
+        """
+        def test() {
+            err := | func() |;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.VarDecl(
+                        "err", mutable=False, value=ast.CatchExpr(
+                            expr=ast.FuncCall(ast.Id("func")),
+                        )
+                    ),
+                ]
+            )
+        ]
+    ],
 ])
 def test_error_handling_constructs(code, exp_ast):
     act_ast = parse_code(code)

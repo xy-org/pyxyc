@@ -271,6 +271,10 @@ class ErrorBlock(Block):
     param: VarDecl | None = None
 
 @dataclass
+class CatchExpr(Node):
+    expr: Node = None
+
+@dataclass
 class SliceExpr(Node):
     start: Node | None = None
     end: Node | None = None
