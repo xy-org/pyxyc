@@ -799,7 +799,7 @@ class CompilerContext:
             table.data.type = ns_type
         self.data_namespaces.append(table)
         return table
-    
+
     def push_catch_frame(self, cf: CatchFrame):
         self.catch_frames.append(cf)
 
@@ -977,7 +977,7 @@ class CompilerContext:
                 )
             )
         return res
-    
+
     def register_global_type(self, type_obj):
         self.global_types.append(type_obj)
 
@@ -2994,7 +2994,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
 
         if field_obj is not None and field_obj.type_desc is recursive_pseudo_field_type_obj:
             raise CompilationError(f"Cannot set value for pseudo field `{field_objs[i].xy_node.name}`. Pseudo fields cannot initialize other pseudo fields.", expr)
-        
+
         if (field_obj is None or field_obj.xy_node.is_pseudo):
             first_non_trivial_idx = min(first_non_trivial_idx, i)
 
