@@ -552,6 +552,16 @@ src.xy:2:34: error: Empty define
                                    ^^^
 """
     ),
+    (
+        """
+        def test() { 0'addrof; }
+        """,
+        """\
+src.xy:2:24: error: Cannot get address of a const
+|         def test() { 0'addrof; }
+                         ^^^^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

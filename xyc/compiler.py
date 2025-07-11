@@ -4844,7 +4844,7 @@ def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
         inferred_type=inferred_type
     )
 
-def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx):
+def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx: CompilerContext):
     if isinstance(arg_obj.compiled_obj, VarObj) and arg_obj.compiled_obj.c_node is not None:
         # Pointers in xy don't have any constness attached to them so
         # any const variables must be made non-const
@@ -4854,7 +4854,16 @@ def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx):
         type_obj = type_obj.base_type_obj
         c_node=arg_obj.c_node
     else:
-        c_node=c.UnaryExpr(arg=arg_obj.c_node, op="&", prefix=True)
+        arg_c_node = arg_obj.c_node
+        if isinstance(arg_c_node, (c.Const, c.CompoundLiteral)):
+            if isinstance(arg_obj.xy_node, (xy.Const, xy.StrLiteral)):
+                raise CompilationError("Cannot get address of a const", expr)
+            tmp_obj = ctx.create_tmp_var(type_obj, "addrof", expr)
+            cfunc.body.append(tmp_obj.c_node)
+            arg_c_node = c.Id(tmp_obj.c_node.name)
+
+        c_node=c.UnaryExpr(arg=arg_c_node, op="&", prefix=True)
+
     return ExprObj(
         c_node=c_node,
         inferred_type=ptr_type_to(type_obj, ctx)
