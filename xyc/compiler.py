@@ -642,9 +642,11 @@ def check_type_compatibility(xy_node, expr1_obj, expr2_obj, ctx, fcall_rules=Fal
 
 def fcall_sig(name, args_inferred_types, inject_args=False):
     sig = name + "(" + \
-        ", ".join(fmt_type(t) for t in args_inferred_types)
+        ", ".join(fmt_type(t) for t in args_inferred_types.args)
     if len(args_inferred_types.kwargs) > 0:
-        sig += ", " + \
+        if len(args_inferred_types.args) > 0:
+            sig += ", "
+        sig += \
         ", ".join(f"{pname}: {fmt_type(t)}" for pname, t in args_inferred_types.kwargs.items()) + \
         (", ..." if inject_args else "" )
     sig +=  ")"
@@ -5623,6 +5625,10 @@ def do_compile_unhandled_code(expr, err_obj, cast, cfunc, caller_ctx, callee_ctx
     if unhandled_fobj is not None:
         unhandled_call_obj = do_compile_fcall(expr, unhandled_fobj, unhandled_args, cast, cfunc, unhandled_ctx)
         cfunc.body.append(unhandled_call_obj.c_node)
+    elif not caller_ctx.builder.abort_on_unhandled:
+        # uncaught error
+        cast.includes.append(c.Include("stdio.h"))  # TODO remove that just use write(2)
+        gen_print_var("Uncaught", err_obj, cast, cfunc.body, unhandled_ctx)
 
     if not caller_ctx.stdlib_included:
         cast.includes.append(c.Include("stdlib.h"))

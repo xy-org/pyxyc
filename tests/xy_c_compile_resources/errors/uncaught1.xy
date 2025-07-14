@@ -1,0 +1,15 @@
+struct Error {
+    code: Int;
+}
+
+def to(err: Error, :Bool) err.code != 0;
+
+def errorProne(a: Int) -> Int | Error {
+    if (a < 0) {
+        error Error{10};
+    }
+}
+
+def test(var: Int) {
+    errorProne(var - 1);
+}

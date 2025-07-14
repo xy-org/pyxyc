@@ -113,6 +113,7 @@ from xyc.compiler import CompilationError
     "globals/globals2",
     "errors/handling1",
     "errors/handling2",
+    "errors/uncaught1",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)
@@ -121,7 +122,7 @@ def test_c_compilation(resource_dir, filename):
         src_path,
         module_name=module_name
     )
-    rich_errors = "richErrors" in filename
+    rich_errors = "richErrors" in filename or "uncaught" in filename
     c_project = builder.compile_project(
         project, os.path.dirname(src_path),
         rich_errors=rich_errors, abort_on_unhandled=not rich_errors
