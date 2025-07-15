@@ -295,6 +295,11 @@ from xyc.tokenizer import split_tokens
         ['a', '&&', 'b', '||', 'c'],
         None
     ),
+    (
+        'import libxy.(cli, array);',
+        ['import', 'libxy', '.', '(', 'cli', ',', 'array', ')', ';'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)

@@ -44,6 +44,15 @@ code_ast = [
             )),
         ],
     ],
+    [
+        "import libxy.(cli, array, string, mod1.mod2) in libxy;",
+        [
+            ast.Import(lib="libxy.cli", in_name="libxy"),
+            ast.Import(lib="libxy.array", in_name="libxy"),
+            ast.Import(lib="libxy.string", in_name="libxy"),
+            ast.Import(lib="libxy.mod1.mod2", in_name="libxy"),
+        ],
+    ],
 ]
 @pytest.mark.parametrize("code, exp_ast", code_ast)
 def test_parse_import(code, exp_ast):
@@ -81,7 +90,7 @@ def test_parse_import_error(code, err_msg):
         ]
     ],
     [
-        """#  comment with leading and trailing spaces  
+        """#  comment with leading and trailing spaces
         """,
         [
         ]

@@ -154,9 +154,14 @@ def parse_import(itoken):
     coords = itoken.peak_coords()
     itoken.consume()  # "import"
     lib = itoken.consume()
-    while not itoken.peak_eol() and itoken.peak() == ".":
-        itoken.consume()
-        lib += "." + itoken.consume()
+    multi = []
+    while not itoken.peak_eol() and itoken.check("."):
+        if itoken.check("("):
+            multi = parse_expr_list(itoken, is_toplevel=False)
+            itoken.expect(")")
+            break
+        else:
+            lib += "." + itoken.consume()
 
     tags = TagList()
     if itoken.check("~"):
@@ -177,9 +182,22 @@ def parse_import(itoken):
         raise ParsingError("Importing more than one module at a time is NYI.", itoken)
     itoken.expect_semicolon(msg=f"Missing ';' at end of import. {semicolon_error_explanation}")
 
-    return Import(
-        lib=lib, in_name=in_name, tags=tags, src=itoken.src, coords=coords
-    )
+    res = []
+    if len(multi) == 0:
+        res.append(
+            Import(
+                lib=lib, in_name=in_name, tags=tags, src=itoken.src, coords=coords
+            )
+        )
+    else:
+        for sub_expr in multi:
+            sub_lib = lib + "." + sub_expr.src.code[sub_expr.coords[0]:sub_expr.coords[1]]
+            res.append(
+                Import(
+                    lib=sub_lib, in_name=in_name, tags=tags, src=itoken.src, coords=coords
+                )
+            )
+    return res
 
 def parse_sl_comment(itoken):
     comment_start = itoken.token_pos[itoken.i-1]+1
@@ -1296,7 +1314,10 @@ def parse_stmt_list(itoken: TokenIter):
         coords = itoken.peak_coords()
 
         if itoken.peak() == "import":
-            node = parse_import(itoken)
+            imports = parse_import(itoken)
+            if len(imports) > 1:
+                body.extend(imports[0:-1])
+            node = imports[-1]
         elif itoken.check("#"):
             node = parse_sl_comment(itoken)
         elif itoken.check(";;"):
@@ -1408,7 +1429,7 @@ def parse_error_block(itoken):
         raise ParsingError("Error blocks can have only one argument", itoken)
     res.param = params[0] if len(params) > 0 else None
     res.coords = (res.coords[0], itoken.peak_coords()[0])
-    
+
     block = parse_block(itoken)
     res.returns = block.returns
     res.body = block.body
