@@ -1,0 +1,26 @@
+struct Complex {
+    # fields ...
+    this := 0;
+    that := 10;
+}
+
+def dtor(c: Complex) {
+    # ...
+}
+
+def setupThis(c: mut Complex, val: Int) {
+    c.this = val;
+}
+
+def setupThat(c: mut Complex) {
+    c.that += c.this;
+}
+
+def test() {
+    a := Complex{
+        5,
+        that=20,
+        'setupThis(50),
+        'setupThat,
+    };
+}

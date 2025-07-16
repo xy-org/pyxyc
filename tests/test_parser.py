@@ -2589,6 +2589,29 @@ def test_parse_struct(code, exp_ast):
             ),
         ],
     ],
+    [
+        """
+        def func() Struct{
+            positional,
+            name=value,
+            'setup(),
+        };
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("func"),
+                params=[],
+                body=ast.StructLiteral(
+                    ast.Id("Struct"),
+                    args=[
+                        ast.Id("positional"),
+                        ast.BinExpr(ast.Id("name"), ast.Id("value"), op="="),
+                        ast.FuncCall(ast.Id("setup"), inject_context=True),
+                    ]
+                )
+            ),
+        ],
+    ],
 ])
 def test_struct_literals(code, exp_ast):
     act_ast = parse_code(code)

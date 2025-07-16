@@ -109,6 +109,7 @@ from xyc.compiler import CompilationError
     "funcs/paramTypeEnum",
     "structs/fieldInit",
     "structs/subFieldInit",
+    "structs/subInitFunc",
     "globals/globals1",
     "globals/globals2",
     "errors/handling1",

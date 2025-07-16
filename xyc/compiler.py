@@ -754,6 +754,8 @@ class CompilerContext:
 
     caller_contexts: list['CompilerContext'] = field(default_factory=list)
 
+    ctx_obj_stack: list['CompiledObj'] = field(default_factory=list)
+
     empty_struct_name: str | None = None
 
     def __post_init__(self):
@@ -807,6 +809,12 @@ class CompilerContext:
 
     def pop_catch_frame(self):
         self.catch_frames.pop()
+
+    def push_ctx_obj(self, new_ctx_obj):
+        self.ctx_obj_stack.append(new_ctx_obj)
+
+    def pop_ctx_obj(self):
+        self.ctx_obj_stack.pop()
 
     @property
     def ns(self):
@@ -2072,6 +2080,12 @@ def compile_vardecl(node, cast, cfunc, ctx):
         else:
             cvar.value = type_desc.init_value
 
+    # TODO check if types support assignment
+
+    # auto move if RHS is a tmp i.e. disable dtor
+    if value_obj is not None and is_tmp_expr(value_obj) and value_obj.compiled_obj is not None:
+        value_obj.compiled_obj.needs_dtor = False
+
     # remove repeated type in case of struct literals or casts
     if isinstance(cvar.value, c.CompoundLiteral):
         cvar.value = c.InitList(elems=cvar.value.args)
@@ -2967,9 +2981,16 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
     # do early error checking
     already_set_fields = set()
     any_named = False
+    any_init_funcs = False
     first_non_trivial_idx = len(expr_args)
     for i, arg in enumerate(expr_args):
-        if isinstance(arg, xy.BinExpr) and arg.op=="=":
+        is_init_func = isinstance(arg, xy.FuncCall) and arg.inject_context
+        if any_init_funcs and not is_init_func:
+            raise CompilationError("Mixing init funcs and named or positional arguments is NYI", arg)
+        elif is_init_func:
+            field_obj = None
+            any_init_funcs = True
+        elif isinstance(arg, xy.BinExpr) and arg.op=="=":
             # named field
             any_named = True
             name = None
@@ -3003,8 +3024,11 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
     # iterate a second time to compute values
     pos_objs = [None] * num_real_fields
     expr_objs = []
+    init_func_calls = []
     for i, arg in enumerate(expr_args):
-        if isinstance(arg, xy.BinExpr) and arg.op=="=":
+        if isinstance(arg, xy.FuncCall) and arg.inject_context:
+            init_func_calls.append(arg)
+        elif isinstance(arg, xy.BinExpr) and arg.op=="=":
             # named field
             name = getattr(arg.arg1, 'name', None)
             val_obj = compile_expr(arg.arg2, cast, cfunc, ctx)
@@ -3025,7 +3049,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
 
     # create tmp if needed
     injected_tmp = False
-    if tmp_obj is None and first_non_trivial_idx < len(expr_args):
+    if tmp_obj is None and (first_non_trivial_idx < len(expr_args) or any_init_funcs):
         tmp_obj = ctx.create_tmp_var(type_obj)
         cfunc.body.append(tmp_obj.c_node)
         injected_tmp = True
@@ -3089,6 +3113,12 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
             if not isinstance(obj.c_node, c.Id):
                 cfunc.body.append(obj.c_node)
 
+        ctx.push_ctx_obj(tmp_expr_obj)
+        for init_fcall in init_func_calls:
+            obj = compile_fcall(init_fcall, cast, cfunc, ctx)
+            cfunc.body.append(obj.c_node)
+        ctx.pop_ctx_obj()
+
     # optimize the resulting expression
     if type_obj.builtin and isinstance(res, c.CompoundLiteral) and len(res.args) == 1:
         val = res.args[0]
@@ -3100,7 +3130,8 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
     return ExprObj(
         xy_node=expr,
         c_node=res,
-        inferred_type=type_obj
+        inferred_type=type_obj,
+        compiled_obj=tmp_obj,
     )
 
 def should_pass_by_ref(param: xy.VarDecl, type_obj):
@@ -3501,6 +3532,8 @@ def fselect_unnamed(expr, arg_types: ArgList, ctx: CompilerContext, partial_matc
 
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     arg_exprs = ArgList()
+    if expr.inject_context and len(ctx.ctx_obj_stack) > 0:
+        arg_exprs.args.append(ctx.ctx_obj_stack[-1])
     expr_to_move_idx = None
     for i in range(len(expr.args)):
 
