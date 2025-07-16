@@ -1922,7 +1922,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 idx_obj = maybe_deref(expr_obj.idx, True, cast, cfunc, ctx)
                 if idx_obj.c_node is not None and not is_simple_cexpr(idx_obj.c_node):
                     cfunc.body.append(idx_obj.c_node)
-            if expr_obj.c_node is not None and not isinstance(expr_obj.c_node, c.Id):
+            elif expr_obj.c_node is not None and not isinstance(expr_obj.c_node, c.Id):
                 cfunc.body.append(expr_obj.c_node)
 
     # call dtors if any
@@ -2124,7 +2124,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
     if isinstance(expr, xy.Const):
         return compile_const(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.BinExpr):
-        if expr.op not in {'.', '=', '.=', '..', '=<', '+=', '-=', '*=', '/='}:
+        if expr.op not in {'.', '=', '.=', '..', '=<', '+=', '-=', '*=', '/=', '@=', '@'}:
             return compile_binop(expr, cast, cfunc, ctx)
         elif expr.op == '.':
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
@@ -2147,6 +2147,27 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             acc_tmp = maybe_move_to_temp(acc_obj, cast, cfunc, ctx)
             math_op = find_and_call(operatorToFname[expr.op[0]], ArgList([acc_tmp, val_obj]), cast, cfunc, ctx, expr)
             return compile_assign(acc_obj, math_op, cast, cfunc, ctx, expr)
+        elif expr.op == '@=':
+            acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
+            return do_compile_append(acc_obj, expr.arg2, cast, cfunc, ctx, expr)
+        elif expr.op == '@':
+            acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
+            if not isinstance(acc_obj.compiled_obj, (TypeExprObj, TypeObj)):
+                copy_obj = find_and_call("copy", ArgList([acc_obj]), cast, cfunc, ctx, expr)
+            else:
+                copy_obj = ExprObj(
+                    expr, c_node=acc_obj.compiled_obj.init_value, inferred_type=acc_obj.compiled_obj,
+                )
+            tmp_obj = ctx.create_tmp_var(copy_obj.inferred_type, "comp")
+            tmp_obj.c_node.value = copy_obj.c_node
+            cfunc.body.append(tmp_obj.c_node)
+            tmp_obj = ExprObj(
+                expr,
+                c_node=c.Id(tmp_obj.c_node.name),
+                inferred_type=tmp_obj.inferred_type,
+                compiled_obj=tmp_obj,
+            )
+            return do_compile_append(tmp_obj, expr.arg2, cast, cfunc, ctx, expr)
         elif expr.op == '.=':
             if not (isinstance(expr.arg2, xy.StructLiteral) and expr.arg2.name is None):
                 raise CompilationError("The right hand side of the '.=' operator must be an anonymous struct literal")
@@ -2442,6 +2463,16 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_caller_context_expr(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
+
+def do_compile_append(dst_obj, val: xy.Node, cast, cfunc, ctx, expr):
+    vals = [val]
+    if isinstance(val, xy.StructLiteral) and val.name is None:
+            vals = val.args
+    for val_expr in vals:
+        val_obj = compile_expr(val_expr, cast, cfunc, ctx)
+        append_fcall = find_and_call("append", ArgList([dst_obj, val_obj]), cast, cfunc, ctx, expr)
+        cfunc.body.append(append_fcall.c_node)
+    return dst_obj
 
 def compile_const(expr, cast, cfunc, ctx):
     rtype_obj = ctx.get_compiled_type(xy.Id(
@@ -4195,7 +4226,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                         # TODO maybe call compile_id
                         var_decl = ctx.lookup(pobj.xy_node.name, is_func=False)
                         if var_decl is not None and not isinstance(var_decl, VarObj):
-                            raise CompilationError("'{pobj.xy_node.name}' is not a var", pobj.xy_node)
+                            raise CompilationError(f"'{pobj.xy_node.name}' is not a var", pobj.xy_node)
                         elif var_decl is not None and compatible_types(var_decl.inferred_type, pobj.type_desc):
                             if var_decl.xy_node.is_pseudo:
                                 raise CompilationError(f"'{pobj.xy_node.name}' is a pseudo param", var_decl.xy_node)

@@ -2066,6 +2066,48 @@ def test_simple_expressions(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def test(s: mut Array) {
+            s @ Val{};
+            s @= Val{};
+            s @= { Val{}, Val{} };
+        }""",
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                params=[
+                    ast.VarDecl("s", type=ast.Id("Array"), mutable=True, is_param=True)
+                ],
+                body=[
+                    ast.BinExpr(
+                        ast.Id("s"),
+                        ast.StructLiteral(
+                            ast.Id("Val"),
+                        ),
+                        op = "@",
+                    ),
+                    ast.BinExpr(
+                        ast.Id("s"),
+                        ast.StructLiteral(
+                            ast.Id("Val"),
+                        ),
+                        op = "@=",
+                    ),
+                    ast.BinExpr(
+                        ast.Id("s"),
+                        ast.StructLiteral(
+                            name=None,
+                            args=[
+                                ast.StructLiteral(ast.Id("Val")),
+                                ast.StructLiteral(ast.Id("Val")),
+                            ],
+                        ),
+                        op = "@=",
+                    )
+                ]
+            ),
+        ]
+    ],
 ])
 def test_expressions(code, exp_ast):
     act_ast = parse_code(code)
@@ -3346,8 +3388,8 @@ def test_parse_multiline_strings(code, exp_ast):
             a := @{0, 1};
             b := @int[2]{0, 1};
             c := @int[]{0, 1};
-            d := List~int@{0, 1};
-            e := list@{0, 1};
+            d := List~int @ {0, 1};
+            e := list @ {0, 1};
         }
         """,
         [
@@ -3369,16 +3411,22 @@ def test_parse_multiline_strings(code, exp_ast):
                             ast.Id("int"), dims=[]
                         )
                     )),
-                    ast.VarDecl("d", value=ast.ArrayLit(
-                        elems=[ast.Const(0), ast.Const(1)],
-                        base=ast.AttachTags(
+                    ast.VarDecl("d", value=ast.BinExpr(
+                        arg1=ast.AttachTags(
                             arg=ast.Id("List"),
                             tags=ast.TagList(args=[ast.Id("int")]),
-                        )
+                        ),
+                        arg2=ast.StructLiteral(
+                            name=None, args=[ast.Const(0), ast.Const(1)],
+                        ),
+                        op="@",
                     )),
-                    ast.VarDecl("e", value=ast.ArrayLit(
-                        elems=[ast.Const(0), ast.Const(1)],
-                        base=ast.Id("list"),
+                    ast.VarDecl("e", value=ast.BinExpr(
+                        arg1=ast.Id("list"),
+                        arg2=ast.StructLiteral(
+                            name=None, args=[ast.Const(0), ast.Const(1)]
+                        ),
+                        op="@",
                     )),
                 ]
             ),

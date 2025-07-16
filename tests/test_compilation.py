@@ -20,6 +20,7 @@ from xyc.compiler import CompilationError
     "arrays/arrayComprehension",
     "arrays/listLiterals",
     "arrays/modifyingArrays",
+    "arrays/arrayAppend",
     #"arrays/arrayTypeInference",
     #"arrays/arrayAddress",
     "cinterop/cimport",

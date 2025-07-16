@@ -2,7 +2,12 @@ struct List~[elem: struct, xy_dtor=true] {
     mem: Ptr;
 }
 
-def push(l: mut List, num: Int) {
+def copy(l: mut List) -> List {
+    # ...
+    return List{};
+}
+
+def append(l: mut List, num: Int) {
 }
 
 def dtor(l: mut List) {}
@@ -10,5 +15,5 @@ def dtor(l: mut List) {}
 def test() {
     list1 := List~Int@{1, 2, 3};
     list2 := list1@{3, 2, 1};
-    # TODO list3 := List~Int @for(i in @{1, 2, 3}) i*10;
+    list3 := List~Int @for(i in @{1, 2, 3}) i*10;
 }

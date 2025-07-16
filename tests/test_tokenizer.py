@@ -300,6 +300,16 @@ from xyc.tokenizer import split_tokens
         ['import', 'libxy', '.', '(', 'cli', ',', 'array', ')', ';'],
         None
     ),
+    (
+        's @= val;',
+        ['s', '@=', 'val', ';'],
+        None
+    ),
+    (
+        's @ val; s@val;',
+        ['s', '@', 'val', ';', 's', '@', 'val', ';'],
+        None
+    ),
 ])
 def test_split_tokens(code, tokens, token_pos):
     res = split_tokens(code)

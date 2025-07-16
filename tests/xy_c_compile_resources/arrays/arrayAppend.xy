@@ -1,0 +1,18 @@
+struct Array {
+    # ...
+}
+
+def append(arr: mut Array, val: Int) {
+    # ...
+}
+
+def copy(arr: mut Array) -> Array {
+    # ...
+    return Array{};
+}
+
+def test(arr: mut Array) -> Array {
+    arr @= 1;
+    arr @= {2, 3, 4};
+    return arr @ {5, 6};
+}

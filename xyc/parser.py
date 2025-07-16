@@ -429,7 +429,7 @@ operator_precedence = {
     "==": 5, "!=": 5, "in": 5,
     "&&": 4,
     "||": 3, "|": 3,
-    "=": 2, '+=': 2, '-=': 2, "|=": 2, "&=": 2, '*=': 2, '/=': 2, ".=": 2, "=<": 2, "=>": 2, # right assoc
+    "=": 2, '+=': 2, '-=': 2, "|=": 2, "&=": 2, '*=': 2, '/=': 2, ".=": 2, "=<": 2, "=>": 2, "@=": 2, # right assoc
 }
 MIN_PRECEDENCE=2
 UNARY_PRECEDENCE=10
@@ -573,8 +573,6 @@ def combine_op(op, arg1, rhs, my_slice, itoken):
         arg1 = decl
     elif op == '~':
         arg1 = AttachTags(arg1, TagList([rhs]))
-    elif op == "@" and isinstance(rhs, StructLiteral):
-        arg1 = ArrayLit(rhs.args, base=arg1)  # TODO should we really do that
     else:
         arg1 = BinExpr(arg1, rhs, op=op)
 
@@ -584,7 +582,7 @@ def combine_op(op, arg1, rhs, my_slice, itoken):
     return arg1, my_slice
 
 def is_right_assoc(op):
-    return op in {"=", "+=", "-=", "*=", "/=", "&=", "|=", "=<", "~"}
+    return op in {"=", "+=", "-=", "*=", "/=", "&=", "|=", "=<", "@=", "~"}
 
 def parse_operand(itoken, precedence, op_prec):
     if itoken.peak() == "if":
