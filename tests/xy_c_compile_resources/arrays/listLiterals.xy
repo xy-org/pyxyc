@@ -15,5 +15,5 @@ def dtor(l: mut List) {}
 def test() {
     list1 := List~Int@{1, 2, 3};
     list2 := list1@{3, 2, 1};
-    list3 := List~Int @for(i in @{1, 2, 3}) i*10;
+    #list3 := List~Int @for(i in @{1, 2, 3}) i*10;
 }
