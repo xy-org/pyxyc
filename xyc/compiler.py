@@ -2148,15 +2148,19 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             math_op = find_and_call(operatorToFname[expr.op[0]], ArgList([acc_tmp, val_obj]), cast, cfunc, ctx, expr)
             return compile_assign(acc_obj, math_op, cast, cfunc, ctx, expr)
         elif expr.op == '@=':
-            acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
-            return do_compile_append(acc_obj, expr.arg2, cast, cfunc, ctx, expr)
+            if not isinstance(expr.arg2, xy.ForExpr):
+                acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
+                return do_compile_append(acc_obj, expr.arg2, cast, cfunc, ctx, expr)
+            # else list comprihension like expression but with @=
+            list_comp = xy.ListComprehension(list_type=expr.arg1, loop=expr.arg2, coords=expr.coords, src=expr.src)
+            return compile_list_comprehension(list_comp, cast, cfunc, ctx, is_assign=True)
         elif expr.op == '@':
             acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             if not isinstance(acc_obj.compiled_obj, (TypeExprObj, TypeObj)):
                 copy_obj = find_and_call("copy", ArgList([acc_obj]), cast, cfunc, ctx, expr)
             else:
                 copy_obj = ExprObj(
-                    expr, c_node=acc_obj.compiled_obj.init_value, inferred_type=acc_obj.compiled_obj,
+                    expr, c_node=acc_obj.compiled_obj.init_value, inferred_type=acc_obj.inferred_type,
                 )
             tmp_obj = ctx.create_tmp_var(copy_obj.inferred_type, "comp")
             tmp_obj.c_node.value = copy_obj.c_node
@@ -2470,9 +2474,24 @@ def do_compile_append(dst_obj, val: xy.Node, cast, cfunc, ctx, expr):
             vals = val.args
     for val_expr in vals:
         val_obj = compile_expr(val_expr, cast, cfunc, ctx)
-        append_fcall = find_and_call("append", ArgList([dst_obj, val_obj]), cast, cfunc, ctx, expr)
+        append_fcall = find_and_call_append(ArgList([dst_obj, val_obj]), cast, cfunc, ctx, expr)
         cfunc.body.append(append_fcall.c_node)
     return dst_obj
+
+def find_and_call_append(arg_list: ArgList, cast, cfunc, ctx, expr):
+    fobj: FuncObj = find_func_obj("append", arg_list, cast, cfunc, ctx, expr)
+
+    if fobj.move_args_to_temps:
+        # we move the last argument if we need to. Previous arguments must have
+        # been moved by the function caller
+        arg_list.args[-1] = maybe_move_to_temp(arg_list.args[-1], cast, cfunc, ctx)
+
+    return do_compile_fcall(
+        expr,
+        fobj,
+        arg_exprs=arg_list,
+        cast=cast, cfunc=cfunc, ctx=ctx
+    )
 
 def compile_const(expr, cast, cfunc, ctx):
     rtype_obj = ctx.get_compiled_type(xy.Id(
@@ -4037,6 +4056,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=ctx.size_obj
         )
     elif is_builtin_func(func_obj, "sizeof"):
+        # TODO this crashes for whatever reason redact_code(arg_exprs[0], cast, cfunc, ctx)
         return ExprObj(
             c_node=c.FuncCall("sizeof", [arg_exprs[0].c_node]),
             inferred_type=ctx.size_obj
@@ -4715,7 +4735,7 @@ def compile_srclineof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         cast, cfunc, ctx
     )
 
-def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: CompilerContext):
+def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: CompilerContext, is_assign=False):
     if len(expr.loop.over) != 1:
         raise CompilationError("List Comprehension with more than one loop is NYI", expr.loop)
     if isinstance(expr.loop.block.body, list):
@@ -4726,6 +4746,26 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
     iter_var_name = expr.loop.over[0].arg1
     container_obj = compile_expr(container_node, cast, cfunc, ctx)
     container_obj = maybe_move_to_temp(container_obj, cast, cfunc, ctx)
+
+    dst_obj = None
+    if expr.list_type is not None:
+        dst_obj = compile_expr(expr.list_type, cast, cfunc, ctx, deref=False)
+        if not is_assign:
+            if not isinstance(dst_obj.compiled_obj, (TypeExprObj, TypeObj)):
+                copy_obj = find_and_call("copy", ArgList([dst_obj]), cast, cfunc, ctx, expr)
+            else:
+                copy_obj = ExprObj(
+                    expr, c_node=dst_obj.compiled_obj.init_value, inferred_type=dst_obj.inferred_type,
+                )
+            tmp_obj = ctx.create_tmp_var(copy_obj.inferred_type, "comp")
+            tmp_obj.c_node.value = copy_obj.c_node
+            cfunc.body.append(tmp_obj.c_node)
+            dst_obj = ExprObj(
+                expr,
+                c_node=c.Id(tmp_obj.c_node.name),
+                inferred_type=copy_obj.inferred_type,
+                compiled_obj=tmp_obj,
+            )
 
     if isinstance(container_obj.inferred_type, ArrTypeObj):
         arr_len = container_obj.inferred_type.dims[0]
@@ -4739,10 +4779,14 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
                 inferred_type=container_obj.inferred_type.base_type_obj,
             )
             elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
-            c_node.elems.append(elem_obj.c_node)
+            if dst_obj is None:
+                c_node.elems.append(elem_obj.c_node)
+            else:
+                append_fcall = find_and_call_append(ArgList([dst_obj, elem_obj]), cast, cfunc, ctx, expr)
+                cfunc.body.append(append_fcall.c_node)
         ctx.pop_ns()
 
-        return ExprObj(
+        return dst_obj or ExprObj(
             xy_node=expr,
             c_node=c_node,
             inferred_type=container_obj.inferred_type
@@ -4763,17 +4807,23 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
                 compiled_obj=f_obj.compiled_obj,
             )
             elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
-            c_node.elems.append(elem_obj.c_node)
+            if dst_obj is None:
+                c_node.elems.append(elem_obj.c_node)
+            else:
+                append_fcall = find_and_call_append(ArgList([dst_obj, elem_obj]), cast, cfunc, ctx, expr)
+                cfunc.body.append(append_fcall.c_node)
             elem_type_obj = elem_obj.inferred_type
         ctx.pop_ns()
 
-        return ExprObj(
+        res_inferred_type = ArrTypeObj(
+            xy_node=expr, c_node=c_node, dims=[arr_len],
+            base_type_obj=elem_type_obj
+        )
+
+        return dst_obj or ExprObj(
             xy_node=expr,
             c_node=c_node,
-            inferred_type=ArrTypeObj(
-                xy_node=expr, c_node=c_node, dims=[arr_len],
-                base_type_obj=elem_type_obj
-            )
+            inferred_type=res_inferred_type
         )
     elif container_obj.inferred_type is fselection_type_obj:
         func_type_objs: list[FuncTypeObj] = container_obj.compiled_obj
@@ -4789,7 +4839,11 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
                 compiled_obj=func_type_obj.func_obj,
             )
             elem_obj = compile_expr(expr.loop.block.body, cast, cfunc, ctx)
-            c_node.elems.append(elem_obj.c_node)
+            if dst_obj is None:
+                c_node.elems.append(elem_obj.c_node)
+            else:
+                append_fcall = find_and_call_append(ArgList([dst_obj, elem_obj]), cast, cfunc, ctx, expr)
+                cfunc.body.append(append_fcall.c_node)
             elem_type_obj = elem_obj.inferred_type
         ctx.pop_ns()
 
@@ -4803,7 +4857,7 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
                 "Cannot infer type of empty array"
             )
 
-        return ExprObj(
+        return dst_obj or ExprObj(
             xy_node=expr,
             c_node=c_node,
             inferred_type=inferred_type

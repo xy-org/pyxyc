@@ -3436,6 +3436,7 @@ def test_parse_multiline_strings(code, exp_ast):
         """def comprehension() -> void {
             a := @{0, 1};
             b := @for (i in a) i*2;
+            c := list @for (i in a) i;
         }
         """,
         [
@@ -3453,6 +3454,17 @@ def test_parse_multiline_strings(code, exp_ast):
                             ],
                             block=ast.Block(
                                 body=ast.BinExpr(ast.Id("i"), ast.Const(2), "*"),
+                            )
+                        ),
+                    )),
+                    ast.VarDecl("c", value=ast.ListComprehension(
+                        list_type=ast.Id("list"),
+                        loop=ast.ForExpr(
+                            over=[
+                                ast.BinExpr(op="in", arg1=ast.Id("i"), arg2=ast.Id("a"))
+                            ],
+                            block=ast.Block(
+                                body=ast.Id("i")
                             )
                         ),
                     )),

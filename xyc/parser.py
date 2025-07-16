@@ -573,6 +573,8 @@ def combine_op(op, arg1, rhs, my_slice, itoken):
         arg1 = decl
     elif op == '~':
         arg1 = AttachTags(arg1, TagList([rhs]))
+    elif op == "@" and isinstance(rhs, ForExpr):
+        arg1 = ListComprehension(arg1, rhs)
     else:
         arg1 = BinExpr(arg1, rhs, op=op)
 
