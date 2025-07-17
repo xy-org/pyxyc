@@ -3605,6 +3605,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
                 )
                 expr_to_move_idx = None
             obj = maybe_move_to_temp(obj, cast, dummy_func, ctx)
+            obj.redact_cfunc = cfunc
             obj.first_cnode_idx = len(cfunc.body)
             cfunc.body.extend(dummy_func.body)
             obj.num_cnodes = len(cfunc.body) - obj.first_cnode_idx
@@ -4056,9 +4057,13 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=ctx.size_obj
         )
     elif is_builtin_func(func_obj, "sizeof"):
-        # TODO this crashes for whatever reason redact_code(arg_exprs[0], cast, cfunc, ctx)
+        if arg_exprs[0].num_cnodes > 0:
+            redact_code(arg_exprs[0], cast, cfunc, ctx)
+            c_node = c.Id(arg_exprs[0].inferred_type.c_name)
+        else:
+            c_node = arg_exprs[0].c_node
         return ExprObj(
-            c_node=c.FuncCall("sizeof", [arg_exprs[0].c_node]),
+            c_node=c.FuncCall("sizeof", [c_node]),
             inferred_type=ctx.size_obj
         )
     elif is_builtin_func(func_obj, "offsetof"):
@@ -4228,6 +4233,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     compiled_obj=arg, inferred_type=arg.inferred_type
                 )
                 redact_code(arg, cast, cfunc, ctx)
+            arg.num_cnodes = 0  # the time for code reduction is over so lets disable it
             check_type_compatibility(arg.xy_node, pobj, arg, ctx, fcall_rules=True)
             if pobj.xy_node.is_pseudo:
                 continue
@@ -4923,7 +4929,7 @@ def ensure_func_decl(func_obj: FuncObj, cast, cfunc, ctx):
 def redact_code(obj: ExprObj, cast, cfunc, ctx):
     if obj.num_cnodes > 0:
         for idx in range(obj.first_cnode_idx, obj.first_cnode_idx + obj.num_cnodes):
-            cfunc.body[idx] = c.Empty()
+            getattr(obj, 'redact_cfunc', cfunc).body[idx] = c.Empty()
     if isinstance(obj, ExprObj):
         for tmp_var_name in obj.tmp_var_names:
             ctx.ns.pop(tmp_var_name, None)

@@ -107,7 +107,7 @@ from xyc.compiler import CompilationError
     "logicCmp/minMax",
     "logicCmp/shortcircuit",
     "ctti/srcLocFuncs",
-    #"ctti/sizeofNoEval",
+    "ctti/sizeofNoEval",
     "funcs/paramTypeEnum",
     "structs/fieldInit",
     "structs/subFieldInit",
