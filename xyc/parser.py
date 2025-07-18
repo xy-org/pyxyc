@@ -1311,7 +1311,12 @@ def parse_stmt_list(itoken: TokenIter):
     comment_node = None
     itoken.skip_empty_lines()
     while itoken.has_more() and itoken.peak() != "}":
-        coords = itoken.peak_coords()
+        visibility = None
+        if itoken.peak() in visibilityMap:
+            vis_idx = itoken.i
+            visibility = visibilityMap[itoken.consume()]
+            if itoken.peak() == "\n":
+                raise ParsingError("Visibility marker cannot stand on its own", itoken)
 
         if itoken.peak() == "import":
             imports = parse_import(itoken)
@@ -1324,16 +1329,6 @@ def parse_stmt_list(itoken: TokenIter):
             node = parse_ml_comment(itoken)
         elif itoken.peak() == "def":
             node = parse_def(itoken)
-        elif itoken.peak() in visibilityMap:
-            next_token = itoken.peakn(2)[1]
-            if next_token == "def":
-                node = parse_def(itoken)
-            elif next_token == "struct":
-                node = parse_struct(itoken)
-            elif next_token == "\n":
-                raise ParsingError("Visibility marker must be on the same line as the def or struct", itoken)
-            else:
-                raise ParsingError("Only defs and structs can have visibility", itoken)
         elif itoken.peak() == "struct":
             node = parse_struct(itoken)
         elif itoken.check("from"):
@@ -1380,6 +1375,15 @@ def parse_stmt_list(itoken: TokenIter):
                     "Malformed expression. Maybe missing operator or semicolon.",
                     itoken, notes=notes
                 )
+
+        if visibility is not None and hasattr(node, 'visibility'):
+            node.visibility = visibility
+        elif visibility is not None:
+            itoken.i = vis_idx
+            raise ParsingError(
+                "Only func defs, structs, and global vars can have visibility", itoken
+            )
+
         if not isinstance(node, Comment):
             if comment_node is not None:
                 node.comment = comment_node.comment
@@ -1399,6 +1403,7 @@ def parse_stmt_list(itoken: TokenIter):
 
     if comment_node is not None:
         body.append(comment_node)
+
     return body
 
 def parse_return(itoken):

@@ -321,7 +321,7 @@ def test_callbacks_and_fselect(code, err_msg):
     ),
     (
         "*\ndef func() {}",
-        "Visibility marker must be on the same line as the def or struct"
+        "Visibility marker cannot stand on its own"
     ),
     (
         "struct *Struct() {}",

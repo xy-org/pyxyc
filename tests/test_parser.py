@@ -2769,6 +2769,24 @@ def test_static_expr(code, exp_ast):
             ),
         ]
     ],
+    [
+        """
+        -a := 0;
+        +b := 1;
+        *c := 2;
+        """,
+        [
+            ast.VarDecl(
+                "a", visibility=ast.ModuleVisibility, value=ast.Const(0),
+            ),
+            ast.VarDecl(
+                "b", visibility=ast.PackageVisibility, value=ast.Const(1),
+            ),
+            ast.VarDecl(
+                "c", visibility=ast.PublicVisibility, value=ast.Const(2),
+            ),
+        ]
+    ],
 ])
 def test_visibility(code, exp_ast):
     act_ast = parse_code(code)

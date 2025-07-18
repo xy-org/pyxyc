@@ -1,0 +1,9 @@
+speedOfLight := 299_792_458;
+
+struct Universe {
+    c := speedOfLight;
+}
+
+def test() {
+    u : Universe;
+}

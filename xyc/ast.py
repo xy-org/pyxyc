@@ -250,15 +250,16 @@ class VarDecl(Node):
     is_callerContext: bool = False
     is_move: bool = False
     index_in: Node | None = None
+    visibility: str = PackageVisibility
 
     @property
     def is_index(self):
         return self.index_in is not None
-    
+
     @property
     def is_based(self):
         return self.index_in is not nobase
-    
+
 nobase = Id("")
 
 def param(*args, **kwargs):

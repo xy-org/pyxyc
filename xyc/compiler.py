@@ -1257,6 +1257,7 @@ def compile_header(ctx: CompilerContext, asts, cast):
                     xy_node=node,
                     c_node=cdef,
                 )
+                try_compile_const_value(ctx.data_ns[node.name], node.value, cast, ctx)
                 cast.consts.append(cdef)
 
 
@@ -1264,11 +1265,8 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
     for ast in asts:
         for node in ast:
-            if isinstance(node, xy.VarDecl):
-                _ = ctx.eval(node.value)
-                value_obj = compile_expr(node.value, cast, None, ctx)
-                ctx.data_ns[node.name].c_node.value = value_obj.c_node
-                ctx.data_ns[node.name].type_desc = value_obj.inferred_type
+            if isinstance(node, xy.VarDecl) and ctx.data_ns[node.name].c_node.value is None:
+                do_compile_const_value(ctx.data_ns[node.name], node.value, cast, ctx)
 
     fobjs = []
     for ast in asts:
@@ -1299,6 +1297,28 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 fill_missing_dtors(type_obj, fobjs, asts, cast, ctx)
 
     return fobjs
+
+def try_compile_const_value(obj, node, cast, ctx):
+    can_compile_now = False
+    try:
+        do_compile_const_value(obj, node, cast, ctx)
+        ctx.eval(node)
+        can_compile_now = True
+    except:
+        pass
+
+    if can_compile_now:
+        value_obj = compile_expr(node, cast, None, ctx)
+        obj.c_node.value = value_obj.c_node
+        obj.type_desc = value_obj.inferred_type
+
+    return can_compile_now
+
+def do_compile_const_value(obj, node, cast, ctx):
+    ctx.eval(node)
+    value_obj = compile_expr(node, cast, None, ctx)
+    obj.c_node.value = value_obj.c_node
+    obj.type_desc = value_obj.inferred_type
 
 def create_fobj(node: xy.FuncDef, fobjs, ctx):
     for i, param in enumerate(node.params):
@@ -1489,6 +1509,9 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             if isinstance(default_value_obj, InstanceObj):
                 # I don't like that. Why not just call compile_expr
                 default_value_obj.c_node = compile_expr(field.value, cast, None, ctx).c_node
+            elif isinstance(default_value_obj, VarObj):
+                default_value_obj = copy(default_value_obj)  # Don't overwrite var obj
+                default_value_obj.c_node = c.Id(default_value_obj.c_node.name)
             if field_type_obj is None:
                 field_type_obj = default_value_obj.inferred_type
             elif field_type_obj is not default_value_obj.inferred_type:
