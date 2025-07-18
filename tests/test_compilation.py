@@ -73,6 +73,7 @@ from xyc.compiler import CompilationError
     "boundaryExpr/boundaryExpr2",
     "boundaryExpr/boundaryExpr3",
     "boundaryExpr/boundaryExpr4",
+    "boundaryExpr/boundaryExpr5",
     "structs/properties",
     "exitWithError",
     "ctti/fieldsof",

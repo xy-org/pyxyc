@@ -1,0 +1,27 @@
+struct Str {
+    data: Ptr~Byte;
+    size: Size;
+}
+
+def dtor(s: Str) {
+        # ...
+}
+
+def str~[StrCtor{prefix=""}](data: Ptr, len: Size) Str{data, len};
+
+struct Log {
+    level: Int;
+}
+
+*def info(^msg: Str, log : Log) =
+if (log.level <= 0) {
+    write(^msg);
+};
+
+def write(msg: Str) {
+    # ...
+}
+
+def test() {
+    info("message", Log{});
+}

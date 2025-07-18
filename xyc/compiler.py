@@ -3755,6 +3755,7 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
         compiled_obj=tmp_obj,
         first_cnode_idx=expr_obj.first_cnode_idx if expr_obj.num_cnodes > 0 else len(cfunc.body)-1,
         num_cnodes=expr_obj.num_cnodes + 1 if expr_obj.num_cnodes > 0 else 1,
+        tmp_var_names={tmp_obj.c_node.name},
     )
 
 def is_simple_cexpr(expr):
@@ -4930,12 +4931,19 @@ def redact_code(obj: ExprObj, cast, cfunc, ctx):
     if obj.num_cnodes > 0:
         for idx in range(obj.first_cnode_idx, obj.first_cnode_idx + obj.num_cnodes):
             getattr(obj, 'redact_cfunc', cfunc).body[idx] = c.Empty()
+        obj.num_cnodes = 0
     if isinstance(obj, ExprObj):
         for tmp_var_name in obj.tmp_var_names:
-            ctx.ns.pop(tmp_var_name, None)
+            for ns in ctx.data_namespaces[::-1]:
+                if ns.pop(tmp_var_name, None) is not None:
+                    break
+        obj.tmp_var_names = set()
     if isinstance(obj.compiled_obj, ExprObj):
         for tmp_var_name in obj.compiled_obj.tmp_var_names:
-            ctx.ns.pop(tmp_var_name, None)
+            for ns in ctx.data_namespaces[::-1]:
+                if ns.pop(tmp_var_name, None) is not None:
+                    break
+        obj.compiled_obj.tmp_var_names = set()
 
 def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
     assert len(arg_exprs) in range(1, 3)
