@@ -1,0 +1,13 @@
+struct Data {
+    a: Int;
+    b: Long;
+}
+
+def test(val: mut Int) -> Data {
+    res := Data {
+        a=< val,
+        b= 10_000l,
+    };
+    # ...
+    return res;
+}

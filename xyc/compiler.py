@@ -3061,7 +3061,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         elif is_init_func:
             field_obj = None
             any_init_funcs = True
-        elif isinstance(arg, xy.BinExpr) and arg.op=="=":
+        elif isinstance(arg, xy.BinExpr) and arg.op in {"=", "=<"}:
             # named field
             any_named = True
             name = None
@@ -3099,10 +3099,12 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
     for i, arg in enumerate(expr_args):
         if isinstance(arg, xy.FuncCall) and arg.inject_context:
             init_func_calls.append(arg)
-        elif isinstance(arg, xy.BinExpr) and arg.op=="=":
+        elif isinstance(arg, xy.BinExpr) and arg.op in {"=", "=<"}:
             # named field
             name = getattr(arg.arg1, 'name', None)
             val_obj = compile_expr(arg.arg2, cast, cfunc, ctx)
+            if arg.op == "=<":
+                val_obj = move_out(val_obj, cast, cfunc, ctx)
             expr_objs.append((arg.arg1, val_obj))
             field_obj = type_obj.fields.get(name, None)
             field_i = name_to_pos.get(name, -1)
