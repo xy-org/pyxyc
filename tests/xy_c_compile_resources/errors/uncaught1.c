@@ -21,7 +21,13 @@ void uncaught1_test(int32_t p_var) {
     int32_t tmp_0_res = 0;
     const uncaught1_Error tmp_1_err = uncaught1_errorProne(p_var - 1, &tmp_0_res);
     if (tmp_1_err.m_code != 0) {
-        fprintf(stderr, "    %s=Error{code=%d}\n", "Uncaught", tmp_1_err.m_code);
+        fprintf(stderr, "\n");
+        fprintf(stderr, "%s=Error{code=%d}", "Error", tmp_1_err.m_code);
+        fprintf(stderr, "\ntests/xy_c_compile_resources/errors/uncaught1.xy:%d ", 14);
+        fprintf(stderr, "When calling uncaught1.errorProne!\n");
+        fprintf(stderr, "| %s\n", "    errorProne(var - 1);");
+        fprintf(stderr, "Arguments to Function are:\n");
+        fprintf(stderr, "    %s=%d\n", "a", p_var - 1);
         exit(200);
     }
 }

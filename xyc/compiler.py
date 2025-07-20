@@ -2273,27 +2273,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
     elif isinstance(expr, xy.Id):
         var_obj = ctx.eval(expr, f"Cannot find variable '{expr.name}'")
         if isinstance(var_obj, VarObj):
-            c_node = c.Id(var_obj.c_node.name) if var_obj.c_node is not None else None
-            if var_obj.passed_by_ref:
-                res = IdxObj(
-                    xy_node=expr,
-                    inferred_type=var_obj.type_desc,
-                    container=param_container,
-                    c_node=c.UnaryExpr(c_node, op="*", prefix=True),  # references are the only one with a c_node
-                    idx=ExprObj(
-                        xy_node=expr,
-                        c_node=c_node,
-                        inferred_type=ptr_type_to(var_obj.type_desc, ctx)
-                    )
-                )
-                return maybe_deref(res, deref, cast, cfunc, ctx)
-
-            return ExprObj(
-                xy_node=expr,
-                c_node=c_node,
-                inferred_type=var_obj.type_desc,
-                compiled_obj=var_obj,
-            )
+            return var_to_expr_obj(expr, var_obj, cast, cfunc, ctx, deref)
         elif isinstance(var_obj, TypeObj):
             return ExprObj(
                 xy_node=expr,
@@ -2491,6 +2471,29 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
 
+def var_to_expr_obj(expr, var_obj, cast, cfunc, ctx, deref):
+    c_node = c.Id(var_obj.c_node.name) if var_obj.c_node is not None else None
+    if var_obj.passed_by_ref:
+        res = IdxObj(
+            xy_node=expr,
+            inferred_type=var_obj.type_desc,
+            container=param_container,
+            c_node=c.UnaryExpr(c_node, op="*", prefix=True),  # references are the only one with a c_node
+            idx=ExprObj(
+                xy_node=expr,
+                c_node=c_node,
+                inferred_type=ptr_type_to(var_obj.type_desc, ctx)
+            )
+        )
+        return maybe_deref(res, deref, cast, cfunc, ctx)
+
+    return ExprObj(
+        xy_node=expr,
+        c_node=c_node,
+        inferred_type=var_obj.type_desc,
+        compiled_obj=var_obj,
+    )
+
 def do_compile_append(dst_obj, val: xy.Node, cast, cfunc, ctx, expr):
     vals = [val]
     if isinstance(val, xy.StructLiteral) and val.name is None:
@@ -2680,9 +2683,9 @@ def is_c_true(c_node):
     return isinstance(c_node, c.Const) and c_node.value
 
 def is_tmp_expr(obj: ExprObj):
+    c_name = obj.c_node.name if isinstance(obj.c_node, (c.Id, c.VarDecl)) else ""
     return (
-        isinstance(obj.c_node, c.Id) and obj.c_node.name.startswith("tmp") and
-        '_' in obj.c_node.name
+        c_name.startswith("tmp") and '_' in c_name
     )
 
 def maybe_deref(obj: CompiledObj, deref: bool, cast, cfunc, ctx):
@@ -4333,15 +4336,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     out_guards = func_obj.xy_node.out_guards if func_obj.xy_node is not None else []
     if (len(in_guards) + len(out_guards)) > 0:
         cast.includes.append(c.Include("stdlib.h"))
-    param_print_code = []
+    param_print_code = c.Block()
     for guard in in_guards:
         guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
         if not is_ct_true(guard_obj):
             on_guard_fail = []
-            gen_guard_failed_code(expr, guard, func_obj, cast, on_guard_fail, ctx)
-            if len(param_print_code) == 0:
+            gen_guard_failed_code(guard, func_obj, cast, on_guard_fail, ctx, is_guard=True)
+            if len(param_print_code.body) == 0:
                 gen_print_params_code(cast, param_print_code, ctx)
-            on_guard_fail.extend(param_print_code)
+            on_guard_fail.extend(param_print_code.body)
 
             if ctx.builder.abort_on_unhandled:
                 on_guard_fail.append(c.FuncCall("abort"))
@@ -4449,7 +4452,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 check_if.body.append(c.Return(c.Id(err_obj_c_name)))
             else:
                 # call unhandled
-                do_compile_unhandled_code(expr, err_expr_obj, cast, check_if, caller_ctx, callee_ctx)
+                do_compile_unhandled_code(expr, err_expr_obj, cast, check_if, caller_ctx, callee_ctx, func_obj)
             cfunc.body.append(check_if)
 
         else:
@@ -4534,46 +4537,57 @@ def do_compile_field_get(obj, field_node, cast, cfunc, ctx, deref=False, expr=No
         field_obj = struct_obj.fields[field_name]
         return field_obj.default_value_obj
 
-def gen_guard_failed_code(expr, guard, func_obj: FuncObj, cast, cbody, ctx: CompilerContext):
+def gen_guard_failed_code(expr, func_obj: FuncObj, cast, cbody, ctx: CompilerContext, is_guard=False):
     if not ctx.builder.rich_errors:
         return
 
     cast.includes.append(c.Include("stdio.h"))
-    fn = os.path.relpath(guard.src.filename)
+    fn = os.path.relpath(expr.src.filename)
     cbody.append(c.FuncCall("fprintf", args=[
         c.Id("stderr"),
         c.Const(f"\"\\n{fn}:%d \""),
-        c.Const(find_lineof(guard))
+        c.Const(find_lineof(expr))
     ]))
-    func_fullname = func_obj.module_header.module_name if func_obj.module_header else ctx.module_name
-    func_fullname += "." + ctx.eval_to_id(func_obj.xy_node.name)
-    cbody.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const(f"\"Guard failed when calling {func_fullname}!\\n\"")]))
-    linesrc = escape_str(find_linesrc(guard))
+    func_module_name = func_obj.module_header.module_name if func_obj.module_header else ctx.module_name
+    func_fullname = func_module_name + "." + ctx.eval_to_id(func_obj.xy_node.name)
+    general_message = f"\"Guard failed when calling {func_fullname}!\\n\""
+    if not is_guard:
+        general_message = f"\"When calling {func_fullname}!\\n\""
+    cbody.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const(general_message)]))
+    linesrc = escape_str(find_linesrc(expr))
     cbody.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const(f"\"| %s\\n\""), c.Const(f"\"{linesrc}\"")]))
 
-def gen_print_params_code(cast, cbody, ctx: CompilerContext):
+def gen_print_params_code(cast, cfunc, ctx: CompilerContext):
     if not ctx.builder.rich_errors:
         return
-    cbody.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const("\"Arguments to Function are:\\n\"")]))
+    cfunc.body.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const("\"Arguments to Function are:\\n\"")]))
     for name, obj in ctx.ns.items():
-        gen_print_var(name, obj, cast, cbody, ctx)
+        if not is_tmp_expr(obj):
+            gen_print_var(name, obj, cast, cfunc, ctx)
 
-def gen_print_var(name, obj: CompiledObj, cast, cbody, ctx):
+def gen_print_var(name, obj: CompiledObj, cast, cfunc, ctx, ident=4, endl=True):
     fmt = []
     args = []
 
-    decompose_obj_in_prints(obj, fmt, args, ctx)
+    decompose_obj_in_prints(obj, fmt, args, cast, cfunc, ctx)
 
     fmt = "".join(fmt)
-    cbody.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const(f"\"    %s={fmt}\\n\""), c.Const(f"\"{name}\""), *args]))
+    end = '\\n' if endl else ''
+    cfunc.body.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const(f"\"{' ' * ident }%s={fmt}{end}\""), c.Const(f"\"{name}\""), *args]))
 
-def decompose_obj_in_prints(obj, fmt, args, ctx: CompilerContext):
+def decompose_obj_in_prints(obj, fmt, args, cast, cfunc, ctx: CompilerContext):
     if obj.c_node is None and isinstance(obj, LazyObj): obj = obj.compiled_obj
     if obj.c_node is None or obj.inferred_type is None:
         fmt.append("\"???\"")
+    if isinstance(obj, VarObj):
+        obj = var_to_expr_obj(obj.xy_node, obj, cast, cfunc, ctx, False)
+
+    if isinstance(obj.c_node, c.VarDecl):
+        return
 
     c_node = obj.c_node
-    if isinstance(obj, VarObj): c_node = c.Id(c_node.name)
+    if isinstance(c_node, c.VarDecl):
+        c_node = c.Id(c_node.name)
 
     type_obj = obj.inferred_type
     tags = type_obj.tags
@@ -4604,7 +4618,7 @@ def decompose_obj_in_prints(obj, fmt, args, ctx: CompilerContext):
             if field.c_node is None: continue
             fmt.append(field.xy_node.name + "=")
             fget_obj = field_get(obj, field, None, None, ctx)
-            decompose_obj_in_prints(fget_obj, fmt, args, ctx)
+            decompose_obj_in_prints(fget_obj, fmt, args, cast, cfunc, ctx)
             fmt.append(", ")
             trailing_comma = True
         if trailing_comma: fmt.pop()
@@ -5750,7 +5764,7 @@ def compile_error(xyerror, cast, cfunc, ctx: CompilerContext):
         ctx.current_fobj.etype_obj is not value_obj.inferred_type:
         # error in function not returing an error
         value_obj = maybe_move_to_temp(value_obj, cast, cfunc, ctx)
-        do_compile_unhandled_code(xyerror, value_obj, cast, cfunc, ctx, None)
+        do_compile_unhandled_code(xyerror, value_obj, cast, cfunc, ctx, ctx, ctx.current_fobj)
         return ExprObj(
             xy_node=xyerror,
             c_node=c.Empty(),
@@ -5766,7 +5780,7 @@ def compile_error(xyerror, cast, cfunc, ctx: CompilerContext):
         inferred_type=value_obj.inferred_type
     )
 
-def do_compile_unhandled_code(expr, err_obj, cast, cfunc, caller_ctx, callee_ctx):
+def do_compile_unhandled_code(expr, err_obj, cast, cfunc, caller_ctx, callee_ctx, func_obj):
     unhandled_args = ArgList(args=[err_obj])
     unhandled_ctx = caller_ctx
     unhandled_fobj = maybe_find_func_obj(
@@ -5783,7 +5797,11 @@ def do_compile_unhandled_code(expr, err_obj, cast, cfunc, caller_ctx, callee_ctx
     elif not caller_ctx.builder.abort_on_unhandled:
         # uncaught error
         cast.includes.append(c.Include("stdio.h"))  # TODO remove that just use write(2)
-        gen_print_var("Uncaught", err_obj, cast, cfunc.body, unhandled_ctx)
+
+        cfunc.body.append(c.FuncCall("fprintf", args=[c.Id("stderr"), c.Const(f"\"\\n\"")]))
+        gen_print_var("Error", err_obj, cast, cfunc, unhandled_ctx, ident=0, endl=False)
+        gen_guard_failed_code(expr, func_obj, cast, cfunc.body, callee_ctx, False)
+        gen_print_params_code(cast, cfunc, callee_ctx)
 
     if not caller_ctx.stdlib_included:
         cast.includes.append(c.Include("stdlib.h"))
