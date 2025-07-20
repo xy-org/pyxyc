@@ -1963,12 +1963,7 @@ def call_dtors_for_fields(obj: VarObj, cast, cfunc, ctx):
     type_obj = obj.type_desc
     for name, field in type_obj.fields.items():
         if not field.is_pseudo and field.needs_dtor:
-            expr_obj = ExprObj(
-                xy_node=field.xy_node,
-                c_node=c.Expr(c.Id(obj.c_node.name), c.Id(field.c_node.name), op="."),
-                inferred_type=field.type_desc,
-                compiled_obj=field,
-            )
+            expr_obj = field_get(var_to_expr_obj(obj.xy_node, obj, cast, cfunc, ctx, True), field, cast, cfunc, ctx)
             call_dtor(expr_obj, cast, cfunc, ctx)
 
 def call_dtor(obj, cast, cfunc, ctx):
