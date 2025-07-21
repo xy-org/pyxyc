@@ -15,6 +15,7 @@ class CompiledObj:
 class LazyObj(CompiledObj):
     inferred_type: 'TypeObj' = None
     compiled_obj: CompiledObj | None = None
+    ctx: 'CompilerContext' = None
 
 @dataclass
 class TypeObj(CompiledObj):
@@ -249,6 +250,7 @@ class ExprObj(CompiledObj):
     num_cnodes: int = -1
     tmp_var_names: set = field(default_factory=set)
     is_iter_ctor: bool = False
+    from_lazy_ctx: 'CompilerContext' = None
 
 @dataclass
 class ConstObj(ExprObj):
@@ -2286,7 +2288,13 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         elif isinstance(var_obj, ExprObj):
             return maybe_deref(var_obj, deref, cast, cfunc, ctx)
         elif isinstance(var_obj, LazyObj):
-            return compile_expr(var_obj.xy_node, cast, cfunc, ctx)
+            if isinstance(var_obj.xy_node, xy.CallerContextExpr):
+                assert var_obj.ctx is not None
+                res = compile_expr(var_obj.xy_node.arg, cast, cfunc, var_obj.ctx)
+            else:
+                res = compile_expr(var_obj.xy_node, cast, cfunc, var_obj.ctx or ctx)
+            res.from_lazy_ctx = var_obj.ctx or ctx
+            return res
         elif isinstance(var_obj, InstanceObj):
             return ExprObj(
                 c_node=var_obj.c_node,
@@ -3779,6 +3787,7 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
         first_cnode_idx=expr_obj.first_cnode_idx if expr_obj.num_cnodes > 0 else len(cfunc.body)-1,
         num_cnodes=expr_obj.num_cnodes + 1 if expr_obj.num_cnodes > 0 else 1,
         tmp_var_names={tmp_obj.c_node.name},
+        from_lazy_ctx=expr_obj.from_lazy_ctx,
     )
 
 def is_simple_cexpr(expr):
@@ -4247,17 +4256,19 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             args_list.append(arg)
             args_writable.append(False)
             caller_ctx.ns[pobj.xy_node.name] = LazyObj(
-                xy_node=arg.xy_node, tags=arg.tags, compiled_obj=arg, inferred_type=arg.inferred_type
+                xy_node=arg.xy_node, tags=arg.tags, compiled_obj=arg, inferred_type=arg.inferred_type,
             )
             callee_ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_callerContext:
+                lazy_ctx = arg.from_lazy_ctx or caller_ctx
                 callee_ctx.ns[pobj.xy_node.name] = LazyObj(
                     xy_node=xy.CallerContextExpr(arg.xy_node, src=arg.xy_node.src, coords=arg.xy_node.coords),
                     tags=arg.tags,
-                    compiled_obj=arg, inferred_type=arg.inferred_type
+                    compiled_obj=arg, inferred_type=arg.inferred_type,
+                    ctx=lazy_ctx,
                 )
                 redact_code(arg, cast, cfunc, ctx)
-            arg.num_cnodes = 0  # the time for code reduction is over so lets disable it
+            arg.num_cnodes = 0  # the time for code redaction is over so lets disable it
             check_type_compatibility(arg.xy_node, pobj, arg, ctx, fcall_rules=True)
             if pobj.xy_node.is_pseudo:
                 continue

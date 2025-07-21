@@ -42,6 +42,8 @@ floats
     ("tags/assigningTag", "", False),
 
     ("indices/exprForBaseOffset", "In funcReturningIdx\nMatch\nIn returnString\nIn funcReturningIdx\nNo Match\n", True),
+
+    ("lazyEvalChain", "m=0\n", False),
 ])
 def test_end_to_end(testname, output, tmp_path, resource_dir, valgrind):
     test_base = resource_dir / "end_to_end" / testname

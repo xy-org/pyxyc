@@ -1,0 +1,16 @@
+import libxy.(string, stdio);
+
+def func1(^msg: Str) func2(msg);
+
+def func2(^msg: Str) func3(msg);
+
+def func3(^msg: Str) func4(msg);
+
+def func4(^msg: Str) func5(msg);
+
+def func5(^msg: Str) print(msg);
+
+def main~EntryPoint() {
+    m := 0;
+    func1(f"{=m}\n");
+}
