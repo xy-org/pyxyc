@@ -4446,7 +4446,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             check_error_fcall = find_and_call(
                 "to",
                 ArgList([err_expr_obj, bool_expr_obj]),
-                cast, cfunc, ctx, expr
+                cast, cfunc, callee_ctx, expr
             )
 
             check_if = c.If(
