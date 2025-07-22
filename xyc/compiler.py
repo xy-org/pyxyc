@@ -277,6 +277,7 @@ def ext_symbol_to_type(ext_obj):
         c_node=ext_obj.c_node,
         builtin=False,
         fully_compiled=True,
+        init_value=c.InitList([c.Const(0)]),
         is_external=True
     )
 

@@ -1,0 +1,12 @@
+import posix~[Clib{headers=@{"termios.h", "unistd.h"}}] in c;
+
+struct Data {
+    num: Int;
+    ext: inlinec"struct termios";
+    flt: Float;
+}
+
+def test() {
+    a := Data{};
+    b := Data{flt=2.0};
+}

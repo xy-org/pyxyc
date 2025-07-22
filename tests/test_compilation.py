@@ -116,6 +116,7 @@ from xyc.compiler import CompilationError
     "structs/subFieldInit",
     "structs/subInitFunc",
     "structs/moveInStructLit",
+    "structs/fieldExternalType",
     "globals/globals1",
     "globals/globals2",
     "errors/handling1",
