@@ -3338,7 +3338,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                     ctx,
                     xy_node=expr,
                 )
-                cfunc.body.append(append_call.c_node)
+                if append_call.c_node is not None: cfunc.body.append(append_call.c_node)
             else:
                 assert isinstance(part, xy.Args)
                 if part.is_introspective:
@@ -3359,7 +3359,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                         ctx,
                         xy_node=expr,
                     )
-                    cfunc.body.append(append_call.c_node)
+                    if append_call.c_node is not None: cfunc.body.append(append_call.c_node)
                 gen_fcall = xy.FuncCall(
                     xy.Id("append", src=part.src, coords=part.coords),
                     args=[xy.Id(builder_tmpvar.c_node.name, src=part.src, coords=part.coords)] + part.args,
@@ -3368,7 +3368,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                     coords=part.coords
                 )
                 append_call = compile_fcall(gen_fcall, cast, cfunc, ctx)
-                cfunc.body.append(append_call.c_node)
+                if append_call.c_node is not None: cfunc.body.append(append_call.c_node)
 
         to_obj = func_desc.tags["xyStr"].kwargs.get("to", None)
         if to_obj is not None:
