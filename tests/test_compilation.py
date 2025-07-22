@@ -59,6 +59,7 @@ from xyc.compiler import CompilationError
     "namedArguments",
     "namedFields",
     "tags/positionalTags",
+    "tags/defaultValue",
     "indices/pseudoFields",
     "errors/guards",
     "errors/richErrors",

@@ -2223,10 +2223,19 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         else:
             # compile get tag
             assert expr.op == ".."
-            assert isinstance(expr.arg2, xy.Id)
-            field_name = expr.arg2.name
+            if not isinstance(expr.arg2, (xy.Id, xy.Enumeration)):
+                raise CompilationError("Invalid expression", expr.arg2)
+            if isinstance(expr.arg2, xy.Enumeration) and len(expr.arg2.items) > 2:
+                raise CompilationError("Expected '..(tagname, defaultValue)'", expr.arg2);
+
+            tag_name_node = expr.arg2 if isinstance(expr.arg2, xy.Id) else expr.arg2.items[0]
+            def_val_node = None
+            if isinstance(expr.arg2, xy.Enumeration) and len(expr.arg2.items) <= 2:
+                def_val_node = expr.arg2.items[1]
+
+            field_name = tag_name_node.name
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
-            tag_obj = tag_get(expr, arg1_obj, field_name, ctx)
+            tag_obj = tag_get(expr, arg1_obj, field_name, ctx, def_val_node)
             if isinstance(tag_obj, (TypeObj, TypeExprObj)):
                 return ExprObj(
                     c_node=c.Id(tag_obj.c_node.name),
@@ -3008,7 +3017,7 @@ def ptr_type_to(type_obj, ctx):
     ptr_type.tags["to"] = type_obj
     return ptr_type
 
-def tag_get(expr, obj, tag_label, ctx):
+def tag_get(expr, obj, tag_label, ctx, default_value_node: xy.Node = None):
     if isinstance(obj.compiled_obj, (TypeObj, TypeExprObj)):
         obj = obj.compiled_obj
     else:
@@ -3016,6 +3025,8 @@ def tag_get(expr, obj, tag_label, ctx):
 
 
     if tag_label not in obj.tags:
+        if default_value_node is not None:
+            return ctx.eval(default_value_node)
         available_tags = "Available Tags:" + "    \n".join(obj.tags.keys())
         if len(obj.tags) == 0:
             available_tags = "Tag list is empty"

@@ -1,0 +1,29 @@
+struct Tag1 {}
+struct Tag2 {}
+
+struct Data {
+    # ...
+}
+
+def func(data: Data) = func(data, data..(tag, MissingTag));
+
+def func(data: Data, :Tag1) {
+    # ...
+}
+
+def func(data: Data, :Tag2) {
+    # ...
+}
+
+-struct MissingTag {}
+def func(data: Data, :MissingTag) {
+    # ...
+}
+
+def test() {
+    a: Data~[tag=Tag2];
+    a'func;
+
+    b: Data;
+    b'func;
+}
