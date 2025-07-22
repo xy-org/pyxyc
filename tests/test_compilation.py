@@ -58,7 +58,7 @@ from xyc.compiler import CompilationError
     "strings/escapes",
     "namedArguments",
     "namedFields",
-    "positionalTags",
+    "tags/positionalTags",
     "indices/pseudoFields",
     "errors/guards",
     "errors/richErrors",
