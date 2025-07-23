@@ -1382,7 +1382,8 @@ def validate_name(node: xy.Node, ctx: CompilerContext):
     name = node.name
     if isinstance(name, xy.Id):
         name = name.name
-    assert isinstance(name, str)
+    if not isinstance(name, str):
+        raise CompilationError("Invalid identifier", node)
     if '_' in name:
         raise CompilationError("Underscores are not allowed in names. For more info go to TBD", node)
     if not name[0].isalpha():
@@ -3037,20 +3038,24 @@ def tag_get(expr, obj, tag_label, ctx, default_value_node: xy.Node = None):
     tag_obj = obj.tags[tag_label]
     return tag_obj
 
-def compile_struct_literal(expr, cast, cfunc, ctx: CompilerContext):
+def compile_struct_literal(expr: xy.StructLiteral, cast, cfunc, ctx: CompilerContext):
     if expr.name is None:
         raise CompilationError("Anonymous struct literals are not supported", expr)
-    type_obj = ctx.eval(expr.name, msg="Cannot find type")
-    tmp_obj = None
+
+    type_obj = ctx.eval(expr.name)
+    var_obj = None
     if not isinstance(type_obj, (TypeObj, TypeExprObj)):
-        # assert isinstance(type_obj, VarObj)
-        var_obj = type_obj
-        type_obj = type_obj.inferred_type
+        var_obj = compile_expr(expr.name, cast, cfunc, ctx)
+        type_obj = var_obj.inferred_type
+
+    if not is_obj_visible(type_obj, ctx):
+        raise CompilationError(f"Struct '{type_obj.name}' is not visible", expr.name)
+
+    tmp_obj = None
+    if var_obj is not None and not isinstance(var_obj.compiled_obj, (TypeObj, TypeExprObj)):
         tmp_obj = ctx.create_tmp_var(type_obj, xy_node=expr)
-        tmp_obj.c_node.value = c.Id(var_obj.c_node.name) if isinstance(var_obj, VarObj) else maybe_deref(var_obj, True, cast, cfunc, ctx).c_node
+        tmp_obj.c_node.value = c.Id(var_obj.c_node.name) if isinstance(var_obj, VarObj) else var_obj.c_node
         cfunc.body.append(tmp_obj.c_node)
-    elif not is_obj_visible(type_obj, ctx):
-            raise CompilationError(f"Struct '{type_obj.name}' is not visible", expr.name)
 
     return do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx)
 
@@ -4629,7 +4634,7 @@ def decompose_obj_in_prints(obj, fmt, args, cast, cfunc, ctx: CompilerContext):
             args.append(c_node)
         else:
             fmt.append("???")
-    else:
+    elif not type_obj.is_external:
         fmt.append(type_obj.name)
         fmt.append("{")
         trailing_comma = False
