@@ -696,6 +696,7 @@ class ModuleHeader:
     func_namespace: IdTable
     module_name: str = None
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
+    unstr_prefix_reg: dict[str, any] = field(default_factory=dict)
     ctx: 'CompilerContext' = None
 
 @dataclass
@@ -729,6 +730,7 @@ class CompilerContext:
     global_func_ns: IdTable = field(default_factory=IdTable)
 
     str_prefix_reg: dict[str, any] = field(default_factory=dict)
+    unstr_prefix_reg: dict[str, any] = field(default_factory=dict)
     added_alignof_macro: bool = False
     defined_c_symbols: set[str] = field(default_factory=set)
 
@@ -1213,7 +1215,8 @@ def compile_module(builder, module_name, asts, module_path):
     mh = ModuleHeader(
         module_name=module_name,
         data_namespace=ctx.data_ns, func_namespace=ctx.func_ns,
-        str_prefix_reg=ctx.str_prefix_reg, ctx=ctx
+        str_prefix_reg=ctx.str_prefix_reg, unstr_prefix_reg=ctx.unstr_prefix_reg,
+        ctx=ctx
     )
 
     for obj in itertools.chain(ctx.data_ns.values(), ctx.func_ns.values()):
@@ -1669,9 +1672,14 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     fobj.tags = ctx.eval_tags(node.tags)
     if "xyStr" in fobj.tags:
         # TODO assert it is a StrCtor indeed
-        str_lit = fobj.tags["xyStr"].kwargs["prefix"]
+        str_lit = fobj.tags["xyStr"].kwargs.get("prefix", xy.StrLiteral())
         prefix = str_lit.parts[0].value if len(str_lit.parts) else ""
         ctx.str_prefix_reg[prefix] = fobj
+    if "xy.unstr" in fobj.tags:
+        # TODO assert it is a StrCtor indeed
+        str_lit = fobj.tags["xy.unstr"].kwargs.get("prefix", xy.StrLiteral())
+        prefix = str_lit.parts[0].value if len(str_lit.parts) else ""
+        ctx.unstr_prefix_reg[prefix] = fobj
     if "xy.entrypoint" in fobj.tags:
         # TODO assert it is the correct type
         tag_obj = fobj.tags["xy.entrypoint"]
@@ -1865,6 +1873,7 @@ def compile_builtins(builder, module_name, asts, module_path):
             default_tag_label_map = {
                 "TagCtor": "xyTag",
                 "StrCtor": "xyStr",
+                "UnstrCtor": "xy.unstr",
                 "EntryPoint": "xy.entrypoint",
                 "IterCtor": "xyIter",
                 "Clib": "xyc.lib",
@@ -2217,6 +2226,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                     value_obj = move_out(value_obj, cast, cfunc, ctx)
                 value_obj = maybe_deref(value_obj, True, cast, cfunc, ctx)
                 return idx_set(IdxObj(xy_node=expr, container=container_obj, idx=idx_obj), value_obj, cast, cfunc, ctx)
+            elif isinstance(expr.arg1, xy.StrLiteral):
+                return compile_unstring(expr.arg1, expr.arg2, cast, cfunc, ctx)
 
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
@@ -3405,6 +3416,38 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
             )
         else:
             return builder_tmpvar_id
+
+def compile_unstring(lhs_expr, rhs_expr, cast, cfunc, ctx: CompilerContext):
+    assert isinstance(lhs_expr, xy.StrLiteral)
+    rhs_obj = compile_expr(rhs_expr, cast, cfunc, ctx)
+    rhs_obj = move_to_temp(rhs_obj, cast, cfunc, ctx)
+    unstr_ctor: FuncObj = ctx.unstr_prefix_reg[lhs_expr.prefix]
+    unstr_obj = do_compile_fcall(lhs_expr, unstr_ctor, ArgList([rhs_obj]), cast, cfunc, ctx)
+    unstr_iter = ctx.create_tmp_var(unstr_obj.inferred_type, "unstr", lhs_expr)
+    unstr_iter.c_node.value = unstr_obj.c_node
+    cfunc.body.append(unstr_iter.c_node)
+    unstr_obj = var_to_expr_obj(lhs_expr, unstr_iter, cast, cfunc, ctx, deref=False)
+
+    for part in lhs_expr.parts:
+        assert isinstance(part, xy.Args)
+        if not isinstance(part.args[0], xy.VarDecl):
+            raise CompilationError("Only var decls must be present in a unstring expression", part)
+        decl = part.args[0]
+        if decl.value is not None:
+            raise CompilationError("Cannot do assignment in unstring expression", decl.value)
+        var_obj = compile_vardecl(decl, cast, cfunc, ctx)
+        cfunc.body.append(var_obj.c_node)
+
+        val_obj = var_to_expr_obj(decl, var_obj, cast, cfunc, ctx, deref=False)
+        arg_list = ArgList([rhs_obj, unstr_obj, val_obj])
+        for arg in part.args[1:]:
+            arg_list.args.append(compile_expr(arg, cast, cfunc, ctx))
+        for name, arg in part.kwargs.items():
+            arg_list.kwargs[name] = compile_expr(arg, cast, cfunc, ctx)
+        read_obj = find_and_call("read", arg_list, cast, cfunc, ctx, part)
+        cfunc.body.append(read_obj.c_node)
+
+    return rhs_obj
 
 def compile_inlinec(expr, parts, cast, cfunc, ctx):
     inlinec = ""
@@ -6138,6 +6181,10 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
                 # str ctors are not sticky
                 if ctor_obj.module_header.module_name == module_header.module_name:
                     ctx.str_prefix_reg[str_prefix] = ctor_obj
+            for str_prefix, ctor_obj in module_header.unstr_prefix_reg.items():
+                # str ctors are not sticky
+                if ctor_obj.module_header.module_name == module_header.module_name:
+                    ctx.unstr_prefix_reg[str_prefix] = ctor_obj
 
     if imprt.in_name:
         ctx.data_ns[imprt.in_name] = import_obj

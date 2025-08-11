@@ -1,0 +1,16 @@
+struct Str {
+    addr: Ptr~Byte;
+    size: Size;
+}
+
+def str~[StrCtor{}](addr: Ptr~Byte, len: Size) = Str{addr, len};
+
+def unstr~[UnstrCtor{}](str: Str) = 0z;
+
+def read(s: Str, i: mut Size, val: mut Int) {
+    # ...
+}
+
+def test() {
+    "{a: Int}{b: Int}" = "123 456";
+}

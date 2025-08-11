@@ -486,6 +486,11 @@ struct StrCtor {
     # Implemented by the compiler
 }
 
+;; Use this struct to mark functions that unstring strings
+struct UnstrCtor {
+    # Implemented by the compiler
+}
+
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
