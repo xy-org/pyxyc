@@ -1,6 +1,7 @@
 import libxy.string;
 import libxy.slice;
 import libxy.stdio;
+import libxy.memory;
 
 def test(cond: Bool) {
    if (cond) {

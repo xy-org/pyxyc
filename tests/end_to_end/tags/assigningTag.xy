@@ -1,5 +1,6 @@
 import libxy.stdio;
 import libxy.string;
+import libxy.memory;
 
 struct Data {
     num: Int;

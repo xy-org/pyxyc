@@ -1,6 +1,5 @@
 import xy.ctti;
-import libxy.string;
-import libxy.stdio;
+import libxy.(stdio, string, memory);
 
 ;; MyStruct comment
 struct MyStruct {
