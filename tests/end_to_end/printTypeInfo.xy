@@ -43,13 +43,13 @@ def printTypeInfo(
     fieldsPtr : Ptr~FieldDesc = fields'addrof,
     fieldsLen : Size = fields'len
 ) {
-    if (typeComment.len > 0) {
+    if (typeComment.size > 0) {
         print(f";; {typeComment}\n");
     }
     print(f"struct {typeName} \{\n");
     for (i in :fieldsLen) {
         f := fieldsPtr[i];
-        if (f.comment.len > 0) {
+        if (f.comment.size > 0) {
             print(f"    ;; {f.comment}\n");
         }
         print(f"    {f.name}: {f.typename}; # size={f.size} offset={f.offset} alignof={f.alignment}\n");

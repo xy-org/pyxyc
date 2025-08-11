@@ -10,7 +10,7 @@ def main~EntryPoint() {
     for (i in 1:argc) {
         argStr := Str~MemExt {
             addr=argv[i]~Byte,
-            len=c.strlen(argv[i]),
+            size=c.strlen(argv[i]),
         };
         print(f"{argStr}\n");
     }

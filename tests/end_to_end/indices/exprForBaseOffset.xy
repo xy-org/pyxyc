@@ -7,18 +7,18 @@ def test(cond: Bool) {
         print("Match\n");
     } else {
         print("No Match\n");
-    } 
+    }
 }
 
 def funcReturningIdx(s: Str) -> s[ SizeInterval ] {
     print("In funcReturningIdx\n");
-    res := 0z:(s'len-4);
+    res := 0z:(s.size-4);
     return res;
 }
 
 def get(s: Str, int: SizeInterval) -> Str~MemExt
->> int.start < s.len
->> (int.end - int.start) <= s.len
+>> int.start < s.size
+>> (int.end - int.start) <= s.size
 {
     return Str{s.addr + int.start, int.end - int.start};
 }
