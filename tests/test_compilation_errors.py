@@ -26,7 +26,7 @@ src.xy:2:13: note: Previous definition is here
             func(0.0);
         }
      """, """\
-src.xy:7:13: error: Cannot find function 'func(Float)'
+src.xy:7:13: error: Cannot find function 'func(Float)' in src
 |             func(0.0);
               ^^^^
 note: Candidates are:
@@ -42,7 +42,7 @@ note: Candidates are:
             a := arr[0];
         }
      """, """\
-src.xy:6:21: error: Cannot decay 'Array[ Int ]' because: Cannot find function 'get(Array, Int)'
+src.xy:6:21: error: Cannot decay 'Array[ Int ]' because: Cannot find function 'get(Array, Int)' in src
 |             a := arr[0];
                       ^
 note: Candidates are:
@@ -465,7 +465,7 @@ src.xy:4:20: error: Don't call me
         }
         """,
         """\
-src.xy:3:20: error: Cannot find function 'add(Uint, Byte)'; Mixed signedness arithmetic is not allowed.
+src.xy:3:20: error: Cannot find function 'add(Uint, Byte)' in src; Mixed signedness arithmetic is not allowed.
 |             return a + b;
                      ^^^^^
 """

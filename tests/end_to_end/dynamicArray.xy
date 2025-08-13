@@ -75,7 +75,7 @@ def next(arr: pseudo Array, iter: mut ArrayIter) {
 }
 
 def get(arr: Array, iter: ArrayIter, elemSize : Size = ctti.sizeof(arr..elemType)) -> arr[ Ptr~[^arr..elemType] ] {
-    return arr.mem'at(iter.idx * elemSize);
+    return arr.mem.addr + iter.idx * elemSize;
 }
 
 # ----------------- test code -----------------

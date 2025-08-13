@@ -399,7 +399,7 @@ class FuncSpace:
         else:
             fname = node.name.src.code[node.name.coords[0]:node.name.coords[1]]
         fsig = fcall_sig(fname, args_inferred_types, node.inject_args)
-        err_msg = f"Cannot find function '{fsig}'"
+        err_msg = f"Cannot find function '{fsig}' in {ctx.module_name}"
 
         candidates = ''
         prev_module_name = None
@@ -1013,7 +1013,8 @@ class CompilerContext:
         elif isinstance(node, xy.CallerContextExpr):
             if not self.eval_calltime_exprs:
                 raise NoCallerContextError
-            assert self.has_caller_context()
+            if not self.has_caller_context():
+                raise CompilationError("No caller context", node)
             return self.get_caller_context().eval(node.arg, msg=msg, is_func=is_func)
         elif isinstance(node, xy.Const):
             const_type_obj = None
@@ -2475,7 +2476,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             if expr.op not in {"+", "-", "*"}:
                 raise CompilationError(f"'{expr.op}' slices are not supported.", expr)
             tmp_obj = ctx.compile_tmp_var(expr.start, cast, cfunc, name_hint="slice")
-            expr.start = xy.Id(tmp_obj.xy_node.name)
+            expr = copy(expr)  # TODO test this
+            expr.start = xy.Id(tmp_obj.xy_node.name, src=expr.start.src, coords=expr.start.coords)
             expr.end = xy.BinExpr(expr.start, expr.end, op=expr.op, src=expr.src, coords=expr.coords)
         kwargs = {}
         if expr.start is not None:
@@ -3754,11 +3756,11 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         for arg in arg_exprs.kwargs.values():
             assert_has_type(arg)
 
+    caller_ctx = ctx
     if isinstance(fspace, (FuncSpace, ExtSpace)):
         if ctx.compiling_header:
             for fobj in fspace._funcs:
                 compile_func_prototype(fobj, cast, ctx)
-        caller_ctx = ctx
         if isinstance(expr.name, xy.CallerContextExpr):
             # if we have a func space from a parent  space then we do the
             # func selection as if we are in that context
@@ -3787,7 +3789,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         )
         expr_to_move_idx = None
 
-    return do_compile_fcall(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+    return do_compile_fcall(expr, func_obj, arg_exprs, cast, cfunc, caller_ctx)
 
 def compile_expr_for_arg(arg: xy.Node, cast, cfunc, ctx: CompilerContext):
     expr_obj = compile_expr(arg, cast, cfunc, ctx)

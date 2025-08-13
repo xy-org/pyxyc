@@ -1,0 +1,5 @@
+import callerContext.test;
+
+def main~EntryPoint() {
+    runTest();
+}
