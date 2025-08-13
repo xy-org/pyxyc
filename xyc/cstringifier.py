@@ -217,11 +217,12 @@ def stringify_field(field, frags, ident):
     frags.append(";\n")
 
 def parentheses_required(op, parent_op_precedence):
-    # the check for the binary & and | is needed just to keep -Wall happy
+    # the check for the binary &(&) and |(|) is needed just to keep -Wall happy
     # but also generate more readable code
     return (
         parent_op_precedence > op_precedence[op] or
-        op == "&" and parent_op_precedence == op_precedence["|"]
+        op == "&" and parent_op_precedence == op_precedence["|"] or
+        op == "&&" and parent_op_precedence == op_precedence["||"]
     )
 
 def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):

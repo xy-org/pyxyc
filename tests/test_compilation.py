@@ -109,6 +109,7 @@ from xyc.compiler import CompilationError
     "logicCmp/overloadingCmp",
     "logicCmp/minMax",
     "logicCmp/shortcircuit",
+    "logicCmp/mixingAndOr",
     "ctti/srcLocFuncs",
     "ctti/sizeofNoEval",
     "funcs/paramTypeEnum",

@@ -22,7 +22,7 @@ void shortcircuit_test1(bool p_a, bool p_b) {
 }
 
 void shortcircuit_test2(bool p_a, bool p_b) {
-    const bool l_d = p_a || p_b && shortcircuit_func1();
+    const bool l_d = p_a || (p_b && shortcircuit_func1());
 }
 
 void shortcircuit_test3(bool p_a, bool p_b) {

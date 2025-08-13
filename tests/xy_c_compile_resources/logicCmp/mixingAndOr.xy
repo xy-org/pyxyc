@@ -1,0 +1,21 @@
+def pred1(a: Int) -> Bool {
+    return a > 0;
+}
+
+def pred2(a: Int) -> Bool {
+    return a < -10;
+}
+
+def pred3(a: Int, b: Int) -> Bool {
+    return a >= b;
+}
+
+def test1(a: Int, b: Int) {
+    cond: mut = pred1(a);
+    cond = cond || pred2(b);
+    cond = cond && pred3(a, b);
+}
+
+def test2(a: Int, b: Int) -> Bool {
+    return (a >= 10 && a < 20) || (b >= a && b < 10);
+}

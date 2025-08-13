@@ -2676,7 +2676,8 @@ def create_loop_over_array(obj, cast, cfunc, ctx: CompilerContext):
 
 def optimize_acc_expr(c_expr):
     if (isinstance(c_expr, c.Expr) and c_expr.op == "=" and
-        isinstance(c_expr.arg2, c.Expr) and c_expr.arg1 == c_expr.arg2.arg1):
+        isinstance(c_expr.arg2, c.Expr) and c_expr.arg1 == c_expr.arg2.arg1 and
+        c_expr.arg2.op in {"+", "-", "*", "/", "%", "<<", ">>", "&", "|", "^"}):
         return c.Expr(c_expr.arg1, c_expr.arg2.arg2, op=c_expr.arg2.op+"=")
     return c_expr
 
