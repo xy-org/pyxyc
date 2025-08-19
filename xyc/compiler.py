@@ -3424,7 +3424,9 @@ def compile_unstring(lhs_expr, rhs_expr, cast, cfunc, ctx: CompilerContext):
     assert isinstance(lhs_expr, xy.StrLiteral)
     rhs_obj = compile_expr(rhs_expr, cast, cfunc, ctx)
     rhs_obj = move_to_temp(rhs_obj, cast, cfunc, ctx)
-    unstr_ctor: FuncObj = ctx.unstr_prefix_reg[lhs_expr.prefix]
+    unstr_ctor: FuncObj = ctx.unstr_prefix_reg.get(lhs_expr.prefix, None)
+    if unstr_ctor is None:
+        raise CompilationError(f"No unstring ctor registered for prefix '{lhs_expr.prefix}'", lhs_expr)
     unstr_obj = do_compile_fcall(lhs_expr, unstr_ctor, ArgList([rhs_obj]), cast, cfunc, ctx)
     unstr_iter = ctx.create_tmp_var(unstr_obj.inferred_type, "unstr", lhs_expr)
     unstr_iter.c_node.value = unstr_obj.c_node
