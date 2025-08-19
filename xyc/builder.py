@@ -64,11 +64,11 @@ class Builder:
     def import_module(self, module_name: str, xy_node):
         if module_name in self.module_cache:
             return self.module_cache[module_name].header
-        
+
         self.check_cyclical_imports(module_name, xy_node)
         self.module_import_index[module_name] = len(self.module_import_stack)
         self.module_import_stack.append(xy_node)
-        
+
         if module_name == "xy.ctti":
             self.compile_ctti()
             return self.module_cache[module_name].header
@@ -79,11 +79,11 @@ class Builder:
 
         header, _ = self.do_compile_module(module_name, module_path)
 
-        del self.module_import_index[module_name] 
+        del self.module_import_index[module_name]
         self.module_import_stack.pop()
 
         return header
-    
+
     def check_cyclical_imports(self, module_name, xy_node):
         idx = self.module_import_index.get(module_name, None)
         if idx is not None:
@@ -96,7 +96,7 @@ class Builder:
                 idx = idx + 1
             notes.append(("Finally imports:", xy_node))
             raise CompilationError(*notes[0], notes=notes[1:])
-    
+
     def compile_builtins(self):
         builtins_module_name = "xy.builtins"
         module_path = path.join(self.builtin_lib_path, "xy", "builtins")
@@ -138,7 +138,7 @@ class Builder:
                 self.entrypoint_module_names.append(module_name)
         self.add_global_types(header.ctx.global_types)
         return header, c_srcs
-    
+
     def locate_module(self, module_name: str):
         search_paths = self.search_paths
         for path in search_paths:
@@ -146,14 +146,14 @@ class Builder:
             if os.path.exists(module_path):
                 return module_path
         return None
-    
+
     def do_build(self):
         if len(self.entrypoint_module_names) == 1:
             module = self.module_cache[self.entrypoint_module_names[0]]
             maybe_add_main(module.header.ctx, module.source, len(self.global_type_reg) > 0, "xy.sys" in self.module_cache)
         elif len(self.entrypoint_module_names) > 0:
             raise ValueError("Multiple entry points found")
-        
+
         if len(self.global_type_reg) > 0:
             dummy_ast = c.Ast()
             gen_global_stack(self.global_type_reg, dummy_ast)
@@ -240,7 +240,7 @@ def compile_project(project, module_path, rich_errors=False, abort_on_unhandled=
         maybe_add_main(module.header.ctx, module.source, len(builder.global_type_reg) > 0, "xy.sys" in builder.module_cache)
     elif len(builder.entrypoint_module_names) > 0:
         raise ValueError("Multiple entry points found")
-    
+
     if len(builder.global_type_reg) > 0:
         dummy_ast = c.Ast()
         gen_global_stack(builder.global_type_reg, dummy_ast)
