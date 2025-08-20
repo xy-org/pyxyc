@@ -1,0 +1,7 @@
+import libc~[Clib{headers=@{"stddef.h"}}] in c;
+
+def test() {
+    a: c.ptrdiff_t = c.ptrdiff_t{100};
+    b: c.point_t = c.point_t{x=10, y=20};
+    c := c.ptrdiff_t{200};
+}

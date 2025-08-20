@@ -126,6 +126,10 @@ class TypeExprObj(CompiledObj):
     def is_init_value_zeros(self):
         return self.type_obj.is_init_value_zeros
 
+    @property
+    def is_external(self):
+        return self.type_obj.is_external
+
     def get_base_type(self):
         return self.type_obj
 
@@ -526,6 +530,13 @@ def is_obj_visible(obj, ctx: 'CompilerContext'):
             if ctx.module_name.split('.')[0] != obj.module_header.module_name.split('.')[0]:
                 return False
     return True
+
+def check_types_assignment(lhs_type_obj, rhs_type_obj, field: xy.Node):
+    errors = cmp_types_updated(lhs_type_obj, rhs_type_obj, field)
+    if len(errors) > 0:
+        raise CompilationError(*errors[0],
+            notes=[*errors[1:]]
+        )
 
 def cmp_arg_param_types(arg_type, param_type):
     if param_type is any_type_obj:
@@ -1522,8 +1533,8 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
                 default_value_obj.c_node = c.Id(default_value_obj.c_node.name)
             if field_type_obj is None:
                 field_type_obj = default_value_obj.inferred_type
-            elif field_type_obj is not default_value_obj.inferred_type:
-                raise CompilationError("Explicit and inferred types differ", field)
+            else:
+                check_types_assignment(field_type_obj, default_value_obj.inferred_type, field)
             dv_cnode = default_value_obj.c_node
             default_values.append(dv_cnode)
             default_values_zeros.append(isinstance(dv_cnode, c.Const) and dv_cnode.value == 0)
@@ -3058,7 +3069,9 @@ def compile_struct_literal(expr: xy.StructLiteral, cast, cfunc, ctx: CompilerCon
 
     type_obj = ctx.eval(expr.name)
     var_obj = None
-    if not isinstance(type_obj, (TypeObj, TypeExprObj)):
+    if isinstance(type_obj, ExtSymbolObj):
+        type_obj = ext_symbol_to_type(type_obj)
+    elif not isinstance(type_obj, (TypeObj, TypeExprObj)):
         var_obj = compile_expr(expr.name, cast, cfunc, ctx)
         type_obj = var_obj.inferred_type
 
@@ -3075,6 +3088,9 @@ def compile_struct_literal(expr: xy.StructLiteral, cast, cfunc, ctx: CompilerCon
 
 def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: CompilerContext):
     fully_compile_type(type_obj, cast, None, ctx)
+
+    if type_obj.is_external:
+        return do_compile_ext_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx)
 
     expr_args = expr.args
 
@@ -3244,6 +3260,50 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         c_node=res,
         inferred_type=type_obj,
         compiled_obj=tmp_obj,
+    )
+
+def do_compile_ext_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: CompilerContext):
+    assert type_obj.is_external
+    expr_args = expr.args
+
+    # loop once in order to see if there are any non-trivial args and
+    # do early error checking
+    any_init_funcs = False
+    first_non_trivial_idx = len(expr_args)
+    for i, arg in enumerate(expr_args):
+        is_init_func = isinstance(arg, xy.FuncCall) and arg.inject_context
+        if is_init_func:
+            raise CompilationError("Init funcs are not allowed in c-type struct literals", arg)
+
+    ctypename = type_obj.c_name
+    c_res = c.CompoundLiteral(
+        name=ctypename,
+        args=[],
+    )
+
+    # iterate a second time to compute values
+    for i, arg in enumerate(expr_args):
+        if isinstance(arg, xy.BinExpr) and arg.op in {"=", "=<"}:
+            val_obj = compile_expr(arg.arg2, cast, cfunc, ctx)
+            if arg.op == "=<":
+                val_obj = move_out(val_obj, cast, cfunc, ctx)
+            if not isinstance(arg.arg1, xy.Id):
+                raise CompilationError("The field to be initialized must be a simple identifier", arg.arg1)
+            name = getattr(arg.arg1, 'name', None)
+            c_res.args.append(c.Expr(
+                c.UnaryExpr(c.Id(name), op=".", prefix=True),
+                val_obj.c_node,
+                op="=",
+            ))
+        else:
+            val_obj = compile_expr(arg, cast, cfunc, ctx)
+            c_res.args.append(val_obj.c_node)
+
+    return ExprObj(
+        xy_node=expr,
+        c_node=c_res,
+        inferred_type=type_obj,
+        compiled_obj=None,
     )
 
 def should_pass_by_ref(param: xy.VarDecl, type_obj):
