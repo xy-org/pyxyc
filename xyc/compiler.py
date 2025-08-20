@@ -1049,12 +1049,7 @@ class CompilerContext:
                     xy_node=node
                 )
             else:
-                if len(node.parts) > 1:
-                    raise CompilationError("Cannot evaluate expression at compile time", node.parts[1])
-                return ExtSymbolObj(
-                    c_node=c.Id(node.full_str),
-                    xy_node=node,
-                )
+                raise CompilationError("Cannot evaluate inline code. If you want to use an external symbol 'c.external_symbol' or 'c.\"struct type_t\"", node)
         elif isinstance(node, xy.StructLiteral):
             instance_type = self.eval(node.name)
             if instance_type is None:
@@ -1084,9 +1079,18 @@ class CompilerContext:
                 base = self.eval(node.arg1, msg="Cannot find symbol")
                 if isinstance(base, ImportObj):
                     if base.is_external:
-                        assert isinstance(node.arg2, xy.Id)
+                        if isinstance(node.arg2, xy.Id):
+                            ext_name = node.arg2.name
+                        elif isinstance(node.arg2, xy.StrLiteral):
+                            if len(node.arg2.parts) > 1:
+                                raise CompilationError("No interpolation allowed when importing external symbols", node.arg2)
+                            if len(node.arg2.full_str) == 0:
+                                raise CompilationError("Missing external name", node.arg2)
+                            ext_name = node.arg2.full_str
+                        else:
+                            raise CompilationError("Not allowed in this context", node.arg2)
                         return ExtSymbolObj(
-                            c_node=c.Id(node.arg2.name),
+                            c_node=c.Id(ext_name),
                             xy_node=node.arg2,
                         )
                     else:

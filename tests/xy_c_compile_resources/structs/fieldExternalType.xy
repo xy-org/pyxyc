@@ -2,7 +2,7 @@ import posix~[Clib{headers=@{"termios.h", "unistd.h"}}] in c;
 
 struct Data {
     num: Int;
-    ext: inlinec"struct termios";
+    ext: c."struct termios";
     flt: Float;
 }
 
