@@ -1052,9 +1052,13 @@ class CompilerContext:
                 raise CompilationError("Cannot evaluate inline code. If you want to use an external symbol 'c.external_symbol' or 'c.\"struct type_t\"", node)
         elif isinstance(node, xy.StructLiteral):
             instance_type = self.eval(node.name)
+            if isinstance(instance_type, ExtSymbolObj):
+                instance_type = ext_symbol_to_type(instance_type)
             if instance_type is None:
                 raise CompilationError(f"Cannot find name '{self.eval_to_id(node.name)}'", node.name)
             obj = InstanceObj(type_obj=instance_type, xy_node=node)
+            if instance_type.is_external:
+                return obj  # no need to setup fields b/c there are none
             pos_to_name = list(instance_type.fields.keys())
             for i, arg in enumerate(node.args):
                 if isinstance(arg, xy.BinExpr) and arg.op=="=":

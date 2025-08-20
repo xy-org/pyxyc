@@ -5,6 +5,13 @@ struct Data {
     a: Int;
 }
 
+struct TypeInferenceData {
+    ext1 := c.ptrdiff_t{20};
+    ext2 : c.ptrdiff_t;
+}
+
 def test() {
     data := Data{a=10};
+    tiData1 := TypeInferenceData{};
+    tiData2 := TypeInferenceData{ext2=c.ptrdiff_t{30}};
 }
