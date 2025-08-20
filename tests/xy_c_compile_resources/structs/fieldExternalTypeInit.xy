@@ -1,0 +1,10 @@
+import libc~[Clib{headers=@{"stddef.h"}}] in c;
+
+struct Data {
+    ext : c.ptrdiff_t;
+    a: Int;
+}
+
+def test() {
+    data := Data{a=10};
+}

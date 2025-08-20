@@ -276,12 +276,19 @@ class ExtSymbolObj(CompiledObj):
         return self.c_node.name
 
 def ext_symbol_to_type(ext_obj):
+    c_name = ext_obj.c_node.name
+    if c_name.startswith("struct "):
+        # we know it's a struct and can miss the compound literal
+        init_value = c.InitList([c.Const(0)])
+    else:
+        init_value=c.CompoundLiteral(c_name, args=[c.Const(0)])
+
     return TypeObj(
         xy_node=ext_obj.xy_node,
         c_node=ext_obj.c_node,
         builtin=False,
         fully_compiled=True,
-        init_value=c.InitList([c.Const(0)]),
+        init_value=init_value,
         is_external=True
     )
 
