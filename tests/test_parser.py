@@ -228,6 +228,26 @@ def main(i: int) -> int {
             ])
         ],
     ],
+    [
+        """
+        def func() {
+            return ;; comment after return
+            return a ;; comment after return with arg
+            return a, b ;; comment after return with multiple values
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("func"),
+                params=[],
+                body=[
+                    ast.Return([], comment=";; comment after return"),
+                    ast.Return(ast.Id("a"), comment=";; comment after return with arg"),
+                    ast.Return([ast.Id("a"), ast.Id("b")], comment=";; comment after return with multiple values"),
+                ]
+            )
+        ],
+    ],
 ])
 def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)

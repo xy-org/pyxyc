@@ -1257,11 +1257,14 @@ def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False, accept_inject=
         return positional, named
 
 
-def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False, accept_inject=False):
+def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False, accept_inject=False,
+                    accept_ml_comments=True):
     res = []
     inject = None
     if ignore_eols: itoken.skip_empty_lines()
-    while itoken.peak() not in {")", "]", "}", ";"}:
+    term_symbols = {")", "]", "}", ";"}
+    if not accept_ml_comments: term_symbols.add(";;")
+    while itoken.peak() not in term_symbols:
         if inject is not None:
             raise ParsingError("Cannot have any arguments after ...", itoken)
         calltime_coords = itoken.peak_coords()
@@ -1291,7 +1294,7 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False
             else:
                 raise ParsingError("... Can appear only at the end of an argument list", itoken)
         if ignore_eols: itoken.skip_empty_lines()
-        if itoken.peak() not in {")", "]", "}", ";"}:
+        if itoken.peak() not in term_symbols:
             itoken.expect(",")
         if ignore_eols: itoken.skip_empty_lines()
     if accept_inject:
@@ -1409,7 +1412,7 @@ def parse_stmt_list(itoken: TokenIter):
 def parse_return(itoken):
     coords = itoken.peak_coords()
     assert itoken.check("return")
-    expr = parse_expr_list(itoken, is_toplevel=False)
+    expr = parse_expr_list(itoken, ignore_eols=True, is_toplevel=False, accept_ml_comments=False)
     if len(expr) == 1:
         expr = expr[0]
     node = Return(expr, src=itoken.src, coords=coords)
@@ -1418,7 +1421,7 @@ def parse_return(itoken):
 def parse_error(itoken):
     coords = itoken.peak_coords()
     assert itoken.check("error")
-    exprs = parse_expr_list(itoken)
+    exprs = parse_expr_list(itoken, ignore_eols=True, is_toplevel=False, accept_ml_comments=False)
     if len(exprs) == 0:
         raise ParsingError("Missing value for \"error\" statement", itoken)
     if len(exprs) > 1:
