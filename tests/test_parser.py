@@ -248,6 +248,31 @@ def main(i: int) -> int {
             )
         ],
     ],
+    [
+        """
+        def mkSchema() = Schema {
+            ;; comment 1
+            ;; comment 2
+
+            'setup(),
+        };
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("mkSchema"),
+                body=ast.StructLiteral(
+                    ast.Id("Schema"),
+                    args=[
+                        ast.FuncCall(
+                            ast.Id("setup"),
+                            inject_context=True,
+                            comment=";; comment 1\n            ;; comment 2"
+                        )
+                    ],
+                )
+            )
+        ]
+    ]
 ])
 def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)

@@ -1277,6 +1277,7 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False
                 if is_end_of_expr(itoken):
                     raise ParsingError("Doc comment is not followed by anything", itoken)
             introspective = itoken.check("=")
+            if ignore_eols: itoken.skip_empty_lines()
             expr = parse_expression(itoken, is_toplevel=is_toplevel)
             if introspective:
                 if not isinstance(expr, Id):
