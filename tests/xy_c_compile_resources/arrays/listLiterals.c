@@ -8,7 +8,7 @@ struct listLiterals_List {
     void* m_mem;
 };
 
-listLiterals_List listLiterals_copy(listLiterals_List* p_l) {
+listLiterals_List listLiterals_copy(listLiterals_List p_l) {
     return (listLiterals_List){0};
 }
 
@@ -24,7 +24,7 @@ void listLiterals_test(void) {
     listLiterals_append(&tmp_0_comp, 2);
     listLiterals_append(&tmp_0_comp, 3);
     listLiterals_List l_list1 = tmp_0_comp;
-    listLiterals_List tmp_1_comp = listLiterals_copy(&l_list1);
+    listLiterals_List tmp_1_comp = listLiterals_copy(l_list1);
     listLiterals_append(&tmp_1_comp, 3);
     listLiterals_append(&tmp_1_comp, 2);
     listLiterals_append(&tmp_1_comp, 1);
@@ -39,7 +39,7 @@ void listLiterals_test(void) {
     listLiterals_append(&l_list3, tmp_4_arg[0] - 1);
     listLiterals_append(&l_list3, tmp_4_arg[1] - 1);
     int32_t tmp_5_arg[2] = {6, 7};
-    listLiterals_List tmp_6_comp = listLiterals_copy(&l_list3);
+    listLiterals_List tmp_6_comp = listLiterals_copy(l_list3);
     listLiterals_append(&tmp_6_comp, tmp_5_arg[0] / 2);
     listLiterals_append(&tmp_6_comp, tmp_5_arg[1] / 2);
     listLiterals_List l_list4 = tmp_6_comp;

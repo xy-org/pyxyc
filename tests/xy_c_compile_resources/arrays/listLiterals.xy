@@ -2,7 +2,7 @@ struct List~[elem: struct, xy_dtor=true] {
     mem: Ptr;
 }
 
-def copy(l: mut List) -> List {
+def copy(l: List) -> List {
     # ...
     return List{};
 }

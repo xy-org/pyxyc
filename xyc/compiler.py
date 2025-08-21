@@ -226,6 +226,12 @@ class FuncObj(CompiledObj):
             return self.xy_node.visibility
         return xy.PackageVisibility
 
+    @property
+    def is_dtor(self):
+        if self.xy_node is not None:
+            return self.xy_node.name.name == "dtor"
+        return False
+
 @dataclass
 class VarObj(CompiledObj):
     type_desc: TypeObj | None = None
@@ -4410,6 +4416,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 redact_code(arg, cast, cfunc, ctx)
             arg.num_cnodes = 0  # the time for code redaction is over so lets disable it
             check_type_compatibility(arg.xy_node, pobj, arg, ctx, fcall_rules=True)
+            if pobj.xy_node.mutable:
+                assert_mutable(arg, expr, func_obj, ctx)
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:
@@ -4469,6 +4477,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             check_type_compatibility(value_obj.xy_node, pobj, value_obj, ctx, fcall_rules=True)
             args_list.append(value_obj)
             args_writable.append(False)
+            if pobj.xy_node.mutable:
+                assert_mutable(value_obj, expr, func_obj, ctx)
             if not pobj.xy_node.is_pseudo:
                 if pobj.passed_by_ref:
                     res.args.append(c_getref(value_obj))
@@ -4658,6 +4668,21 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     caller_ctx.pop_ns()
 
     return res_obj
+
+def assert_mutable(obj: ExprObj, fcall_expr, fobj, ctx: CompilerContext):
+    if (
+        isinstance(obj.compiled_obj, VarObj) and
+        not obj.compiled_obj.xy_node.mutable and
+        not is_tmp_expr(obj) and
+        not fobj.is_dtor and
+        obj.compiled_obj.fieldof_obj is None
+    ):
+        raise CompilationError(
+            "Passing immutable variable as a mutable argument", obj.xy_node,
+            notes=[
+                (f"In call to function {func_sig(fobj)}", fcall_expr)
+            ]
+        )
 
 def do_compile_field_get_rec(obj, compound_expr, cast, cfunc, ctx):
     res = obj

@@ -562,6 +562,28 @@ src.xy:2:24: error: Cannot get address of a const
                          ^^^^^^
 """
     ),
+
+    # mutating an immutable variable
+    (
+        """
+        def fun(a: mut Int) {}
+
+        def test() {
+            a := 0;
+            fun(a);
+        }
+        """,
+        """\
+src.xy:6:17: error: Passing immutable variable as a mutable argument
+|             fun(a);
+                  ^
+src.xy:6:13: note: In call to function fun(Int)
+|             fun(a);
+              ^^^
+"""
+    ),
+    # TODO test passing an immutable to a mutabale named param
+    # TODO test passing a reference to an immutable to a mutable param
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
