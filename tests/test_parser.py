@@ -272,6 +272,56 @@ def main(i: int) -> int {
                 )
             )
         ]
+    ],
+    [
+        """
+        def mkSchema() = Schema {
+            a, ;; comment for a
+            'setup(), ;; comment for setup
+        };
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("mkSchema"),
+                body=ast.StructLiteral(
+                    ast.Id("Schema"),
+                    args=[
+                        ast.Id("a", comment=";; comment for a"),
+                        ast.FuncCall(
+                            ast.Id("setup"),
+                            inject_context=True,
+                            comment=";; comment for setup"
+                        )
+                    ],
+                )
+            )
+        ]
+    ],
+    [
+        """
+        def mkSchema() = Schema {
+            ;; before a
+            a,
+            ;; before setup
+            'setup() ;; after setup
+        };
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("mkSchema"),
+                body=ast.StructLiteral(
+                    ast.Id("Schema"),
+                    args=[
+                        ast.Id("a", comment=";; before a"),
+                        ast.FuncCall(
+                            ast.Id("setup"),
+                            inject_context=True,
+                            comment=";; before setup\n;; after setup"
+                        )
+                    ],
+                )
+            )
+        ]
     ]
 ])
 def test_parse_comments(code, exp_ast):

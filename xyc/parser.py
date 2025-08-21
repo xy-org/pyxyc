@@ -1295,8 +1295,18 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False
             else:
                 raise ParsingError("... Can appear only at the end of an argument list", itoken)
         if ignore_eols: itoken.skip_empty_lines()
+        has_comma = False
+        if accept_ml_comments and itoken.check(";;"):
+            comment_node = parse_ml_comment(itoken)
+            if len(expr.comment) > 0: expr.comment += "\n"
+            expr.comment += comment_node.comment
         if itoken.peak() not in term_symbols:
             itoken.expect(",")
+            has_comma = True
+        if accept_ml_comments and itoken.check(";;"):
+            comment_node = parse_ml_comment(itoken)
+            if len(expr.comment) > 0: expr.comment += "\n"
+            expr.comment += comment_node.comment
         if ignore_eols: itoken.skip_empty_lines()
     if accept_inject:
         return res, inject
