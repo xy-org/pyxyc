@@ -587,6 +587,7 @@ def is_right_assoc(op):
     return op in {"=", "+=", "-=", "*=", "/=", "&=", "|=", "=<", "@=", "~"}
 
 def parse_operand(itoken, precedence, op_prec):
+    itoken.skip_empty_lines()
     if itoken.peak() == "if":
         return parse_if(itoken)
     elif itoken.peak() in {"else", "elif"}:

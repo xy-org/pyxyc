@@ -2282,6 +2282,42 @@ def test_assigning_tags(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
+        """def test() {
+            (assert) (
+                cond1 ||
+                cond2
+            );
+            (assert) cond1 ||
+                     cond2;
+        }""",
+        [
+            ast.FuncDef(ast.Id("test"), body=[
+                ast.FuncCall(
+                    ast.Id("assert"),
+                    args=[
+                        ast.BinExpr(
+                            ast.Id("cond1"), ast.Id("cond2"), op="||"
+                        )
+                    ]
+                ),
+                ast.FuncCall(
+                    ast.Id("assert"),
+                    args=[
+                        ast.BinExpr(
+                            ast.Id("cond1"), ast.Id("cond2"), op="||"
+                        )
+                    ]
+                ),
+            ], params=[]),
+        ]
+    ],
+])
+def test_newlines_in_expressions(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
         """def func() {
             return % ! - - + ^ ' a;
         }""",
