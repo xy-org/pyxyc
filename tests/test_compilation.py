@@ -126,6 +126,7 @@ from xyc.compiler import CompilationError
     "errors/handling2",
     "errors/uncaught1",
     "strings/unstringing",
+    "funcs/namedReturn",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)

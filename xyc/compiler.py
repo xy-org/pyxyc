@@ -1936,7 +1936,7 @@ def compile_ctti(builder, module_name, asts, module_path):
     return mh, cast
 
 def compile_func(fdesc, cast, ctx):
-    node = fdesc.xy_node
+    node: xy.FuncDef = fdesc.xy_node
     cfunc = fdesc.c_node
 
     ctx.push_ns()
@@ -1944,6 +1944,22 @@ def compile_func(fdesc, cast, ctx):
         if param_obj.xy_node.name in ctx.ns:
             raise CompilationError(f"Parameter {param_obj.xy_node.name} already defined", param_obj.xy_node)
         ctx.ns[param_obj.xy_node.name] = param_obj
+
+    # handle any named return
+    for iret, ret in enumerate(node.returns):
+        if ret.name is not None:
+            if return_by_param(node):
+                mangled_ret_name = f"__{ret.name}" if ret.name else f"_res{iret}"
+
+                ctx.ns[ret.name] = VarObj(
+                    xy_node=ret,
+                    c_node=c.VarDecl(name=mangled_ret_name),
+                    type_desc=fdesc.rtype_obj,
+                    passed_by_ref=True,
+                )
+            else:
+                varobj = compile_vardecl(ret, cast, cfunc, ctx)
+                cfunc.body.append(varobj.c_node)
 
     ctx.current_fobj = fdesc
     if isinstance(node.body, list):
@@ -5871,7 +5887,17 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
                     inferred_type=value_obj.inferred_type,
                 )
                 # it's a temporary value on the stack. So we need to copy it
-            ret.value = value_obj.c_node
+        else: # return void or named return
+            for ret_vardecl in ctx.current_fobj.xy_node.returns:
+                if ret_vardecl.name is not None:
+                    varobj = ctx.lookup(ret_vardecl.name, False)
+                    value_obj = ExprObj(
+                        xy_node=xyreturn,
+                        c_node=c.Id(varobj.c_node.name),
+                        inferred_type=varobj.inferred_type,
+                        compiled_obj=varobj
+                    )
+        if value_obj is not None: ret.value = value_obj.c_node
 
         call_all_dtors(cast, cfunc, ctx)
         if value_obj is not None and isinstance(value_obj.compiled_obj, VarObj):
@@ -5889,6 +5915,8 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
     else:
         # return by param(s)
         for iret, ret in enumerate(xy_func.returns):
+            if not xyreturn.value:
+                continue # return by param. Either void or named return. Either way nothing to do.
             value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
             if isinstance(value_obj.compiled_obj, VarObj):
                 value_obj.compiled_obj.needs_dtor = False

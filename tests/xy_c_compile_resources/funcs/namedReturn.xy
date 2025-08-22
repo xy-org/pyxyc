@@ -1,0 +1,14 @@
+def test1() -> (ret: Int) {
+    ret = 10;
+    return;
+}
+
+def test2(a: Int) -> (ret: Float) | Int {
+    ret = a'to(Float) * 2.0;
+    if (a > 20) {
+        return 1.0;
+    } elif (a > 10) {
+        return;
+    }
+    error 1;
+}
