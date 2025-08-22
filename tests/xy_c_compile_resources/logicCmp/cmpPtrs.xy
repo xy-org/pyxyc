@@ -1,0 +1,11 @@
+def test(a: Ptr, b: %a) {
+    c := a == b;
+    d := a != b;
+    e := !a;
+    f := !!a;
+    g := a > b;
+    h := a >= b;
+    i := a < b;
+    j := a <= b;
+    k := cmp(a, b);
+}

@@ -107,6 +107,7 @@ from xyc.compiler import CompilationError
     "logicCmp/cmpBits",
     "logicCmp/cmpNums",
     "logicCmp/cmpNumConsts",
+    "logicCmp/cmpPtrs",
     "logicCmp/overloadingCmp",
     "logicCmp/minMax",
     "logicCmp/shortcircuit",

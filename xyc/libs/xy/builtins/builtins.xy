@@ -210,6 +210,7 @@
     # implemented by the compiler
 }
 
+;; Compare pointers
 *def cmp(a: Ptr, b: Ptr) -> Int {
     # Implemented by the compiler
 }
@@ -220,6 +221,11 @@
 *def not(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Bool)
 ) -> Bool {
+    # Implemented by the compiler
+}
+
+;; True if {a} is NULL, false otherwise
+*def not(a: Ptr) -> Bool {
     # Implemented by the compiler
 }
 
