@@ -59,7 +59,7 @@ errors_Error errors_doNothing(void) {
     return (errors_Error){0};
 }
 
-errors_Error errors_callReturningErrorButNoResult(int32_t p_a, int32_t p_b, int32_t* _res0) {
+errors_Error errors_callReturningErrorButNoResult(int32_t p_a, int32_t p_b) {
     const errors_Error tmp_0_err = errors_doWork(p_a);
     if (tmp_0_err.m_errorCode != 0) {
         return tmp_0_err;

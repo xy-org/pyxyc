@@ -6,4 +6,5 @@ def test() -> Long {
     a := func(5, 10);
     b := func(3.14, 9.8);
     c := func(127b, -1b);
+    return 0l;
 }

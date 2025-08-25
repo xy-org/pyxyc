@@ -32,7 +32,7 @@ def print(a: Int) -> void {}
 
 def doNothing() -> void | Error {}
 
-def callReturningErrorButNoResult(a: Int, b: Int) -> Int | Error {
+def callReturningErrorButNoResult(a: Int, b: Int) -> void | Error {
     doWork(a);
     doWork(b);
 }

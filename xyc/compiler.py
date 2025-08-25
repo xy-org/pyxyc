@@ -2028,11 +2028,29 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
     ):
         var_obj = ctx.ns[ctx.current_fobj.xy_node.returns[0].name]
         cfunc.body.append(c.Return(c.Id(var_obj.c_node.name)))
+    elif (
+        is_func_body and
+        ctx.current_fobj.rtype_obj is not ctx.void_obj and
+        not ctx.module_name.startswith("xy.") and
+        not has_ret_err_at_end(body)
+    ):
+        raise CompilationError("Missing 'return' or 'error' statement at end of non-void function", ctx.current_fobj.xy_node)
 
     ctx.exit_block()
 
-def has_ret_err_at_end(body: list[xy.Node]):
-    return len(body) > 0 and isinstance(body[-1], (xy.Return, xy.Error))
+def has_ret_err_at_end(node):
+    if isinstance(node, xy.Block):
+        return has_ret_err_at_end(node.body)
+    if isinstance(node, list):
+        if len(node) == 0: return False
+        return has_ret_err_at_end(node[-1])
+    if isinstance(node, (xy.Return, xy.Error)): return True
+    if isinstance(node, (xy.IfExpr)):
+        res = node.else_node is not None
+        res = res and has_ret_err_at_end(node.block.body)
+        res = res and has_ret_err_at_end(node.else_node)
+        return res
+    return False
 
 def call_dtors_for_fields(obj: VarObj, cast, cfunc, ctx):
     type_obj = obj.type_desc

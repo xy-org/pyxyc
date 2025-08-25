@@ -14,6 +14,7 @@ uncaught1_Error uncaught1_errorProne(int32_t p_a, int32_t* _res0) {
     if (p_a < 0) {
         return (uncaught1_Error){10};
     }
+    *_res0 = 0;
     return (uncaught1_Error){0};
 }
 
@@ -23,7 +24,7 @@ void uncaught1_test(int32_t p_var) {
     if (tmp_1_err.m_code != 0) {
         fprintf(stderr, "\n");
         fprintf(stderr, "%s=Error{code=%d}", "Error", tmp_1_err.m_code);
-        fprintf(stderr, "\ntests/xy_c_compile_resources/errors/uncaught1.xy:%d ", 14);
+        fprintf(stderr, "\ntests/xy_c_compile_resources/errors/uncaught1.xy:%d ", 15);
         fprintf(stderr, "When calling uncaught1.errorProne!\n");
         fprintf(stderr, "| %s\n", "    errorProne(var - 1);");
         fprintf(stderr, "Arguments to Function are:\n");

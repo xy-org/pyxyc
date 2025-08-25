@@ -21,12 +21,13 @@ src.xy:2:13: note: Previous definition is here
         def func(a: Int) {
         }
         def func(a: Ubyte) -> Int {
+            return 0;
         }
         def main() {
             func(0.0);
         }
      """, """\
-src.xy:7:13: error: Cannot find function 'func(Float)' in src
+src.xy:8:13: error: Cannot find function 'func(Float)' in src
 |             func(0.0);
               ^^^^
 note: Candidates are:
@@ -584,6 +585,50 @@ src.xy:6:13: note: In call to function fun(Int)
     ),
     # TODO test passing an immutable to a mutabale named param
     # TODO test passing a reference to an immutable to a mutable param
+
+    # missing return/error
+    (
+        """
+        def fun() -> void {}
+
+        def test() -> Int {
+            fun();
+        }
+        """,
+        """\
+src.xy:4:13: error: Missing 'return' or 'error' statement at end of non-void function
+|         def test() -> Int {
+              ^^^^
+"""
+    ),
+    (
+        """
+        def test(cond1: Bool) -> Int {
+            if (cond1) return 0;
+        }
+        """,
+        """\
+src.xy:2:13: error: Missing 'return' or 'error' statement at end of non-void function
+|         def test(cond1: Bool) -> Int {
+              ^^^^
+"""
+    ),
+    (
+        """
+        def test(cond1: Bool) -> Int {
+            if (cond1) {
+                return 0;
+            } else {
+                # nothing
+            }
+        }
+        """,
+        """\
+src.xy:2:13: error: Missing 'return' or 'error' statement at end of non-void function
+|         def test(cond1: Bool) -> Int {
+              ^^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"
