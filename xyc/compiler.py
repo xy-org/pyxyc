@@ -3520,7 +3520,8 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
 def compile_unstring(lhs_expr, rhs_expr, cast, cfunc, ctx: CompilerContext):
     assert isinstance(lhs_expr, xy.StrLiteral)
     rhs_obj = compile_expr(rhs_expr, cast, cfunc, ctx)
-    rhs_obj = move_to_temp(rhs_obj, cast, cfunc, ctx)
+    if not is_lvalue(rhs_obj):
+        rhs_obj = move_to_temp(rhs_obj, cast, cfunc, ctx)
     unstr_ctor: FuncObj = ctx.unstr_prefix_reg.get(lhs_expr.prefix, None)
     if unstr_ctor is None:
         raise CompilationError(f"No unstring ctor registered for prefix '{lhs_expr.prefix}'", lhs_expr)

@@ -14,3 +14,7 @@ def read(s: Str, i: mut Size, val: mut Int) {
 def test() {
     "{a: Int}{b: Int}" = "123 456";
 }
+
+def test2(s: Str) {
+    "{a: Int}{b: Int}" = s;
+}

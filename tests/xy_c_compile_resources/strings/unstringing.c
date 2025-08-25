@@ -20,3 +20,11 @@ void unstringing_test(void) {
     int32_t l_b = 0;
     unstringing_read(tmp_0_arg, &tmp_1_unstr, &l_b);
 }
+
+void unstringing_test2(unstringing_Str p_s) {
+    size_t tmp_0_unstr = (size_t)0;
+    int32_t l_a = 0;
+    unstringing_read(p_s, &tmp_0_unstr, &l_a);
+    int32_t l_b = 0;
+    unstringing_read(p_s, &tmp_0_unstr, &l_b);
+}
