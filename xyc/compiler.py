@@ -2019,7 +2019,20 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
         if len(body) == 0 or not isinstance(body[-1], (xy.Return, xy.Error)):
             cfunc.body.append(c.Return(ctx.current_fobj.etype_obj.init_value))
 
+    # add retrun named return
+    if (
+        is_func_body and ctx.current_fobj.etype_obj is None and
+        len(ctx.current_fobj.xy_node.returns) > 0 and
+        ctx.current_fobj.xy_node.returns[0].name is not None and
+        not has_ret_err_at_end(body)
+    ):
+        var_obj = ctx.ns[ctx.current_fobj.xy_node.returns[0].name]
+        cfunc.body.append(c.Return(c.Id(var_obj.c_node.name)))
+
     ctx.exit_block()
+
+def has_ret_err_at_end(body: list[xy.Node]):
+    return len(body) > 0 and isinstance(body[-1], (xy.Return, xy.Error))
 
 def call_dtors_for_fields(obj: VarObj, cast, cfunc, ctx):
     type_obj = obj.type_desc
