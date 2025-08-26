@@ -31,6 +31,7 @@ class TypeObj(CompiledObj):
     base_type_obj: 'TypeObj' = None
     fully_compiled: bool = False
     module_header: 'ModuleHeader' = None  # None means current module
+    sizeof: int = 0. # at the moment this is more of a guess
 
     def get_base_type(self):
         return self if self.base_type_obj is None else self.base_type_obj
@@ -129,6 +130,10 @@ class TypeExprObj(CompiledObj):
     @property
     def is_external(self):
         return self.type_obj.is_external
+
+    @property
+    def sizeof(self):
+        return self.type_obj.sizeof
 
     def get_base_type(self):
         return self.type_obj
@@ -241,6 +246,7 @@ class VarObj(CompiledObj):
     needs_dtor: bool = False
     fieldof_obj: TypeObj | None = None # set to the type this varobj is a field of
     is_stored_global: bool = False
+    only_as_param_container: bool = False
 
     @property
     def inferred_type(self):
@@ -314,7 +320,7 @@ global_memory = ExprObj(
     c_node=c.Id("GLOBAL_MEM"),
     inferred_type=global_memory_type,
 )
-param_container = VarObj()
+param_containers = dict()  # Use to check aliasing rules
 recursive_pseudo_field_type_obj = TypeObj(c_node=c.Type("PLACEHOLDER"), xy_node=field)
 
 @dataclass
@@ -1524,6 +1530,7 @@ def ensure_empty_struct(cast, ast, ctx):
     return ctx.empty_struct_name
 
 def compile_struct_fields(type_obj, ast, cast, ctx):
+    sizeof = 0
     node = type_obj.xy_node
     cstruct = type_obj.c_node
     fields = {}
@@ -1590,6 +1597,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
         if not field.is_pseudo:
             type_obj.needs_dtor = type_obj.needs_dtor or field_type_obj.needs_dtor
             cstruct.fields.append(cfield)
+            sizeof += field_type_obj.sizeof
     type_obj.fields = fields
 
     all_zeros = all(default_values_zeros)
@@ -1599,6 +1607,8 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
         args=c_init_args
     )
     type_obj.is_init_value_zeros = all_zeros
+
+    type_obj.sizeof = sizeof
 
 def compile_pseudo_fields(type_obj, ast, cast, ctx):
     fields = type_obj.fields
@@ -1880,23 +1890,33 @@ def compile_builtins(builder, module_name, asts, module_path):
 
         if isinstance(obj, TypeObj):
             ctype_map = {
-                "Byte": "int8_t", "Ubyte": "uint8_t",
-                "Short": "int16_t", "Ushort": "uint16_t",
-                "Int": "int32_t", "Uint": "uint32_t", "Char": "int32_t",
-                "Long": "int64_t", "Ulong": "uint64_t",
-                "Size": "size_t",
-                "Float": "float", "Double": "double",
-                "Bool": "bool", "void": "void",
-                "Ptr": "void*",
-                "Bits8": "uint8_t", "Bits16": "uint16_t",
-                "Bits32": "uint32_t", "Bits64": "uint64_t",
+                "Byte":   ("int8_t",   1),
+                "Ubyte":  ("uint8_t",  1),
+                "Short":  ("int16_t",  2),
+                "Ushort": ("uint16_t", 2),
+                "Int":    ("int32_t",  4),
+                "Uint":   ("uint32_t", 4),
+                "Char":   ("int32_t",  4),
+                "Long":   ("int64_t",  8),
+                "Ulong":  ("uint64_t", 8),
+                "Size":   ("size_t",   8), # TODO what about 32-bit systems
+                "Float":  ("float",    4),
+                "Double": ("double",   8),
+                "Bool":   ("bool",     0),
+                "void":   ("void",     0),
+                "Ptr":    ("void*",    8), # TODO what about 32-bit systems
+                "Bits8":  ("uint8_t",  1),
+                "Bits16": ("uint16_t", 2),
+                "Bits32": ("uint32_t", 4),
+                "Bits64": ("uint64_t", 8),
             }
             bits_to_numeric_map = {
                 "Bits8": "Ubyte", "Bits16": "Ushort",
                 "Bits32": "Uint", "Bits64": "Ulong",
             }
             if obj.xy_node.name in ctype_map:
-                obj.c_node.name = ctype_map[obj.xy_node.name]
+                obj.c_node.name = ctype_map[obj.xy_node.name][0]
+                obj.sizeof = ctype_map[obj.xy_node.name][1]
                 obj.init_value = c.Const(0)
                 if not obj.xy_node.name.startswith("Bits"):
                     obj.fields = {
@@ -2580,10 +2600,14 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
 def var_to_expr_obj(expr, var_obj, cast, cfunc, ctx, deref):
     c_node = c.Id(var_obj.c_node.name) if var_obj.c_node is not None else None
     if var_obj.passed_by_ref:
+        container = param_containers.get(var_obj.type_desc.c_node.name, None)
+        if container is None:
+            container = VarObj(only_as_param_container=True)
+            param_containers[var_obj.type_desc.c_node.name] = container
         res = IdxObj(
             xy_node=expr,
             inferred_type=var_obj.type_desc,
-            container=param_container,
+            container=container,
             c_node=c.UnaryExpr(c_node, op="*", prefix=True),  # references are the only one with a c_node
             idx=ExprObj(
                 xy_node=expr,
@@ -2952,7 +2976,7 @@ def idx_flatten_chain(idx_obj: IdxObj, cast, cfunc, ctx):
         idx_obj = idx_obj.container
     if isinstance(idx_obj, IdxObj) and is_ptr_type(idx_obj.idx.inferred_type, ctx):
         res.append(idx_obj)
-    if not isinstance(idx_obj, IdxObj) and idx_obj is not global_memory and idx_obj is not param_container:
+    if not isinstance(idx_obj, IdxObj) and idx_obj is not global_memory:
         res.append(idx_obj)
     return res[::-1]
 
@@ -3377,7 +3401,11 @@ def do_compile_ext_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Com
 def should_pass_by_ref(param: xy.VarDecl, type_obj):
     if isinstance(type_obj, TypeExprObj):
         type_obj = type_obj.type_obj
-    return not isinstance(type_obj, ArrTypeObj) and param.mutable
+    if isinstance(type_obj, ArrTypeObj):
+        return False
+    if param.mutable:
+        return True
+    return type_obj.sizeof > 16  # TODO should be 8 on 32-bit systems
 
 def c_deref(c_node, field=None):
     if isinstance(c_node, c.UnaryExpr) and c_node.op == "*" and c_node.prefix:
@@ -5082,7 +5110,8 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
 
         res_inferred_type = ArrTypeObj(
             xy_node=expr, c_node=c_node, dims=[arr_len],
-            base_type_obj=elem_type_obj
+            base_type_obj=elem_type_obj,
+            sizeof=arr_len * elem_type_obj.sizeof,
         )
 
         return dst_obj or ExprObj(
@@ -6185,9 +6214,12 @@ def find_type(texpr, cast, ctx, required=True):
     elif isinstance(texpr, xy.ArrayType):
         base_type = find_type(texpr.base, cast, ctx)
         dims = []
+        lin_size = 1
         for d in texpr.dims:
-            dims.append(ct_eval(d, ctx))
-        return ArrTypeObj(xy_node=texpr, base_type_obj=base_type, dims=dims)
+            dim = ct_eval(d, ctx)
+            dims.append(dim)
+            lin_size *= dim
+        return ArrTypeObj(xy_node=texpr, base_type_obj=base_type, dims=dims, sizeof=lin_size * base_type.sizeof)
     elif isinstance(texpr, xy.FuncType):
         ctx.push_ns()
         c_func = c.Func("dummy")

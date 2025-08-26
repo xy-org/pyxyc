@@ -18,19 +18,19 @@ void for3_next(size_t* p_idx) {
     (*p_idx)++;
 }
 
-float* for3_get(for3_Array p_arr, size_t p_idx) {
-    return &p_arr.m_elems[p_idx];
+float* for3_get(for3_Array* p_arr, size_t p_idx) {
+    return &p_arr->m_elems[p_idx];
 }
 
 void for3_set(for3_Array* p_arr, size_t p_idx, float p_elem) {
     p_arr->m_elems[p_idx] = p_elem;
 }
 
-float for3_sum(for3_Array p_arr) {
+float for3_sum(for3_Array* p_arr) {
     size_t tmp_0_arg = for3_iter();
     float l_res = 0;
-    for (size_t tmp_1_iter = tmp_0_arg; tmp_1_iter < p_arr.m_len; for3_next(&tmp_1_iter)) {
-        if (!(tmp_1_iter < p_arr.m_len)) {
+    for (size_t tmp_1_iter = tmp_0_arg; tmp_1_iter < p_arr->m_len; for3_next(&tmp_1_iter)) {
+        if (!(tmp_1_iter < p_arr->m_len)) {
             abort();
         }
         float* tmp_2_arg = for3_get(p_arr, tmp_1_iter);
@@ -39,7 +39,7 @@ float for3_sum(for3_Array p_arr) {
     return l_res;
 }
 
-float for3_mix(for3_Array p_arr1, for3_Array p_arr2) {
+float for3_mix(for3_Array* p_arr1, for3_Array* p_arr2) {
     size_t tmp_0_arg = for3_iter();
     size_t tmp_2_arg = for3_iter();
     float l_res = 0;
@@ -47,12 +47,12 @@ float for3_mix(for3_Array p_arr1, for3_Array p_arr2) {
         uint32_t i = 0;
         size_t tmp_1_iter = tmp_0_arg;
         size_t tmp_3_iter = tmp_2_arg;
-        for (; tmp_1_iter < p_arr1.m_len && tmp_3_iter < p_arr2.m_len; ++i, for3_next(&tmp_1_iter), for3_next(&tmp_3_iter)) {
-            if (!(tmp_1_iter < p_arr1.m_len)) {
+        for (; tmp_1_iter < p_arr1->m_len && tmp_3_iter < p_arr2->m_len; ++i, for3_next(&tmp_1_iter), for3_next(&tmp_3_iter)) {
+            if (!(tmp_1_iter < p_arr1->m_len)) {
                 abort();
             }
             float* tmp_4_arg = for3_get(p_arr1, tmp_1_iter);
-            if (!(tmp_3_iter < p_arr2.m_len)) {
+            if (!(tmp_3_iter < p_arr2->m_len)) {
                 abort();
             }
             float* tmp_5_arg = for3_get(p_arr2, tmp_3_iter);
@@ -68,21 +68,21 @@ void for3_double(for3_Array* p_arr1) {
         if (!(tmp_1_iter < p_arr1->m_len)) {
             abort();
         }
-        float* tmp_2_arg = for3_get(*p_arr1, tmp_1_iter);
+        float* tmp_2_arg = for3_get(p_arr1, tmp_1_iter);
         if (*tmp_2_arg > 0) {
             if (!(tmp_1_iter < p_arr1->m_len)) {
                 abort();
             }
-            float* tmp_3_arg = for3_get(*p_arr1, tmp_1_iter);
+            float* tmp_3_arg = for3_get(p_arr1, tmp_1_iter);
             for3_set(p_arr1, tmp_1_iter, 2.0f * *tmp_3_arg);
             if (!(tmp_1_iter < p_arr1->m_len)) {
                 abort();
             }
-            float* tmp_4_arg = for3_get(*p_arr1, tmp_1_iter);
+            float* tmp_4_arg = for3_get(p_arr1, tmp_1_iter);
             if (!(tmp_1_iter < p_arr1->m_len)) {
                 abort();
             }
-            float* tmp_5_arg = for3_get(*p_arr1, tmp_1_iter);
+            float* tmp_5_arg = for3_get(p_arr1, tmp_1_iter);
             for3_set(p_arr1, tmp_1_iter, *tmp_5_arg + *tmp_4_arg);
         }
     }
@@ -100,12 +100,12 @@ void for3_iterAndChange(for3_Array* p_arr1) {
         if (!(tmp_1_iter < p_arr1->m_len)) {
             abort();
         }
-        float* tmp_2_arg = for3_get(*p_arr1, tmp_1_iter);
+        float* tmp_2_arg = for3_get(p_arr1, tmp_1_iter);
         for3_doSomething(*tmp_2_arg);
         if (!(tmp_1_iter < p_arr1->m_len)) {
             abort();
         }
-        float* tmp_3_arg = for3_get(*p_arr1, tmp_1_iter);
+        float* tmp_3_arg = for3_get(p_arr1, tmp_1_iter);
         for3_changeSomehow(tmp_3_arg);
     }
 }

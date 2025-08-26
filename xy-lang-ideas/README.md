@@ -2238,7 +2238,7 @@ Memory Aliasing is the best. It allows us to do fun stuff. It plays well with ca
 
 ### Writing
 
-Aliasing read and write variables leads to wierd resuults and hard to find bugs. Most programs are not implemented with that in mind.
+Aliasing read and write variables leads to wierd results and hard to find bugs. Most programs are not implemented with that in mind.
 
 Aliasing write and write variables may result in invalid memory - again rather hard to find. So we need to avoid memory aliasing as much as possible and going further, imposing restriction is justified.
 

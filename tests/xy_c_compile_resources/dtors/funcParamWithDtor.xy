@@ -1,0 +1,34 @@
+struct SmallStruct {
+    ptr: Ptr;
+}
+
+struct LargeStruct {
+    ptr: @Ptr[10];
+}
+
+def dtor(s: (SmallStruct, LargeStruct)) {
+    # ...
+}
+
+def test() {
+    s1: SmallStruct;
+    s2: LargeStruct;
+
+    ;; NOTE the compiler is free to choose how to pass s1 and s2 to func
+    ;; as long as the correct dtors are called at the correct time.
+    ;; REMEMBER: all structs are assumed relocatable.
+    func(s1);
+    func(s2);
+}
+
+def mkSmall() -> SmallStruct {
+    return SmallStruct{};
+}
+
+def mkLarge() -> LargeStruct {
+    return LargeStruct{};
+}
+
+def func(s: (SmallStruct, LargeStruct)) {
+    # ...
+}
