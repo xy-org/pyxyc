@@ -8,7 +8,8 @@ from xyc.compiler import CompilationError
 
 
 @pytest.mark.parametrize("filename", [
-    "noop",
+    "basic/noop",
+    "basic/noop2",
     "typeInferenceBasic",
     "typeInferenceAdvanced",
     "funcs/funcOverloadingSimple",
