@@ -629,6 +629,24 @@ src.xy:2:13: error: Missing 'return' or 'error' statement at end of non-void fun
               ^^^^
 """
     ),
+
+    # ignoring return results
+    (
+        """
+        def func() -> Int {
+            return 0;
+        }
+        def test() {
+            func();
+        }
+        """,
+        """\
+src.xy:6:13: error: Discarding values is not allowed. Rewrite expression as '_ = <expr>' to ignore the value
+|             func();
+              ^^^^
+note: Discarded value is of type 'Int'
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

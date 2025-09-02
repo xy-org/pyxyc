@@ -18,6 +18,6 @@ struct Data {
 }
 
 def main~EntryPoint() {
-    func("abc");
-    func(f"abc");
+    _ = func("abc");
+    _ = func(f"abc");
 }

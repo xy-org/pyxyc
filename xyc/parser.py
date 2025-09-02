@@ -25,13 +25,14 @@ class TokenIter:
             raise ParsingError("Unexpected end of file", self)
         return self.tokens[self.i:self.i+n]
 
-    def peak_coords(self):
-        if not self.has_more():
+    def peak_coords(self, offset = 0):
+        if self.i + offset < self.num_tokens:
+            return (
+                self.token_pos[self.i + offset  ],
+                self.token_pos[self.i + offset  ] + len(self.peak())
+            )
+        else:
             return (len(self.src.code), len(self.src.code))
-        return (
-            self.token_pos[self.i],
-            self.token_pos[self.i] + len(self.peak())
-        )
 
     def consume(self, n=1):
         if not self.has_more():
@@ -504,10 +505,10 @@ def do_parse_expression(
 
             # check for postfix operator
             if op == "=>":
-                arg1 = UnaryExpr(arg1, op=op)
+                arg1 = UnaryExpr(arg1, op=op, src=itoken.src, coords=itoken.peak_coords(-1))
                 return arg1
             elif op in {"++", "--"}:
-                arg1 = UnaryExpr(arg1, op=op)
+                arg1 = UnaryExpr(arg1, op=op, src=itoken.src, coords=itoken.peak_coords(-1))
                 lookahead = itoken.peak()
                 continue
 

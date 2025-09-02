@@ -7,5 +7,5 @@ def func(a: mut Int) -> Int {
 
 def test() {
     var: Int;
-    sizeof(var'func);
+    _ = sizeof(var'func);
 }

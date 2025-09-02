@@ -3,10 +3,10 @@ import paramDefaultValue.module2;
 
 def test() {
     a := 5;
-    func(a);
-    func(a, 10);
-    func(a*10);
+    _ = func(a);
+    _ = func(a, 10);
+    _ = func(a*10);
 
-    myfunc(a);
-    myfunc(a, 10);
+    _ = myfunc(a);
+    _ = myfunc(a, 10);
 }

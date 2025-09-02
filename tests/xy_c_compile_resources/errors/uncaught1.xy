@@ -12,5 +12,5 @@ def errorProne(a: Int) -> Int | Error {
 }
 
 def test(var: Int) {
-    errorProne(var - 1);
+    _ = errorProne(var - 1);
 }

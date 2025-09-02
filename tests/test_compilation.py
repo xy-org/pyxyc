@@ -131,6 +131,7 @@ from xyc.compiler import CompilationError
     "strings/unstringing",
     "funcs/namedReturn",
     "funcs/namedReturnImplicit",
+    "funcs/ignoreRetVal",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)

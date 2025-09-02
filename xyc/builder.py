@@ -173,7 +173,7 @@ class Builder:
         cc_proc = subprocess.run(
             ["clang", "-std=c99",
 
-             # turn on as much as possible (reasonable)
+             # turn on as much as (reasonably) possible
              "-Wall", "-pedantic", "-Wformat", "-Wextra", "-Wuninitialized",
 
              # TODO reenable these

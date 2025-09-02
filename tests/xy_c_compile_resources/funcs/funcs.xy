@@ -20,7 +20,7 @@ def callDoubles(a: mut A) -> A {
 
 def test() -> Int {
     a : mut = A{5};
-    double(a);
+    _ = double(a);
     doubleInout(a);
     return callDoubles(a).num;
 }
@@ -41,17 +41,17 @@ def rndA() -> A {
 
 
 def testDefaultArgs() {
-    defaultArg0(A{0});
+    _ = defaultArg0(A{0});
 
-    A{0}'defaultArg1();
+    _ = A{0}'defaultArg1();
     a := A{10};
-    a'defaultArg1(A{0});
+    _ = a'defaultArg1(A{0});
 
-    a'defaultArg2();
-    a'defaultArg2(A{10});
+    _ = a'defaultArg2();
+    _ = a'defaultArg2(A{10});
 
-    a'defaultArg3();
-    a'defaultArg3(A{20});
+    _ = a'defaultArg3();
+    _ = a'defaultArg3(A{20});
 
-    A{0}'defaultArg2'defaultArg3;
+    _ = A{0}'defaultArg2'defaultArg3;
 }

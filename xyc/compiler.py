@@ -2010,11 +2010,16 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
             obj = compile_error(node, cast, cfunc, ctx)
             cfunc.body.append(obj.c_node)
         elif isinstance(node, xy.VarDecl):
-            validate_name(node, ctx)
-            vardecl_obj = compile_vardecl(node, cast, cfunc, ctx)
-            if len(cfunc.body) > 0 and isinstance(cfunc.body[-1], c.Label):
-                cfunc.body.append(c.InlineCode(""))  # don't generate a label to a definition which is c23 specific
-            cfunc.body.append(vardecl_obj.c_node)
+            if node.name != "_":
+                validate_name(node, ctx)
+                vardecl_obj = compile_vardecl(node, cast, cfunc, ctx)
+                if len(cfunc.body) > 0 and isinstance(cfunc.body[-1], c.Label):
+                    cfunc.body.append(c.InlineCode(""))  # don't generate a label to a definition which is c23 specific
+                cfunc.body.append(vardecl_obj.c_node)
+            else:
+                expr_obj = compile_expr(node.value, cast, cfunc, ctx)
+                if expr_obj.c_node is not None and not isinstance(expr_obj.c_node, c.Id):
+                    cfunc.body.append(expr_obj.c_node)
         else:
             expr_obj = compile_expr(node, cast, cfunc, ctx, deref=False)
             if isinstance(expr_obj, IdxObj):
@@ -2029,6 +2034,20 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                     cfunc.body.append(idx_obj.c_node)
             elif expr_obj.c_node is not None and not isinstance(expr_obj.c_node, c.Id):
                 cfunc.body.append(expr_obj.c_node)
+            if (
+                expr_obj.inferred_type is not None and expr_obj.inferred_type is not ctx.void_obj
+                and not isinstance(expr_obj.inferred_type, (ExtSymbolObj, TypeInferenceError))
+                and not expr_obj.inferred_type.is_external and
+                (not isinstance(node, xy.BinExpr) or node.op in {"==", "!=", "."}) and
+                (not isinstance(node, xy.UnaryExpr) or node.op in {"-", "%"})
+            ):
+                raise CompilationError(
+                    "Discarding values is not allowed. Rewrite expression as '_ = <expr>' to ignore the value",
+                    node,
+                    notes=[
+                        (f"Discarded value is of type '{expr_obj.inferred_type.name}'", None)
+                    ]
+                )
 
     # call dtors if any
     if len(body) > 0 and not isinstance(body[-1], (xy.Return, xy.Break)):
@@ -2330,6 +2349,10 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 return compile_unstring(expr.arg1, expr.arg2, cast, cfunc, ctx)
 
             arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
+            if isinstance(expr.arg1, xy.Id) and expr.arg1.name == "_":
+                res = copy(arg2_obj)
+                res.inferred_type = ctx.void_obj
+                return res
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
 
             return compile_assign(arg1_obj, arg2_obj, cast, cfunc, ctx, expr, expr.op=="=<")

@@ -20,5 +20,5 @@ def func3() -> Int {
 }
 
 def func() {
-    func1(func2(), func3());
+    _ = func1(func2(), func3());
 }

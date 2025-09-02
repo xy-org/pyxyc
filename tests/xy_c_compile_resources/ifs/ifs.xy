@@ -22,7 +22,7 @@ def namedIf(x: Int, y: Int) -> Int {
 def elifs(x: Int, y: Int) -> Int {
     return if (x < y) -> (res: Int) {
         res = 0;
-        namedIf(x, y);
+        _ = namedIf(x, y);
     } elif (x < y) {
         res = 1;
     } else {

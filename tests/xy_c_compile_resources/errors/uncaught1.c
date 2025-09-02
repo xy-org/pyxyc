@@ -26,7 +26,7 @@ void uncaught1_test(int32_t p_var) {
         fprintf(stderr, "%s=Error{code=%d}", "Error", tmp_1_err.m_code);
         fprintf(stderr, "\ntests/xy_c_compile_resources/errors/uncaught1.xy:%d ", 15);
         fprintf(stderr, "When calling uncaught1.errorProne!\n");
-        fprintf(stderr, "| %s\n", "    errorProne(var - 1);");
+        fprintf(stderr, "| %s\n", "    _ = errorProne(var - 1);");
         fprintf(stderr, "Arguments to Function are:\n");
         fprintf(stderr, "    %s=%d\n", "a", p_var - 1);
         exit(200);

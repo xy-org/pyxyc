@@ -2304,3 +2304,7 @@ global/globalize set of functions
 maybe funcs that support :struct or keep thinkgs as type are at the moment considering sizeof works perfectly or and reduces complexity. You can have check in funcs like addrof e.g. def f(a: Any, b:= a'addr) if a is a type then error. So a type expr has the same typeof as the type but is different kind of expression as it points to a type instead of a value.
 
 support for globalize(a: Int = 0);
+
+### Notes
+
+The language was creatied with the idea of no ctors from the start but dtor. Initial versions of the language. went a step further disallowing any initial values other than zero. Eventually other initial values were allowed but features like +flag remained supported only as a way to turn something on. Eventually +!flag was added.

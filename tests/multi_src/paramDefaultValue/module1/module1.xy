@@ -7,6 +7,6 @@ def func(a: Int, b: Int = calcDefaultValue(a)) -> Int {
 }
 
 def test() {
-    func(5);
-    func(5, 10);
+    _ = func(5);
+    _ = func(5, 10);
 }

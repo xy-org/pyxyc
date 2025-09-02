@@ -23,5 +23,5 @@ def test3() -> Int {
 }
 
 def test4() {
-    if (compute(helper1(), helper2(), helper3()) > 0) compute(helper3(), helper2(), helper1());
+    _ = if (compute(helper1(), helper2(), helper3()) > 0) compute(helper3(), helper2(), helper1());
 }

@@ -1272,6 +1272,35 @@ def test_parse_func_call(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def main() -> void {
+            _ = func(a, b);
+            _ := func(a, b);
+            _:= a + b;
+            _= a + b;
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.BinExpr(
+                    ast.Id("_"),
+                    ast.FuncCall(ast.Id("func"), args=[ast.Id('a'), ast.Id('b')]),
+                    op="=",
+                ),
+                ast.VarDecl(
+                    "_", value=ast.FuncCall(ast.Id("func"), args=[ast.Id('a'), ast.Id('b')]),
+                ),
+                ast.VarDecl(
+                    "_", value=ast.BinExpr(ast.Id('a'), ast.Id('b'), op="+"),
+                ),
+                ast.BinExpr(
+                    ast.Id("_"),
+                    ast.BinExpr(ast.Id('a'), ast.Id('b'), op="+"),
+                    op="=",
+                ),
+            ]),
+        ]
+    ],
 ])
 def test_parse_var_decl(code, exp_ast):
     act_ast = parse_code(code)

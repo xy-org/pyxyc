@@ -1,0 +1,15 @@
+def func(a: Int, b: Int) -> Int {
+    return a / b;
+}
+
+def voidFunc() -> void {
+}
+
+def test(a: Int, b: Int) {
+    _ = func(a, b);
+    _ := func(a, b);
+    _ := b;
+    _ = a;
+    _ = voidFunc();
+    _ = 'voidFunc();
+}
