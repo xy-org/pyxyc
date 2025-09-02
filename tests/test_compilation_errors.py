@@ -647,6 +647,32 @@ src.xy:6:13: error: Discarding values is not allowed. Rewrite expression as '_ =
 note: Discarded value is of type 'Int'
 """
     ),
+
+    # instantiating Any
+    (
+        """
+        def func() {
+            a: Any;
+        }
+        """,
+        """\
+src.xy:3:13: error: Cannot instantiate pseudo type 'Any'. It serves as a wildcard in func definitions and cannot be instantiated.
+|             a: Any;
+              ^^^^^^
+"""
+    ),
+    (
+        """
+        def func() {
+            a := Any{};
+        }
+        """,
+        """\
+src.xy:3:18: error: Cannot find variable 'Any'
+|             a := Any{};
+                   ^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

@@ -2199,6 +2199,12 @@ def compile_vardecl(node, cast, cfunc, ctx):
                    else "Not a type")
         raise CompilationError(err_msg, err_node)
 
+    if type_desc is any_type_obj:
+        raise CompilationError(
+            "Cannot instantiate pseudo type 'Any'. It serves as a wildcard in func definitions and cannot be instantiated.",
+            node
+        )
+
     if type_desc.needs_dtor:
         cvar.qtype.is_const = False
 
