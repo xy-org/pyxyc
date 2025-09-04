@@ -134,10 +134,34 @@
     # Implemented by the compiler
 }
 
+;; Equivalent to if({b}) {a}+1 else {a};
+*def add(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    b: Bool
+) -> %a {
+    # Implemented by the compiler
+}
+
+*def add(
+    b: Bool,
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+) -> %a {
+    # Implemented by the compiler
+}
+
 ;; Subtraction
+;; Note! Only Numeric - Bool is defined
 *def sub(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
     b: %a
+) -> %a {
+    # Implemented by the compiler
+}
+
+;; Equivalent to if({b}) {a}-1 else {a};
+*def sub(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    b: Bool
 ) -> %a {
     # Implemented by the compiler
 }
@@ -154,6 +178,13 @@
 *def div(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
     b: %a
+) -> %a {
+    # Implemented by the compiler
+}
+
+*def div(
+    b: Bool,
+    a: (Float, Double),
 ) -> %a {
     # Implemented by the compiler
 }
@@ -287,6 +318,23 @@
     b: Int
 ) -> %a
 >> isConst(^b)
+{
+    # implemented by the compiler
+}
+
+;; Equivalent to if ({b}) {a} else %{a}{}
+*def mul(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    b: Bool
+) -> %a
+{
+    # implemented by the compiler
+}
+
+*def mul(
+    b: Bool,
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+) -> %a
 {
     # implemented by the compiler
 }

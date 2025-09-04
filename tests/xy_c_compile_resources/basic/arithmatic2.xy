@@ -1,0 +1,18 @@
+;; Test bool arithmatic
+
+def test(
+    int: Int,
+    float: Float,
+    double: Double,
+    bool: Bool,
+) {
+    a : Int = int - int;
+    b : Int = int - bool;
+    c : Double = double + double;
+    d : Double = double + bool;
+    e : Float = float - float;
+    f : Float = float + bool;
+    g : Float = bool / float;
+    h : Double = bool * double;
+    i : Double = int * bool;
+}
