@@ -648,6 +648,22 @@ struct FuncSelection {
     # implemented by the compiler
 }
 
+*def to(a: Float, :Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+*def to (a: Bits32, :Float) -> Float {
+    # implemented by the compiler
+}
+
+*def to(a: Double, :Bits64) -> Bits64 {
+    # implemented by the compiler
+}
+
+*def to (a: Bits64, :Double) -> Double {
+    # implemented by the compiler
+}
+
 ;; Conversion bits -> integer type
 
 *def to(a: Bits8, :Byte) -> Byte {
