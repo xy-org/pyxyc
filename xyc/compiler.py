@@ -4502,6 +4502,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     callee_ctx.push_caller_context(caller_ctx)
     callee_ctx.tmp_names = caller_ctx.tmp_names
     callee_ctx.current_fobj = caller_ctx.current_fobj
+    callee_ctx.global_types = caller_ctx.global_types
 
     # XXX
     if hasattr(func_obj.c_node, 'name'):

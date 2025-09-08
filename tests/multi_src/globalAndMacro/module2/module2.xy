@@ -1,0 +1,5 @@
+import globalAndMacro.module1;
+
+def test() {
+    _ = get();
+}

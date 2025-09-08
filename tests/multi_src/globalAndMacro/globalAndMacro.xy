@@ -1,0 +1,5 @@
+import globalAndMacro.module2;
+
+def callTest() {
+    test();
+}
