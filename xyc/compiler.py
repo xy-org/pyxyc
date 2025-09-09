@@ -4283,6 +4283,17 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             ),
             inferred_type=func_obj.rtype_obj,
         )
+    elif is_builtin_func(func_obj, "mulhi"):
+        int128_ctype = "__int128_t" if arg_exprs[0].inferred_type.name == "Long" else "__uint128_t"
+        arg1 = c.Cast(arg_exprs[0].c_node, int128_ctype)
+        arg2 = c.Cast(arg_exprs[1].c_node, int128_ctype)
+        c_res = c.Expr(arg1, arg2, op="*")
+        c_res = c.Expr(c_res, c.Const(64), op=">>")
+        return ExprObj(
+            xy_node=expr,
+            c_node=c_res,
+            inferred_type=arg_exprs[0].inferred_type
+        )
     elif func_obj.builtin and len(arg_exprs) == 2 and arg_exprs[0].inferred_type.builtin and arg_exprs[1].inferred_type.builtin:
         if len(func_obj.xy_node.in_guards) > 0:
             ## the only builtin funcs with in-guards are the exceptions for Int
@@ -4455,6 +4466,22 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             "Long": "INT64_MAX",
             "Ulong": "UINT64_MAX",
             "Size": "SIZE_MAX",
+        }
+        if lim := name_to_lim.get(func_obj.rtype_obj.xy_node.name, False):
+            return ExprObj(c_node=c.Id(lim), inferred_type=func_obj.rtype_obj)
+        else:
+            raise CompilationError("Report this to xy devs at TBD", expr)
+    elif is_builtin_func(func_obj, "min"):
+        name_to_lim = {
+            "Byte": "INT8_MIN",
+            "Ubyte": "0",
+            "Short": "INT16_MIN",
+            "Ushort": "0",
+            "Int": "INT32_MIN",
+            "Uint": "0",
+            "Long": "INT64_MIN",
+            "Ulong": "0",
+            "Size": "0",
         }
         if lim := name_to_lim.get(func_obj.rtype_obj.xy_node.name, False):
             return ExprObj(c_node=c.Id(lim), inferred_type=func_obj.rtype_obj)

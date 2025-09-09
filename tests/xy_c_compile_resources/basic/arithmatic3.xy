@@ -1,0 +1,13 @@
+;; Test arithmatic with Longs
+
+def test1(x: Long, y: Long) -> Long {
+    a := x * y;
+    b := x / y;
+    return a \mulhi b;
+}
+
+def test1(x: Ulong, y: Ulong) -> Ulong {
+    a := x * y;
+    b := x / y;
+    return a \mulhi b;
+}

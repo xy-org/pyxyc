@@ -120,6 +120,10 @@
     return c.INT32_MAX;
 }
 
+*def min(:Int) -> Int {
+    return c.INT32_MIN;
+}
+
 *def max(:Size) -> Size {
     return c.SIZE_MAX;
 }
@@ -172,6 +176,11 @@
     b: %a
 ) -> %a {
     # Implemented by the compiler
+}
+
+;; Multiplie two 64-bit values, and return bits[64:127] of the 128-bit result
+*def mulhi(a: (Long, Ulong), b: %a) -> %a {
+    # implemented by the compiler
 }
 
 ;; (Integer) Division
