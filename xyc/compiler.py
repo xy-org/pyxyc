@@ -541,9 +541,8 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx)
     return True
 
 def is_obj_visible(obj, ctx: 'CompilerContext'):
-    if obj.visibility in xy.ModuleVisibility:
-        if obj.module_header is not None:
-            return False
+    if obj.visibility == xy.ModuleVisibility:
+        return obj.module_header is None or obj.module_header.module_name == ctx.module_name
     if obj.visibility == xy.PackageVisibility:
         if obj.module_header is not None:
             if ctx.module_name.split('.')[0] != obj.module_header.module_name.split('.')[0]:
