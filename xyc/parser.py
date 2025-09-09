@@ -614,7 +614,7 @@ def parse_operand(itoken, precedence, op_prec):
         if len(bracketed_exprs) == 1 and isinstance(bracketed_exprs[0], Id) and not is_end_of_expr(itoken) and next_token[0].isalpha():
             # reverse function call notation
             coords = itoken.peak_coords()
-            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True, is_toplevel=False)
             arg1 = FuncCall(bracketed_exprs[0], ret_args, kwargs, inject_args,
                             src=itoken.src, coords=coords)
         elif itoken.peak() != "->":
@@ -692,7 +692,7 @@ def parse_operand(itoken, precedence, op_prec):
             inject_context=True
         )
         if itoken.check("("):
-            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True, is_toplevel=False)
             fcall.args.extend(ret_args)
             fcall.kwargs = kwargs
             fcall.inject_args = inject_args
@@ -784,7 +784,7 @@ def parse_operator(arg1, itoken, precedence, op_prec):
     op_coords = itoken.peak_coords()
     op = itoken.consume()  # assumes valid operator
     if op == "(":
-        ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+        ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True, is_toplevel=False)
         itoken.expect(")")
         fcall = FuncCall(arg1, ret_args, src=itoken.src, coords=arg1.coords)
         fcall.kwargs = kwargs
@@ -797,7 +797,7 @@ def parse_operator(arg1, itoken, precedence, op_prec):
             fname_node,
             [arg1], src=itoken.src, coords=f_coords)
         if itoken.check("("):
-            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True)
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True, is_toplevel=False)
             fcall.args.extend(ret_args)
             fcall.kwargs = kwargs
             fcall.inject_args = inject_args

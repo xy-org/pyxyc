@@ -1395,6 +1395,35 @@ def test_parse_var_decl(code, exp_ast):
             ]),
         ]
     ],
+    [
+        """def main() -> void {
+            func(a:b);
+            func(a'get:b'get);
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.FuncCall(
+                    ast.Id("func"),
+                    args=[
+                        ast.SliceExpr(
+                            ast.Id("a"),
+                            ast.Id("b"),
+                        )
+                    ]
+                ),
+                ast.FuncCall(
+                    ast.Id("func"),
+                    args=[
+                        ast.SliceExpr(
+                            ast.FuncCall(ast.Id("get"), args=[ast.Id("a")]),
+                            ast.FuncCall(ast.Id("get"), args=[ast.Id("b")]),
+                        )
+                    ]
+                ),
+            ]),
+        ]
+    ],
 ])
 def test_parse_slices(code, exp_ast):
     act_ast = parse_code(code)
