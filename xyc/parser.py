@@ -614,7 +614,7 @@ def parse_operand(itoken, precedence, op_prec):
         if len(bracketed_exprs) == 1 and isinstance(bracketed_exprs[0], Id) and not is_end_of_expr(itoken) and next_token[0].isalpha():
             # reverse function call notation
             coords = itoken.peak_coords()
-            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True, is_toplevel=False)
+            ret_args, kwargs, inject_args = parse_args_kwargs(itoken, accept_inject=True, is_toplevel=False, accept_ml_comments=False)
             arg1 = FuncCall(bracketed_exprs[0], ret_args, kwargs, inject_args,
                             src=itoken.src, coords=coords)
         elif itoken.peak() != "->":
@@ -1239,9 +1239,11 @@ def parse_char_literal(token, tk_coords, itoken):
     lit = itoken.src.code[start:end]
     return Const(lit, lit, type="Char", src=itoken.src, coords=tk_coords)
 
-def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False, accept_inject=False):
+def parse_args_kwargs(itoken, is_toplevel=True, is_taglist=False, accept_inject=False, accept_ml_comments=True):
     positional, named = [], {}
-    args = parse_expr_list(itoken, ignore_eols=True, is_toplevel=is_toplevel, is_taglist=is_taglist, accept_inject=accept_inject)
+    args = parse_expr_list(itoken, ignore_eols=True, is_toplevel=is_toplevel,
+                           is_taglist=is_taglist, accept_inject=accept_inject,
+                           accept_ml_comments=accept_ml_comments)
     if accept_inject:
         args, inject_args = args
     for expr in args:

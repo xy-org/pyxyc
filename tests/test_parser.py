@@ -322,7 +322,24 @@ def main(i: int) -> int {
                 )
             )
         ]
-    ]
+    ],
+    [
+        """
+        def test() {
+            (assert) a, b;; comment
+            (assert) c, d;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.FuncCall(ast.Id("assert"), args=[ast.Id("a"), ast.Id("b")], comment=';; comment'),
+                    ast.FuncCall(ast.Id("assert"), args=[ast.Id("c"), ast.Id("d")]),
+                ]
+            )
+        ]
+    ],
 ])
 def test_parse_comments(code, exp_ast):
     act_ast = parse_code(code)
