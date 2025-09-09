@@ -116,16 +116,16 @@
 
 # Limits
 
-*def max(:Int) -> Int {
-    return c.INT32_MAX;
+*def max(
+    type: pseudo (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+ ) -> %type {
+    # Implemented by the compiler
 }
 
-*def min(:Int) -> Int {
-    return c.INT32_MIN;
-}
-
-*def max(:Size) -> Size {
-    return c.SIZE_MAX;
+*def min(
+    type: pseudo (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+ ) -> %type {
+    # Implemented by the compiler
 }
 
 # Arithmetic operations
