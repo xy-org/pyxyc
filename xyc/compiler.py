@@ -421,7 +421,7 @@ class FuncSpace:
             fname = node.name.name
         else:
             fname = node.name.src.code[node.name.coords[0]:node.name.coords[1]]
-        fsig = fcall_sig(fname, args_inferred_types, node.inject_args)
+        fsig = fcall_sig(fname, args_inferred_types, getattr(node, 'inject_args', False))
         err_msg = f"Cannot find function '{fsig}' in {ctx.module_name}"
 
         candidates = ''
