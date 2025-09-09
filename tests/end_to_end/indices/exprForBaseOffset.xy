@@ -11,13 +11,13 @@ def test(cond: Bool) {
     }
 }
 
-def funcReturningIdx(s: Str) -> s[ SizeInterval ] {
+def funcReturningIdx(s: Str) -> s[ RangeSize ] {
     print("In funcReturningIdx\n");
     res := 0z:(s.size-4);
     return res;
 }
 
-def get(s: Str, int: SizeInterval) -> Str~MemExt
+def get(s: Str, int: RangeSize) -> Str~MemExt
 >> int.start < s.size
 >> (int.end - int.start) <= s.size
 {
