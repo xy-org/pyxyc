@@ -1,0 +1,17 @@
+def test1() -> Int {
+    a := -> (res: Int) {
+        res = 0;
+    };
+    b := -> (res: Int) {
+        res = 1;
+    };
+    return a + b;
+}
+
+# def test2() {
+#     return -> (res: Int) {
+#         res = 1;
+#     } + -> (res: Int) {
+#         res = 2;
+#     }
+# }

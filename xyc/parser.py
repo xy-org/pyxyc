@@ -722,6 +722,8 @@ def parse_operand(itoken, precedence, op_prec):
         itoken.consume()
         arg1 = parse_expression(itoken, op_prec["^"]+1, op_prec=op_prec)
         arg1 = CallerContextExpr(arg1, src=itoken.src, coords=coords)
+    elif itoken.peak() == "->":
+        return parse_block(itoken)
     elif itoken.peak() in {"++", "--"}:
         raise ParsingError("Prefix increment and decrement are not supported. "
                         "More infor at TBD", itoken)

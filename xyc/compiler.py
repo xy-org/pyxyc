@@ -2622,6 +2622,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         return compile_fcall(slice_ctor_fcall, cast, cfunc, ctx)
     elif isinstance(expr, xy.CallerContextExpr):
         return compile_caller_context_expr(expr, cast, cfunc, ctx)
+    elif isinstance(expr, xy.Block):
+        return compile_expr_block(expr, cast, cfunc, ctx)
     else:
         raise CompilationError(f"Unknown xy ast node {type(expr).__name__}", expr)
 
@@ -5281,6 +5283,37 @@ def compile_caller_context_expr(expr: xy.CallerContextExpr, cast, cfunc, ctx: Co
             raise NoCallerContextError
         raise CompilationError("No caller context", expr)
     return compile_expr(expr.arg, cast, cfunc, ctx.get_caller_context())
+
+def compile_expr_block(block: xy.Block, cast, cfunc, ctx: CompilerContext):
+    ctx.push_ns()
+
+    c_block = c.Block()
+    c_res = None
+    inferred_type = ctx.void_obj
+    for ret_vardecl in block.returns:
+        if ret_vardecl.name is None or ret_vardecl.type.name == "void":
+            continue
+        var_obj = compile_vardecl(ret_vardecl, cast, cfunc, ctx)
+        var_obj.c_node.name = ctx.gen_tmp_name(ret_vardecl.name)
+        ctx.ns[var_obj.c_node.name] = var_obj
+        cfunc.body.append(var_obj.c_node)
+        if c_res is None:
+            c_res = c.Id(var_obj.c_node.name)
+            inferred_type = var_obj.type_desc
+
+    if isinstance(block.body, list):
+        compile_body(block.body, cast, c_block, ctx, is_func_body=False)
+
+    ctx.pop_ns()
+
+    if len(c_block.body) > 0:
+        cfunc.body.append(c_block)
+
+    return ExprObj(
+        xy_node=block,
+        c_node=c_res,
+        inferred_type=inferred_type
+    )
 
 def ensure_func_decl(func_obj: FuncObj, cast, cfunc, ctx):
     if func_obj.module_header is not None:

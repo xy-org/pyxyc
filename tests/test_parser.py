@@ -4454,6 +4454,41 @@ def test_toggles(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
+        def test() -> Int {
+            return -> (a: Int) {
+                a = func();
+            };
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                returns=ast.SimpleRType("Int"),
+                body=[
+                    ast.Return(
+                        value=ast.Block(
+                            returns=[ast.VarDecl("a", type=ast.Id("Int"), mutable=True)],
+                            body=[
+                                ast.BinExpr(
+                                    ast.Id("a"),
+                                    ast.FuncCall(ast.Id("func")),
+                                    op="=",
+                                )
+                            ]
+                        )
+                    )
+                ]
+            ),
+        ]
+    ],
+])
+def test_expr_blocks(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """
         def test() {
             a := func() | value;
         }

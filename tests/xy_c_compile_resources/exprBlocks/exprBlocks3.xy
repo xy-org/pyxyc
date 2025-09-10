@@ -1,0 +1,24 @@
+struct Struct {
+    val: Long;
+}
+
+def func(s: Struct) {
+    # ...
+}
+
+struct Container {
+    s1: Struct;
+    s2: Struct;
+}
+
+def dtor(c: Container)  = -> void {
+    c.s1'func;
+    c.s2'func;
+};
+
+def test(s: Struct) -> Long {
+    return -> (res: Long) {
+        c: Container;
+        res = c.s1.val + c.s2.val;
+    };
+}

@@ -1,0 +1,22 @@
+struct Struct {
+    val: Int;
+}
+
+def func(s: Struct) {
+    # ...
+}
+
+def dtor(s: Struct) {
+    # ...
+}
+
+def test() -> void {
+    s: Struct;
+    _ = -> void {
+        s := Struct{10};
+        a := -> (a: Int) {
+            a = 10;
+        };
+        s'func();
+    };
+}
