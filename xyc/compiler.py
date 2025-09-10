@@ -5306,8 +5306,11 @@ def compile_expr_block(block: xy.Block, cast, cfunc, ctx: CompilerContext):
 
     ctx.pop_ns()
 
-    if len(c_block.body) > 0:
-        cfunc.body.append(c_block)
+    if c_res is not None:
+        if len(c_block.body) > 0:
+            cfunc.body.append(c_block)
+    else:
+        c_res = c_block
 
     return ExprObj(
         xy_node=block,

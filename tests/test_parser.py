@@ -4481,6 +4481,29 @@ def test_toggles(code, exp_ast):
             ),
         ]
     ],
+    [
+        """
+        def test() = -> (a: Int) {
+            a = 0;
+        };
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                returns=[],
+                body=ast.Block(
+                    returns=[
+                        ast.VarDecl("a", ast.Id("Int"), mutable=True),
+                    ],
+                    body=[
+                        ast.BinExpr(
+                            ast.Id("a"), ast.Const(0), op="=",
+                        )
+                    ],
+                )
+            ),
+        ]
+    ],
 ])
 def test_expr_blocks(code, exp_ast):
     act_ast = parse_code(code)

@@ -11,7 +11,7 @@ struct Container {
     s2: Struct;
 }
 
-def dtor(c: Container)  = -> void {
+def dtor(c: Container) = -> void {
     c.s1'func;
     c.s2'func;
 };

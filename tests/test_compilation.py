@@ -138,7 +138,7 @@ from xyc.compiler import CompilationError
     "funcs/ignoreRetVal",
     "exprBlocks/exprBlocks1",
     "exprBlocks/exprBlocks2",
-    #"exprBlocks/exprBlocks3",
+    "exprBlocks/exprBlocks3",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)

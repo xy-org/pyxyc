@@ -242,13 +242,19 @@ def parse_def(itoken: TokenIter):
             raise ParsingError("Syntax ambiguity. Please be specific and use square brackets to separate tags.", itoken)
     node.params = parse_params(itoken)
 
-    itoken.check("=")
-    value = parse_block(itoken)
-    node.returns = value.returns
-    node.etype = value.etype
-    node.in_guards = value.in_guards
-    node.out_guards = value.out_guards
-    node.body = value.body
+    if itoken.check("="):
+        value = parse_block(itoken)
+        if not isinstance(value.body, list):
+            node.body = value.body
+        else:
+            node.body = value
+    else:
+        value = parse_block(itoken)
+        node.returns = value.returns
+        node.etype = value.etype
+        node.in_guards = value.in_guards
+        node.out_guards = value.out_guards
+        node.body = value.body
 
     if isinstance(node.body, list):
         if itoken.has_more() and itoken.peak() == ";":
