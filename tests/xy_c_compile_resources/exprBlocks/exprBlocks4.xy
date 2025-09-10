@@ -1,0 +1,11 @@
+def test(x: Int, y: Int) -> Int {
+    a := -> (a: Int)
+        >> x > 0
+        << a > 0
+        {
+            a = 2 * x;
+        } + -> (a: Int) {
+            a = x - 10;
+        };
+    return a;
+}

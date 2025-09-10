@@ -5301,8 +5301,24 @@ def compile_expr_block(block: xy.Block, cast, cfunc, ctx: CompilerContext):
             c_res = c.Id(var_obj.c_node.name)
             inferred_type = var_obj.type_desc
 
-    if isinstance(block.body, list):
-        compile_body(block.body, cast, c_block, ctx, is_func_body=False)
+    for guard in block.in_guards:
+        guard_obj = compile_expr(guard, cast, c_block, ctx)
+        if not is_ct_true(guard_obj):
+            c_block.body.append(c.If(
+                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
+                body=[c.FuncCall("abort")]
+            ))
+
+    assert isinstance(block.body, list)
+    compile_body(block.body, cast, c_block, ctx, is_func_body=False)
+
+    for guard in block.out_guards:
+        guard_obj = compile_expr(guard, cast, c_block, ctx)
+        if not is_ct_true(guard_obj):
+            c_block.body.append(c.If(
+                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
+                body=[c.FuncCall("abort")]
+            ))
 
     ctx.pop_ns()
 
