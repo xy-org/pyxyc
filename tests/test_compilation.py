@@ -95,6 +95,8 @@ from xyc.compiler import CompilationError
     "move/moveOperators3",
     "move/moveOperators4",
     "move/moveOperators5",
+    "move/moveOperators6",
+    "move/moveOperators7",
     "splitNamespaces",
     "cinterop/usingCtypes",
     "cinterop/callFuncOnString",

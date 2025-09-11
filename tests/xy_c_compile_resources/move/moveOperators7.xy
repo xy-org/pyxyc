@@ -1,0 +1,37 @@
+# Test moving to/from void
+
+struct Elem {
+    val: Char;
+}
+
+def dtor(e: Elem) {
+    # ...
+}
+
+struct Array {
+    mem: Ptr~Elem;
+}
+
+def get(arr: Array, idx: Int) -> arr[Ptr~Elem] {
+    return arr.mem;
+}
+
+def set(arr: Array, idx: Int, elem: Elem)  {
+    # ...
+}
+
+def dtor(arr: Array) {
+    # ...
+}
+
+def test1(arr: mut Array, i: Int, j: Int) {
+    arr[i] =< arr[j];
+}
+
+def test2(arr: mut Array, i: Int) {
+    arr[i] =< void;
+}
+
+def test3(arr: mut Array, i: Int) {
+    void =< arr[i];
+}

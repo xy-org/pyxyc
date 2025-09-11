@@ -1,0 +1,16 @@
+# Test moving to/from void
+
+struct Point {
+    x: Int = 1;
+    y: Int = 2;
+}
+
+def dtor(p: Point) {
+    # ...
+}
+
+def test(a: mut Point, b: mut Point) {
+    a =< b;
+    b =< void;
+    void =< a;
+}

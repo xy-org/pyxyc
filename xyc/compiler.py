@@ -2337,6 +2337,9 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 inferred_type=arg1_obj.inferred_type
             )
         elif expr.op in {"=", "=<"}:
+            is_move_from_void = isinstance(expr.arg2, xy.Id) and expr.arg2.name == "void"
+            is_move_to_void = isinstance(expr.arg1, xy.Id) and expr.arg1.name == "void"
+
             if isinstance(expr.arg1, xy.Select):
                 if expr.arg1.base is not None:
                     container_obj = compile_expr(expr.arg1.base, cast, cfunc, ctx, deref=False)
@@ -2345,11 +2348,21 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 assert len(expr.arg1.args.args) == 1
                 assert len(expr.arg1.args.kwargs) == 0
                 idx_obj = compile_expr(expr.arg1.args.args[0], cast, cfunc, ctx, deref=None)
+                lhs_obj = IdxObj(xy_node=expr, container=container_obj, idx=idx_obj)
                 value_obj = compile_expr(expr.arg2, cast, cfunc, ctx, deref=False)
+                if is_move_from_void:
+                    idx_setup(lhs_obj, cast, cfunc, ctx)
+                    value_obj = ExprObj(
+                        xy_node = expr.arg2,
+                        c_node = lhs_obj.inferred_type.init_value,
+                        inferred_type= lhs_obj.inferred_type
+                    )
                 if expr.op == "=<":
                     value_obj = move_out(value_obj, cast, cfunc, ctx)
+                    if is_tmp_expr(value_obj):
+                        ctx.ns[value_obj.c_node.name].needs_dtor = False
                 value_obj = maybe_deref(value_obj, True, cast, cfunc, ctx)
-                return idx_set(IdxObj(xy_node=expr, container=container_obj, idx=idx_obj), value_obj, cast, cfunc, ctx)
+                return idx_set(lhs_obj, value_obj, cast, cfunc, ctx)
             elif isinstance(expr.arg1, xy.StrLiteral):
                 return compile_unstring(expr.arg1, expr.arg2, cast, cfunc, ctx)
 
@@ -2360,7 +2373,18 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 return res
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
 
-            return compile_assign(arg1_obj, arg2_obj, cast, cfunc, ctx, expr, expr.op=="=<")
+            if is_move_from_void:
+                arg2_obj = ExprObj(
+                    xy_node = expr.arg2,
+                    c_node = arg1_obj.inferred_type.init_value,
+                    inferred_type= arg1_obj.inferred_type
+                )
+
+            if not is_move_to_void:
+                return compile_assign(arg1_obj, arg2_obj, cast, cfunc, ctx, expr, expr.op=="=<")
+            else:
+                reset_obj(arg2_obj, cast, cfunc, ctx)
+                return arg1_obj
         else:
             # compile get tag
             assert expr.op == ".."
