@@ -29,10 +29,16 @@ void moveOperators7_test1(moveOperators7_Array* p_arr, int32_t p_i, int32_t p_j)
     moveOperators7_Elem* tmp_0_arg = moveOperators7_get(*p_arr, p_j);
     moveOperators7_Elem tmp_1_ref = *tmp_0_arg;
     moveOperators7_set(*p_arr, p_j, (moveOperators7_Elem){0});
+    moveOperators7_Elem* tmp_2_arg = moveOperators7_get(*p_arr, p_i);
+    moveOperators7_dtor__Elem(*tmp_2_arg);
+    *tmp_2_arg = (moveOperators7_Elem){0};
     moveOperators7_set(*p_arr, p_i, tmp_1_ref);
 }
 
 void moveOperators7_test2(moveOperators7_Array* p_arr, int32_t p_i) {
+    moveOperators7_Elem* tmp_0_arg = moveOperators7_get(*p_arr, p_i);
+    moveOperators7_dtor__Elem(*tmp_0_arg);
+    *tmp_0_arg = (moveOperators7_Elem){0};
     moveOperators7_set(*p_arr, p_i, (moveOperators7_Elem){0});
 }
 

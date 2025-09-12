@@ -2388,6 +2388,10 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                     if is_tmp_expr(value_obj):
                         ctx.ns[value_obj.c_node.name].needs_dtor = False
                 value_obj = maybe_deref(value_obj, True, cast, cfunc, ctx)
+                if expr.op == "=<":
+                    idx_setup(lhs_obj, cast, cfunc, ctx)
+                    if getattr(lhs_obj.inferred_type, 'needs_dtor', False):
+                        call_dtor(idx_get(lhs_obj, cast, cfunc, ctx), cast, cfunc, ctx)
                 return idx_set(lhs_obj, value_obj, cast, cfunc, ctx)
             elif isinstance(expr.arg1, xy.StrLiteral):
                 return compile_unstring(expr.arg1, expr.arg2, cast, cfunc, ctx)
