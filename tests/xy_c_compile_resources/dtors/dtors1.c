@@ -144,7 +144,9 @@ int32_t dtors1_test4(int32_t p_rng, dtors1_Array* _res0) {
             if (p_rng == 3) {
                 dtors1_Array l_arr4 = {0};
                 dtors1_dtor(l_arr4, true);
+                l_arr4 = (dtors1_Array){0};
                 dtors1_dtor(l_arr3, true);
+                l_arr3 = (dtors1_Array){0};
                 break;
             }
             dtors1_dtor(l_arr3, true);

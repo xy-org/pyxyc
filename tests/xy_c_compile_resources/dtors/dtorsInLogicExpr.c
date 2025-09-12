@@ -39,7 +39,9 @@ bool dtorsInLogicExpr_test(dtorsInLogicExpr_Str p_s1, dtorsInLogicExpr_Str p_s2)
         dtorsInLogicExpr_Str tmp_7_arg = dtorsInLogicExpr_copy(tmp_6_arg);
         tmp_8_shortcircuit = dtorsInLogicExpr_startswith(tmp_7_arg, p_s2);
         dtorsInLogicExpr_dtor(tmp_7_arg);
+        tmp_7_arg = (dtorsInLogicExpr_Str){0};
         dtorsInLogicExpr_dtor(tmp_6_arg);
+        tmp_6_arg = (dtorsInLogicExpr_Str){0};
     }
     bool tmp_9_res = tmp_8_shortcircuit;
     dtorsInLogicExpr_dtor(tmp_1_arg);

@@ -35,5 +35,7 @@ dtors3_Person dtors3_test2(int32_t p_i) {
 
 void dtors3_dtor__Person(dtors3_Person* l_obj) {
     dtors3_dtor(l_obj->m_name);
+    l_obj->m_name = (dtors3_Str){0};
     dtors3_dtor(l_obj->m_family);
+    l_obj->m_family = (dtors3_Str){0};
 }

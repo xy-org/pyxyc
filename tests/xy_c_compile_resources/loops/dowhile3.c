@@ -29,10 +29,13 @@ void dowhile3_test(int32_t* p_x, int32_t* p_y) {
             (*p_y)++;
             if (*p_y > 0) {
                 dowhile3_dtor(l_b);
+                l_b = (dowhile3_TypeWithDtor){0};
                 dowhile3_dtor(l_a);
+                l_a = (dowhile3_TypeWithDtor){0};
                 continue;
             } else if (*p_y < -500) {
                 dowhile3_dtor(l_b);
+                l_b = (dowhile3_TypeWithDtor){0};
                 break;
             }
             dowhile3_dtor(l_b);

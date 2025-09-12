@@ -39,7 +39,9 @@ void while3_test(int32_t* p_x, int32_t* p_y) {
             while3_TypeWithDtor l_b = {-1};
             if (*p_y < 20) {
                 while3_dtor(l_b);
+                l_b = (while3_TypeWithDtor){0};
                 while3_dtor(l_a);
+                l_a = (while3_TypeWithDtor){0};
                 goto L_0_CONTINUE_;
             }
             while3_dtor(l_b);

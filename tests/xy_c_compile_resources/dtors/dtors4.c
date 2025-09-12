@@ -36,16 +36,20 @@ void dtors4_test(void) {
 
 void dtors4_dtor__Data(dtors4_Data l_obj) {
     dtors4_dtor(l_obj.m_s);
+    l_obj.m_s = (dtors4_Str){0};
 }
 
 void dtors4_dtor__Bottom(dtors4_Bottom l_obj) {
     dtors4_dtor__Data(l_obj.m_d);
+    l_obj.m_d = (dtors4_Data){0};
 }
 
 void dtors4_dtor__Middle(dtors4_Middle l_obj) {
     dtors4_dtor__Bottom(l_obj.m_b);
+    l_obj.m_b = (dtors4_Bottom){0};
 }
 
 void dtors4_dtor__Top(dtors4_Top l_obj) {
     dtors4_dtor__Middle(l_obj.m_m);
+    l_obj.m_m = (dtors4_Middle){0};
 }

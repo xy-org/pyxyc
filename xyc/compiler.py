@@ -2069,7 +2069,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
 
     # call dtors if any
     if len(body) > 0 and not isinstance(body[-1], (xy.Return, xy.Break)):
-        call_dtors(ctx.ns, cast, cfunc, ctx)
+        call_dtors(ctx.ns, cast, cfunc, ctx, reset_values=False)
 
     # add no error return if needed
     if is_func_body and ctx.current_fobj.etype_obj is not None:
@@ -2116,7 +2116,7 @@ def call_dtors_for_fields(obj: VarObj, cast, cfunc, ctx):
             expr_obj = field_get(var_to_expr_obj(obj.xy_node, obj, cast, cfunc, ctx, True), field, cast, cfunc, ctx)
             call_dtor(expr_obj, cast, cfunc, ctx)
 
-def call_dtor(obj, cast, cfunc, ctx):
+def call_dtor(obj, cast, cfunc, ctx, reset_values=True):
     if not isinstance(obj.inferred_type, ArrTypeObj):
         assert obj.inferred_type.dtor_fobj is not None
         dtor_obj = do_compile_fcall(
@@ -2126,6 +2126,7 @@ def call_dtor(obj, cast, cfunc, ctx):
             cast=cast, cfunc=cfunc, ctx=ctx
         )
         cfunc.body.append(dtor_obj.c_node)
+        if reset_values: reset_obj(obj, cast, cfunc, ctx)
     else:
         cfor = c.For(
             [c.VarDecl("_i", qtype=c.QualType(c.Type("size_t"), is_const=False), value=c.Const(0))],
@@ -2141,7 +2142,7 @@ def call_dtor(obj, cast, cfunc, ctx):
         cfor.body.append(dtor_obj.c_node)
         cfunc.body.append(cfor)
 
-def call_dtors(ns, cast, cfunc, ctx):
+def call_dtors(ns, cast, cfunc, ctx, reset_values=True):
     for obj in reversed(ns.values()):
         if isinstance(obj, VarObj) and obj.needs_dtor and not obj.xy_node.is_param:
             if obj.is_stored_global:
@@ -2153,12 +2154,12 @@ def call_dtors(ns, cast, cfunc, ctx):
                 inferred_type=obj.inferred_type,
                 compiled_obj=obj
             )
-            call_dtor(expr, cast, cfunc, ctx)
+            call_dtor(expr, cast, cfunc, ctx, reset_values=reset_values)
 
-def call_all_dtors(cast, cfunc, ctx):
+def call_all_dtors(cast, cfunc, ctx, reset_values=True):
     # first 2 are global and local namespaces
     for ns in reversed(ctx.data_namespaces[2:]):
-        call_dtors(ns, cast, cfunc, ctx)
+        call_dtors(ns, cast, cfunc, ctx, reset_values=reset_values)
 
 def any_dtors(ctx):
     # TODO optimize that function
@@ -2793,7 +2794,7 @@ def compile_assign(dest_obj, value_obj, cast, cfunc, ctx, expr_node, is_move=Fal
     if is_move:
         value_obj = move_out(value_obj, cast, cfunc, ctx)
         if dest_obj.inferred_type.needs_dtor:
-            call_dtor(dest_obj, cast, cfunc, ctx)
+            call_dtor(dest_obj, cast, cfunc, ctx, reset_values=False)
 
     if isinstance(dest_obj, IdxObj):
         res = idx_set(dest_obj, value_obj, cast, cfunc, ctx)
@@ -4813,7 +4814,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 cf.inferred_type = func_obj.etype_obj
                 check_if.body.append(c.Goto(c.Id(cf.err_label)))
             elif func_obj.etype_obj is ctx.current_fobj.etype_obj:
-                call_all_dtors(cast, check_if, ctx)
+                call_all_dtors(cast, check_if, ctx, reset_values=False)
                 check_if.body.append(c.Return(c.Id(err_obj_c_name)))
             else:
                 # call unhandled
@@ -6141,7 +6142,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
                     )
         if value_obj is not None: ret.value = value_obj.c_node
 
-        call_all_dtors(cast, cfunc, ctx)
+        call_all_dtors(cast, cfunc, ctx, reset_values=False)
         if value_obj is not None and isinstance(value_obj.compiled_obj, VarObj):
             # restore value of needs_dtor for any other returns
             value_obj.compiled_obj.needs_dtor = needs_dtor
@@ -6172,7 +6173,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         ret = c.Return()
         if xy_func.etype is not None:
             ret.value = ctx.current_fobj.etype_obj.init_value
-        call_all_dtors(cast, cfunc, ctx)
+        call_all_dtors(cast, cfunc, ctx, reset_values=False)
         return ExprObj(
             xy_node=xyreturn,
             c_node=ret,
