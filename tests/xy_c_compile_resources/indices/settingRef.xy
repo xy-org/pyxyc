@@ -1,0 +1,12 @@
+struct Array {
+    mem: Ptr~Long;
+    size: Size;
+}
+
+def get(arr: Array, i: Int) -> arr[ Ptr~Long ] {
+    return arr.mem + i;
+}
+
+def test(arr: mut Array) {
+    arr[0] = 10l;
+}

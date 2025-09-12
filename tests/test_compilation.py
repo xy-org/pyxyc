@@ -70,6 +70,7 @@ from xyc.compiler import CompilationError
     "errors/richErrors",
     "indices/indices",
     "indices/refValue",
+    "indices/settingRef",
     "dtors/dtors1",
     "dtors/dtors2",
     "dtors/dtors3",

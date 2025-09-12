@@ -3083,7 +3083,7 @@ def idx_find_widest_get(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
             if get_fobj is None:
                 prev_chain.append(chain_idx)
                 continue
-            res = idx_get(chain_idx, cast, cfunc, ctx)
+            res = idx_get_once(chain_idx, cast, cfunc, ctx)
         for j, prev_idx in zip(range(i, 0, -1), prev_chain[::-1]):
             res = IdxObj(
                 xy_node=idx_obj.xy_node,
