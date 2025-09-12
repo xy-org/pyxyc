@@ -1,0 +1,14 @@
+import macroBlockDtor.module;
+
+struct Struct {
+    ptr: Ptr;
+}
+
+def dtor(s: Struct) {
+    # ...
+}
+
+def test() {
+    a: Action~Struct;
+    a'action;
+}

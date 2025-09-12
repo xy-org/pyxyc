@@ -1,0 +1,8 @@
+struct Action~[type: struct] {
+    code: Int;
+}
+
+def action(act: Action) = if (act.code >= 5) {
+    s := (act..type){};
+    # ...
+};

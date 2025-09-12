@@ -232,6 +232,7 @@ def test_common_errors(code, err_msg, tmp_path):
     "crossModuleSelect",
     "macroErrorAndDtor",
     "globalAndMacro",
+    "macroBlockDtor",
 ])
 def test_module_compilation(resource_dir, module, tmp_path):
     base_dir = resource_dir / "multi_src"

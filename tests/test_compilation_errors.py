@@ -673,6 +673,22 @@ src.xy:3:18: error: Cannot find variable 'Any'
                    ^^^
 """
     ),
+    (
+        """
+        struct Struct {}
+
+        def dtor(s: Struct, num: Int) {}
+
+        def test() {
+            s: Struct;
+        }
+        """,
+        """\
+src.xy:2:16: error: Type appears to need a dtor by no matching dtor(Struct) found
+|         struct Struct {}
+                 ^^^^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

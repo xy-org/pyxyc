@@ -27,6 +27,7 @@ class TypeObj(CompiledObj):
     is_init_value_zeros: bool = True
     needs_dtor: bool = False
     has_explicit_dtor: bool = False
+    dtor_fobj: any = None
     has_auto_dtor: bool = False
     base_type_obj: 'TypeObj' = None
     fully_compiled: bool = False
@@ -94,6 +95,14 @@ class TypeExprObj(CompiledObj):
     @needs_dtor.setter
     def needs_dtor(self, needs_dtor):
         self.type_obj.needs_dtor = needs_dtor
+
+    @property
+    def dtor_fobj(self):
+        return self.type_obj.dtor_fobj
+
+    @dtor_fobj.setter
+    def dtor_fobj(self, dtor_fobj):
+        self.type_obj.dtor_fobj = dtor_fobj
 
     @property
     def has_explicit_dtor(self):
@@ -1340,6 +1349,14 @@ def compile_header(ctx: CompilerContext, asts, cast):
                 type_obj: TypeObj = ctx.data_ns[node.name]
                 fill_missing_dtors(type_obj, fobjs, asts, cast, ctx)
 
+    # check types have proper dtors
+    for ast in asts:
+        for node in ast:
+            if isinstance(node, xy.StructDef):
+                type_obj: TypeObj = ctx.data_ns[node.name]
+                if type_obj.needs_dtor and type_obj.dtor_fobj is None:
+                    raise CompilationError(f"Type appears to need a dtor by no matching dtor({type_obj.name}) found", node)
+
     return fobjs
 
 def try_compile_const_value(obj, node, cast, ctx):
@@ -1677,6 +1694,8 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
     if fobj.xy_node.name.name == "dtor" and len(param_objs) > 0:
         param_objs[0].inferred_type.needs_dtor = True
         param_objs[0].inferred_type.has_explicit_dtor = True
+        if all(p.value is not None for p in fobj.xy_node.params[1:]):
+            param_objs[0].inferred_type.dtor_fobj = fobj
 
     rtype_compiled, etype_compiled, any_refs, has_calltime_tags = compile_ret_err_types(node, cast, cfunc, ctx)
     move_args_to_temps = move_args_to_temps or any_refs
@@ -2099,7 +2118,13 @@ def call_dtors_for_fields(obj: VarObj, cast, cfunc, ctx):
 
 def call_dtor(obj, cast, cfunc, ctx):
     if not isinstance(obj.inferred_type, ArrTypeObj):
-        dtor_obj = find_and_call("dtor", ArgList([obj]), cast, cfunc, ctx, obj.xy_node)
+        assert obj.inferred_type.dtor_fobj is not None
+        dtor_obj = do_compile_fcall(
+            obj.xy_node,
+            obj.inferred_type.dtor_fobj,
+            arg_exprs=ArgList([obj]),
+            cast=cast, cfunc=cfunc, ctx=ctx
+        )
         cfunc.body.append(dtor_obj.c_node)
     else:
         cfor = c.For(
