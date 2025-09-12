@@ -1,0 +1,41 @@
+struct Str {
+    mem: Ptr~Char;
+}
+
+def dtor(s: Str) {
+    # ...
+}
+
+def get(s: Str, i: Int) -> Str {
+    return Str{s.mem + i};
+}
+
+struct CharIter {
+    i: Size;
+    char: Char;
+}
+
+*def chars~IterCtor(str: Str) -> str[ CharIter ] {
+    iter : CharIter;
+    next(str, iter);
+    return iter;
+}
+
+*def get(str: Str, charIter: CharIter) = charIter.char;
+
+*def valid(str: Str, iter: CharIter) iter.char'to(Int) >= 0;
+
+*def next(str: Str, iter: mut CharIter) {
+    iter.i++;
+}
+
+def test() {
+    s := Str{};
+    for (char in s[1]'chars) {
+        doSomething(char);
+    }
+}
+
+def doSomething(char: Char) {
+    # ...
+}

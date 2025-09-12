@@ -6040,7 +6040,10 @@ def compile_for(for_node: xy.ForExpr, cast, cfunc, ctx: CompilerContext):
     if len(return_objs) > 0:
         cfunc.body.append(cfor if for_outer_block is None else for_outer_block)
 
-    call_dtors(ctx.ns, cast, cfunc if for_outer_block is None else for_outer_block, ctx)
+    dtors_block = c.Block(body=[cfor]) if for_outer_block is None else for_outer_block
+    call_dtors(ctx.ns, cast, dtors_block, ctx)
+    if dtors_block is not for_outer_block and len(dtors_block.body) > 1:
+        for_outer_block = dtors_block
     ctx.pop_ns() # for the loop
 
     if len(return_objs) > 0:
