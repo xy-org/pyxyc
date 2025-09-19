@@ -4708,8 +4708,13 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         cast.includes.append(c.Include("stdlib.h"))
     param_print_code = c.Block()
     for guard in in_guards:
-        guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
-        if not is_ct_true(guard_obj):
+        try:
+            guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
+        except CompilationError as e:
+            raise CompilationError("Input assumption failed", expr, notes=[(e.error_message, e.xy_node), *(e.notes if e.notes else [])])
+        if guard_obj.inferred_type is not ctx.bool_obj:
+            raise CompilationError("Assumptions must be Bool expressions", guard)
+        if not ct_eval(guard_obj):
             on_guard_fail = []
             gen_guard_failed_code(guard, func_obj, cast, on_guard_fail, ctx, is_guard=True)
             if len(param_print_code.body) == 0:
@@ -4839,7 +4844,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     # finally eval out_guards
     for guard in out_guards:
         guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
-        if not is_ct_true(guard_obj):
+        if not ct_eval(guard_obj):
             cfunc.body.append(c.If(
                 cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
                 body=[c.FuncCall("abort")]
@@ -5357,7 +5362,7 @@ def compile_expr_block(block: xy.Block, cast, cfunc, ctx: CompilerContext):
 
     for guard in block.in_guards:
         guard_obj = compile_expr(guard, cast, c_block, ctx)
-        if not is_ct_true(guard_obj):
+        if not ct_eval(guard_obj):
             c_block.body.append(c.If(
                 cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
                 body=[c.FuncCall("abort")]
@@ -5368,7 +5373,7 @@ def compile_expr_block(block: xy.Block, cast, cfunc, ctx: CompilerContext):
 
     for guard in block.out_guards:
         guard_obj = compile_expr(guard, cast, c_block, ctx)
-        if not is_ct_true(guard_obj):
+        if not ct_eval(guard_obj):
             c_block.body.append(c.If(
                 cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
                 body=[c.FuncCall("abort")]
@@ -5593,9 +5598,6 @@ def typeEqs(expr, arg_exprs, cast, cfunc, ctx):
             return ctx.falseObj(expr)
 
     return ctx.trueObj(expr)
-
-def is_ct_true(obj):
-    return isinstance(obj.c_node, c.Const) and obj.c_node.value == "true"
 
 def compile_if(ifexpr, cast, cfunc, ctx):
     c_if = c.If()
@@ -6405,7 +6407,8 @@ def find_type(texpr, cast, ctx, required=True):
         dims = []
         lin_size = 1
         for d in texpr.dims:
-            dim = ct_eval(d, ctx)
+            dim_obj = compile_expr(d, cast, c.Func("dummy"), ctx)
+            dim = ct_eval_always(dim_obj, ctx)
             dims.append(dim)
             lin_size *= dim
         return ArrTypeObj(xy_node=texpr, base_type_obj=base_type, dims=dims, sizeof=lin_size * base_type.sizeof)
@@ -6435,10 +6438,22 @@ def find_type(texpr, cast, ctx, required=True):
             res = ext_symbol_to_type(res)
         return res
 
-def ct_eval(expr, ctx):
-    if isinstance(expr, xy.Const):
-        return expr.value
-    raise CompilationError("Cannot Compile-Time Evaluate", expr)
+def ct_eval(expr_obj):
+    return c_eval(expr_obj.c_node)
+
+def c_eval(c_node):
+    if isinstance(c_node, c.Const):
+        return c_node.value
+    elif isinstance(c_node, c.UnaryExpr) and c_node.op == "!":
+        res = c_eval(c_node.arg)
+        if isinstance(res, bool): return not res
+    return None
+
+def ct_eval_always(expr_obj, ctx):
+    res = ct_eval(expr_obj)
+    if res is None:
+        raise CompilationError("Cannot Compile-Time Evaluate", expr_obj.xy_node)
+    return res
 
 def find_func(fcall, ctx):
     fspace = ctx.eval_to_fspace(fcall.name)
