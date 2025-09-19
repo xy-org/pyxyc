@@ -559,7 +559,7 @@ def is_obj_visible(obj, ctx: 'CompilerContext'):
     return True
 
 def check_types_assignment(lhs_type_obj, rhs_type_obj, field: xy.Node):
-    errors = cmp_types_updated(lhs_type_obj, rhs_type_obj, field)
+    _, errors = cmp_types(lhs_type_obj, rhs_type_obj, field)
     if len(errors) > 0:
         raise CompilationError(*errors[0],
             notes=[*errors[1:]]
@@ -615,51 +615,46 @@ def compatible_types(src_type, dst_type):
 
     return True
 
-def cmp_types_updated(src_type: TypeObj, dst_type: TypeObj, xy_node, fcall_rules=False):
+def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
     if src_type is None or dst_type is None:
-        return [] ## c types
+        return 0, [] ## c types
     # TODO maybe remove cmp_arg_param_types
     if src_type is dst_type:
-        return []
+        return 0, []
 
     if dst_type is any_type_obj:
-        return []
+        return 0, []
 
     if isinstance(src_type, ArrTypeObj):
         if not isinstance(dst_type, ArrTypeObj):
-            return [("Left side is not an array", dst_type.xy_node)]
-        return []
-        if len(arg_type.dims) != len(param_type.dims):
-            return False
-        for i in range(len(arg_type.dims)):
-            if arg_type.dims[i] != param_type.dims[i]:
-                return False
+            return -1, [("Left side is not an array", dst_type.xy_node)]
+        return 0, []
 
     if isinstance(src_type, FuncTypeObj) and isinstance(dst_type, FuncTypeObj):
-        return []  # XXX
+        return 0, []  # XXX
 
     if isinstance(dst_type, TypeInferenceError) or dst_type is any_type_obj or src_type is any_type_obj:
-        return []
+        return 0, []
 
     if not (src_type.get_base_type().xy_node.name == dst_type.get_base_type().xy_node.name and src_type.get_base_type().c_name == dst_type.get_base_type().c_name):
-        return [(f"Type mismatch in assignment: {fmt_type(src_type.get_base_type())} and {fmt_type(dst_type.get_base_type())}", xy_node)]
+        return -1, [(f"Type mismatch in assignment: {fmt_type(src_type.get_base_type())} and {fmt_type(dst_type.get_base_type())}", xy_node)]
 
 
     for tag_name, tag in dst_type.tags.items():
         other_tag = src_type.tags.get(tag_name, None)
-        if not fcall_rules and other_tag is None:
-            return [
+        if other_tag is None:
+            return -1, [
                 (f"Cannot discard tag '{tag_name}'", xy_node),
                 (f"Tag attached here", tag.xy_node),
             ]
         if other_tag is not None and not ct_equals(tag, other_tag):
-            return [
+            return -1, [
                 (f"Values for tag '{tag_name}' differ", xy_node),
                 (f"Left tag attached here", other_tag.xy_node),
                 (f"Right tag attached here", tag.xy_node),
             ]
 
-    return []
+    return 0, []
 
 def ct_equals(tag, other_tag):
     if isinstance(other_tag, (TypeExprObj, TypeObj)) and isinstance(tag, (TypeExprObj, TypeObj)):
@@ -672,8 +667,8 @@ def ct_equals(tag, other_tag):
         return tag.c_name == other_tag.c_name
     return False
 
-def check_type_compatibility(xy_node, expr1_obj, expr2_obj, ctx, fcall_rules=False):
-    errors = cmp_types_updated(expr1_obj.inferred_type, expr2_obj.inferred_type, xy_node, fcall_rules)
+def check_type_compatibility(xy_node, expr1_obj, expr2_obj, ctx):
+    _, errors = cmp_types(expr1_obj.inferred_type, expr2_obj.inferred_type, xy_node)
     if len(errors) > 0:
         if implicit_zero_conversion(expr2_obj, expr1_obj.inferred_type, ctx):
             return
@@ -4627,7 +4622,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 )
                 redact_code(arg, cast, cfunc, ctx)
             arg.num_cnodes = 0  # the time for code redaction is over so lets disable it
-            check_type_compatibility(arg.xy_node, pobj, arg, ctx, fcall_rules=True)
+            check_type_compatibility(arg.xy_node, arg, pobj, ctx)
             if pobj.xy_node.mutable:
                 assert_mutable(arg, expr, func_obj, ctx)
             if pobj.xy_node.is_pseudo:
@@ -4662,7 +4657,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                             notes = []
                             if isinstance(var_decl, VarObj):
                                 notes = [(f"Variable '{pobj.xy_node.name}' has unsuitable type", var_decl.xy_node)]
-                                notes.extend(cmp_types_updated(var_decl.inferred_type, pobj.type_desc, expr))
+                                notes.extend(cmp_types(var_decl.inferred_type, pobj.type_desc, expr)[1])
                             raise CompilationError(f"Cannot find var '{pobj.xy_node.name}' to auto inject", expr, notes=notes)
                         value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, callee_ctx)
                     to_move = (
@@ -4686,7 +4681,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             else:
                 value_obj = arg_exprs.kwargs[pobj.xy_node.name]
 
-            check_type_compatibility(value_obj.xy_node, pobj, value_obj, ctx, fcall_rules=True)
+            check_type_compatibility(value_obj.xy_node, value_obj, pobj, ctx)
             args_list.append(value_obj)
             args_writable.append(False)
             if pobj.xy_node.mutable:
