@@ -50,14 +50,14 @@ def get(
     arr: Array, i: Size,
     elemSize : Size = ctti.sizeof(arr..elemType)
 ) -> arr[ Ptr~[^arr..elemType] ] {
-    return arr.mem.addr + i * elemSize;
+    return (arr.mem.addr + i * elemSize)~[void];
 }
 
 def get(
     arr: Array, i: Int,
     elemSize : Size = ctti.sizeof(arr..elemType)
 ) -> arr[ Ptr~[^arr..elemType] ] {
-    return arr.mem.addr + i'to(Size) * elemSize;
+    return (arr.mem.addr + i'to(Size) * elemSize)~void;
 }
 
 struct ArrayIter {
@@ -75,7 +75,7 @@ def next(arr: pseudo Array, iter: mut ArrayIter) {
 }
 
 def get(arr: Array, iter: ArrayIter, elemSize : Size = ctti.sizeof(arr..elemType)) -> arr[ Ptr~[^arr..elemType] ] {
-    return arr.mem.addr + iter.idx * elemSize;
+    return (arr.mem.addr + iter.idx * elemSize)~void;
 }
 
 # ----------------- test code -----------------

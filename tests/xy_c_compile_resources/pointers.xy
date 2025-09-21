@@ -3,5 +3,5 @@ def pointerFun(a: Ptr) -> Ptr {
     c := b + 1;
     d := c~[to=Ulong] - 2;
     e := d;
-    return e + 3;
+    return (e + 3)~[void];
 }

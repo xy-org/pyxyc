@@ -21,7 +21,7 @@ def get(s: Str, int: RangeSize) -> Str~MemExt
 >> int.start < s.size
 >> (int.end - int.start) <= s.size
 {
-    return Str{s.addr + int.start, int.end - int.start};
+    return Str~MemExt{s.addr + int.start, int.end - int.start};
 }
 
 def returnString() -> Str {

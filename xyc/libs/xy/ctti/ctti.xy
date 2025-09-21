@@ -69,8 +69,19 @@ struct StrLit {
     # Implemented by the compiler
 }
 
-;; Compares two types. Returns true if types are identical including tags.
-;; TODO should be renamed to cmp or something. Maybe don't use.
-*def typeEqs(a: pseudo Any, b: pseudo Any) -> Bool {
+;; Compares two types.
+;; Return 0 if types are identical including tags.
+;; Return 1 if {a} and {b} have the same basic type but {a} has more tags.
+;; return -1 otherwise
+*def cmpTypes(^a: Any, ^b: Any) -> Int {
+    # Implemented by the compiler
+}
+
+;; Compile-time assert {lhs} and {rhs} have compatible types.
+;; Two types are considered compatible if cmpTypes({lhs}, {rhs}) >= 0
+;; This function is identical to just ">> cmpTypes({lhs}, {rhs}) >= 0" but
+;; produces better error messages.
+;; If types are compatible then the function always returns true
+*def assumeCompatibleTypes(^lhs: Any, ^rhs: Any) -> Bool {
     # Implemented by the compiler
 }

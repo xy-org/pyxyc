@@ -56,9 +56,9 @@ def select(pc: PointCloud, i: Int) -> pc[ Int ] {
 }
 
 def get(pc: PointCloud, i: Int) -> pc[ Ptr~Point ] {
-    return (pc.mem)~[to=Byte] + i'to(Size) * sizeof(Point);
+    return ((pc.mem)~[to=Byte] + i'to(Size) * sizeof(Point))~Point;
 }
- 
+
 def set(pc: mut PointCloud, i: Int, p: Point) {
     # not implemented for brievity
 }

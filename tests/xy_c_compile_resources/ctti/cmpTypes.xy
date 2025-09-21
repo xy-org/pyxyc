@@ -1,0 +1,30 @@
+import xy.ctti;
+
+struct Struct1 {
+    val: Int;
+}
+
+struct Struct2 {
+    val: Int;
+}
+
+struct Tag1~[TagCtor{label="tag"}] {
+    val: Int;
+}
+
+struct Tag2~[TagCtor{label="tag"}] {
+    val: Int;
+}
+
+def test() {
+    a := Int \cmpTypes Int;
+    b := Struct1 \cmpTypes Struct1;
+    c := Struct1 \cmpTypes Struct2;
+    d := Struct1 \cmpTypes Struct1~Tag1;
+    e := Struct1~Tag1 \cmpTypes Struct1;
+    f := Struct1~Tag1 \cmpTypes Struct1~Tag2;
+    g := Struct1~Tag1 \cmpTypes Struct2~Tag1;
+    h := Struct1~Tag1 \cmpTypes Struct1~Tag1;
+    i := Struct1~Tag1 \cmpTypes Struct1~[Tag1, pi=3.14];
+    j := Struct1~[Tag1, pi=3.14] \cmpTypes Struct1~Tag1;
+}

@@ -13,7 +13,7 @@ def guards2(a: Int, b: pseudo Any) -> Int
 }
 
 def guards3(a: pseudo Any, b: pseudo Any) -> Int
->>  %a \typeEqs %b
+>>  %a \assumeCompatibleTypes %b
 {
     return 0;
 }

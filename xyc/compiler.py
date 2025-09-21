@@ -558,6 +558,8 @@ def is_obj_visible(obj, ctx: 'CompilerContext'):
                 return False
     return True
 
+# We need a different way to compare arg to param types because the rules for
+# fselect are slightly different namely there is no match based on tags
 def cmp_arg_param_types(arg_type, param_type):
     if param_type is any_type_obj:
         return True
@@ -621,7 +623,7 @@ def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
                 (f"Right tag attached here", tag.xy_node),
             ]
 
-    return 0, []
+    return int(len(src_type.tags) != len(dst_type.tags)), []
 
 def ct_equals(tag, other_tag):
     if isinstance(other_tag, (TypeExprObj, TypeObj)) and isinstance(tag, (TypeExprObj, TypeObj)):
@@ -4324,6 +4326,31 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             ),
             inferred_type=func_obj.rtype_obj,
         )
+    elif is_builtin_func(func_obj, "cmpTypes") or is_builtin_func(func_obj, "assumeCompatibleTypes"):
+        arg1_obj = None
+        arg2_obj = None
+        for obj in itertools.chain(arg_exprs.args, arg_exprs.kwargs.values()):
+            if arg1_obj is None: arg1_obj = obj
+            else: arg2_obj = obj
+            redact_code(obj, cast, cfunc, ctx)
+        num_res, errs = cmp_types(
+            arg1_obj.inferred_type, arg2_obj.inferred_type, expr,
+        )
+        if func_obj.xy_node.name.name.startswith("assume"):
+            if len(errs) > 0:
+                raise CompilationError(*errs[0], notes=[*errs[1:]])
+            return ExprObj(
+                c_node=c.Const(True, "true"),
+                inferred_type=ctx.bool_obj,
+                xy_node=expr,
+            )
+        else:
+            c_res = c.Const(num_res)
+            return ExprObj(
+                c_node=c_res,
+                inferred_type=ctx.int_obj,
+                xy_node=expr,
+            )
     elif is_builtin_func(func_obj, "mulhi"):
         int128_ctype = "__int128_t" if arg_exprs[0].inferred_type.name == "Long" else "__uint128_t"
         arg1 = c.Cast(arg_exprs[0].c_node, int128_ctype)

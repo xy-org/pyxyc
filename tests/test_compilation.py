@@ -126,6 +126,7 @@ from xyc.compiler import CompilationError
     "logicCmp/mixingAndOr",
     "ctti/srcLocFuncs",
     "ctti/sizeofNoEval",
+    "ctti/cmpTypes",
     "funcs/paramTypeEnum",
     "structs/fieldInit",
     "structs/subFieldInit",
