@@ -1,0 +1,19 @@
+struct Data {
+    val: Int;
+}
+
+def work(val: (Int, Char, Long)) {
+    # ...
+}
+
+def test() {
+    d1: Data;
+    d2: Data~[tag1=5, tag2=`z`];
+    d3 := d2~[tag2=void];
+
+    work(d1..(tag1, -1l));
+    work(d2..tag1);
+    work(d2..tag2);
+    work(d3..tag1);
+    work(d3..(tag2, -1l));
+}

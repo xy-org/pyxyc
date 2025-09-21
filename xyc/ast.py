@@ -10,6 +10,9 @@ class TagList:
     args: list['Node'] = field(default_factory=list)
     kwargs: dict[str, 'Node'] = field(default_factory=dict)
 
+    def __len__(self):
+        return len(self.args) + len(self.kwargs)
+
 @dataclass
 class Node:
     tags: TagList = field(default_factory=TagList, kw_only=True)

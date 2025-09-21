@@ -1,0 +1,26 @@
+struct Struct {
+    val: Int;
+}
+
+struct Tag1 {}
+struct Tag2 {}
+struct DefaultTag {}
+
+def callBasedOnTag(s: Struct) call(s, s..(tag, DefaultTag));
+
+def call(s: Struct, :Tag1) {}
+def call(s: Struct, :Tag2) {}
+def call(s: Struct, :DefaultTag) {}
+
+def test() {
+    s1: Struct~[tag=Tag1];
+    s2: Struct~[tag=Tag2];
+    s3: Struct;
+    callBasedOnTag(s1);
+    callBasedOnTag(s2);
+    callBasedOnTag(s3);
+    callBasedOnTag(s1~void);
+    callBasedOnTag(s2~[void]);
+    callBasedOnTag(s3~[tag=Tag1]);
+    callBasedOnTag(s3~[tag=Tag2]);
+}

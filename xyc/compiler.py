@@ -558,13 +558,6 @@ def is_obj_visible(obj, ctx: 'CompilerContext'):
                 return False
     return True
 
-def check_types_assignment(lhs_type_obj, rhs_type_obj, field: xy.Node):
-    _, errors = cmp_types(lhs_type_obj, rhs_type_obj, field)
-    if len(errors) > 0:
-        raise CompilationError(*errors[0],
-            notes=[*errors[1:]]
-        )
-
 def cmp_arg_param_types(arg_type, param_type):
     if param_type is any_type_obj:
         return True
@@ -585,32 +578,6 @@ def cmp_arg_param_types(arg_type, param_type):
     arg_type_module = arg_type.module_header.module_name if arg_type.module_header is not None else ""
     param_type_module = param_type.module_header.module_name if param_type.module_header is not None else ""
     if not (arg_type_module == param_type_module and arg_type.get_base_type().xy_node.name == param_type.get_base_type().xy_node.name):
-        return False
-
-    return True
-
-def compatible_types(src_type, dst_type):
-    # TODO maybe remove cmp_arg_param_types
-    if src_type is dst_type:
-        return True
-
-    if dst_type is any_type_obj:
-        return True
-
-    if isinstance(src_type, ArrTypeObj):
-        if not isinstance(dst_type, ArrTypeObj):
-            return False
-        return True
-        if len(arg_type.dims) != len(param_type.dims):
-            return False
-        for i in range(len(arg_type.dims)):
-            if arg_type.dims[i] != param_type.dims[i]:
-                return False
-
-    if isinstance(src_type, FuncTypeObj) and isinstance(dst_type, FuncTypeObj):
-        return True  # XXX
-
-    if src_type.get_base_type() is not dst_type.get_base_type():
         return False
 
     return True
@@ -675,6 +642,11 @@ def check_type_compatibility(xy_node, expr1_obj, expr2_obj, ctx):
         raise CompilationError(*errors[0],
             notes=[*errors[1:]]
         )
+
+def compatible_types(src_type, dst_type):
+    # TODO maybe remove cmp_arg_param_types
+    _, diffs = cmp_types(src_type, dst_type, src_type.xy_node)
+    return len(diffs) == 0
 
 def fcall_sig(name, args_inferred_types, inject_args=False):
     sig = name + "(" + \
@@ -947,11 +919,13 @@ class CompilerContext:
             for xy_tag in open_tags
         ]
         remaining_args = tags.args[after_open:]
-        return tag_specs, self.eval_tags(xy.TagList(remaining_args, kw_tags), cast=cast, ast=ast)
+        tag_objs = {}
+        self.eval_tags(tag_objs, xy.TagList(remaining_args, kw_tags), cast=cast, ast=ast)
+        return tag_specs, tag_objs
 
 
-    def eval_tags(self, tags: xy.TagList, tag_specs: list[VarObj] = [], cast=None, ast=None):
-        res = {}
+    def eval_tags(self, tag_objs: dict, tags: xy.TagList, tag_specs: list[VarObj] = [], cast=None, ast=None):
+        res = set()
         no_label_msg = "Please associate default label by adding the TagCtor tag" \
         ": ~[TagCtor{label=\"default-label\"}] " \
         "or add a positional tag to the struct"
@@ -990,8 +964,13 @@ class CompilerContext:
 
             if label in res:
                 raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
-            res[label] = tag_obj
+            tag_objs[label] = tag_obj
+            res.add(label)
         for label, xy_tag in tags.kwargs.items():
+            if isinstance(xy_tag, xy.Id) and xy_tag.name == "void":
+                del tag_objs[label]
+                continue
+
             try:
                 tag_obj = self.eval(xy_tag)
             except NoCallerContextError:
@@ -1004,7 +983,8 @@ class CompilerContext:
                     xy_node=xy_tag, c_node=tag_obj.c_node,
                     type_obj=tag_obj, tags=copy(tag_obj.tags)
                 )
-            res[label] = tag_obj
+            tag_objs[label] = tag_obj
+            res.add(label)
         return res
 
     def lookup(self, name: str, is_func: bool):
@@ -1053,8 +1033,13 @@ class CompilerContext:
             const_type_obj = None
             if node.type is not None:
                 const_type_obj = self.get_compiled_type(node.type)
+
+            c_node = c.Const(node.value_str)
+            if node.type == "Char":
+                c_node.value_str = f"'{node.value_str}'"
+
             return ConstObj(value=node.value, xy_node=node,
-                            c_node=c.Const(node.value_str),
+                            c_node=c_node,
                             inferred_type=const_type_obj)
         elif isinstance(node, xy.StrLiteral):
             if node.prefix != "inlinec":
@@ -1130,14 +1115,14 @@ class CompilerContext:
         elif isinstance(node, xy.AttachTags):
             obj = self.eval(node.arg)
             if isinstance(obj, ConstObj):
-                obj.tags = self.eval_tags(node.tags)
+                self.eval_tags(obj.tags, node.tags)
             elif isinstance(obj, TypeObj):
                 base_type = obj
                 obj = TypeExprObj(
                     xy_node=node, c_node=base_type.c_node, type_obj=base_type,
                     tags=copy(obj.tags)
                 )
-                obj.tags.update(self.eval_tags(node.tags, base_type.tag_specs))
+                self.eval_tags(obj.tags, node.tags, base_type.tag_specs)
             else:
                 raise CompilationError(f"Cannot assign tags to obj of type {obj.__class__.__name__}", node)
             return obj
@@ -1573,7 +1558,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             if field_type_obj is None:
                 field_type_obj = default_value_obj.inferred_type
             else:
-                check_types_assignment(field_type_obj, default_value_obj.inferred_type, field)
+                check_type_compatibility(field, ExprObj(inferred_type=field_type_obj), default_value_obj, ctx)
             dv_cnode = default_value_obj.c_node
             default_values.append(dv_cnode)
             default_values_zeros.append(isinstance(dv_cnode, c.Const) and dv_cnode.value == 0)
@@ -1725,7 +1710,7 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
         fobj.etype_obj = ctx.get_compiled_type(node.etype)
 
     # compile tags
-    fobj.tags = ctx.eval_tags(node.tags)
+    ctx.eval_tags(fobj.tags, node.tags)
     if "xyStr" in fobj.tags:
         # TODO assert it is a StrCtor indeed
         str_lit = fobj.tags["xyStr"].kwargs.get("prefix", xy.StrLiteral())
@@ -2641,8 +2626,12 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 type_obj=obj.inferred_type, tags=copy(obj.inferred_type.tags)
             )
             tag_specs = obj.inferred_type.type_obj.tag_specs
-        tags_to_attach = ctx.eval_tags(expr.tags, tag_specs=tag_specs)
-        obj.inferred_type.tags.update(tags_to_attach) # tags are attached to the type
+        expr_tags = expr.tags
+        if len(expr.tags.args) == 1 and isinstance(expr.tags.args[0], xy.Id) and expr.tags.args[0].name == "void":
+            obj.inferred_type.tags.clear()
+            expr_tags = copy(expr_tags)
+            expr_tags.args = expr_tags.args[1:]
+        tags_to_attach = ctx.eval_tags(obj.inferred_type.tags, expr_tags, tag_specs=tag_specs)  # tags are attached to the type
         if is_ptr_type(obj.inferred_type, ctx) and "to" in tags_to_attach:
             obj.c_node = optimize_cast(c.Cast(obj.c_node, obj.inferred_type.c_name))
         return obj
@@ -3855,7 +3844,8 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
         else:
             func_obj = None
             candidates: list[FuncObj] = fselect_unnamed(expr, arg_inferred_types, ctx, partial_matches=False)
-            required_tags = ctx.eval_tags(expr.tags, cast=cast)
+            required_tags = {}
+            ctx.eval_tags(required_tags, expr.tags, cast=cast)
             for cand in candidates:
                 if has_required_tags(cand.tags, required_tags):
                     func_obj = cand
@@ -3880,7 +3870,8 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
         candidates: list[FuncObj] = fselect_unnamed(expr, arg_inferred_types, ctx, partial_matches=False)
 
         res_objs = []
-        required_tags = ctx.eval_tags(expr.tags, cast=cast)
+        required_tags = {}
+        ctx.eval_tags(required_tags, expr.tags, cast=cast)
         for cand in candidates:
             if has_required_tags(cand.tags, required_tags):
                 ensure_func_decl(cand, cast, cfunc, ctx)
@@ -4736,7 +4727,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 
         eval_stored_value = callee_ctx.eval_calltime_exprs
         callee_ctx.eval_calltime_exprs = True
-        rtype_obj.tags = callee_ctx.eval_tags(
+        callee_ctx.eval_tags(
+            rtype_obj.tags,
             func_obj.xy_node.returns[0].type.tags,
             tag_specs=rtype_obj.base_type_obj.tag_specs,
         )
@@ -6186,14 +6178,16 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
 
 def assert_rtype_match(value_obj, fobj, ctx: CompilerContext):
     c_expr = isinstance(value_obj.inferred_type, TypeInferenceError) or value_obj.inferred_type is None
-    if not c_expr and not compatible_types(value_obj.inferred_type, fobj.rtype_obj):
+    if not c_expr and not compatible_types(fobj.rtype_obj, value_obj.inferred_type):
         if implicit_zero_conversion(value_obj, fobj.rtype_obj, ctx):
             return
         return_type_node = fobj.xy_node.returns[0] if len(fobj.xy_node.returns) else fobj.xy_node
+        _, diff = cmp_types(fobj.rtype_obj, value_obj.inferred_type, value_obj.xy_node)
         raise CompilationError(
             f"Return type mismatch. Tyring to return '{fmt_type(value_obj.inferred_type)}'", value_obj.xy_node,
             notes=[
-                (f"From function returning '{fmt_type(fobj.rtype_obj)}'", return_type_node)
+                (f"From function returning '{fmt_type(fobj.rtype_obj)}'", return_type_node),
+                *diff,
             ]
         )
 
@@ -6537,7 +6531,8 @@ def compile_select(expr: xy.Select, cast, cfunc, ctx):
     return idx_obj
 
 def compile_import(imprt, ctx: CompilerContext, ast, cast):
-    compiled_tags = ctx.eval_tags(imprt.tags)
+    compiled_tags = {}
+    ctx.eval_tags(compiled_tags, imprt.tags)
     import_obj = ImportObj(name=imprt.lib)
     if "xyc.lib" in compiled_tags:
         obj = compiled_tags["xyc.lib"]
