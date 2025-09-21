@@ -587,7 +587,6 @@ def cmp_arg_param_types(arg_type, param_type):
 def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
     if src_type is None or dst_type is None:
         return 0, [] ## c types
-    # TODO maybe remove cmp_arg_param_types
     if src_type is dst_type:
         return 0, []
 
@@ -646,7 +645,6 @@ def check_type_compatibility(xy_node, expr1_obj, expr2_obj, ctx):
         )
 
 def compatible_types(src_type, dst_type):
-    # TODO maybe remove cmp_arg_param_types
     _, diffs = cmp_types(src_type, dst_type, src_type.xy_node)
     return len(diffs) == 0
 
@@ -775,7 +773,6 @@ class CompilerContext:
         self.func_namespaces = [self.global_func_ns, self.func_ns]
 
     def fill_builtin_objs(self, data_ns, func_ns):
-        self.void_obj = data_ns["void"]
         self.bool_obj = data_ns["Bool"]
         self.ptr_obj = data_ns["Ptr"]
         self.global_obj = data_ns["Global"]
@@ -798,6 +795,7 @@ class CompilerContext:
             data_ns["Ulong"],
             data_ns["Size"],
         )
+        self.void_obj = data_ns["void"]
 
     def is_prim_int(self, type_obj):
         if isinstance(type_obj,TypeExprObj):
@@ -1228,6 +1226,10 @@ def compile_module(builder, module_name, asts, module_path):
 
     if module_name == "xy.builtins":
         ctx.global_data_ns["c"] = ImportObj(is_external=True)
+        ctx.void_obj = TypeObj(
+            xy_node=xy.StructDef("void", visibility=xy.PublicVisibility), c_node=c.Id("void")
+        )
+        ctx.data_ns["void"] = ctx.void_obj
     else:
         compile_import(xy.Import(lib="xy.builtins"), ctx, asts, res)
         ctx.fill_builtin_objs(ctx.global_data_ns, ctx.global_func_ns)

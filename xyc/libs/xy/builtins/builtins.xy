@@ -1,11 +1,7 @@
 # Header files "stdint.h", "stddef.h", "stdbool.h" are auto imported in symbol c
 
-;; A type that means no-type
-*struct void {
-    # Implemented by the compiler
-    # Should this even be a struct
-    # It is a type in C so it makes sense to be one in xy.
-}
+;; NOTE void is not a type in xy (unlike c).
+;; 'void' has the meaning of removing, voiding, or not having something.
 
 # Primitive bool type
 
