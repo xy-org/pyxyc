@@ -1,4 +1,4 @@
-struct Callback~[TagCtor{label="cbLabel"}] {}
+struct Callback~[xyTag:=TagCtor{label="cbLabel"}] {}
 
 def test() -> Int {
     cb1 := $ abs(Int);

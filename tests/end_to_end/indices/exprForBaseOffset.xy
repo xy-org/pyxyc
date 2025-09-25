@@ -24,7 +24,7 @@ def get(s: Str, int: RangeSize) -> Str~MemExt
     return Str~MemExt{s.addr + int.start, int.end - int.start};
 }
 
-def returnString() -> Str {
+def returnString() -> Str~MemManaged {
     print("In returnString\n");
     return f"stringPartial";
 }

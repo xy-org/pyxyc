@@ -1,10 +1,10 @@
-struct Str~Utf8 {
+struct Str~[encoding: Any = Utf8] {
     addr: Ptr;
     size: Size;
 }
 
-struct Utf8~[TagCtor{label="encoding"}] {}
-struct Ascii~[TagCtor{label="encoding"}] {}
+struct Utf8~[xyTag := TagCtor{label="encoding"}] {}
+struct Ascii~[xytag := TagCtor{label="encoding"}] {}
 
 def str~[StrCtor{prefix="", interpolation=false}](
     addr: Ptr, size: Size

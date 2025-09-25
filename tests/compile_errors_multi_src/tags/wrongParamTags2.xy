@@ -1,0 +1,14 @@
+struct Str {
+    addr: Ptr;
+    size: Size;
+}
+
+def f1(s: Str) = s..hash;
+
+def test() -> Int {
+    s1: Str;
+    s2: Str~[hash=10];
+    y := f1(s2);
+    x := f1(s1); # error as s1 doesn't have a hash tag
+    return x + y;
+}

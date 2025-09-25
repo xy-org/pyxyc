@@ -897,30 +897,34 @@ class CompilerContext:
         raise CompilationError("Cannot determine identifier", name)
 
     def get_compiled_type(self, name: xy.Id | str):
+        if name == "void" or isinstance(name, xy.Id) and name.name == "void":
+            return self.void_obj
         res = self.eval_to_type(name if not isinstance(name, str) else xy.Id(name))
         return res
 
     def split_and_eval_tags(self, tags: xy.TagList, cast, ast):
-        kw_tags = copy(tags.kwargs)
-        open_tags = []
-        after_open = len(tags.args)
+        tag_specs = []
+        tag_objs = {}
         for i in range(len(tags.args)):
             xy_tag = tags.args[i]
             if not isinstance(xy_tag, xy.VarDecl):
-                after_open = i
-            else:
-                if after_open < len(tags.args):
-                    raise CompilationError("Cannot mix positional and named tags.", xy_tag)
-                open_tags.append(xy_tag)
-                if xy_tag.value is not None:
-                    kw_tags[xy_tag.name] = xy_tag.value
-        tag_specs = [
-            VarObj(xy_node=xy_tag, type_desc=find_type(xy_tag.type, cast, self))
-            for xy_tag in open_tags
-        ]
-        remaining_args = tags.args[after_open:]
-        tag_objs = {}
-        self.eval_tags(tag_objs, xy.TagList(remaining_args, kw_tags), cast=cast, ast=ast)
+                raise CompilationError("Only tag decl are allowed here.", xy_tag)
+            spec = VarObj(xy_node=xy_tag)
+            if xy_tag.type is not None:
+                spec.type_desc = find_type(xy_tag.type, cast, self)
+            if xy_tag.value is not None and (not isinstance(xy_tag.value, xy.Id) or xy_tag.value.name != "void"):
+                val_obj = self.eval_tag(xy_tag.value, cast, ast)
+                tag_objs[xy_tag.name] = val_obj
+                if spec.type_desc is None:
+                    if isinstance(val_obj, (TypeObj, TypeExprObj)):
+                        spec.type_desc = any_struct_type_obj
+                    else:
+                        spec.type_desc = val_obj.inferred_type
+                else:
+                    lhs = ExprObj(inferred_type=spec.type_desc)
+                    rhs = val_obj if hasattr(val_obj, 'inferred_type') else ExprObj(inferred_type=val_obj)
+                    check_type_compatibility(xy_tag, lhs, rhs, self)
+            tag_specs.append(spec)
         return tag_specs, tag_objs
 
 
@@ -930,6 +934,12 @@ class CompilerContext:
         ": ~[TagCtor{label=\"default-label\"}] " \
         "or add a positional tag to the struct"
         for i, xy_tag in enumerate(tags.args):
+            if isinstance(xy_tag, xy.Id) and xy_tag.name == "void":
+                if i > 0:
+                    raise CompilationError("Void can only be at the start", xy_tag)
+                tag_objs.clear()
+                continue
+
             try:
                 tag_obj = self.eval(xy_tag, msg="Cannot find symbol")
             except NoCallerContextError:
@@ -970,22 +980,25 @@ class CompilerContext:
             if isinstance(xy_tag, xy.Id) and xy_tag.name == "void":
                 del tag_objs[label]
                 continue
-
-            try:
-                tag_obj = self.eval(xy_tag)
-            except NoCallerContextError:
-                tag_obj = calltime_expr_obj
             if label in res:
                 raise CompilationError(f"Label '{label}' already filled by tag", res[label].xy_node)
-            if isinstance(tag_obj, TypeObj):
-                fully_compile_type(tag_obj, cast, ast, self)
-                tag_obj = TypeExprObj(
-                    xy_node=xy_tag, c_node=tag_obj.c_node,
-                    type_obj=tag_obj, tags=copy(tag_obj.tags)
-                )
-            tag_objs[label] = tag_obj
+
+            tag_objs[label] = self.eval_tag(xy_tag, cast, ast)
             res.add(label)
         return res
+
+    def eval_tag(self, xy_tag, cast, ast):
+        try:
+            tag_obj = self.eval(xy_tag)
+        except NoCallerContextError:
+            tag_obj = calltime_expr_obj
+        if isinstance(tag_obj, TypeObj):
+            fully_compile_type(tag_obj, cast, ast, self)
+            tag_obj = TypeExprObj(
+                xy_node=xy_tag, c_node=tag_obj.c_node,
+                type_obj=tag_obj, tags=copy(tag_obj.tags)
+            )
+        return tag_obj
 
     def lookup(self, name: str, is_func: bool):
         namespaces = self.data_namespaces if not is_func else self.func_namespaces
@@ -1019,6 +1032,8 @@ class CompilerContext:
 
     def do_eval(self, node, msg=None, is_func=False):
         if isinstance(node, xy.Id):
+            if node.name == "void":
+                raise CompilationError("void is a keyword not a type", node)
             res = self.lookup(node.name, is_func=is_func)
             if res is None and msg is not None:
                 raise CompilationError(msg, node)
@@ -1123,6 +1138,8 @@ class CompilerContext:
                     tags=copy(obj.tags)
                 )
                 self.eval_tags(obj.tags, node.tags, base_type.tag_specs)
+            elif obj is None:
+                raise CompilationError("Cannot find symbol", node.arg)
             else:
                 raise CompilationError(f"Cannot assign tags to obj of type {obj.__class__.__name__}", node)
             return obj
@@ -1400,7 +1417,7 @@ def fill_missing_dtors(type_obj: TypeObj, all_fobjs, asts, cast, ctx):
         type_obj.has_auto_dtor = True
         dtor_node = xy.FuncDef(
             xy.Id("dtor"), xy.PublicVisibility,
-            params=[xy.VarDecl("obj", xy.Id(type_obj.xy_node.name))],
+            params=[xy.VarDecl("obj", xy.Id(type_obj.xy_node.name), src=type_obj.xy_node.src, coords=type_obj.xy_node.coords)],
             body=[],
         )
         fobj = FuncObj(
@@ -1760,7 +1777,8 @@ def compile_params(params, cast, cfunc, ctx):
                 ptype_obj = TypeExprObj(
                     xy_node=ptype_obj.xy_node,
                     c_node=ptype_obj.c_node,
-                    type_obj=ptype_obj
+                    type_obj=ptype_obj,
+                    tags=ptype_obj.tags,
                 )
             param_obj.type_desc = ptype_obj
         else:
@@ -1797,7 +1815,7 @@ def compile_ret_err_types(node, cast, cfunc, ctx):
     any_refs = False
     if return_by_param(node):
         for iret, ret in enumerate(node.returns):
-            if ctx.eval(ret.type) is ctx.void_obj:
+            if ctx.get_compiled_type(ret.type) is ctx.void_obj:
                 rtype_compiled = ctx.void_obj
                 assert len(node.returns) == 1
                 continue
@@ -2359,7 +2377,6 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 assert len(expr.arg1.args.kwargs) == 0
                 idx_obj = compile_expr(expr.arg1.args.args[0], cast, cfunc, ctx, deref=None)
                 lhs_obj = IdxObj(xy_node=expr, container=container_obj, idx=idx_obj)
-                value_obj = compile_expr(expr.arg2, cast, cfunc, ctx, deref=False)
                 if is_move_from_void:
                     idx_setup(lhs_obj, cast, cfunc, ctx)
                     value_obj = ExprObj(
@@ -2367,6 +2384,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                         c_node = lhs_obj.inferred_type.init_value,
                         inferred_type= lhs_obj.inferred_type
                     )
+                else:
+                    value_obj = compile_expr(expr.arg2, cast, cfunc, ctx, deref=False)
                 if expr.op == "=<":
                     value_obj = move_out(value_obj, cast, cfunc, ctx)
                     if is_tmp_expr(value_obj):
@@ -2380,12 +2399,17 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             elif isinstance(expr.arg1, xy.StrLiteral):
                 return compile_unstring(expr.arg1, expr.arg2, cast, cfunc, ctx)
 
-            arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
+            if not is_move_from_void:
+                arg2_obj = compile_expr(expr.arg2, cast, cfunc, ctx)
             if isinstance(expr.arg1, xy.Id) and expr.arg1.name == "_":
                 res = copy(arg2_obj)
                 res.inferred_type = ctx.void_obj
                 return res
-            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
+
+            if not is_move_to_void:
+                arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
+            else:
+                arg1_obj = ExprObj(xy_node=expr.arg1, inferred_type=ctx.void_obj)
 
             if is_move_from_void:
                 arg2_obj = ExprObj(
@@ -2631,7 +2655,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             )
             tag_specs = obj.inferred_type.type_obj.tag_specs
         expr_tags = expr.tags
-        if len(expr.tags.args) == 1 and isinstance(expr.tags.args[0], xy.Id) and expr.tags.args[0].name == "void":
+        if len(expr.tags.args) >= 1 and isinstance(expr.tags.args[0], xy.Id) and expr.tags.args[0].name == "void":
             obj.inferred_type.tags.clear()
             expr_tags = copy(expr_tags)
             expr_tags.args = expr_tags.args[1:]

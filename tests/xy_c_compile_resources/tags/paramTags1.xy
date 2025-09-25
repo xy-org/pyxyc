@@ -1,0 +1,19 @@
+struct Str~[mark := 0] {
+    addr: Ptr;
+    size: Size;
+}
+
+def f1(s: Str) -> Int {
+    return s..mark;
+}
+
+def f2(s: Str~void) = s..mark;
+
+def test() -> Int {
+    s1: Str;
+    s2: Str~10;
+    x := f1(s1);
+    y := f2(s1) + f2(s2);
+    return x + y;
+}
+

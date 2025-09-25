@@ -1,6 +1,6 @@
-struct Test1~[TagCtor{label="test1"}] {}
-struct Test2~[TagCtor{label="test1"}] {}
-struct Test3~[TagCtor{label="test3"}] {}
+struct Test1~[xyTag := TagCtor{label="test1"}] {}
+struct Test2~[xyTag := TagCtor{label="test1"}] {}
+struct Test3~[xyTag := TagCtor{label="test3"}] {}
 
 def test1~Test1() {}
 

@@ -1,5 +1,5 @@
-struct Tag1~[TagCtor{label="tag1"}] {}
-struct Tag2~[TagCtor{label="tag2"}] {}
+struct Tag1~[xyTag:=TagCtor{label="tag1"}] {}
+struct Tag2~[xyTag:=TagCtor{label="tag2"}] {}
 
 struct Data {
     # ...

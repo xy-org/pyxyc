@@ -1,4 +1,4 @@
-struct Array~[managed=true] {
+struct Array~[managed:=true] {
     mem: Ptr;
 }
 

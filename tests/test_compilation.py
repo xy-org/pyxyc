@@ -67,6 +67,8 @@ from xyc.compiler import CompilationError
     "tags/defaultValue",
     "tags/forgettingTags1",
     "tags/forgettingTags2",
+    "tags/paramTags1",
+    "tags/paramTags2",
     "indices/pseudoFields",
     "errors/guards",
     "errors/richErrors",

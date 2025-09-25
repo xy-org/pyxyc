@@ -1,8 +1,8 @@
-import libxy.string;
+import libxy.(string, memory);
 import libxy.stdio;
 
 def test~EntryPoint() -> Int {
-    str : Str;
+    str : Str~MemManaged;
     a := 0;
     b := 10;
     if (a > b) {

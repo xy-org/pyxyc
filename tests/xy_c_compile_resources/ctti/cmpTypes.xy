@@ -8,11 +8,11 @@ struct Struct2 {
     val: Int;
 }
 
-struct Tag1~[TagCtor{label="tag"}] {
+struct Tag1~[xyTag:=TagCtor{label="tag"}] {
     val: Int;
 }
 
-struct Tag2~[TagCtor{label="tag"}] {
+struct Tag2~[xyTag:=TagCtor{label="tag"}] {
     val: Int;
 }
 

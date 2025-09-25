@@ -1,1 +1,1 @@
-struct Test~[TagCtor{label="test"}] {}
+struct Test~[xyTag:=TagCtor{label="test"}] {}

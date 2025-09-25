@@ -233,7 +233,7 @@ src.xy:4:22: error: Cannot find symbol
                        ^^^^^^^
 """),
     ("""
-        struct Test~[TagCtor{label="test"}] {}
+        struct Test~[xyTag:=TagCtor{label="test"}] {}
         def func() {
             tests := @for (f in $* ~Test()) f;
         }
@@ -741,6 +741,10 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
     ("tags/mismatchedTags5.xy", r".*Values for tag 'tag' differ"),
     ("tags/mismatchedTags6.xy", r".*Values for tag 'tag' differ"),
 
+    ("tags/wrongParamTags1.xy", r".*Values for tag 'hash' differ"),
+    ("tags/wrongParamTags2.xy", r".*6:18: note: No tag 'hash'. Tag list is empty"),
+    ("tags/wrongParamTags3.xy", r".*11:28: error: Cannot discard tag 'max'"),
+
     ("recursiveDeps", r".*Cyclical module dependency. Import loop begins here:.*"),
 ])
 def test_compilation_errors_src(package, exp_err_msg, tmp_path, resource_dir):
@@ -755,4 +759,4 @@ def test_compilation_errors_src(package, exp_err_msg, tmp_path, resource_dir):
         ])
         builder.build()
     err_msg = str(err.value)
-    assert re.match(exp_err_msg, err_msg) is not None, err_msg
+    assert re.search(exp_err_msg, err_msg) is not None, err_msg

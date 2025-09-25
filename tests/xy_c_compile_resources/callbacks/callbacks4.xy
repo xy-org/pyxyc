@@ -2,7 +2,7 @@
 
 import xy.ctti;
 
-struct Test~[TagCtor{label="test"}] {}
+struct Test~[xyTag := TagCtor{label="test"}] {}
 
 def test1~Test() {}
 def test2~Test() {}

@@ -1,0 +1,14 @@
+struct Str~[hash := 10] {
+    addr: Ptr;
+    size: Size;
+}
+
+def f1(s: Str) -> Int {
+    return s..hash;
+}
+
+def test() -> Int {
+    s := Str{};
+    _ := f1(Str~[10]{});
+    _ := f1(Str~[0]{});  # error as 0 doesn't match the default value of 10
+}
