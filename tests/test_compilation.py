@@ -149,6 +149,7 @@ from xyc.compiler import CompilationError
     "exprBlocks/exprBlocks2",
     "exprBlocks/exprBlocks3",
     "exprBlocks/exprBlocks4",
+    "synonyms/synonym1",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)

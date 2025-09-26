@@ -1126,7 +1126,8 @@ class CompilerContext:
             elif node.op == "..":
                 base = self.eval(node.arg1, is_func=is_func)
                 return tag_get(node, base, node.arg2.name, self)
-            assert False
+            else:
+                raise CompilationError(f"Unexpected operator '{node.op}'", node)
         elif isinstance(node, xy.AttachTags):
             obj = self.eval(node.arg)
             if isinstance(obj, ConstObj):
@@ -1155,6 +1156,8 @@ class CompilerContext:
             elif isinstance(obj, IdxObj) and obj.container is global_memory and isinstance(obj.idx.inferred_type, FuncTypeObj):
                 # calling a callback
                 return obj.idx
+            elif is_c_ct_const(obj.c_node):
+                return obj
             raise CompilationError(
                 "Cannot evaluate at compile time.",
                 node)
@@ -1304,23 +1307,15 @@ def compile_header(ctx: CompilerContext, asts, cast):
                         node
                     )
                 validate_name(node, ctx)
-                cdef = c.Define(
-                    name=mangle_define(node.name, ctx.module_name),
-                )
-                ctx.data_ns[node.name] = VarObj(
-                    xy_node=node,
-                    c_node=cdef,
-                )
-                try_compile_const_value(ctx.data_ns[node.name], node.value, cast, ctx)
-                cast.consts.append(cdef)
+                try_compile_const_value(node.name, node.value, cast, ctx)
 
 
     compile_structs(ctx, asts, cast)
 
     for ast in asts:
         for node in ast:
-            if isinstance(node, xy.VarDecl) and ctx.data_ns[node.name].c_node.value is None:
-                do_compile_const_value(ctx.data_ns[node.name], node.value, cast, ctx)
+            if isinstance(node, xy.VarDecl) and node.name not in ctx.data_ns:
+                do_compile_const_value(node.name, node.value, cast, ctx)
 
     fobjs = []
     for ast in asts:
@@ -1360,27 +1355,31 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
     return fobjs
 
-def try_compile_const_value(obj, node, cast, ctx):
-    can_compile_now = False
+def try_compile_const_value(const_name, node, cast, ctx):
     try:
-        do_compile_const_value(obj, node, cast, ctx)
-        ctx.eval(node)
-        can_compile_now = True
+        do_compile_const_value(const_name, node, cast, ctx)
+        return True
     except:
-        pass
+        return False
 
-    if can_compile_now:
-        value_obj = compile_expr(node, cast, None, ctx)
-        obj.c_node.value = value_obj.c_node
-        obj.type_desc = value_obj.inferred_type
-
-    return can_compile_now
-
-def do_compile_const_value(obj, node, cast, ctx):
-    ctx.eval(node)
+def do_compile_const_value(const_name, node, cast, ctx):
+    ctx.eval(node)  # just to make sure it can be evaluated at compile-time
     value_obj = compile_expr(node, cast, None, ctx)
-    obj.c_node.value = value_obj.c_node
-    obj.type_desc = value_obj.inferred_type
+    if value_obj.compiled_obj is None:
+        cdef = c.Define(
+            name=mangle_define(const_name, ctx.module_name),
+            value=value_obj.c_node,
+        )
+        obj = VarObj(
+            xy_node=node,
+            c_node=cdef,
+            type_desc = value_obj.inferred_type,
+        )
+        ctx.data_ns[const_name] = obj
+        cast.consts.append(cdef)
+    else:
+        # synonym for a type or something
+        ctx.data_ns[const_name] = value_obj.inferred_type
 
 def create_fobj(node: xy.FuncDef, fobjs, ctx):
     for i, param in enumerate(node.params):
@@ -4124,6 +4123,20 @@ def is_simple_cexpr(expr):
     if isinstance(expr, c.Cast):
        return is_simple_cexpr(expr.what)
     return False
+
+def is_c_ct_const(expr):
+    if isinstance(expr, c.Const):
+        return True
+    if isinstance(expr, c.Expr):
+        return is_c_ct_const(expr.arg1) and is_c_ct_const(expr.arg2)
+    if isinstance(expr, c.UnaryExpr):
+        return is_c_ct_const(expr.arg)
+    if isinstance(expr, c.CompoundLiteral):
+        return all(is_c_ct_const(e) for e in expr.args)
+    if isinstance(expr, c.Index):
+        return is_c_ct_const(expr.expr) and is_c_ct_const(expr.index)
+    if isinstance(expr, c.Cast):
+       return is_c_ct_const(expr.what)
 
 
 def find_and_call(name: str, arg_objs, cast, cfunc, ctx, xy_node):
