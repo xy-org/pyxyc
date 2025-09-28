@@ -426,10 +426,10 @@ def parse_toplevel_type_expr(itoken):
 var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo"}
 
 operator_precedence = {
-    "^": 12, "unary[": 12, "unary'": 12,
+    "unary^": 12, "unary[": 12, "unary'": 12,
     "~": 11, "++" : 11, "--": 11, ".": 11, "(": 11, "[": 11, "{": 11, "'": 11, "..": 11,
     "unary+": 10, "unary-": 10, "!": 10, "&": 10, '%': 10,
-    "\\": 9, "@": 9,
+    "\\": 9, "@": 9, "^": 9,
     "*": 8, "/": 8,
     "+": 7, "-": 7,
     "<": 6, "<=": 6, ">=": 6, ">": 6, ":": 6, "+:": 6, "*:": 6, "-:": 6,
@@ -726,7 +726,7 @@ def parse_operand(itoken, precedence, op_prec):
     elif itoken.peak() == "^":
         coords = itoken.peak_coords()
         itoken.consume()
-        arg1 = parse_expression(itoken, op_prec["^"]+1, op_prec=op_prec)
+        arg1 = parse_expression(itoken, op_prec["unary^"]+1, op_prec=op_prec)
         arg1 = CallerContextExpr(arg1, src=itoken.src, coords=coords)
     elif itoken.peak() == "->":
         return parse_block(itoken)

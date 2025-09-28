@@ -13,6 +13,7 @@ from xyc.compiler import CompilationError
     "basic/arithmatic1",
     "basic/arithmatic2",
     "basic/arithmatic3",
+    "basic/arithmatic4",
     "typeInferenceAdvanced",
     "funcs/funcOverloadingSimple",
     "funcs/funcRecursive",

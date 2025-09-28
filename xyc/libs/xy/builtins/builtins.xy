@@ -179,6 +179,14 @@
     # implemented by the compiler
 }
 
+;; Power a.k.a. exponentiation
+*def pow(
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    b: %a
+) -> %a {
+    # Implemented by the compiler
+}
+
 ;; (Integer) Division
 *def div(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),

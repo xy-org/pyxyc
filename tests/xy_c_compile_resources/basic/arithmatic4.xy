@@ -1,0 +1,13 @@
+;; Test pow(er) operator
+
+def test(x: Int, y: Int) -> Int {
+    a := x ^ 2;
+    b := y ^ x;
+    return a ^ b;
+}
+
+def test(x: Float, y: Float) -> Float {
+    a := x ^ y;
+    b := x ^ (1.0/y);
+    return a + b;
+}

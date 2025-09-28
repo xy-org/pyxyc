@@ -4401,6 +4401,23 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=c_res,
             inferred_type=arg_exprs[0].inferred_type
         )
+    elif is_builtin_func(func_obj, "pow"):
+        ctype_name = arg_exprs[0].inferred_type.c_node.name
+        if ctype_name in {"uint64_t", "int64_t"}:
+            raise CompilationError("Power of long integers is NYI", expr)
+        cast.includes.append(c.Include("math.h"))
+        if ctype_name in {"double", "float"}:
+            c_res = c.FuncCall("pow" if arg_exprs[0].inferred_type.c_node.name == "double" else "powf")
+            c_res.args = [arg_exprs[0].c_node, arg_exprs[1].c_node]
+        else:
+            c_res = c.FuncCall("pow")
+            c_res.args = [c.Cast(arg_exprs[0].c_node, "double"), c.Cast(arg_exprs[1].c_node, "double")]
+            c_res = c.Cast(c_res, ctype_name)
+        return ExprObj(
+            xy_node=expr,
+            c_node=c_res,
+            inferred_type=arg_exprs[0].inferred_type
+        )
     elif func_obj.builtin and len(arg_exprs) == 2 and arg_exprs[0].inferred_type.builtin and arg_exprs[1].inferred_type.builtin:
         if len(func_obj.xy_node.in_guards) > 0:
             ## the only builtin funcs with in-guards are the exceptions for Int
@@ -6531,6 +6548,7 @@ operatorToFname = fname = {
     ">=": "cmpGe",
     "<": "cmpLt",
     "<=": "cmpLe",
+    "^": "pow",
 }
 def rewrite_op(binexpr, ctx):
     fname = operatorToFname.get(binexpr.op, None)

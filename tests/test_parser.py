@@ -2278,6 +2278,66 @@ def test_simple_expressions(code, exp_ast):
             ),
         ]
     ],
+    [
+        """def test(x: Float, y: Float) {
+            a := x ^ y;
+            b := ^x ^ ^y;
+            c := -x ^ y;
+            d := x ^ -y;
+            e := a * b - c ^ d;
+        }""",
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                params=[
+                    ast.VarDecl("x", type=ast.Id("Float"), mutable=False, is_param=True),
+                    ast.VarDecl("y", type=ast.Id("Float"), mutable=False, is_param=True),
+                ],
+                body=[
+                    ast.VarDecl(
+                        "a",
+                        value=ast.BinExpr(
+                            arg1=ast.Id("x"),
+                            arg2=ast.Id("y"),
+                            op="^",
+                        )
+                    ),
+                    ast.VarDecl(
+                        "b",
+                        value=ast.BinExpr(
+                            arg1=ast.CallerContextExpr(ast.Id("x")),
+                            arg2=ast.CallerContextExpr(ast.Id("y")),
+                            op="^",
+                        )
+                    ),
+                    ast.VarDecl(
+                        "c",
+                        value=ast.BinExpr(
+                            arg1=ast.UnaryExpr(ast.Id("x"), op="-"),
+                            arg2=ast.Id("y"),
+                            op="^",
+                        )
+                    ),
+                    ast.VarDecl(
+                        "d",
+                        value=ast.BinExpr(
+                            arg1=ast.Id("x"),
+                            arg2=ast.UnaryExpr(ast.Id("y"), op="-"),
+                            op="^",
+                        )
+                    ),
+                    ast.VarDecl(
+                        "e",
+                        value=ast.BinExpr(
+                            arg1=ast.BinExpr(ast.Id("a"), ast.Id("b"), op="*"),
+                            arg2=ast.BinExpr(ast.Id("c"), ast.Id("d"), op="^"),
+                            op="-",
+                        )
+                    ),
+                ]
+            ),
+        ]
+    ],
 ])
 def test_expressions(code, exp_ast):
     act_ast = parse_code(code)
