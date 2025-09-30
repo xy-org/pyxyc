@@ -1370,6 +1370,11 @@ def do_compile_const_value(const_name, node, cast, ctx):
             name=mangle_define(const_name, ctx.module_name),
             value=value_obj.c_node,
         )
+        if isinstance(value_obj.inferred_type, ArrTypeObj) and isinstance(value_obj.c_node, c.InitList):
+            cdef.value = c.CompoundLiteral(
+                name=f"{value_obj.inferred_type.base_type_obj.c_name}[{value_obj.inferred_type.dims[0]}]",
+                args=value_obj.c_node.elems
+            )
         obj = VarObj(
             xy_node=node,
             c_node=cdef,
@@ -2286,6 +2291,8 @@ def expand_array_to_init_list(value_obj: ExprObj):
     if isinstance(value_obj.c_node, c.InitList):
         # already an init list
         return value_obj.c_node
+    elif isinstance(value_obj.c_node, c.CompoundLiteral):
+        return c.InitList(value_obj.c_node.args)
 
     res = c.InitList()
     if len(value_obj.inferred_type.dims) <= 0:
@@ -4736,7 +4743,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                         value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, callee_ctx)
                     to_move = (
                         (i < len(leftover_params) - 1) or
-                        isinstance(value_obj.c_node, c.InitList) or
+                        isinstance(value_obj.c_node, (c.InitList, c.CompoundLiteral)) or
                         (len(func_obj.xy_node.in_guards) > 0)
                     )
                     if to_move:
@@ -6558,7 +6565,10 @@ def rewrite_op(binexpr, ctx):
             args=[binexpr.arg1, binexpr.arg2],
             src=binexpr.src, coords=binexpr.coords)
     else:
-        raise CompilationError(f"Unrecognized operator '{binexpr.op}'", binexpr)
+        msg = f"Unrecognized operator '{binexpr.op}'"
+        if binexpr.op in {"|", "&"}:
+            msg += f". Did you mean '{binexpr.op * 2}' ?"
+        raise CompilationError(msg, binexpr)
 
 def rewrite_unaryop(expr: xy.UnaryExpr, ctx):
     if expr.op == "++":

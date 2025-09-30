@@ -56,6 +56,7 @@ from xyc.compiler import CompilationError
     "opOverloading",
     "consts/globalConstants",
     "consts/asFieldValue",
+    "consts/arrayConstants",
     "funcs/funcs",
     "funcs/largeParams",
     "strings/stringInterpolation",
