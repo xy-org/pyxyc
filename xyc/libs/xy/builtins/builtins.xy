@@ -149,6 +149,20 @@
     # Implemented by the compiler
 }
 
+*def add(
+    char: Char,
+    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
+) -> %char {
+    # Implemented by the compiler
+}
+
+*def sub(
+    char: Char,
+    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
+) -> %char {
+    # Implemented by the compiler
+}
+
 ;; Subtraction
 ;; Note! Only Numeric - Bool is defined
 *def sub(
