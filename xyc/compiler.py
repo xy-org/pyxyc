@@ -4644,6 +4644,17 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             xy_node=expr,
             inferred_type=func_obj.rtype_obj
         )
+    elif is_builtin_func(func_obj, "inf") or is_builtin_func(func_obj, "nan"):
+        if cast is not None:
+            cast.includes.append(c.Include("math.h"))
+        c_res = c.Id("INFINITY" if is_builtin_func(func_obj, "inf") else "NAN")
+        if arg_exprs[0].inferred_type.c_name != "float":
+            c_res = c.Cast(c_res, to=arg_exprs[0].inferred_type.c_name)
+        return ExprObj(
+            c_node=c_res,
+            xy_node=expr,
+            inferred_type=arg_exprs[0].inferred_type
+        )
 
     ensure_func_decl(func_obj, cast, cfunc, ctx)
 

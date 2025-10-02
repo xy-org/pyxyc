@@ -110,6 +110,22 @@
     # Implemented by the compiler
 }
 
+*def inf(: Float) -> Float {
+    # implemented by the compiler
+}
+
+*def inf(: Double) -> Double {
+    # implemented by the compiler
+}
+
+*def nan(: Float) -> Float {
+    # implemented by the compiler
+}
+
+*def nan(: Double) -> Double {
+    # implemented by the compiler
+}
+
 # Limits
 
 *def max(
