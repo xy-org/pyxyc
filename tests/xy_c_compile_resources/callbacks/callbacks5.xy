@@ -1,0 +1,43 @@
+def f1(x: Int) {
+
+}
+
+def f2(x: Int, y := x + 1) {
+    # ...
+}
+
+def f3(x: Int, y := x * 2) -> Int {
+    return y - x;
+}
+
+def f4(x: mut Int, y : Int) {
+    x -= y;
+}
+
+def f5(x: mut Int) -> Int | Long {
+    x++;
+    if (x > 20) {
+        error 20l;
+    }
+    return x + 20;
+}
+
+def test1() {
+    cb1 := $f1(Int)'toCallback;
+    cb2 := $f2(Int)'toCallback((:Int)->Int);
+
+    [cb1](5);
+    _ = [cb2](10);
+
+    cb3 := $f3(Int)'toCallback;
+    x : mut = [cb3](10, 11);
+
+    cb4 := $f3(Int)'toCallback((:Int)->Int);
+    y := [cb4](20);
+
+    cb5 := $f4(Int, Int)'toCallback;
+    [cb5](x, 20);
+
+    cb6 := $f5(Int)'toCallback;
+    z := [cb6](x);
+}

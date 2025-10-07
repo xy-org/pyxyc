@@ -2,7 +2,7 @@ import crossModuleSelect.tag;
 import crossModuleSelect.module2;
 
 def main() {
-    tests := @for (f in $*~Test()) f;
+    tests := @for (f in $*~Test()) f'toCallback;
     for (t in tests) {
         [t]();
     }

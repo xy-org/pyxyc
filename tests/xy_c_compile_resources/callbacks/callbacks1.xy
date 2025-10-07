@@ -1,10 +1,10 @@
 struct Callback~[xyTag:=TagCtor{label="cbLabel"}] {}
 
 def test() -> Int {
-    cb1 := $ abs(Int);
-    cb2 := $~Callback(Int);
+    cb1 := $ abs(Int)'toCallback;
+    cb2 := $~Callback(Int)'toCallback;
     cb3 : (:Int, :Double)->Int;
-    cb3 = $ (Int, Double);
+    cb3 = $ (Int, Double)'toCallback;
     cb4 := cb3;
     return [cb1]([cb3](-5, 5.6d)'[cb2]);
 }

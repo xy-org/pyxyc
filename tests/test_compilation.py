@@ -97,6 +97,7 @@ from xyc.compiler import CompilationError
     "callbacks/callbacks2",
     "callbacks/callbacks3",
     "callbacks/callbacks4",
+    "callbacks/callbacks5",
     "macros1",
     "move/moveOperators1",
     "move/moveOperators2",

@@ -5,7 +5,7 @@ def test1~Test() {}
 def test2~Test() {}
 
 def invokeTests() {
-    tests := @for (f in $* ~Test()) f;
+    tests := @for (f in $* ~Test()) f'toCallback;
     for (f in tests) {
         [f]();
     }

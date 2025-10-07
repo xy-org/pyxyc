@@ -643,14 +643,24 @@ struct Clib {
 # Iter stuff
 
 ;; Use this struct to mark iterator functions
-struct IterCtor {
+*struct IterCtor {
     # Implemented by the compiler
 }
 
-# Function Selection
+;; Compile-time only structure representing a function.
+;; The result type of the '$' operator.
+;; The '$*' operators returns an array of {FuncDef}s.
+*struct FuncDef {
+    # Empty
+}
 
-struct FuncSelection {
-    # Compile-time only array-like structure implemented by the compiler
+;; Create a callback from func {funcDef}.
+;; The callback type is guessed from the function
+*def toCallback(funcDef : FuncDef) = funcDef'callback;
+
+;; Create a callback with type {cbType} from func {funcDef}
+*def toCallback(funcDef : FuncDef, cbType: Any) -> %cbType {
+    # implemented by the compiler
 }
 
 # Miscellaneous
