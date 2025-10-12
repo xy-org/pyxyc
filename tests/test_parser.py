@@ -915,6 +915,72 @@ def test_parse_implied_context_expr(code, exp_ast):
             )
         ]
     ],
+    [
+        """
+        def mkFunc() = def inner(x: Int, y: Int) -> Int {
+            return x + y;
+        };
+        """,
+        [
+            ast.FuncDef(ast.Id("mkFunc"),
+                params=[],
+                returns=[],
+                body=ast.FuncDef(
+                    ast.Id("inner"),
+                    params=[
+                        ast.VarDecl("x", ast.Id("Int"), mutable=False, is_param=True),
+                        ast.VarDecl("y", ast.Id("Int"), mutable=False, is_param=True),
+                    ],
+                    returns=ast.SimpleRType("Int"),
+                    body=[
+                        ast.Return(ast.BinExpr(ast.Id("x"), ast.Id("y"), op="+"))
+                    ]
+                )
+            )
+        ]
+    ],
+    [
+        """
+        def test() = f(def a() = 5, def b() = 10);
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                params=[],
+                body=ast.FuncCall(
+                    ast.Id("f"),
+                    args=[
+                        ast.FuncDef(
+                            ast.Id("a"),
+                            body=ast.Const(5),
+                        ),
+                        ast.FuncDef(
+                            ast.Id("b"),
+                            body=ast.Const(10),
+                        ),
+                    ]
+                )
+            )
+        ]
+    ],
+    [
+        """
+        def test() = def inner() = def deeper() = 5;
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                params=[],
+                body=ast.FuncDef(
+                    ast.Id("inner"),
+                    body=ast.FuncDef(
+                        ast.Id("deeper"),
+                        body=ast.Const(5),
+                    )
+                )
+            )
+        ]
+    ],
 ])
 def test_parse_advanced_funcs(code, exp_ast):
     act_ast = parse_code(code)

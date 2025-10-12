@@ -1,0 +1,10 @@
+def mkFunc(x: Int) =
+    def inner(base: Int) -> Int {
+        return base;
+    };
+
+def test() -> Int {
+    a := mkFunc(10)(20);
+    b := mkFunc(20)(30);
+    return a + b;
+}

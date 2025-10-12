@@ -1,0 +1,9 @@
+def test() {
+    def lambda() {
+        # ...
+    }
+
+    for (i in :20) {
+        lambda();
+    }
+}

@@ -1,0 +1,20 @@
+def inner(x: (Int, Long)) {
+    # ...
+}
+
+def test1(x: Int) {
+    inner(10);
+
+    def inner(x: Int = 20) {
+        # ...
+    }
+
+    inner();
+    inner(20l);
+    inner(20);
+    inner(x);
+}
+
+def test2(x: Int) {
+    inner(x);
+}

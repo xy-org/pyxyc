@@ -222,7 +222,7 @@ def parse_ml_comment(itoken, until_eol=False):
     return Comment(comment=comment, src=itoken.src,
                    coords=[comment_start, comment_start+2])
 
-def parse_def(itoken: TokenIter):
+def parse_def(itoken: TokenIter, check_semicolon=True):
     visibility = PackageVisibility
     if itoken.peak() in {"-", "+", "*"}:
         visibility = visibilityMap[itoken.consume()]
@@ -256,13 +256,13 @@ def parse_def(itoken: TokenIter):
         node.out_guards = value.out_guards
         node.body = value.body
 
-    if isinstance(node.body, list):
+    if check_semicolon and isinstance(node.body, list):
         if itoken.has_more() and itoken.peak() == ";":
             raise ParsingError(
                 "Function definitions don't require a terminating semicolon.",
                 itoken
             )
-    else:
+    elif check_semicolon:
         # macro
         if not itoken.check(";"):
             raise ParsingError(
@@ -756,6 +756,8 @@ def parse_operand(itoken, precedence, op_prec):
         else:
             itoken.i -= 1
             arg1 = None
+    elif itoken.peak() == "def":
+        arg1 = parse_def(itoken, check_semicolon=False)
     else:
         arg1 = None
 

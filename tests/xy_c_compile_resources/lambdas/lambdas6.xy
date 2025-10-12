@@ -1,0 +1,20 @@
+def func(f: FuncDef) =
+    f2(toCallback(
+        def wrapper(p: Ptr, f := f) = [f]([p~Int])'to(Int), (:Ptr) -> Int
+    ));
+
+def f2(cb: (:Ptr)->Int) {
+    num: mut = 10;
+    res := [cb](num'addrof);
+}
+
+def my(x: Int) -> Long {
+    return x'to(Long);
+}
+
+def test() {
+    func($my(Int));
+    func(def something(x: Int) -> Int {
+        return 500;
+    });
+}

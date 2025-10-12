@@ -233,6 +233,7 @@ class FuncObj(CompiledObj):
     has_calltime_tags: bool = False
     decl_visible: bool = False
     is_macro: bool = False
+    data_closure: 'IdTable' = None  # only compiletime known constants can be put here
 
     @property
     def c_name(self):
@@ -734,6 +735,10 @@ class TmpNames:
     def exit_block(self):
         pass
 
+@dataclass
+class FuncGenState:
+    gen_i: int = 0
+
 @dataclass(repr=False)
 class CompilerContext:
     builder: any
@@ -780,7 +785,7 @@ class CompilerContext:
 
     empty_struct_name: str | None = None
 
-    gen_i: int = 0
+    func_gen_state: FuncGenState = field(default_factory=FuncGenState)
 
     def __post_init__(self):
         self.data_namespaces = [self.global_data_ns, self.data_ns]
@@ -830,6 +835,10 @@ class CompilerContext:
         self.data_namespaces.append(table)
         return table
 
+    def push_func_ns(self):
+        func_ns = IdTable()
+        self.func_namespaces.append(func_ns)
+
     def push_catch_frame(self, cf: CatchFrame):
         self.catch_frames.append(cf)
 
@@ -849,15 +858,19 @@ class CompilerContext:
     def pop_ns(self):
         return self.data_namespaces.pop()
 
+    def pop_func_ns(self):
+        self.func_namespaces.pop()
+
     def ensure_func_space(self, name: xy.Id):
-        if name.name not in self.func_ns:
+        func_ns = self.func_namespaces[-1]
+        if name.name not in func_ns:
             fspace = FuncSpace()
-            self.func_ns[name.name] = fspace
-            parent_space = self.global_func_ns.get(name.name, None)
+            parent_space = self.lookup(name.name, is_func=True)
+            func_ns[name.name] = fspace
             if isinstance(parent_space, FuncSpace):
                 fspace.parent_space = parent_space
             return fspace
-        candidate = self.func_ns[name.name]
+        candidate = func_ns[name.name]
         if isinstance(candidate, FuncSpace):
             return candidate
         # something else already defined with the same name
@@ -1228,6 +1241,10 @@ class CompilerContext:
     def enter_func(self):
         self.next_label_idx = 0
         self.tmp_names.enter_func()
+        self.push_func_ns()
+
+    def leave_func(self):
+        self.pop_func_ns()
 
     def exit_block(self):
         self.tmp_names.exit_block()
@@ -1472,7 +1489,7 @@ def validate_name(node: xy.Node, ctx: CompilerContext):
         raise CompilationError("Names should start with a letter", node)
     for i in range(1, len(name)):
         if not name[i].isalnum():
-            raise CompilationError("Names should be alphanumeric", node)
+            raise CompilationError(f"Names should be alphanumeric:", node)
     if name in keywords:
         raise CompilationError(f"'{name}' is a keyword", node)
 
@@ -2028,6 +2045,7 @@ def compile_func(fdesc, cast, ctx):
     if isinstance(node.body, list):
         ctx.enter_func()
         compile_body(node.body, cast, cfunc, ctx, is_func_body=True)
+        ctx.leave_func()
 
     ctx.current_fobj = None
 
@@ -2082,7 +2100,8 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 and not isinstance(expr_obj.inferred_type, (ExtSymbolObj, TypeInferenceError))
                 and not expr_obj.inferred_type.is_external and
                 (not isinstance(node, xy.BinExpr) or node.op in {"==", "!=", "."}) and
-                (not isinstance(node, xy.UnaryExpr) or node.op in {"-", "%"})
+                (not isinstance(node, xy.UnaryExpr) or node.op in {"-", "%"}) and
+                (not is_funddef_type(expr_obj.inferred_type))
             ):
                 raise CompilationError(
                     "Discarding values is not allowed. Rewrite expression as '_ = <expr>' to ignore the value",
@@ -2726,6 +2745,32 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             inferred_type=type_obj,
             compiled_obj=type_obj
         )
+    elif isinstance(expr, xy.FuncDef):
+        fobjs = []
+        current_fobj = ctx.current_fobj
+        create_fobj(expr, fobjs, ctx)
+        fobj = fobjs[0]
+        compile_func_prototype(fobj, cast, ctx)
+        fobj.c_node.name = mangle_def(expr, fobj.param_objs, ctx, False) + "_func_" + str(ctx.func_gen_state.gen_i)
+        ctx.func_gen_state.gen_i += 1
+        fill_param_default_values(fobj, cast, ctx)
+        compile_func(fobj, cast, ctx)
+        ctx.current_fobj = current_fobj
+
+        fobj.data_closure = IdTable()
+        already_added = set()
+        for ns in reversed(ctx.data_namespaces[2:]):
+            for key, obj in ns.items():
+                if key not in already_added:
+                    already_added.add(key)
+                    fobj.data_closure[key] = obj
+
+        return ExprObj(
+            xy_node=expr,
+            c_node=c.Id(fobj.c_name),
+            inferred_type=TypeExprObj(expr, type_obj=ctx.funcdef_obj),
+            compiled_obj=fobj
+        )
     else:
         raise CompilationError(f"Unknown xy ast node '{type(expr).__name__}'", expr)
 
@@ -3167,6 +3212,10 @@ def idx_setup(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
         deidx_obj = idx_get(idx_obj, c.Ast(), c.Block(), ctx)
         idx_obj.inferred_type = deidx_obj.inferred_type
         ctx.tmp_names = tmp_names
+
+    # set c_node if ref
+    if idx_obj.c_node is None and is_ptr_type(idx_obj.idx.inferred_type, ctx):
+        idx_obj.c_node = c.UnaryExpr(idx_obj.idx.c_node, op="*", prefix=True)
 
     return idx_obj
 
@@ -4064,11 +4113,15 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         func_obj = fspace.find(expr, arg_inferred_types, caller_ctx, partial_matches=expr.inject_args)
     elif isinstance(fspace, FuncObj):
         func_obj = fspace
+        # XXX eval creates its own cast and in the case of a macro defining
+        # a function that func definition may disappear
+        if func_obj.module_header is None and not func_obj.is_macro and func_obj.c_node not in cast.funcs:
+            cast.funcs.append(func_obj.c_node)
     else:
         if isinstance(fspace, (VarObj, ExprObj)):
             inferred_type = fspace.inferred_type if isinstance(fspace, ExprObj) else fspace.type_desc
             if not isinstance(inferred_type, FuncTypeObj):
-                raise CompilationError("Not a callback", expr)
+                raise CompilationError(f"Not a callback. Type is {type(inferred_type)}", expr)
             func_obj = copy(fspace.inferred_type.func_obj)
             func_obj.c_node = fspace.c_node
         else:
@@ -4705,11 +4758,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         c_typename = create_fptr_type(required_cb_type.func_obj, cast, ctx)
 
         gen_cfun = c.Func(
-            f"xy_gen__{ctx.module_name}__cb{ctx.gen_i}",
+            f"xy_gen__{ctx.module_name.replace('.', '_')}__cb{ctx.func_gen_state.gen_i}",
             params=[p.c_node for p in params],
             rtype="void",
         )
-        ctx.gen_i += 1
+        ctx.func_gen_state.gen_i += 1
         cast.funcs.append(gen_cfun)
 
         ctx.push_ns()
@@ -4753,6 +4806,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     callee_ctx.tmp_names = caller_ctx.tmp_names
     callee_ctx.current_fobj = caller_ctx.current_fobj
     callee_ctx.global_types = caller_ctx.global_types
+    callee_ctx.func_gen_state = caller_ctx.func_gen_state
+    if func_obj.data_closure is not None:
+        callee_ctx.data_namespaces.append(func_obj.data_closure)
 
     # XXX
     if hasattr(func_obj.c_node, 'name'):
@@ -6596,7 +6652,7 @@ def find_type(texpr, cast, ctx, required=True):
         c_func = c.Func("dummy")
         param_objs, _ = compile_params(texpr.params, cast, c_func, ctx)
         for i, p in enumerate(param_objs):
-            p.xy_node.name = "param{i}"
+            p.xy_node.name = f"param{i}"
             p.c_node.name = f"p_param{i}"
         rtype_obj, etype_obj, _, _ = compile_ret_err_types(texpr, cast, c_func, ctx)
         ctx.pop_ns()
