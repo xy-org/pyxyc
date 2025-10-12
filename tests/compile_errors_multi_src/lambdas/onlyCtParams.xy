@@ -1,0 +1,11 @@
+def test(x: Int) {
+    def inner(x := x) {
+        print(x);
+    }
+
+    inner();
+}
+
+def print(x: Int) {
+    # ...
+}

@@ -746,6 +746,10 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
     ("tags/wrongParamTags3.xy", r".*11:28: error: Cannot discard tag 'max'"),
 
     ("recursiveDeps", r".*Cyclical module dependency. Import loop begins here:.*"),
+
+    ("lambdas/noClosure0.xy", r".*Not known at compile-time.*"),
+    ("lambdas/noClosure1.xy", r".*Not captured in closure.*"),
+    ("lambdas/onlyCtParams.xy", r".*Not known at compile-time.*"),
 ])
 def test_compilation_errors_src(package, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

@@ -303,6 +303,10 @@ class ExtSymbolObj(CompiledObj):
     def c_name(self):
         return self.c_node.name
 
+@dataclass
+class PoisonObj(ExprObj):
+    reason: str = ""
+
 def ext_symbol_to_type(ext_obj):
     c_name = ext_obj.c_node.name
     if c_name.startswith("struct "):
@@ -2346,11 +2350,11 @@ c_symbol_type = TypeInferenceError(
     "The types of c symbols cannot be inferred. Please be explicit and specify the type."
 )
 
-def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
-    res = do_compile_expr(expr, cast, cfunc, ctx, deref=deref)
+def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_poison=False) -> ExprObj:
+    res = do_compile_expr(expr, cast, cfunc, ctx, deref=deref, allow_poison=allow_poison)
     return res
 
-def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> ExprObj:
+def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_poison=False) -> ExprObj:
     if isinstance(expr, xy.Const):
         return compile_const(expr, cast, cfunc, ctx)
     elif isinstance(expr, xy.BinExpr):
@@ -2484,7 +2488,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 def_val_node = expr.arg2.items[1]
 
             field_name = tag_name_node.name
-            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx)
+            arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, allow_poison=True)
             tag_obj = tag_get(expr, arg1_obj, field_name, ctx, def_val_node)
             if isinstance(tag_obj, (TypeObj, TypeExprObj)):
                 return ExprObj(
@@ -2545,6 +2549,8 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
                 compiled_obj=var_obj,
             )
         elif isinstance(var_obj, ExprObj):
+            if isinstance(var_obj, PoisonObj) and not allow_poison:
+                raise CompilationError(var_obj.reason, expr)
             return maybe_deref(var_obj, deref, cast, cfunc, ctx)
         elif isinstance(var_obj, LazyObj):
             if isinstance(var_obj.xy_node, xy.CallerContextExpr):
@@ -2754,8 +2760,6 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         fobj.c_node.name = mangle_def(expr, fobj.param_objs, ctx, False) + "_func_" + str(ctx.func_gen_state.gen_i)
         ctx.func_gen_state.gen_i += 1
         fill_param_default_values(fobj, cast, ctx)
-        compile_func(fobj, cast, ctx)
-        ctx.current_fobj = current_fobj
 
         fobj.data_closure = IdTable()
         already_added = set()
@@ -2763,7 +2767,23 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
             for key, obj in ns.items():
                 if key not in already_added:
                     already_added.add(key)
-                    fobj.data_closure[key] = obj
+                    if is_known_at_ct(obj):
+                        fobj.data_closure[key] = obj
+                    else:
+                        fobj.data_closure[key] = PoisonObj(
+                            xy_node=expr,
+                            compiled_obj=obj,
+                            inferred_type=obj.inferred_type,
+                            reason="Not captured in closure"
+                        )
+        ctx.data_namespaces.append(fobj.data_closure)
+        compile_func(fobj, cast, ctx)
+        ctx.data_namespaces.pop()
+        for obj in fobj.data_closure.values():
+            if isinstance(obj, PoisonObj):
+                obj.reason = "Not known at compile-time"
+
+        ctx.current_fobj = current_fobj
 
         return ExprObj(
             xy_node=expr,
@@ -2773,6 +2793,11 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True) -> Expr
         )
     else:
         raise CompilationError(f"Unknown xy ast node '{type(expr).__name__}'", expr)
+
+def is_known_at_ct(obj: ExprObj):
+    if is_funddef_type(obj.inferred_type):
+        return True
+    return is_c_ct_const(obj.c_node)
 
 def var_to_expr_obj(expr, var_obj, cast, cfunc, ctx, deref):
     c_node = c.Id(var_obj.c_node.name) if var_obj.c_node is not None else None

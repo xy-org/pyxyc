@@ -1,0 +1,9 @@
+def test(x: Int) {
+    def inner() x;
+
+    _ := inner();
+}
+
+def print(x: Int) {
+    # ...
+}
