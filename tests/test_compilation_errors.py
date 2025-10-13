@@ -47,7 +47,7 @@ src.xy:6:21: error: Cannot decay 'Array[ Int ]' because: Cannot find function 'g
 |             a := arr[0];
                       ^
 note: Candidates are:
-    in module xy.builtins
+    in module xy.builtin
         *get(Ptr) -> Ptr
         *get(Ptr, Byte) -> Ptr
         *get(Ptr, Ubyte) -> Ptr

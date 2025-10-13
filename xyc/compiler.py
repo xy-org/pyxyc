@@ -1284,14 +1284,14 @@ def compile_module(builder, module_name, asts, module_path):
     ctx.module_path = module_path
     res = c.Ast()
 
-    if module_name == "xy.builtins":
+    if module_name == "xy.builtin":
         ctx.global_data_ns["c"] = ImportObj(is_external=True)
         ctx.void_obj = TypeObj(
             xy_node=xy.StructDef("void", visibility=xy.PublicVisibility), c_node=c.Id("void")
         )
         ctx.data_ns["void"] = ctx.void_obj
     else:
-        compile_import(xy.Import(lib="xy.builtins"), ctx, asts, res)
+        compile_import(xy.Import(lib="xy.builtin"), ctx, asts, res)
         ctx.fill_builtin_objs(ctx.global_data_ns, ctx.global_func_ns)
 
     ctx.compiling_header = True
@@ -1326,7 +1326,7 @@ def compile_module(builder, module_name, asts, module_path):
                 for func_obj in obj._funcs:
                     func_obj.builtin = True
 
-    if module_name == "xy.builtins":
+    if module_name == "xy.builtin":
         ctx.fill_builtin_objs(ctx.data_ns, ctx.func_ns)
 
     return mh, res

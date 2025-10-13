@@ -98,8 +98,8 @@ class Builder:
             raise CompilationError(*notes[0], notes=notes[1:])
 
     def compile_builtins(self):
-        builtins_module_name = "xy.builtins"
-        module_path = path.join(self.builtin_lib_path, "xy", "builtins")
+        builtins_module_name = "xy.builtin"
+        module_path = path.join(self.builtin_lib_path, "xy", "builtin")
         if not path.exists(module_path):
             raise ValueError(f"Cannot locate the 'xy' library at {module_path}")
         module_ast = parse_module(module_path, builtins_module_name)
