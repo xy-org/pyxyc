@@ -218,6 +218,7 @@
 }
 
 ;; (Integer) Division
+;; Rounding is towards zero.
 *def div(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
     b: %a
@@ -232,8 +233,16 @@
     # Implemented by the compiler
 }
 
-;; Modulo arithmetic. Equivalent to '%' in C.
-*def mod(
+;; Remainder after integer division
+;; It is defined as rem(a, b) = a - (a \div b) * b.
+;; The sign of the result is the same as the sign of the dividend {a}.
+;; Examples:
+;; 7 \rem 4 == 1
+;; 7 \rem -4 == 3
+;; -7 \rem 4 == -3
+;; -7 \rem -4 == -3
+;; The divisor is assumed to be non-zero.
+*def rem(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
     b: %a
 ) -> %a {

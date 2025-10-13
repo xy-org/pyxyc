@@ -1,7 +1,7 @@
 def test(lim: mut Int) {
     do {
-        if (lim \mod 10 == 0) continue;
-        if (lim \mod 100 == 0) break;
+        if (lim \rem 10 == 0) continue;
+        if (lim \rem 100 == 0) break;
         lim++;
     } while (lim < 1000);
 }

@@ -4549,7 +4549,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             "sub": '-',
             "mul": '*',
             "div": '/',
-            "mod": '%',
+            "rem": '%',
             "or": "||",
             "and": "&&",
             "shiftl": "<<",

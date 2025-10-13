@@ -3,7 +3,7 @@ def test1(x: Int, y: %x) {
     b := x - y;
     c := x * y;
     d := x / y;
-    e := x \mod y;
+    e := x \rem y;
 }
 
 def test2(x: Byte, y: %x) {
@@ -11,7 +11,7 @@ def test2(x: Byte, y: %x) {
     b := x - y;
     c := x * y;
     d := x / y;
-    e := x \mod y;
+    e := x \rem y;
 }
 
 def test3(x: Ushort, y: %x) {
@@ -19,7 +19,7 @@ def test3(x: Ushort, y: %x) {
     b := x - y;
     c := x * y;
     d := x / y;
-    e := x \mod y;
+    e := x \rem y;
 }
 
 def test4(x: Float, y: %x) {
