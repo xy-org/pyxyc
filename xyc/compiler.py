@@ -4293,6 +4293,334 @@ def find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     )
 
 def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    if func_obj.builtin:
+        builtin_res = compile_builtin_fcall(expr, func_obj, arg_exprs, cast, cfunc, ctx)
+        if builtin_res is not None:
+            return builtin_res
+        # else continue normally
+
+    ensure_func_decl(func_obj, cast, cfunc, ctx)
+
+    caller_ctx = ctx
+    if func_obj.module_header is not None:
+        callee_ctx = func_obj.module_header.ctx
+    else:
+        callee_ctx = ctx
+    callee_ctx = copy(callee_ctx)  # make a shollow copy
+    # deep copy only the fields that we need in the new context
+    callee_ctx.data_namespaces = copy(callee_ctx.data_namespaces[:2]) # copy only the global and module namespaces. ignore local vars
+    callee_ctx.func_namespaces = copy(callee_ctx.func_namespaces[:2])
+    callee_ctx.caller_contexts = copy(callee_ctx.caller_contexts)
+    callee_ctx.push_caller_context(caller_ctx)
+    callee_ctx.tmp_names = caller_ctx.tmp_names
+    callee_ctx.current_fobj = caller_ctx.current_fobj
+    callee_ctx.global_types = caller_ctx.global_types
+    callee_ctx.func_gen_state = caller_ctx.func_gen_state
+    if func_obj.data_closure is not None:
+        callee_ctx.data_namespaces.append(func_obj.data_closure)
+
+    # XXX
+    if hasattr(func_obj.c_node, 'name'):
+        res = c.FuncCall(name=func_obj.c_name)
+    else:
+        res = c.FuncCall(name=func_obj.c_node)
+
+    callee_ctx.push_ns()
+    caller_ctx.push_ns()
+
+    args_list = []  # list of all arguments in order of passing including injected ones
+    args_writable = []
+
+    for arg in arg_exprs.args:
+        assert arg.c_node is not None
+    for arg in arg_exprs.kwargs.values():
+        assert arg.c_node is not None
+
+    # add arguments
+    if func_obj.xy_node is None:
+        # add arguments to external c function
+        for arg in arg_exprs:
+            res.args.append(arg.c_node)
+    if func_obj.xy_node is not None:
+        # add arguments to a xy function
+        for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
+            args_list.append(arg)
+            args_writable.append(False)
+            caller_ctx.ns[pobj.xy_node.name] = LazyObj(
+                xy_node=arg.xy_node, tags=arg.tags, compiled_obj=arg, inferred_type=arg.inferred_type,
+            )
+            callee_ctx.ns[pobj.xy_node.name] = arg
+            if pobj.xy_node.is_callerContext:
+                lazy_ctx = arg.from_lazy_ctx or caller_ctx
+                callee_ctx.ns[pobj.xy_node.name] = LazyObj(
+                    xy_node=xy.CallerContextExpr(arg.xy_node, src=arg.xy_node.src, coords=arg.xy_node.coords),
+                    tags=arg.tags,
+                    compiled_obj=arg, inferred_type=arg.inferred_type,
+                    ctx=lazy_ctx,
+                )
+                redact_code(arg, cast, cfunc, ctx)
+            arg.num_cnodes = 0  # the time for code redaction is over so lets disable it
+            check_type_compatibility(arg.xy_node, arg, pobj, ctx)
+            if pobj.xy_node.mutable:
+                assert_mutable(arg, expr, func_obj, ctx)
+            if pobj.xy_node.is_pseudo:
+                continue
+            if pobj.passed_by_ref:
+                args_writable[-1] = True
+                res.args.append(c_getref(arg))
+            else:
+                res.args.append(arg.c_node)
+
+        leftover_params = func_obj.param_objs[len(arg_exprs.args):]
+        for i, pobj in enumerate(leftover_params):
+            if pobj.xy_node.name not in arg_exprs.kwargs:
+                try:
+                    value_obj = None
+                    if getattr(expr, 'inject_args', False):
+                        # TODO maybe call compile_id
+                        var_decl = ctx.lookup(pobj.xy_node.name, is_func=False)
+                        if var_decl is not None and not isinstance(var_decl, VarObj):
+                            raise CompilationError(f"'{pobj.xy_node.name}' is not a var", pobj.xy_node)
+                        elif var_decl is not None and compatible_types(var_decl.inferred_type, pobj.type_desc):
+                            if var_decl.xy_node.is_pseudo:
+                                raise CompilationError(f"'{pobj.xy_node.name}' is a pseudo param", var_decl.xy_node)
+                            value_obj = ExprObj(
+                                c_node=c.Id(var_decl.c_node.name),
+                                xy_node=pobj.xy_node,
+                                inferred_type=var_decl.type_desc,
+                            )
+                    if value_obj is None:
+                        if pobj.xy_node.value is None:
+                            var_decl = ctx.lookup(pobj.xy_node.name, is_func=False)
+                            notes = []
+                            if isinstance(var_decl, VarObj):
+                                notes = [(f"Variable '{pobj.xy_node.name}' has unsuitable type", var_decl.xy_node)]
+                                notes.extend(cmp_types(var_decl.inferred_type, pobj.type_desc, expr)[1])
+                            raise CompilationError(f"Cannot find var '{pobj.xy_node.name}' to auto inject", expr, notes=notes)
+                        value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, callee_ctx)
+                    to_move = (
+                        (i < len(leftover_params) - 1) or
+                        isinstance(value_obj.c_node, (c.InitList, c.CompoundLiteral)) or
+                        (len(func_obj.xy_node.in_guards) > 0)
+                    )
+                    if to_move:
+                        value_obj = maybe_move_to_temp(value_obj, cast, cfunc, ctx)
+                    elif pobj.xy_node.is_pseudo:
+                        # ensure pseudo parameters get executed
+                        cfunc.body.append(value_obj.c_node)
+                except CompilationError as e:
+                    raise CompilationError(
+                        f"Cannot compile default value for param '{pobj.xy_node.name}'", expr,
+                        notes=[
+                            (e.error_message, e.xy_node),
+                            *(e.notes if e.notes is not None else [])
+                        ]
+                    )
+            else:
+                value_obj = arg_exprs.kwargs[pobj.xy_node.name]
+
+            check_type_compatibility(value_obj.xy_node, value_obj, pobj, ctx)
+            args_list.append(value_obj)
+            args_writable.append(False)
+            if pobj.xy_node.mutable:
+                assert_mutable(value_obj, expr, func_obj, ctx)
+            if not pobj.xy_node.is_pseudo:
+                if pobj.passed_by_ref:
+                    res.args.append(c_getref(value_obj))
+                else:
+                    res.args.append(value_obj.c_node)
+            callee_ctx.ns[pobj.xy_node.name] = value_obj
+
+    # all arguments have been processed let's now check aliasing rules
+    check_aliasing_rules(args_list, args_writable, ctx)
+
+    # compile input guards if any
+    in_guards = func_obj.xy_node.in_guards if func_obj.xy_node is not None else []
+    out_guards = func_obj.xy_node.out_guards if func_obj.xy_node is not None else []
+    if (len(in_guards) + len(out_guards)) > 0:
+        cast.includes.append(c.Include("stdlib.h"))
+    param_print_code = c.Block()
+    for guard in in_guards:
+        try:
+            guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
+        except CompilationError as e:
+            raise CompilationError("Input assumption failed", expr, notes=[(e.error_message, e.xy_node), *(e.notes if e.notes else [])])
+        if guard_obj.inferred_type is not ctx.bool_obj:
+            raise CompilationError("Assumptions must be Bool expressions", guard)
+        if not ct_eval(guard_obj):
+            on_guard_fail = []
+            gen_guard_failed_code(guard, func_obj, cast, on_guard_fail, ctx, is_guard=True)
+            if len(param_print_code.body) == 0:
+                gen_print_params_code(cast, param_print_code, ctx)
+            on_guard_fail.extend(param_print_code.body)
+
+            if ctx.builder.abort_on_unhandled:
+                on_guard_fail.append(c.FuncCall("abort"))
+            else:
+                on_guard_fail.append(c.FuncCall("exit", args=[c.Const(200)]))
+
+            cfunc.body.append(c.If(
+                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
+                body=on_guard_fail
+            ))
+
+    rtype_obj = func_obj.rtype_obj
+    cast_result = False
+    if (func_obj.xy_node is not None and len(func_obj.xy_node.returns) > 0 and
+        func_obj.has_calltime_tags
+    ):
+        # TODO optimize this by evaluating only the values that need it
+        rtype_obj = copy(rtype_obj)
+
+        eval_stored_value = callee_ctx.eval_calltime_exprs
+        callee_ctx.eval_calltime_exprs = True
+        callee_ctx.eval_tags(
+            rtype_obj.tags,
+            func_obj.xy_node.returns[0].type.tags,
+            tag_specs=rtype_obj.base_type_obj.tag_specs,
+        )
+        callee_ctx.eval_calltime_exprs = eval_stored_value
+        cast_result = True
+
+    macro_expr_obj = None
+    if func_obj.is_macro:
+        body = func_obj.xy_node.body
+        if isinstance(body, xy.Break):
+            handle_static_break(expr, body, cast, cfunc, ctx)
+        try:
+            macro_expr_obj = compile_expr(body, cast, cfunc, callee_ctx, deref=False)
+        except CompilationError as e:
+            raise CompilationError(
+                f"Failed to call macro '{ctx.eval_to_id(func_obj.xy_node.name)}'", expr,
+                notes=[(e.error_message, e.xy_node), *(e.notes if e.notes else [])]
+            )
+        if isinstance(macro_expr_obj, TypeObj):
+            raise CompilationError("Functions cannot return a type", expr)
+        res = macro_expr_obj.c_node
+        rtype_obj = macro_expr_obj.inferred_type
+    elif (
+        func_obj.xy_node is not None and
+        (func_obj.etype_obj is not None or len(func_obj.xy_node.returns) > 1)
+    ):
+        # call a function that may error
+        tmp_cid = None
+        if func_obj.rtype_obj is not ctx.void_obj:
+            tmp_obj = ctx.create_tmp_var(func_obj.rtype_obj, name_hint="res")
+            cfunc.body.append(tmp_obj.c_node)
+            tmp_cid = c.Id(tmp_obj.c_node.name)
+            res.args.append(c.UnaryExpr(op='&', prefix=True, arg=tmp_cid))
+
+            ret_name = func_obj.xy_node.returns[0].name
+            callee_ctx.ns[ret_name] = tmp_obj
+
+        if func_obj.etype_obj is not None:
+            # error handling
+
+            # first get the catch frame if any
+            cf: CatchFrame = ctx.catch_frames[-1] if len(ctx.catch_frames) > 0 else None
+
+            if cf is None:
+                err_obj = ctx.create_tmp_var(func_obj.etype_obj, name_hint="err")
+                err_obj.c_node.qtype.is_const = True
+                err_obj.c_node.value = res
+                cfunc.body.append(err_obj.c_node)
+                err_obj_c_name = err_obj.c_node.name
+            else:
+                cf.ref_count += 1
+                cfunc.body.append(c.Expr(
+                    c.Id(cf.var_name), res, op="="
+                ))
+                err_obj_c_name = cf.var_name
+
+            # TODO firgure out a way to remove this two expr_objs
+            bool_expr_obj = ExprObj(
+                xy_node=expr,
+                c_node=c.Id(ctx.bool_obj.c_node.name),
+                inferred_type=ctx.bool_obj,
+                compiled_obj=ctx.bool_obj,
+            )
+            err_expr_obj = ExprObj(
+                xy_node=expr,
+                c_node=c.Id(err_obj_c_name),
+                inferred_type=func_obj.etype_obj
+            )
+            check_error_fcall = find_and_call(
+                "to",
+                ArgList([err_expr_obj, bool_expr_obj]),
+                cast, cfunc, callee_ctx, expr
+            )
+
+            check_if = c.If(
+                cond=check_error_fcall.c_node,
+            )
+            if cf is not None:
+                cf.inferred_type = func_obj.etype_obj
+                check_if.body.append(c.Goto(c.Id(cf.err_label)))
+            elif func_obj.etype_obj is ctx.current_fobj.etype_obj:
+                call_all_dtors(cast, check_if, ctx, reset_values=False)
+                check_if.body.append(c.Return(c.Id(err_obj_c_name)))
+            else:
+                # call unhandled
+                do_compile_unhandled_code(expr, err_expr_obj, cast, check_if, caller_ctx, callee_ctx, func_obj)
+            cfunc.body.append(check_if)
+
+        else:
+            cfunc.body.append(res)
+
+        res = tmp_cid
+    else:
+        # else if a call to a function that has no error handling
+        # no need to do anything the res already has the needed c fcall
+        # only cast the result if needed
+        if cast_result:
+            res = c.Cast(what=res, to=rtype_obj.c_name)
+
+    # finally eval out_guards
+    for guard in out_guards:
+        guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
+        if not ct_eval(guard_obj):
+            cfunc.body.append(c.If(
+                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
+                body=[c.FuncCall("abort")]
+            ))
+
+    if macro_expr_obj is not None:
+        raw_fcall_obj = copy(macro_expr_obj)
+        raw_fcall_obj.xy_node = expr
+    else:
+        raw_fcall_obj = ExprObj(
+            c_node=res,
+            xy_node=expr,
+            inferred_type=rtype_obj,
+        )
+
+    if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:
+        if func_obj.xy_node.returns[0].is_based:
+            refto_name = func_obj.xy_node.returns[0].index_in.name
+            if refto_name not in callee_ctx.ns:
+                raise CompilationError(f"No parameter {refto_name}", func_obj.xy_node.returns[0].index_in)
+            base = callee_ctx.ns[refto_name]
+        else:
+            base = global_memory
+
+        res_obj = idx_setup(
+            IdxObj(
+                container=base,
+                idx=raw_fcall_obj,
+                xy_node=expr,
+                is_iter_ctor=is_iter_ctor_call(func_obj)
+            ),
+            cast, cfunc, ctx
+        )
+    else:
+        res_obj = raw_fcall_obj
+
+    callee_ctx.pop_ns()
+    caller_ctx.pop_ns()
+
+    return res_obj
+
+def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if is_builtin_func(func_obj, "get"):
         if is_global_type(arg_exprs[0].inferred_type, ctx):
             return compile_global_get(expr, func_obj, arg_exprs, cast, cfunc, ctx)
@@ -4814,327 +5142,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             xy_node=expr,
             inferred_type=inferred_type
         )
-
-    ensure_func_decl(func_obj, cast, cfunc, ctx)
-
-    caller_ctx = ctx
-    if func_obj.module_header is not None:
-        callee_ctx = func_obj.module_header.ctx
-    else:
-        callee_ctx = ctx
-    callee_ctx = copy(callee_ctx)  # make a shollow copy
-    # deep copy only the fields that we need in the new context
-    callee_ctx.data_namespaces = copy(callee_ctx.data_namespaces[:2]) # copy only the global and module namespaces. ignore local vars
-    callee_ctx.func_namespaces = copy(callee_ctx.func_namespaces[:2])
-    callee_ctx.caller_contexts = copy(callee_ctx.caller_contexts)
-    callee_ctx.push_caller_context(caller_ctx)
-    callee_ctx.tmp_names = caller_ctx.tmp_names
-    callee_ctx.current_fobj = caller_ctx.current_fobj
-    callee_ctx.global_types = caller_ctx.global_types
-    callee_ctx.func_gen_state = caller_ctx.func_gen_state
-    if func_obj.data_closure is not None:
-        callee_ctx.data_namespaces.append(func_obj.data_closure)
-
-    # XXX
-    if hasattr(func_obj.c_node, 'name'):
-        res = c.FuncCall(name=func_obj.c_name)
-    else:
-        res = c.FuncCall(name=func_obj.c_node)
-
-    callee_ctx.push_ns()
-    caller_ctx.push_ns()
-
-    args_list = []  # list of all arguments in order of passing including injected ones
-    args_writable = []
-
-    for arg in arg_exprs.args:
-        assert arg.c_node is not None
-    for arg in arg_exprs.kwargs.values():
-        assert arg.c_node is not None
-
-    # add arguments
-    if func_obj.xy_node is None:
-        # add arguments to external c function
-        for arg in arg_exprs:
-            res.args.append(arg.c_node)
-    if func_obj.xy_node is not None:
-        # add arguments to a xy function
-        for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
-            args_list.append(arg)
-            args_writable.append(False)
-            caller_ctx.ns[pobj.xy_node.name] = LazyObj(
-                xy_node=arg.xy_node, tags=arg.tags, compiled_obj=arg, inferred_type=arg.inferred_type,
-            )
-            callee_ctx.ns[pobj.xy_node.name] = arg
-            if pobj.xy_node.is_callerContext:
-                lazy_ctx = arg.from_lazy_ctx or caller_ctx
-                callee_ctx.ns[pobj.xy_node.name] = LazyObj(
-                    xy_node=xy.CallerContextExpr(arg.xy_node, src=arg.xy_node.src, coords=arg.xy_node.coords),
-                    tags=arg.tags,
-                    compiled_obj=arg, inferred_type=arg.inferred_type,
-                    ctx=lazy_ctx,
-                )
-                redact_code(arg, cast, cfunc, ctx)
-            arg.num_cnodes = 0  # the time for code redaction is over so lets disable it
-            check_type_compatibility(arg.xy_node, arg, pobj, ctx)
-            if pobj.xy_node.mutable:
-                assert_mutable(arg, expr, func_obj, ctx)
-            if pobj.xy_node.is_pseudo:
-                continue
-            if pobj.passed_by_ref:
-                args_writable[-1] = True
-                res.args.append(c_getref(arg))
-            else:
-                res.args.append(arg.c_node)
-
-        leftover_params = func_obj.param_objs[len(arg_exprs.args):]
-        for i, pobj in enumerate(leftover_params):
-            if pobj.xy_node.name not in arg_exprs.kwargs:
-                try:
-                    value_obj = None
-                    if getattr(expr, 'inject_args', False):
-                        # TODO maybe call compile_id
-                        var_decl = ctx.lookup(pobj.xy_node.name, is_func=False)
-                        if var_decl is not None and not isinstance(var_decl, VarObj):
-                            raise CompilationError(f"'{pobj.xy_node.name}' is not a var", pobj.xy_node)
-                        elif var_decl is not None and compatible_types(var_decl.inferred_type, pobj.type_desc):
-                            if var_decl.xy_node.is_pseudo:
-                                raise CompilationError(f"'{pobj.xy_node.name}' is a pseudo param", var_decl.xy_node)
-                            value_obj = ExprObj(
-                                c_node=c.Id(var_decl.c_node.name),
-                                xy_node=pobj.xy_node,
-                                inferred_type=var_decl.type_desc,
-                            )
-                    if value_obj is None:
-                        if pobj.xy_node.value is None:
-                            var_decl = ctx.lookup(pobj.xy_node.name, is_func=False)
-                            notes = []
-                            if isinstance(var_decl, VarObj):
-                                notes = [(f"Variable '{pobj.xy_node.name}' has unsuitable type", var_decl.xy_node)]
-                                notes.extend(cmp_types(var_decl.inferred_type, pobj.type_desc, expr)[1])
-                            raise CompilationError(f"Cannot find var '{pobj.xy_node.name}' to auto inject", expr, notes=notes)
-                        value_obj = compile_expr(pobj.xy_node.value, cast, cfunc, callee_ctx)
-                    to_move = (
-                        (i < len(leftover_params) - 1) or
-                        isinstance(value_obj.c_node, (c.InitList, c.CompoundLiteral)) or
-                        (len(func_obj.xy_node.in_guards) > 0)
-                    )
-                    if to_move:
-                        value_obj = maybe_move_to_temp(value_obj, cast, cfunc, ctx)
-                    elif pobj.xy_node.is_pseudo:
-                        # ensure pseudo parameters get executed
-                        cfunc.body.append(value_obj.c_node)
-                except CompilationError as e:
-                    raise CompilationError(
-                        f"Cannot compile default value for param '{pobj.xy_node.name}'", expr,
-                        notes=[
-                            (e.error_message, e.xy_node),
-                            *(e.notes if e.notes is not None else [])
-                        ]
-                    )
-            else:
-                value_obj = arg_exprs.kwargs[pobj.xy_node.name]
-
-            check_type_compatibility(value_obj.xy_node, value_obj, pobj, ctx)
-            args_list.append(value_obj)
-            args_writable.append(False)
-            if pobj.xy_node.mutable:
-                assert_mutable(value_obj, expr, func_obj, ctx)
-            if not pobj.xy_node.is_pseudo:
-                if pobj.passed_by_ref:
-                    res.args.append(c_getref(value_obj))
-                else:
-                    res.args.append(value_obj.c_node)
-            callee_ctx.ns[pobj.xy_node.name] = value_obj
-
-    # all arguments have been processed let's now check aliasing rules
-    check_aliasing_rules(args_list, args_writable, ctx)
-
-    # compile input guards if any
-    in_guards = func_obj.xy_node.in_guards if func_obj.xy_node is not None else []
-    out_guards = func_obj.xy_node.out_guards if func_obj.xy_node is not None else []
-    if (len(in_guards) + len(out_guards)) > 0:
-        cast.includes.append(c.Include("stdlib.h"))
-    param_print_code = c.Block()
-    for guard in in_guards:
-        try:
-            guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
-        except CompilationError as e:
-            raise CompilationError("Input assumption failed", expr, notes=[(e.error_message, e.xy_node), *(e.notes if e.notes else [])])
-        if guard_obj.inferred_type is not ctx.bool_obj:
-            raise CompilationError("Assumptions must be Bool expressions", guard)
-        if not ct_eval(guard_obj):
-            on_guard_fail = []
-            gen_guard_failed_code(guard, func_obj, cast, on_guard_fail, ctx, is_guard=True)
-            if len(param_print_code.body) == 0:
-                gen_print_params_code(cast, param_print_code, ctx)
-            on_guard_fail.extend(param_print_code.body)
-
-            if ctx.builder.abort_on_unhandled:
-                on_guard_fail.append(c.FuncCall("abort"))
-            else:
-                on_guard_fail.append(c.FuncCall("exit", args=[c.Const(200)]))
-
-            cfunc.body.append(c.If(
-                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
-                body=on_guard_fail
-            ))
-
-    rtype_obj = func_obj.rtype_obj
-    cast_result = False
-    if (func_obj.xy_node is not None and len(func_obj.xy_node.returns) > 0 and
-        func_obj.has_calltime_tags
-    ):
-        # TODO optimize this by evaluating only the values that need it
-        rtype_obj = copy(rtype_obj)
-
-        eval_stored_value = callee_ctx.eval_calltime_exprs
-        callee_ctx.eval_calltime_exprs = True
-        callee_ctx.eval_tags(
-            rtype_obj.tags,
-            func_obj.xy_node.returns[0].type.tags,
-            tag_specs=rtype_obj.base_type_obj.tag_specs,
-        )
-        callee_ctx.eval_calltime_exprs = eval_stored_value
-        cast_result = True
-
-    macro_expr_obj = None
-    if func_obj.is_macro:
-        body = func_obj.xy_node.body
-        if isinstance(body, xy.Break):
-            handle_static_break(expr, body, cast, cfunc, ctx)
-        try:
-            macro_expr_obj = compile_expr(body, cast, cfunc, callee_ctx, deref=False)
-        except CompilationError as e:
-            raise CompilationError(
-                f"Failed to call macro '{ctx.eval_to_id(func_obj.xy_node.name)}'", expr,
-                notes=[(e.error_message, e.xy_node), *(e.notes if e.notes else [])]
-            )
-        if isinstance(macro_expr_obj, TypeObj):
-            raise CompilationError("Functions cannot return a type", expr)
-        res = macro_expr_obj.c_node
-        rtype_obj = macro_expr_obj.inferred_type
-    elif (
-        func_obj.xy_node is not None and
-        (func_obj.etype_obj is not None or len(func_obj.xy_node.returns) > 1)
-    ):
-        # call a function that may error
-        tmp_cid = None
-        if func_obj.rtype_obj is not ctx.void_obj:
-            tmp_obj = ctx.create_tmp_var(func_obj.rtype_obj, name_hint="res")
-            cfunc.body.append(tmp_obj.c_node)
-            tmp_cid = c.Id(tmp_obj.c_node.name)
-            res.args.append(c.UnaryExpr(op='&', prefix=True, arg=tmp_cid))
-
-            ret_name = func_obj.xy_node.returns[0].name
-            callee_ctx.ns[ret_name] = tmp_obj
-
-        if func_obj.etype_obj is not None:
-            # error handling
-
-            # first get the catch frame if any
-            cf: CatchFrame = ctx.catch_frames[-1] if len(ctx.catch_frames) > 0 else None
-
-            if cf is None:
-                err_obj = ctx.create_tmp_var(func_obj.etype_obj, name_hint="err")
-                err_obj.c_node.qtype.is_const = True
-                err_obj.c_node.value = res
-                cfunc.body.append(err_obj.c_node)
-                err_obj_c_name = err_obj.c_node.name
-            else:
-                cf.ref_count += 1
-                cfunc.body.append(c.Expr(
-                    c.Id(cf.var_name), res, op="="
-                ))
-                err_obj_c_name = cf.var_name
-
-            # TODO firgure out a way to remove this two expr_objs
-            bool_expr_obj = ExprObj(
-                xy_node=expr,
-                c_node=c.Id(ctx.bool_obj.c_node.name),
-                inferred_type=ctx.bool_obj,
-                compiled_obj=ctx.bool_obj,
-            )
-            err_expr_obj = ExprObj(
-                xy_node=expr,
-                c_node=c.Id(err_obj_c_name),
-                inferred_type=func_obj.etype_obj
-            )
-            check_error_fcall = find_and_call(
-                "to",
-                ArgList([err_expr_obj, bool_expr_obj]),
-                cast, cfunc, callee_ctx, expr
-            )
-
-            check_if = c.If(
-                cond=check_error_fcall.c_node,
-            )
-            if cf is not None:
-                cf.inferred_type = func_obj.etype_obj
-                check_if.body.append(c.Goto(c.Id(cf.err_label)))
-            elif func_obj.etype_obj is ctx.current_fobj.etype_obj:
-                call_all_dtors(cast, check_if, ctx, reset_values=False)
-                check_if.body.append(c.Return(c.Id(err_obj_c_name)))
-            else:
-                # call unhandled
-                do_compile_unhandled_code(expr, err_expr_obj, cast, check_if, caller_ctx, callee_ctx, func_obj)
-            cfunc.body.append(check_if)
-
-        else:
-            cfunc.body.append(res)
-
-        res = tmp_cid
-    else:
-        # else if a call to a function that has no error handling
-        # no need to do anything the res already has the needed c fcall
-        # only cast the result if needed
-        if cast_result:
-            res = c.Cast(what=res, to=rtype_obj.c_name)
-
-    # finally eval out_guards
-    for guard in out_guards:
-        guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
-        if not ct_eval(guard_obj):
-            cfunc.body.append(c.If(
-                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
-                body=[c.FuncCall("abort")]
-            ))
-
-    if macro_expr_obj is not None:
-        raw_fcall_obj = copy(macro_expr_obj)
-        raw_fcall_obj.xy_node = expr
-    else:
-        raw_fcall_obj = ExprObj(
-            c_node=res,
-            xy_node=expr,
-            inferred_type=rtype_obj,
-        )
-
-    if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:
-        if func_obj.xy_node.returns[0].is_based:
-            refto_name = func_obj.xy_node.returns[0].index_in.name
-            if refto_name not in callee_ctx.ns:
-                raise CompilationError(f"No parameter {refto_name}", func_obj.xy_node.returns[0].index_in)
-            base = callee_ctx.ns[refto_name]
-        else:
-            base = global_memory
-
-        res_obj = idx_setup(
-            IdxObj(
-                container=base,
-                idx=raw_fcall_obj,
-                xy_node=expr,
-                is_iter_ctor=is_iter_ctor_call(func_obj)
-            ),
-            cast, cfunc, ctx
-        )
-    else:
-        res_obj = raw_fcall_obj
-
-    callee_ctx.pop_ns()
-    caller_ctx.pop_ns()
-
-    return res_obj
+    return None
 
 def assert_mutable(obj: ExprObj, fcall_expr, fobj, ctx: CompilerContext):
     if (
