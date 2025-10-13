@@ -25,6 +25,9 @@ int32_t handling2_test1(int32_t p_x) {
 }
 
 int32_t handling2_mix(int32_t p_a, int32_t p_b) {
+    if (!(p_b != 0)) {
+        abort();
+    }
     return p_a * p_b + p_a / p_b;
 }
 
@@ -43,7 +46,7 @@ int32_t handling2_test2(int32_t p_x) {
     handling2_mix(tmp_1_res, tmp_2_res);
 L_0_CONTINUE_catch:
     ;
-    
+    // don't generate a label to a definition which is c23 specific
     ;
     const handling2_Error l_err = tmp_0_catch;
     return l_err.m_code;

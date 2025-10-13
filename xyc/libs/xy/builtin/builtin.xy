@@ -217,11 +217,23 @@
     # Implemented by the compiler
 }
 
-;; (Integer) Division
-;; Rounding is towards zero.
+;; Integer Division
+;; Rounding is always towards zero.
+;; Examples:
+;; 7 / 4 == 1
+;; 7 / -4 == -1
 *def div(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
     b: %a
+) -> %a
+>> b != %b
+{
+    # Implemented by the compiler
+}
+
+;; Floating Point Division
+*def div(
+    a: (Float, Double), b: %a
 ) -> %a {
     # Implemented by the compiler
 }
@@ -245,7 +257,9 @@
 *def rem(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
     b: %a
-) -> %a {
+) -> %a
+>> b != %b
+{
     # implemented by the compiler
 }
 

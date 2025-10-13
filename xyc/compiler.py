@@ -2079,7 +2079,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 validate_name(node, ctx)
                 vardecl_obj = compile_vardecl(node, cast, cfunc, ctx)
                 if len(cfunc.body) > 0 and isinstance(cfunc.body[-1], c.Label):
-                    cfunc.body.append(c.InlineCode(""))  # don't generate a label to a definition which is c23 specific
+                    cfunc.body.append(c.InlineCode("// don't generate a label to a definition which is c23 specific"))
                 cfunc.body.append(vardecl_obj.c_node)
             else:
                 expr_obj = compile_expr(node.value, cast, cfunc, ctx)
@@ -4439,30 +4439,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     out_guards = func_obj.xy_node.out_guards if func_obj.xy_node is not None else []
     if (len(in_guards) + len(out_guards)) > 0:
         cast.includes.append(c.Include("stdlib.h"))
-    param_print_code = c.Block()
-    for guard in in_guards:
-        try:
-            guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
-        except CompilationError as e:
-            raise CompilationError("Input assumption failed", expr, notes=[(e.error_message, e.xy_node), *(e.notes if e.notes else [])])
-        if guard_obj.inferred_type is not ctx.bool_obj:
-            raise CompilationError("Assumptions must be Bool expressions", guard)
-        if not ct_eval(guard_obj):
-            on_guard_fail = []
-            gen_guard_failed_code(guard, func_obj, cast, on_guard_fail, ctx, is_guard=True)
-            if len(param_print_code.body) == 0:
-                gen_print_params_code(cast, param_print_code, ctx)
-            on_guard_fail.extend(param_print_code.body)
-
-            if ctx.builder.abort_on_unhandled:
-                on_guard_fail.append(c.FuncCall("abort"))
-            else:
-                on_guard_fail.append(c.FuncCall("exit", args=[c.Const(200)]))
-
-            cfunc.body.append(c.If(
-                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
-                body=on_guard_fail
-            ))
+    compile_assums(in_guards, func_obj, callee_ctx, arg_exprs, cast, cfunc, ctx)
 
     rtype_obj = func_obj.rtype_obj
     cast_result = False
@@ -4576,13 +4553,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             res = c.Cast(what=res, to=rtype_obj.c_name)
 
     # finally eval out_guards
-    for guard in out_guards:
-        guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
-        if not ct_eval(guard_obj):
-            cfunc.body.append(c.If(
-                cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
-                body=[c.FuncCall("abort")]
-            ))
+    compile_assums(out_guards, func_obj, callee_ctx, arg_exprs, cast, cfunc, ctx)
 
     if macro_expr_obj is not None:
         raw_fcall_obj = copy(macro_expr_obj)
@@ -4619,6 +4590,34 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     caller_ctx.pop_ns()
 
     return res_obj
+
+def compile_assums(assums, func_obj, callee_ctx, arg_exprs, cast, cfunc, ctx):
+    param_print_code = c.Block()
+    for guard in assums:
+        guard_obj = compile_expr(guard, cast, cfunc, callee_ctx)
+        if guard_obj.inferred_type is not ctx.bool_obj:
+            raise CompilationError("Assumptions must be Bool expressions", guard)
+        gen_check_assum_code(guard_obj, param_print_code, guard, func_obj, cast, cfunc, ctx)
+
+def gen_check_assum_code(guard_obj, param_print_code, guard, func_obj, cast, cfunc, ctx):
+    if ct_eval(guard_obj) == True:
+        return  # true at compile-time
+    if len(param_print_code.body) == 0:
+        gen_print_params_code(cast, param_print_code, ctx)
+
+    on_guard_fail = []
+    gen_guard_failed_code(guard, func_obj, cast, on_guard_fail, ctx, is_guard=True)
+    on_guard_fail.extend(param_print_code.body)
+
+    if ctx.builder.abort_on_unhandled:
+        on_guard_fail.append(c.FuncCall("abort"))
+    else:
+        on_guard_fail.append(c.FuncCall("exit", args=[c.Const(200)]))
+
+    cfunc.body.append(c.If(
+        cond=c.UnaryExpr(guard_obj.c_node, op="!", prefix=True),
+        body=on_guard_fail
+    ))
 
 def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if is_builtin_func(func_obj, "get"):
@@ -4866,12 +4865,6 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=arg_exprs[0].inferred_type
         )
     elif func_obj.builtin and len(arg_exprs) == 2 and arg_exprs[0].inferred_type.builtin and arg_exprs[1].inferred_type.builtin:
-        if len(func_obj.xy_node.in_guards) > 0:
-            ## the only builtin funcs with in-guards are the exceptions for Int
-            if ctx.is_int(arg_exprs[0].inferred_type) and not isinstance(arg_exprs[0].c_node, c.Const):
-                report_mixed_signed(expr, arg_exprs, ctx)
-            if ctx.is_int(arg_exprs[1].inferred_type) and not isinstance(arg_exprs[1].c_node, c.Const):
-                report_mixed_signed(expr, arg_exprs, ctx)
         func_to_op_map = {
             "add": '+',
             "sub": '-',
@@ -4892,6 +4885,24 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         c_arg1 = arg_exprs[0].c_node
         c_arg2 = arg_exprs[1].c_node
         c_op = func_to_op_map[func_obj.xy_node.name.name]
+
+        if (
+            func_obj.xy_node.name.name in {"div", "rem"} and
+            len(func_obj.xy_node.in_guards) > 0 and
+            arg_exprs[0].inferred_type is arg_exprs[1].inferred_type
+        ):
+            assum_obj = ExprObj(
+                xy_node=expr,
+                c_node=c.Expr(c_arg2, c.Const(0), op="!="),
+                inferred_type=ctx.bool_obj,
+            )
+            gen_check_assum_code(assum_obj, c.Block(), func_obj.xy_node.in_guards[0], func_obj, cast, cfunc, ctx)
+        elif len(func_obj.xy_node.in_guards) > 0:
+            ## the only builtin funcs with in-guards are the exceptions for Int
+            if ctx.is_int(arg_exprs[0].inferred_type) and not isinstance(arg_exprs[0].c_node, c.Const):
+                report_mixed_signed(expr, arg_exprs, ctx)
+            if ctx.is_int(arg_exprs[1].inferred_type) and not isinstance(arg_exprs[1].c_node, c.Const):
+                report_mixed_signed(expr, arg_exprs, ctx)
 
         bit_len = None
         if arg_exprs[0].inferred_type.name.startswith("Bits"):
@@ -6719,6 +6730,15 @@ def c_eval(c_node):
     elif isinstance(c_node, c.UnaryExpr) and c_node.op == "!":
         res = c_eval(c_node.arg)
         if isinstance(res, bool): return not res
+    elif isinstance(c_node, c.Expr) and c_node.op in {"==", "!="}:
+        left = c_eval(c_node.arg1)
+        right = c_eval(c_node.arg2)
+        if left is None or right is None:
+            return None
+        if c_node.op == "==":
+            return left == right
+        else:
+            return left != right
     return None
 
 def ct_eval_always(expr_obj, ctx):

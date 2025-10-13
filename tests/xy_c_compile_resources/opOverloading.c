@@ -36,6 +36,9 @@ opOverloading_MyInt opOverloading_mul(opOverloading_MyInt p_a, opOverloading_MyI
 }
 
 opOverloading_MyInt opOverloading_div(opOverloading_MyInt p_a, opOverloading_MyInt p_b) {
+    if (!(p_b.m_num != 0)) {
+        abort();
+    }
     return (opOverloading_MyInt){p_a.m_num / p_b.m_num};
 }
 

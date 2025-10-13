@@ -3,7 +3,7 @@
 #include <stdbool.h>
 
 int32_t ignoreRetVal_func(int32_t p_a, int32_t p_b) {
-    return p_a / p_b;
+    return p_a * p_b;
 }
 
 void ignoreRetVal_voidFunc(void) {

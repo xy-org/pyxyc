@@ -14,6 +14,7 @@ from xyc.compiler import CompilationError
     "basic/arithmatic2",
     "basic/arithmatic3",
     "basic/arithmatic4",
+    "basic/checkedDivision",
     "typeInferenceAdvanced",
     "funcs/funcOverloadingSimple",
     "funcs/funcRecursive",
