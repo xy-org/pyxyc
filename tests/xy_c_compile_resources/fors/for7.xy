@@ -1,0 +1,25 @@
+import xy.ctti;
+
+
+struct Array~[elemType: struct] {
+    ptr: Ptr;
+}
+
+*def fill(arr: mut Array, n: Size, value: Any = (arr..elemType){}) =
+    for (i in :n) {
+        arr'append(value);
+    };
+
+*def append(
+    arr: mut Array,
+    elem: don Any,
+    elemPtr: Ptr = elem'addrof,
+    elemSize: Size = sizeof(arr..elemType),
+) {
+    # ...
+}
+
+def test() {
+    arr: Array~Int;
+    arr'fill(10z);
+}

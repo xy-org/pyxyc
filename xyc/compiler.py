@@ -4429,7 +4429,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     )
                     if to_move:
                         value_obj = maybe_move_to_temp(value_obj, cast, cfunc, ctx)
-                    elif pobj.xy_node.is_pseudo:
+                    elif pobj.xy_node.is_pseudo and not is_simple_cexpr(value_obj.c_node):
                         # ensure pseudo parameters get executed
                         cfunc.body.append(value_obj.c_node)
                 except CompilationError as e:

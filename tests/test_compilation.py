@@ -49,6 +49,7 @@ from xyc.compiler import CompilationError
     "fors/for4",
     "fors/for5",
     "fors/for6",
+    "fors/for7",
     "loops/continue",
     "pointers",
     "pseudoParams",
