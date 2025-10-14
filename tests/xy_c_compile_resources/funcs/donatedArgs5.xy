@@ -1,0 +1,14 @@
+struct WithoutDtor {
+    val: Int;
+}
+
+def action(a: WithoutDtor, b: don Any, ptr: Ptr = b'addrof) {
+    # ...
+}
+
+def test() {
+    without := WithoutDtor{-1};
+    action(without, WithoutDtor{});
+    action(without, WithoutDtor{10});
+    action(without, WithoutDtor{20});
+}

@@ -5759,6 +5759,7 @@ def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx: CompilerContext):
             if isinstance(arg_obj.xy_node, (xy.Const, xy.StrLiteral)):
                 raise CompilationError("Cannot get address of a const", expr)
             tmp_obj = ctx.create_tmp_var(type_obj, "addrof", expr)
+            tmp_obj.c_node.value = arg_c_node
             cfunc.body.append(tmp_obj.c_node)
             arg_c_node = c.Id(tmp_obj.c_node.name)
 
