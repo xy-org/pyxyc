@@ -3,6 +3,13 @@
 ;; NOTE void is not a type in xy (unlike c).
 ;; 'void' has the meaning of removing, voiding, or not having something.
 
+;; Special type that matches any other type in function selection
+;; This is a compile-time only type. Cannot be instantiated.
+;; Any parameter with that type is automatically marked pseudo.
+*struct Any {
+    # Compile-time only
+}
+
 # Primitive bool type
 
 ;; 1-bit true/false type

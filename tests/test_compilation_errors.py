@@ -668,9 +668,9 @@ src.xy:3:13: error: Cannot instantiate pseudo type 'Any'. It serves as a wildcar
         }
         """,
         """\
-src.xy:3:18: error: Cannot find variable 'Any'
+src.xy:3:13: error: Cannot instantiate pseudo type 'Any'. It serves as a wildcard in func definitions and cannot be instantiated.
 |             a := Any{};
-                   ^^^
+              ^
 """
     ),
     (

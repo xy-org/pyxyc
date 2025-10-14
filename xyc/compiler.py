@@ -35,6 +35,7 @@ class TypeObj(CompiledObj):
     sizeof: int = 0. # at the moment this is more of a guess
     is_funcdef: bool = False  # is builtin FuncDef type
     is_ct_only: bool = False  # is type compile time only
+    is_any_type: bool = False  # true if builtin Any type
 
     def get_base_type(self):
         return self if self.base_type_obj is None else self.base_type_obj
@@ -149,6 +150,10 @@ class TypeExprObj(CompiledObj):
     @property
     def is_ct_only(self):
         return self.type_obj.is_ct_only
+
+    @property
+    def is_any_type(self):
+        return self.type_obj.is_any_type
 
     def get_base_type(self):
         return self.type_obj
@@ -328,7 +333,6 @@ def ext_symbol_to_type(ext_obj):
 class NameAmbiguity:
     modules: list[str] = field(default_factory=list)
 
-any_type_obj = TypeObj(xy_node=xy.Id("Any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 any_struct_type_obj = TypeObj(xy_node=xy.Id("Any"), builtin=True, c_node=c.Id("ANY_TYPE_REPORT_IF_YOU_SEE_ME"))
 fieldarray_type_obj = TypeObj(xy_node=xy.Id("FieldArray"), builtin=True, c_node=c.Id("FIELD_TYPE_ARRAY_REPORT_IF_YOU_SEE_ME"))
 fselection_type_obj = TypeObj(xy_node=xy.Id("$*"), builtin=True, c_node=c.Id("FUN_SELECTION_REPORT_IF_YOU_SEE_ME"), is_ct_only=True)
@@ -572,7 +576,7 @@ def is_obj_visible(obj, ctx: 'CompilerContext'):
 # We need a different way to compare arg to param types because the rules for
 # fselect are slightly different namely there is no match based on tags
 def cmp_arg_param_types(arg_type, param_type):
-    if param_type is any_type_obj:
+    if param_type.is_any_type:
         return True
 
     if isinstance(arg_type, ArrTypeObj):
@@ -603,7 +607,7 @@ def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
     if src_type is dst_type:
         return 0, []
 
-    if dst_type is any_type_obj:
+    if isinstance(dst_type, TypeInferenceError) or dst_type.is_any_type:
         return 0, []
 
     if isinstance(src_type, ArrTypeObj):
@@ -618,7 +622,7 @@ def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
     if isinstance(src_type, FuncTypeObj) and is_funddef_type(dst_type):
         return -1, [(f"FuncDef objects are not auto converted to callback", xy_node)]
 
-    if isinstance(dst_type, TypeInferenceError) or dst_type is any_type_obj or src_type is any_type_obj:
+    if src_type.is_any_type:
         return 0, []
 
     if not (src_type.get_base_type().xy_node.name == dst_type.get_base_type().xy_node.name and src_type.get_base_type().c_name == dst_type.get_base_type().c_name):
@@ -692,7 +696,7 @@ def func_sig(fobj: FuncObj, include_ret=False):
             res += ", "
         if pobj.xy_node is not None and pobj.xy_node.value is not None:
             res += "["
-        if pobj.type_desc == any_type_obj:
+        if pobj.type_desc.is_any_type:
             res += "Any"
         else:
             res += pobj.type_desc.name
@@ -769,6 +773,7 @@ class CompilerContext:
 
     entrypoint_obj: any = None
     entrypoint_priority: int = 0
+    any_type_obj: any = None
     void_obj: any = None
     bool_obj: any = None
     ptr_obj: any = None
@@ -818,6 +823,9 @@ class CompilerContext:
             data_ns["Ulong"],
             data_ns["Size"],
         )
+        self.any_type_obj = data_ns["Any"]
+        self.any_type_obj.is_any_type = True
+        self.any_type_obj.is_ct_only = True
         self.void_obj = data_ns["void"]
         self.funcdef_obj = data_ns["FuncDef"]
         self.funcdef_obj.is_funcdef = self.funcdef_obj.is_ct_only =True
@@ -1476,8 +1484,8 @@ def fill_missing_dtors(type_obj: TypeObj, all_fobjs, asts, cast, ctx):
     return False
 
 keywords = {
-    "if", "ef", "else", "for", "while", "Any", "def", "struct", "in", "inout",
-    "outin", "out", "ref", "macro", "yield", "do", "switch", "continue",
+    "if", "ef", "else", "for", "while", "def", "struct", "in", "inout",
+    "outin", "out", "ref", "macro", "yield", "do", "don", "switch", "continue",
     "break", "goto",
 }
 
@@ -1830,12 +1838,13 @@ def compile_params(params, cast, cfunc, ctx):
 
         param_obj.passed_by_ref=should_pass_by_ref(param, param_obj.type_desc)
 
-        if param_obj.type_desc:
-            c_type = param_obj.type_desc.c_name
-            if param_obj.passed_by_ref:
-                c_type = c_type + "*"
-        else:
+        if param_obj.type_desc is None:
             raise CompilationError("Compiler Error: Cannot infer type of param", param)
+        if param_obj.type_desc.is_any_type:
+            param.is_pseudo = True
+        c_type = param_obj.type_desc.c_name
+        if param_obj.passed_by_ref:
+            c_type = c_type + "*"
 
         if param_obj.type_desc is any_struct_type_obj:
             raise CompilationError("function parameters cannot be of type struct.", param)
@@ -2277,7 +2286,7 @@ def compile_vardecl(node, cast, cfunc, ctx):
                    else "Not a type")
         raise CompilationError(err_msg, err_node)
 
-    if type_desc is any_type_obj:
+    if type_desc is ctx.any_type_obj:
         raise CompilationError(
             "Cannot instantiate pseudo type 'Any'. It serves as a wildcard in func definitions and cannot be instantiated.",
             node
@@ -5018,7 +5027,7 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     elif is_builtin_func(func_obj, "addrof"):
         return compile_builtin_addrof(expr, arg_exprs[0], cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "fieldsof"):
-        if arg_exprs[0].inferred_type is any_type_obj:
+        if arg_exprs[0].inferred_type is ctx.any_type_obj:
             raise CompilationError("Cannot get fields of an unknown type", expr)
         return ExprObj(
             xy_node=expr,
@@ -6687,9 +6696,6 @@ def find_type(texpr, cast, ctx, required=True):
     if isinstance(texpr, xy.Id) and texpr.name == "struct":
         # Special case for struct
         return any_struct_type_obj
-    elif isinstance(texpr, xy.Id) and texpr.name == "Any":
-        # Special case for ?
-        return any_type_obj
     elif isinstance(texpr, xy.Id):
         validate_name(texpr, ctx)
         res = ctx.eval(texpr, msg="Cannot find type")

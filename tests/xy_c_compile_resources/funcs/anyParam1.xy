@@ -1,0 +1,13 @@
+def fun(a: Any, b: Int) {
+    # ...
+}
+
+struct Struct {
+    a: Int;
+    b: Int;
+}
+
+def test() {
+    s := Struct{};
+    fun(s, 10);
+}

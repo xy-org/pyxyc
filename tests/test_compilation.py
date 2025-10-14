@@ -18,6 +18,7 @@ from xyc.compiler import CompilationError
     "typeInferenceAdvanced",
     "funcs/funcOverloadingSimple",
     "funcs/funcRecursive",
+    "funcs/anyParam1",
     "strings/stringCtor",
     "entrypoint",
     "entrypoint_priority",
