@@ -1,0 +1,16 @@
+struct WithDtor {
+    ptr: Ptr;
+}
+
+def dtor(val: WithDtor) {
+    # ...
+}
+
+def fun(a: pseudo WithDtor, ptr: Ptr = donateToPtr(a)) {
+    # ...
+}
+
+def test() {
+    a: WithDtor;
+    fun(a=>);
+}

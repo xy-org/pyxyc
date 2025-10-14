@@ -1,0 +1,16 @@
+struct Struct {
+    val: Ptr;
+}
+
+def dtor(s: Struct) {
+    # ...
+}
+
+def func(a: don Struct) {
+    # ...
+}
+
+def test() {
+    a: Struct;
+    a'func;
+}

@@ -1843,6 +1843,8 @@ def compile_params(params, cast, cfunc, ctx):
         cparam = c.VarDecl(mangle_var(param, ctx), c.QualType(c_type))
         param_obj.c_node = cparam
         param_obj.is_pseudo = param.is_pseudo
+        if param.is_donated:
+            param_obj.needs_dtor = param_obj.type_desc.needs_dtor
         if not param.is_pseudo:
             cfunc.params.append(cparam)
 
@@ -2116,7 +2118,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 )
 
     # call dtors if any
-    if len(body) > 0 and not isinstance(body[-1], (xy.Return, xy.Break)):
+    if len(body) == 0 or not isinstance(body[-1], (xy.Return, xy.Break)):
         call_dtors(ctx.ns, cast, cfunc, ctx, reset_values=False)
 
     # add no error return if needed
@@ -2192,7 +2194,10 @@ def call_dtor(obj, cast, cfunc, ctx, reset_values=True):
 
 def call_dtors(ns, cast, cfunc, ctx, reset_values=True):
     for obj in reversed(ns.values()):
-        if isinstance(obj, VarObj) and obj.needs_dtor and not obj.xy_node.is_param:
+        if (
+            isinstance(obj, VarObj) and obj.needs_dtor and
+            (not obj.xy_node.is_param or obj.xy_node.is_donated)
+        ):
             if obj.is_stored_global:
                 restore_global(obj, cast, cfunc, ctx)
                 continue
@@ -4363,6 +4368,16 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             check_type_compatibility(arg.xy_node, arg, pobj, ctx)
             if pobj.xy_node.mutable:
                 assert_mutable(arg, expr, func_obj, ctx)
+            if pobj.xy_node.is_donated and isinstance(arg.c_node, c.Id):
+                if not is_tmp_expr(arg) and arg.inferred_type.needs_dtor:
+                    raise CompilationError("Cannot donate value", arg.xy_node)
+                # we have to disable dtor for that value as it is to be donated
+                # unfortunatelly there is no reliable way to get the var decl
+                # so we search for it using brute force
+                for ns in reversed(ctx.data_namespaces[2:]):
+                    if arg.c_node.name in ns:
+                        ns[arg.c_node.name].needs_dtor = False
+                        break
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:

@@ -247,6 +247,7 @@ class VarDecl(Node):
     type: Node | None = None
     value: Node | None = None
     mutable: bool = False
+    is_donated: bool = False  # marks a parameter that require a donated value
     explicit_mutable: bool = field(default=False, compare=False, repr=False)  # has mut been set explicitly
     is_param: bool = False
     is_pseudo: bool = False

@@ -750,6 +750,8 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
     ("lambdas/noClosure0.xy", r".*Not known at compile-time.*"),
     ("lambdas/noClosure1.xy", r".*Not captured in closure.*"),
     ("lambdas/onlyCtParams.xy", r".*Not known at compile-time.*"),
+
+    ("donations/wrongDonation1.xy", r".*Cannot donate value.*")
 ])
 def test_compilation_errors_src(package, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

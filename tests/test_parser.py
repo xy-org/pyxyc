@@ -981,6 +981,20 @@ def test_parse_implied_context_expr(code, exp_ast):
             )
         ]
     ],
+    [
+        """
+        def test(param: don Struct) {}
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                params=[
+                    ast.VarDecl("param", ast.Id("Struct"), mutable=False, is_param=True, is_donated=True)
+                ],
+                body=[],
+            )
+        ]
+    ],
 ])
 def test_parse_advanced_funcs(code, exp_ast):
     act_ast = parse_code(code)

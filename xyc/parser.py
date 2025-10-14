@@ -423,7 +423,7 @@ def parse_toplevel_type_expr(itoken):
     return parse_expression(itoken, op_prec=toplevel_precedence_map)
 
 # ref is a reserved keyword
-var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo"}
+var_qualifiers = {"mut", "in", "out", "inout", "outin", "pseudo", "don"}
 
 operator_precedence = {
     "unary^": 12, "unary[": 12, "unary'": 12,
@@ -980,6 +980,9 @@ def parse_var_decl(itoken, name_token, precedence, op_prec):
     if itoken.check("mut"):
         decl.mutable = True
         decl.explicit_mutable = True
+    elif itoken.check("don"):
+        decl.mutable = True
+        decl.is_donated = True
     elif itoken.peak() in {"out", "inout", "outin"}:
         raise ParsingError(f"'{itoken.peak()}' is a reserved keyword", itoken)
     elif itoken.check("pseudo"):

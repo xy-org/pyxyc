@@ -1,0 +1,12 @@
+struct WithoutDtor {
+    val: Int;
+}
+
+def action(a: WithoutDtor, b: don WithoutDtor) {
+    # ...
+}
+
+def test() {
+    without := WithoutDtor{};
+    action(without, without);
+}
