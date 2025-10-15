@@ -1,0 +1,18 @@
+struct WithDtor {
+    id: Int;
+}
+
+def dtor(val: WithDtor) {
+    # ...
+}
+
+def action(a: WithDtor, b: don WithDtor, ptr: Ptr = b'addrof) {
+    # ...
+}
+
+def test() {
+    val := WithDtor{-1};
+    action(val, WithDtor{});
+    action(val, WithDtor{10});
+    action(val, WithDtor{20});
+}

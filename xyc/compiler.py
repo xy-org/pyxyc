@@ -4357,7 +4357,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             res.args.append(arg.c_node)
     if func_obj.xy_node is not None:
         # add arguments to a xy function
-        for pobj, arg in zip(func_obj.param_objs, arg_exprs.args):
+        for iarg in range(min(len(func_obj.param_objs), len(arg_exprs.args))):
+            pobj = func_obj.param_objs[iarg]
+            arg = arg_exprs.args[iarg]
             args_list.append(arg)
             args_writable.append(False)
             caller_ctx.ns[pobj.xy_node.name] = LazyObj(
@@ -4377,16 +4379,23 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             check_type_compatibility(arg.xy_node, arg, pobj, ctx)
             if pobj.xy_node.mutable:
                 assert_mutable(arg, expr, func_obj, ctx)
-            if pobj.xy_node.is_donated and isinstance(arg.c_node, c.Id):
-                if not is_tmp_expr(arg) and arg.inferred_type.needs_dtor:
-                    raise CompilationError("Cannot donate value", arg.xy_node)
-                # we have to disable dtor for that value as it is to be donated
-                # unfortunatelly there is no reliable way to get the var decl
-                # so we search for it using brute force
-                for ns in reversed(ctx.data_namespaces[2:]):
-                    if arg.c_node.name in ns:
-                        ns[arg.c_node.name].needs_dtor = False
-                        break
+            if pobj.xy_node.is_donated:
+                if isinstance(arg.c_node, c.Id):
+                    if arg.inferred_type.needs_dtor and not is_tmp_expr(arg):
+                        raise CompilationError("Cannot donate value", arg.xy_node)
+
+                    # we have to disable dtor for that value as it is to be donated
+                    # unfortunatelly there is no reliable way to get the var decl
+                    # so we search for it using brute force
+                    for ns in reversed(ctx.data_namespaces[2:]):
+                        if arg.c_node.name in ns:
+                            ns[arg.c_node.name].needs_dtor = False
+                            break
+
+                if func_obj.is_macro:
+                    arg = copy_to_temp(arg, cast, cfunc, ctx)
+                    arg_exprs.args[iarg] = arg
+                    callee_ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_pseudo:
                 continue
             if pobj.passed_by_ref:
@@ -4448,6 +4457,21 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             args_writable.append(False)
             if pobj.xy_node.mutable:
                 assert_mutable(value_obj, expr, func_obj, ctx)
+            if pobj.xy_node.is_donated:
+                if isinstance(value_obj.c_node, c.Id):
+                    if value_obj.inferred_type.needs_dtor and not is_tmp_expr(value_obj):
+                        raise CompilationError("Cannot donate value", value_obj.xy_node)
+
+                    # we have to disable dtor for that value as it is to be donated
+                    # unfortunatelly there is no reliable way to get the var decl
+                    # so we search for it using brute force
+                    for ns in reversed(ctx.data_namespaces[2:]):
+                        if arg.c_node.name in ns:
+                            ns[arg.c_node.name].needs_dtor = False
+                            break
+
+                if func_obj.is_macro:
+                    value_obj = copy_to_temp(value_obj, cast, cfunc, ctx)
             if not pobj.xy_node.is_pseudo:
                 if pobj.passed_by_ref:
                     res.args.append(c_getref(value_obj))

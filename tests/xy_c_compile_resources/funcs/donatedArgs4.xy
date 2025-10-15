@@ -1,16 +1,19 @@
-struct WithDtor {
-    ptr: Ptr;
+# test modifying a donated value with dtor
+
+def modifyFunc(a: don Int) {
+    a++;
 }
 
-def dtor(val: WithDtor) {
-    # ...
+def modifyMacro(a: don Int) = -> void {
+    a++;
+};
+
+def testFunc() {
+    modifyFunc(0);
+    modifyFunc(5 + 10);
 }
 
-def fun(a: pseudo WithDtor, ptr: Ptr = donateToPtr(a)) {
-    # ...
-}
-
-def test() {
-    a: WithDtor;
-    fun(a=>);
+def testMacro() {
+    modifyMacro(0);
+    modifyMacro(5 + 10);
 }
