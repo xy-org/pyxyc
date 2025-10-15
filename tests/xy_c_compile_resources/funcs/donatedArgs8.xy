@@ -1,0 +1,17 @@
+struct WithDtor {
+    ptr: Ptr~Int;
+}
+
+def dtor(val: WithDtor) {
+    # ...
+}
+
+def macro1(b: don WithDtor) = macro2(b);
+
+def macro2(b: don WithDtor) = macro3(b);
+
+def macro3(b: don WithDtor) = b.ptr += 10;
+
+def test1() {
+    _ = macro1(WithDtor{});
+}

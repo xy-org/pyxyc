@@ -16,8 +16,9 @@ void donatedArgs3_test1(void) {
     donatedArgs3_WithDtor l_withB = {0};
     donatedArgs3_WithDtor tmp_0_arg = l_withB;
     l_withB = (donatedArgs3_WithDtor){0};
+    donatedArgs3_WithDtor tmp_1_arg = tmp_0_arg;
     {
-        donatedArgs3_dtor(tmp_0_arg);
+        donatedArgs3_dtor(tmp_1_arg);
     }
     donatedArgs3_dtor(l_withB);
     donatedArgs3_dtor(l_withA);
@@ -27,8 +28,9 @@ void donatedArgs3_test2(void) {
     donatedArgs3_WithDtor l_withA = {0};
     donatedArgs3_WithDtor l_withB = {0};
     donatedArgs3_WithDtor tmp_0_arg = (donatedArgs3_WithDtor){0};
+    donatedArgs3_WithDtor tmp_1_arg = tmp_0_arg;
     {
-        donatedArgs3_dtor(tmp_0_arg);
+        donatedArgs3_dtor(tmp_1_arg);
     }
     donatedArgs3_dtor(l_withB);
     donatedArgs3_dtor(l_withA);

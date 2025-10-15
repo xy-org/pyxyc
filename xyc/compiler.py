@@ -4613,6 +4613,18 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=rtype_obj,
         )
 
+    # call dtors of donated values if macro
+    if func_obj.is_macro and any(p.xy_node.is_donated for p in func_obj.param_objs):
+        if isinstance(raw_fcall_obj.c_node, c.Block):
+            dtor_cfunc = raw_fcall_obj.c_node
+        else:
+            raise CompilationError("donating a value to a macro that is expression only is NYI", expr)
+        for pobj in func_obj.param_objs:
+            if pobj.xy_node.is_donated and pobj.needs_dtor:
+                arg_expr = callee_ctx.ns[pobj.xy_node.name]
+                call_dtor(arg_expr, cast, dtor_cfunc, ctx, False)
+
+
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:
         if func_obj.xy_node.returns[0].is_based:
             refto_name = func_obj.xy_node.returns[0].index_in.name
