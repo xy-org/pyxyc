@@ -4387,14 +4387,20 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     # we have to disable dtor for that value as it is to be donated
                     # unfortunatelly there is no reliable way to get the var decl
                     # so we search for it using brute force
-                    for ns in reversed(ctx.data_namespaces[2:]):
-                        if arg.c_node.name in ns:
-                            ns[arg.c_node.name].needs_dtor = False
+                    found = False
+                    arg_name = arg.c_node.name if is_tmp_expr(arg) else arg.xy_node.name
+                    for ns in reversed(caller_ctx.data_namespaces[2:]):
+                        if arg_name in ns:
+                            ns[arg_name].needs_dtor = False
+                            found = True
                             break
+                    if not found:
+                        raise CompilationError(f"BUG! Cannot vind variable '{arg_name}'", expr)
 
                 if func_obj.is_macro:
-                    arg = copy_to_temp(arg, cast, cfunc, ctx)
+                    arg = copy_to_temp(arg, cast, cfunc, callee_ctx)
                     arg_exprs.args[iarg] = arg
+                    callee_ctx.ns[arg.c_node.name] = arg.compiled_obj
                     callee_ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_pseudo:
                 continue
@@ -4465,13 +4471,20 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     # we have to disable dtor for that value as it is to be donated
                     # unfortunatelly there is no reliable way to get the var decl
                     # so we search for it using brute force
-                    for ns in reversed(ctx.data_namespaces[2:]):
-                        if arg.c_node.name in ns:
-                            ns[arg.c_node.name].needs_dtor = False
+                    found = False
+                    arg_name = value_obj.c_node.name if is_tmp_expr(value_obj) else value_obj.xy_node.name
+                    for ns in reversed(caller_ctx.data_namespaces[2:]):
+                        if arg_name in ns:
+                            ns[arg_name].needs_dtor = False
+                            found = True
                             break
+                    if not found:
+                        raise CompilationError(f"BUG! Cannot vind variable '{arg_name}'", expr)
 
                 if func_obj.is_macro:
                     value_obj = copy_to_temp(value_obj, cast, cfunc, ctx)
+                    callee_ctx.ns[value_obj.c_node.name] = value_obj.compiled_obj
+                    callee_ctx.ns[pobj.xy_node.name] = value_obj
             if not pobj.xy_node.is_pseudo:
                 if pobj.passed_by_ref:
                     res.args.append(c_getref(value_obj))
@@ -4618,11 +4631,11 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         if isinstance(raw_fcall_obj.c_node, c.Block):
             dtor_cfunc = raw_fcall_obj.c_node
         else:
-            raise CompilationError("donating a value to a macro that is expression only is NYI", expr)
-        for pobj in func_obj.param_objs:
-            if pobj.xy_node.is_donated and pobj.needs_dtor:
-                arg_expr = callee_ctx.ns[pobj.xy_node.name]
-                call_dtor(arg_expr, cast, dtor_cfunc, ctx, False)
+            dtor_cfunc = cfunc
+            raw_fcall_obj = move_to_temp(raw_fcall_obj, cast, cfunc, ctx)
+        call_dtors(callee_ctx.ns, cast, dtor_cfunc, ctx, False)
+        if raw_fcall_obj.num_cnodes > 0:
+            raw_fcall_obj.num_cnodes = len(cfunc.body) - raw_fcall_obj.first_cnode_idx
 
 
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:

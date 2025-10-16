@@ -122,7 +122,7 @@ from xyc.compiler import CompilationError
     "funcs/donatedArgs5",
     "funcs/donatedArgs6",
     "funcs/donatedArgs7",
-    #"funcs/donatedArgs8",
+    "funcs/donatedArgs8",
     "splitNamespaces",
     "cinterop/usingCtypes",
     "cinterop/callFuncOnString",
