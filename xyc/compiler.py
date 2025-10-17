@@ -283,11 +283,9 @@ class ImportObj(CompiledObj):
 class ExprObj(CompiledObj):
     inferred_type: CompiledObj | str | None = None
     compiled_obj: CompiledObj | None = None
-    first_cnode_idx: int = -1
-    num_cnodes: int = -1
-    tmp_var_names: set = field(default_factory=set)
     is_iter_ctor: bool = False
     from_lazy_ctx: 'CompilerContext' = None
+    tmp_var_names: set = field(default_factory=set)  # used for code redaction
 
 @dataclass
 class ConstObj(ExprObj):
@@ -350,7 +348,9 @@ recursive_pseudo_field_type_obj = TypeObj(c_node=c.Type("PLACEHOLDER"), xy_node=
 @dataclass
 class ArgList:
     args: list[ExprObj] = field(default_factory=list)
+    args_setup: list = field(default_factory=list)
     kwargs: dict[str, ExprObj] = field(default_factory=dict)
+    kwargs_setup: list = field(default_factory=dict)
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -4060,11 +4060,12 @@ def fselect_unnamed(expr, arg_types: ArgList, ctx: CompilerContext, partial_matc
 def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     arg_exprs = ArgList()
     if expr.inject_context and len(ctx.ctx_obj_stack) > 0:
+        arg_exprs.args_setup.append(c.Func("dummy"))
         arg_exprs.args.append(ctx.ctx_obj_stack[-1])
     expr_to_move_idx = None
     for i in range(len(expr.args)):
-
         dummy_func = c.Func("dummy")
+        arg_exprs.args_setup.append(dummy_func)
         ctx.push_ns()
         obj = compile_expr(expr.args[i], cast, dummy_func, ctx, deref=False)
         ns = ctx.ns
@@ -4078,44 +4079,48 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         if len(dummy_func.body):
             if expr_to_move_idx is not None:
                 arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
-                    arg_exprs[expr_to_move_idx], cast, cfunc, ctx
+                    arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
                 )
                 expr_to_move_idx = None
             obj = maybe_move_to_temp(obj, cast, dummy_func, ctx)
             obj.redact_cfunc = cfunc
-            obj.first_cnode_idx = len(cfunc.body)
-            cfunc.body.extend(dummy_func.body)
-            obj.num_cnodes = len(cfunc.body) - obj.first_cnode_idx
 
         if cfunc is not None and not is_simple_cexpr(obj.c_node):
             if expr_to_move_idx is not None:
-                tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, cfunc, ctx)
+                tmp_obj = move_to_temp(
+                    arg_exprs.args[expr_to_move_idx], cast,
+                    arg_exprs.args_setup[expr_to_move_idx], ctx
+                )
                 arg_exprs[expr_to_move_idx] = tmp_obj
 
             if type_needs_dtor(obj.inferred_type):
                 # immediatelly move if a dtor is required
-                obj = maybe_move_to_temp(obj, cast, cfunc, ctx)
+                obj = maybe_move_to_temp(obj, cast, dummy_func, ctx)
                 expr_to_move_idx = None
             else:
                 # defer move to tmp for as long as possible
                 expr_to_move_idx = i
         elif type_needs_dtor(obj.inferred_type) and isinstance(obj.c_node, c.CompoundLiteral):
             if expr_to_move_idx is not None:
-                tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, cfunc, ctx)
+                tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx)
                 arg_exprs[expr_to_move_idx] = tmp_obj
 
             # immediatelly move if a dtor is required
-            obj = move_to_temp(obj, cast, cfunc, ctx)
+            obj = move_to_temp(obj, cast, dummy_func, ctx)
             expr_to_move_idx = None
 
         arg_exprs.args.append(obj)
+
+    # and now kwargs
     if len(expr.kwargs) > 0 and expr_to_move_idx is not None:
         arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
-            arg_exprs[expr_to_move_idx], cast, cfunc, ctx
+            arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
         )
         expr_to_move_idx = None
     for pname, pexpr in expr.kwargs.items():
-        obj = compile_expr_for_arg(pexpr, cast, cfunc, ctx)
+        dummy_func = c.Func("dummy")
+        arg_exprs.kwargs_setup[pname] = dummy_func
+        obj = compile_expr_for_arg(pexpr, cast, dummy_func, ctx)
         arg_exprs.kwargs[pname] = obj
 
     arg_inferred_types = ArgList(
@@ -4170,12 +4175,12 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     if expr_to_move_idx is not None and func_obj.move_args_to_temps and not is_builtin_func(func_obj, "to"):
         # the not is_builtin_func(func_obj, "to") is simply an optimization to produce slighly better code
         arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
-            arg_exprs[expr_to_move_idx], cast, cfunc, ctx
+            arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
         )
         expr_to_move_idx = None
     if expr_to_move_idx is not None and isinstance(arg_exprs[expr_to_move_idx], IdxObj):
         arg_exprs[expr_to_move_idx] = idx_get(
-            arg_exprs[expr_to_move_idx], cast, cfunc, ctx
+            arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
         )
         expr_to_move_idx = None
 
@@ -4227,8 +4232,6 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
         tmp_obj.c_node.value = expand_array_to_init_list(expr_obj)
     else:
         tmp_obj.c_node.value = expr_obj.c_node
-    if expr_obj.num_cnodes > 0:
-        assert len(cfunc.body) == expr_obj.first_cnode_idx + expr_obj.num_cnodes
     cfunc.body.append(tmp_obj.c_node)
     return ExprObj(
         xy_node=expr_obj.xy_node,
@@ -4236,8 +4239,6 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
         inferred_type=expr_obj.inferred_type,
         tags=expr_obj.tags,
         compiled_obj=tmp_obj,
-        first_cnode_idx=expr_obj.first_cnode_idx if expr_obj.num_cnodes > 0 else len(cfunc.body)-1,
-        num_cnodes=expr_obj.num_cnodes + 1 if expr_obj.num_cnodes > 0 else 1,
         tmp_var_names={tmp_obj.c_node.name},
         from_lazy_ctx=expr_obj.from_lazy_ctx,
     )
@@ -4307,6 +4308,11 @@ def find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     )
 
 def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    # fill setups with empty blocks if necessary
+    if len(arg_exprs.args) > 0 and len(arg_exprs.args_setup) == 0:
+        # TODO remove that hack
+        arg_exprs.args_setup = [c.Func("dummy") for _ in arg_exprs.args]
+
     if func_obj.builtin:
         builtin_res = compile_builtin_fcall(expr, func_obj, arg_exprs, cast, cfunc, ctx)
         if builtin_res is not None:
@@ -4353,7 +4359,9 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     # add arguments
     if func_obj.xy_node is None:
         # add arguments to external c function
-        for arg in arg_exprs:
+        for i, arg in enumerate(arg_exprs.args):
+            if cfunc is not None:
+                cfunc.body.extend(arg_exprs.args_setup[i].body)
             res.args.append(arg.c_node)
     if func_obj.xy_node is not None:
         # add arguments to a xy function
@@ -4375,7 +4383,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     ctx=lazy_ctx,
                 )
                 redact_code(arg, cast, cfunc, ctx)
-            arg.num_cnodes = 0  # the time for code redaction is over so lets disable it
+            elif cfunc is not None:
+                cfunc.body.extend(arg_exprs.args_setup[iarg].body)
             check_type_compatibility(arg.xy_node, arg, pobj, ctx)
             if pobj.xy_node.mutable:
                 assert_mutable(arg, expr, func_obj, ctx)
@@ -4457,6 +4466,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     )
             else:
                 value_obj = arg_exprs.kwargs[pobj.xy_node.name]
+                if cfunc is not None:
+                    cfunc.body.extend(arg_exprs.kwargs_setup[pobj.xy_node.name].body)
 
             check_type_compatibility(value_obj.xy_node, value_obj, pobj, ctx)
             args_list.append(value_obj)
@@ -4634,8 +4645,6 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             dtor_cfunc = cfunc
             raw_fcall_obj = move_to_temp(raw_fcall_obj, cast, cfunc, ctx)
         call_dtors(callee_ctx.ns, cast, dtor_cfunc, ctx, False)
-        if raw_fcall_obj.num_cnodes > 0:
-            raw_fcall_obj.num_cnodes = len(cfunc.body) - raw_fcall_obj.first_cnode_idx
 
 
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:
@@ -4693,6 +4702,21 @@ def gen_check_assum_code(guard_obj, param_print_code, guard, func_obj, cast, cfu
     ))
 
 def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
+    if cfunc is not None and func_obj.xy_node.name.name not in {"sizeof", "and", "or", "srclineof", "nameof", "packageof"}:
+        for i in range(len(arg_exprs.args_setup)):
+            code = arg_exprs.args_setup[i]
+            cfunc.body.extend(code.body)
+            arg_exprs.args_setup[i] = c.Block()
+        for code in arg_exprs.kwargs_setup.items():
+            cfunc.body.extend(code.body)
+    elif cfunc is not None and func_obj.xy_node.name.name in {"and", "or"} and arg_exprs[0].inferred_type is not ctx.bool_obj:
+        for i in range(len(arg_exprs.args_setup)):
+            code = arg_exprs.args_setup[i]
+            cfunc.body.extend(code.body)
+            arg_exprs.args_setup[i] = c.Block()
+        for code in arg_exprs.kwargs_setup.items():
+            cfunc.body.extend(code.body)
+
     if is_builtin_func(func_obj, "get"):
         if is_global_type(arg_exprs[0].inferred_type, ctx):
             return compile_global_get(expr, func_obj, arg_exprs, cast, cfunc, ctx)
@@ -4784,6 +4808,7 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=ctx.void_obj,
         )
     elif (is_builtin_func(func_obj, "and") or is_builtin_func(func_obj, "or")) and arg_exprs[0].inferred_type is ctx.bool_obj and arg_exprs[1].inferred_type is ctx.bool_obj:
+        cfunc.body.extend(arg_exprs.args_setup[0].body)
         redact_code(arg_exprs[1], cast, cfunc, ctx)
         dummy_func = c.Func("dummy")
         ctx.push_ns()
@@ -5031,11 +5056,12 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=ctx.size_obj
         )
     elif is_builtin_func(func_obj, "sizeof"):
-        if arg_exprs[0].num_cnodes > 0:
-            redact_code(arg_exprs[0], cast, cfunc, ctx)
-            c_node = c.Id(arg_exprs[0].inferred_type.c_name)
-        else:
-            c_node = arg_exprs[0].c_node
+        type_obj = arg_exprs[0].inferred_type
+        c_node = c.Id(type_obj.c_name)
+        if isinstance(type_obj, ArrTypeObj):
+            c_node = c.Id(type_obj.base_type_obj.c_name)
+            for dim in type_obj.dims:
+                c_node = c.Index(c_node, c.Const(dim))
         return ExprObj(
             c_node=c.FuncCall("sizeof", [c_node]),
             inferred_type=ctx.size_obj
@@ -5743,10 +5769,6 @@ def ensure_func_decl(func_obj: FuncObj, cast, cfunc, ctx):
 
 
 def redact_code(obj: ExprObj, cast, cfunc, ctx):
-    if obj.num_cnodes > 0:
-        for idx in range(obj.first_cnode_idx, obj.first_cnode_idx + obj.num_cnodes):
-            getattr(obj, 'redact_cfunc', cfunc).body[idx] = c.Empty()
-        obj.num_cnodes = 0
     if isinstance(obj, ExprObj):
         for tmp_var_name in obj.tmp_var_names:
             for ns in ctx.data_namespaces[::-1]:

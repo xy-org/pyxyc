@@ -29,18 +29,18 @@ void fieldsof_printFields(fieldsof_FieldDesc* p_fieldsPtr, size_t p_fieldsLen) {
 
 void fieldsof_test1(void) {
     const fieldsof_MyStruct l_s = {0};
-    const fieldsof_FieldDesc l_descs[3] = {(fieldsof_FieldDesc){sizeof(l_s.m_a)}, (fieldsof_FieldDesc){sizeof(l_s.m_b)}, (fieldsof_FieldDesc){sizeof(l_s.m_c)}};
+    const fieldsof_FieldDesc l_descs[3] = {(fieldsof_FieldDesc){sizeof(int32_t)}, (fieldsof_FieldDesc){sizeof(float)}, (fieldsof_FieldDesc){sizeof(fieldsof_SubStruct)}};
 }
 
 void fieldsof_test2(void) {
     const fieldsof_MyStruct l_s = {0};
-    fieldsof_FieldDesc tmp_0_arg[3] = {(fieldsof_FieldDesc){sizeof(l_s.m_a)}, (fieldsof_FieldDesc){sizeof(l_s.m_b)}, (fieldsof_FieldDesc){sizeof(l_s.m_c)}};
+    fieldsof_FieldDesc tmp_0_arg[3] = {(fieldsof_FieldDesc){sizeof(int32_t)}, (fieldsof_FieldDesc){sizeof(float)}, (fieldsof_FieldDesc){sizeof(fieldsof_SubStruct)}};
     for (size_t tmp_1_iter = 0; tmp_1_iter < 3; ++tmp_1_iter) {
     }
 }
 
 void fieldsof_test3(void) {
     const fieldsof_MyStruct l_s = {0};
-    fieldsof_FieldDesc tmp_0_arg[3] = {(fieldsof_FieldDesc){sizeof(l_s.m_a)}, (fieldsof_FieldDesc){sizeof(l_s.m_b)}, (fieldsof_FieldDesc){sizeof(l_s.m_c)}};
+    fieldsof_FieldDesc tmp_0_arg[3] = {(fieldsof_FieldDesc){sizeof(int32_t)}, (fieldsof_FieldDesc){sizeof(float)}, (fieldsof_FieldDesc){sizeof(fieldsof_SubStruct)}};
     fieldsof_printFields(tmp_0_arg, (size_t)3);
 }
