@@ -14,7 +14,8 @@ int64_t lambdas6_my(int32_t p_x) {
 }
 
 int32_t xy_gen__lambdas6__cb1(void* p_param0) {
-    return (int32_t)lambdas6_my(*(int32_t*)p_param0);
+    int64_t tmp_0_arg = lambdas6_my(*(int32_t*)p_param0);
+    return (int32_t)tmp_0_arg;
 }
 
 int32_t lambdas6_something_func_2(int32_t p_x) {
@@ -22,7 +23,8 @@ int32_t lambdas6_something_func_2(int32_t p_x) {
 }
 
 int32_t xy_gen__lambdas6__cb4(void* p_param0) {
-    return (int32_t)lambdas6_something_func_2(*(int32_t*)p_param0);
+    int32_t tmp_0_arg = lambdas6_something_func_2(*(int32_t*)p_param0);
+    return (int32_t)tmp_0_arg;
 }
 
 void lambdas6_test(void) {

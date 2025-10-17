@@ -37,7 +37,7 @@ def set(num: mut Long, :Bits, i: Int, val: Bool) {
 
 def set(num: mut Long, :Bits, bits: Bits64) num = bits'to(Long);
 
-def testMixing() {
+def test1() {
     ;; Let's try to blend coffee and tea
 
     a: mut = 0Coffee(36)l;
@@ -46,14 +46,30 @@ def testMixing() {
     a'bits[60] = true;
     b'bits[1] = true;
     b'bits[2] = true;
+}
+
+def test2() {
+    a: mut = 0Coffee(36)l;
+    b: mut = 0Tea(36)l;
+
     a'bits[10] = b'bits[10];
     a'bits[11] = !a'bits[11];
+}
+
+def test3() {
+    a: mut = 0Coffee(36)l;
+    b: mut = 0Tea(36)l;
 
     c := (a'bits || b'bits);
     d := (a'bits && b'bits)'to(Long);
     e := (a'bits != b'bits)'to(Long);
-    f := (a'bits - b'bits)'to(Long);
+}
 
-    g := (d'bits \shiftr 5)'to(Long);
+def test4() {
+    a: mut = 0Coffee(36)l;
+    b: mut = 0Tea(36)l;
+
+    f := (a'bits - b'bits)'to(Long);
+    g := (b'bits \shiftr 5)'to(Long);
 }
 

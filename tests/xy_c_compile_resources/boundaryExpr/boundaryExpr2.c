@@ -15,8 +15,7 @@ void boundaryExpr2_main(void) {
     boundaryExpr2_print(l_a + l_a);
     boundaryExpr2_print(l_a * 2 + l_a * 2);
     int32_t tmp_0_arg = boundaryExpr2_quadruple(&l_a);
-    int32_t tmp_1_arg = tmp_0_arg + boundaryExpr2_quadruple(&l_a);
-    boundaryExpr2_print(tmp_1_arg);
-    int32_t tmp_2_arg = boundaryExpr2_quadruple(&l_a);
-    boundaryExpr2_print(tmp_2_arg + 10);
+    boundaryExpr2_print(tmp_0_arg + boundaryExpr2_quadruple(&l_a));
+    int32_t tmp_1_arg = boundaryExpr2_quadruple(&l_a);
+    boundaryExpr2_print(tmp_1_arg + 10);
 }

@@ -15,8 +15,8 @@ void while2_test(int32_t* p_x, int32_t* p_y) {
     if (!(*p_x >= *p_y)) {
         abort();
     }
-    bool tmp_0_arg = while2_cond1(*p_x, *p_y);
-    bool tmp_6_shortcircuit = tmp_0_arg;
+    bool tmp_2_arg = while2_cond1(*p_x, *p_y);
+    bool tmp_6_shortcircuit = tmp_2_arg;
     if (tmp_6_shortcircuit) {
         if (!(*p_x >= *p_y)) {
             abort();
@@ -33,8 +33,8 @@ void while2_test(int32_t* p_x, int32_t* p_y) {
         if (!(*p_x >= *p_y)) {
             abort();
         }
-        bool tmp_7_arg = while2_cond1(*p_x, *p_y);
-        bool tmp_13_shortcircuit = tmp_7_arg;
+        bool tmp_9_arg = while2_cond1(*p_x, *p_y);
+        bool tmp_13_shortcircuit = tmp_9_arg;
         if (tmp_13_shortcircuit) {
             if (!(*p_x >= *p_y)) {
                 abort();

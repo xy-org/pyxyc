@@ -27,6 +27,5 @@ float richErrors_test(float p_a, float p_b) {
         fprintf(stderr, "    %s=%f\n", "b", p_b);
         exit(200);
     }
-    float tmp_0_arg = richErrors_mydiv(p_a, p_b);
-    return p_a * tmp_0_arg - p_b;
+    return p_a * richErrors_mydiv(p_a, p_b) - p_b;
 }

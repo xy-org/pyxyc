@@ -32,8 +32,8 @@ bool dtorsInLogicExpr_startswith(dtorsInLogicExpr_Str p_str, dtorsInLogicExpr_St
 bool dtorsInLogicExpr_test(dtorsInLogicExpr_Str p_s1, dtorsInLogicExpr_Str p_s2) {
     dtorsInLogicExpr_Str tmp_0_arg = dtorsInLogicExpr_createStr1();
     dtorsInLogicExpr_Str tmp_1_arg = dtorsInLogicExpr_copy(tmp_0_arg);
-    bool tmp_2_arg = dtorsInLogicExpr_startswith(tmp_1_arg, p_s1);
-    bool tmp_8_shortcircuit = tmp_2_arg;
+    bool tmp_4_arg = dtorsInLogicExpr_startswith(tmp_1_arg, p_s1);
+    bool tmp_8_shortcircuit = tmp_4_arg;
     if (!tmp_8_shortcircuit) {
         dtorsInLogicExpr_Str tmp_6_arg = dtorsInLogicExpr_createStr2();
         dtorsInLogicExpr_Str tmp_7_arg = dtorsInLogicExpr_copy(tmp_6_arg);

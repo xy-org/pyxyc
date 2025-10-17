@@ -15,8 +15,8 @@ bool boundaryExpr4_test(int32_t* p_x, int32_t* p_y) {
     if (!(*p_x >= *p_y)) {
         abort();
     }
-    bool tmp_0_arg = boundaryExpr4_cond1(*p_x, *p_y);
-    bool tmp_6_shortcircuit = tmp_0_arg;
+    bool tmp_2_arg = boundaryExpr4_cond1(*p_x, *p_y);
+    bool tmp_6_shortcircuit = tmp_2_arg;
     if (tmp_6_shortcircuit) {
         if (!(*p_x >= *p_y)) {
             abort();

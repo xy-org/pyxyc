@@ -37,12 +37,12 @@ void shortcircuit_test3(bool p_a, bool p_b) {
 
 void shortcircuit_test4(void) {
     bool tmp_0_arg = shortcircuit_func1();
-    bool tmp_2_arg = tmp_0_arg && shortcircuit_func2();
-    bool tmp_17_shortcircuit = tmp_2_arg;
+    bool tmp_9_arg = tmp_0_arg && shortcircuit_func2();
+    bool tmp_17_shortcircuit = tmp_9_arg;
     if (!tmp_17_shortcircuit) {
         bool tmp_10_arg = shortcircuit_func1();
-        bool tmp_12_arg = tmp_10_arg || shortcircuit_func2();
-        bool tmp_16_shortcircuit = tmp_12_arg;
+        bool tmp_13_arg = tmp_10_arg || shortcircuit_func2();
+        bool tmp_16_shortcircuit = tmp_13_arg;
         if (!tmp_16_shortcircuit) {
             bool tmp_15_arg = shortcircuit_func1();
             tmp_16_shortcircuit = shortcircuit_func3(tmp_15_arg, shortcircuit_func2());

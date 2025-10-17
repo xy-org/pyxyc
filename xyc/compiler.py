@@ -4062,72 +4062,37 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     if expr.inject_context and len(ctx.ctx_obj_stack) > 0:
         arg_exprs.args_setup.append(c.Func("dummy"))
         arg_exprs.args.append(ctx.ctx_obj_stack[-1])
-    expr_to_move_idx = None
+
+    # compile arguments
     for i in range(len(expr.args)):
         dummy_func = c.Func("dummy")
-        arg_exprs.args_setup.append(dummy_func)
         ctx.push_ns()
+
         obj = compile_expr(expr.args[i], cast, dummy_func, ctx, deref=False)
+        if isinstance(obj, IdxObj):
+            obj = idx_decay_to_ptr_or_val(obj, cast, dummy_func, ctx)
+
         ns = ctx.ns
         if isinstance(obj, ExprObj):
             obj.tmp_var_names.update(ns.keys())
         ctx.pop_ns()
         ctx.ns.update(ns)
 
-        if isinstance(obj, IdxObj):
-            obj = idx_decay_to_ptr_or_val(obj, cast, dummy_func, ctx)
-        if len(dummy_func.body):
-            if expr_to_move_idx is not None:
-                arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
-                    arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
-                )
-                expr_to_move_idx = None
-            obj = maybe_move_to_temp(obj, cast, dummy_func, ctx)
-            obj.redact_cfunc = cfunc
-
-        if cfunc is not None and not is_simple_cexpr(obj.c_node):
-            if expr_to_move_idx is not None:
-                tmp_obj = move_to_temp(
-                    arg_exprs.args[expr_to_move_idx], cast,
-                    arg_exprs.args_setup[expr_to_move_idx], ctx
-                )
-                arg_exprs[expr_to_move_idx] = tmp_obj
-
-            if type_needs_dtor(obj.inferred_type):
-                # immediatelly move if a dtor is required
-                obj = maybe_move_to_temp(obj, cast, dummy_func, ctx)
-                expr_to_move_idx = None
-            else:
-                # defer move to tmp for as long as possible
-                expr_to_move_idx = i
-        elif type_needs_dtor(obj.inferred_type) and isinstance(obj.c_node, c.CompoundLiteral):
-            if expr_to_move_idx is not None:
-                tmp_obj = move_to_temp(arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx)
-                arg_exprs[expr_to_move_idx] = tmp_obj
-
-            # immediatelly move if a dtor is required
-            obj = move_to_temp(obj, cast, dummy_func, ctx)
-            expr_to_move_idx = None
-
         arg_exprs.args.append(obj)
+        arg_exprs.args_setup.append(dummy_func)
 
     # and now kwargs
-    if len(expr.kwargs) > 0 and expr_to_move_idx is not None:
-        arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
-            arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
-        )
-        expr_to_move_idx = None
     for pname, pexpr in expr.kwargs.items():
         dummy_func = c.Func("dummy")
         arg_exprs.kwargs_setup[pname] = dummy_func
         obj = compile_expr_for_arg(pexpr, cast, dummy_func, ctx)
         arg_exprs.kwargs[pname] = obj
 
+    # select the corrent function
     arg_inferred_types = ArgList(
         args=[arg.inferred_type for arg in arg_exprs.args],
         kwargs={key: arg.inferred_type for key, arg in arg_exprs.kwargs.items()}
     )
-    # select the corrent function
     fspace = ctx.eval(expr.name, is_func=True)
     if fspace is None:
         call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_inferred_types, expr.inject_args)
@@ -4172,17 +4137,32 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
             raise CompilationError("Not a function or callback", expr)
 
 
-    if expr_to_move_idx is not None and func_obj.move_args_to_temps and not is_builtin_func(func_obj, "to"):
-        # the not is_builtin_func(func_obj, "to") is simply an optimization to produce slighly better code
-        arg_exprs[expr_to_move_idx] = maybe_move_to_temp(
-            arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
-        )
-        expr_to_move_idx = None
+    # iterate a second time to determine which objs need to be moved to
+    # a temporary variable in order to guarantee evaluation order
+    should_move_to_tmp = func_obj.move_args_to_temps
+    expr_to_move_idx = None
+    for i in range(len(arg_exprs.args)):
+        arg = arg_exprs.args[i]
+        if type_needs_dtor(arg.inferred_type) and (not is_simple_cexpr(arg.c_node) or isinstance(arg.c_node, c.CompoundLiteral)):
+            # immediatelly move if a dtor is required
+            if expr_to_move_idx is not None:
+                arg_exprs.args[expr_to_move_idx] = maybe_move_to_temp(
+                    arg_exprs.args[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
+                )
+            expr_to_move_idx = None
+            arg_exprs.args[i] = move_to_temp(arg, cast, arg_exprs.args_setup[i], ctx)
+        elif should_move_to_tmp:
+            arg_exprs.args[i] = maybe_move_to_temp(arg, cast, arg_exprs.args_setup[i], ctx)
+        elif not is_simple_cexpr(arg.c_node):
+            if expr_to_move_idx is not None:
+                arg_exprs.args[expr_to_move_idx] = maybe_move_to_temp(
+                    arg_exprs.args[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
+                )
+            expr_to_move_idx = i
     if expr_to_move_idx is not None and isinstance(arg_exprs[expr_to_move_idx], IdxObj):
         arg_exprs[expr_to_move_idx] = idx_get(
             arg_exprs[expr_to_move_idx], cast, arg_exprs.args_setup[expr_to_move_idx], ctx
         )
-        expr_to_move_idx = None
 
     return do_compile_fcall(expr, func_obj, arg_exprs, cast, cfunc, caller_ctx)
 
