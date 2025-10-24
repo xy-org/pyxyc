@@ -719,7 +719,15 @@ struct Clib {
     # implemented by the compiler
 }
 
+*def toBits(a: (Ubyte, Byte)) -> Bits8 {
+    # implemented by the compiler
+}
+
 *def to(a: (Ushort, Short), :Bits16) -> Bits16 {
+    # implemented by the compiler
+}
+
+*def toBits(a: (Ushort, Short)) -> Bits16 {
     # implemented by the compiler
 }
 
@@ -727,11 +735,23 @@ struct Clib {
     # implemented by the compiler
 }
 
+*def toBits(a: (Uint, Int)) -> Bits32 {
+    # implemented by the compiler
+}
+
 *def to(a: (Ulong, Long), :Bits64) -> Bits64 {
     # implemented by the compiler
 }
 
+*def toBits(a: (Ulong, Long)) -> Bits64 {
+    # implemented by the compiler
+}
+
 *def to(a: Float, :Bits32) -> Bits32 {
+    # implemented by the compiler
+}
+
+*def toBits(a: Float) -> Bits32 {
     # implemented by the compiler
 }
 
@@ -740,6 +760,10 @@ struct Clib {
 }
 
 *def to(a: Double, :Bits64) -> Bits64 {
+    # implemented by the compiler
+}
+
+*def toBits(a: Double) -> Bits64 {
     # implemented by the compiler
 }
 

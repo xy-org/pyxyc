@@ -130,6 +130,7 @@ from xyc.compiler import CompilationError
     "cinterop/defines",
     "cinterop/instantiateCtypes",
     "bitwiseOperations/bitBasics",
+    "bitwiseOperations/toBits",
     "bitwiseOperations/bitFloats",
     "bitwiseOperations/bitShifts",
     "bitwiseOperations/bitShiftCmp",

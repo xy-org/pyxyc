@@ -823,6 +823,12 @@ class CompilerContext:
             data_ns["Ulong"],
             data_ns["Size"],
         )
+        self.prim_bit_objs = (
+            data_ns["Bits8"],
+            data_ns["Bits16"],
+            data_ns["Bits32"],
+            data_ns["Bits64"],
+        )
         self.any_type_obj = data_ns["Any"]
         self.any_type_obj.is_any_type = True
         self.any_type_obj.is_ct_only = True
@@ -4721,41 +4727,16 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     elif is_builtin_func(func_obj, "typeEqs"):
         return typeEqs(expr, arg_exprs, cast, cfunc, ctx)
     elif is_builtin_func(func_obj, "to"):
-        src_type = arg_exprs[0].inferred_type
-        dst_type = arg_exprs[1].inferred_type
-        is_fp_to_bits_or_bits_to_fp = (
-            (src_type.builtin and src_type.name in {"Float", "Double"} and dst_type.name.startswith("Bits")) or
-            src_type.name.startswith("Bits") and dst_type.builtin and dst_type.name in {"Float", "Double"}
-        )
-        if is_fp_to_bits_or_bits_to_fp:
-            if isinstance(arg_exprs[0].c_node, c.Id):
-                # produce cleaner code when first arg is a variable name
-                c_res = c.UnaryExpr(arg_exprs[0].c_node, op="&", prefix=True)
-                c_res = c.Cast(c_res, to=f"{arg_exprs[1].c_node.name}*")
-                c_res = c.UnaryExpr(c_res, op="*", prefix=True)
-            else:
-                # slightly more involved code when we don't have a varaible to take the address of
-                c_res = c.CompoundLiteral (
-                    f"union {{ {src_type.c_node.name} _from; {dst_type.c_node.name} _as; }}",
-                    args=[arg_exprs[0].c_node],
-                )
-                c_res = c.Expr(c_res, c.Id("_as"), op=".")
-            return ExprObj(
-                    xy_node=expr,
-                    c_node=c_res,
-                    inferred_type=arg_exprs[1].inferred_type
-                )
-        what = arg_exprs[0].c_node
-        to = arg_exprs[1].c_node.name
-        if isinstance(what, c.Cast) and what.to == to:
-            res = what  # eliminate double cast to the same time in rare cases
-        else:
-            res = c.Cast(what=what, to=to)
-        return ExprObj(
-            xy_node=expr,
-            c_node=res,
-            inferred_type=arg_exprs[1].inferred_type
-        )
+        return compile_builtin_to(arg_exprs[0], arg_exprs[1].inferred_type, expr)
+    elif is_builtin_func(func_obj, "toBits"):
+        natural_bit_type = ctx.prim_bit_objs[2]
+        if arg_exprs[0].inferred_type.name in {"Byte", "Ubyte"}:
+            natural_bit_type = ctx.prim_bit_objs[0]
+        elif arg_exprs[0].inferred_type.name in {"Short", "Ushort"}:
+            natural_bit_type = ctx.prim_bit_objs[1]
+        elif arg_exprs[0].inferred_type.name in {"Long", "Ulong", "Double"}:
+            natural_bit_type = ctx.prim_bit_objs[3]
+        return compile_builtin_to(arg_exprs[0], natural_bit_type, expr)
     elif is_builtin_func(func_obj, "iter"):
         return IdxObj(
             container=arg_exprs[0],
@@ -5248,6 +5229,42 @@ def assert_mutable(obj: ExprObj, fcall_expr, fobj, ctx: CompilerContext):
                 (f"In call to function {func_sig(fobj)}", fcall_expr)
             ]
         )
+
+def compile_builtin_to(from_obj: CompiledObj, dst_type: CompiledObj, expr):
+    src_type = from_obj.inferred_type
+    is_fp_to_bits_or_bits_to_fp = (
+        (src_type.builtin and src_type.name in {"Float", "Double"} and dst_type.name.startswith("Bits")) or
+        src_type.name.startswith("Bits") and dst_type.builtin and dst_type.name in {"Float", "Double"}
+    )
+    if is_fp_to_bits_or_bits_to_fp:
+        if isinstance(from_obj.c_node, c.Id):
+            # produce cleaner code when first arg is a variable name
+            c_res = c.UnaryExpr(from_obj.c_node, op="&", prefix=True)
+            c_res = c.Cast(c_res, to=f"{dst_type.c_node.name}*")
+            c_res = c.UnaryExpr(c_res, op="*", prefix=True)
+        else:
+            # slightly more involved code when we don't have a varaible to take the address of
+            c_res = c.CompoundLiteral (
+                f"union {{ {src_type.c_node.name} _from; {dst_type.c_node.name} _as; }}",
+                args=[from_obj.c_node],
+            )
+            c_res = c.Expr(c_res, c.Id("_as"), op=".")
+        return ExprObj(
+                xy_node=expr,
+                c_node=c_res,
+                inferred_type=dst_type
+            )
+    what = from_obj.c_node
+    to = dst_type.c_node.name
+    if isinstance(what, c.Cast) and what.to == to:
+        res = what  # eliminate double cast to the same time in rare cases
+    else:
+        res = c.Cast(what=what, to=to)
+    return ExprObj(
+        xy_node=expr,
+        c_node=res,
+        inferred_type=dst_type
+    )
 
 def do_compile_field_get_rec(obj, compound_expr, cast, cfunc, ctx):
     res = obj
