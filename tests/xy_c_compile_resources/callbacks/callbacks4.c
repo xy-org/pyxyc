@@ -20,7 +20,7 @@ void callbacks4_test1(void) {
 void callbacks4_test2(void) {
 }
 
-void* callbacks4_str(void* p_addr, size_t p_size) {
+void* callbacks4_str(void* p_addr, uint64_t p_size) {
     return p_addr;
 }
 

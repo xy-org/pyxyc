@@ -14,7 +14,7 @@ struct indices_Point {
 };
 struct indices_PointCloud {
     void* m_mem;
-    size_t m_len;
+    uint64_t m_len;
 };
 
 int32_t indices_select__Point__Int(indices_Point p_p, int32_t p_idx) {
@@ -64,7 +64,7 @@ int32_t indices_select__PointCloud__Int(indices_PointCloud p_pc, int32_t p_i) {
 }
 
 indices_Point* indices_get__PointCloud__Int(indices_PointCloud p_pc, int32_t p_i) {
-    return (indices_Point*)((int8_t*)p_pc.m_mem + (size_t)p_i * sizeof(indices_Point));
+    return (indices_Point*)((int8_t*)p_pc.m_mem + (uint64_t)p_i * sizeof(indices_Point));
 }
 
 void indices_set__PointCloud__Int__Point(indices_PointCloud* p_pc, int32_t p_i, indices_Point p_p) {

@@ -6,7 +6,7 @@ typedef struct settingRef_Array settingRef_Array;
 
 struct settingRef_Array {
     int64_t* m_mem;
-    size_t m_size;
+    uint64_t m_size;
 };
 
 int64_t* settingRef_get(settingRef_Array p_arr, int32_t p_i) {

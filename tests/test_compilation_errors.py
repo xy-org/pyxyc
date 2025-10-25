@@ -57,7 +57,6 @@ note: Candidates are:
         *get(Ptr, Uint) -> Ptr
         *get(Ptr, Long) -> Ptr
         *get(Ptr, Ulong) -> Ptr
-        *get(Ptr, Size) -> Ptr
         *get(Any[], Byte) -> Ptr
         *get(Any[], Ubyte) -> Ptr
         *get(Any[], Short) -> Ptr
@@ -66,7 +65,6 @@ note: Candidates are:
         *get(Any[], Uint) -> Ptr
         *get(Any[], Long) -> Ptr
         *get(Any[], Ulong) -> Ptr
-        *get(Any[], Size) -> Ptr
         *get(Global) -> Ptr
 """),
     ("""

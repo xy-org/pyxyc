@@ -12,7 +12,7 @@ struct for6_Str {
     int32_t* m_mem;
 };
 struct for6_CharIter {
-    size_t m_i;
+    uint64_t m_i;
     int32_t m_char;
 };
 

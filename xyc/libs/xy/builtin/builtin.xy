@@ -72,9 +72,7 @@
 ;; architecture. This type is (by definition) platform dependant. It is
 ;; provided for interfacing with native libraries and for building libraries.
 ;; Size is always unsigned. For error handling use xy error-handling mechanisms.
-*struct Size {
-    # Implemented by the compiler
-}
+*Size := Ulong;
 
 ;; A good old pointer. Use with caution.
 *struct Ptr~[to: struct] {
@@ -89,14 +87,14 @@
 ;; Dereferencing a pointer at an index (offset)
 *def get(
     ptr: Ptr,
-    idx: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+    idx: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
 ) -> [ Ptr~[^ptr..to] ] {
     # Implemented by the compiler
 }
 
 *def set(
     ptr: Ptr,
-    idx: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
+    idx: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
     value: pseudo Any
 ) -> void {
     # Implemented by the compiler
@@ -136,13 +134,13 @@
 # Limits
 
 *def max(
-    type: pseudo (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+    type: pseudo (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
  ) -> %type {
     # Implemented by the compiler
 }
 
 *def min(
-    type: pseudo (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+    type: pseudo (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
  ) -> %type {
     # Implemented by the compiler
 }
@@ -151,7 +149,7 @@
 
 ;; Addition
 *def add(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
     # Implemented by the compiler
@@ -159,7 +157,7 @@
 
 ;; Equivalent to if({b}) {a}+1 else {a};
 *def add(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: Bool
 ) -> %a {
     # Implemented by the compiler
@@ -167,21 +165,21 @@
 
 *def add(
     b: Bool,
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
 ) -> %a {
     # Implemented by the compiler
 }
 
 *def add(
     char: Char,
-    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
+    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
 ) -> %char {
     # Implemented by the compiler
 }
 
 *def sub(
     char: Char,
-    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
+    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
 ) -> %char {
     # Implemented by the compiler
 }
@@ -189,7 +187,7 @@
 ;; Subtraction
 ;; Note! Only Numeric - Bool is defined
 *def sub(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
     # Implemented by the compiler
@@ -197,7 +195,7 @@
 
 ;; Equivalent to if({b}) {a}-1 else {a};
 *def sub(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: Bool
 ) -> %a {
     # Implemented by the compiler
@@ -205,7 +203,7 @@
 
 ;; Multiplication
 *def mul(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
     # Implemented by the compiler
@@ -218,7 +216,7 @@
 
 ;; Power a.k.a. exponentiation
 *def pow(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
     # Implemented by the compiler
@@ -230,7 +228,7 @@
 ;; 7 / 4 == 1
 ;; 7 / -4 == -1
 *def div(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
     b: %a
 ) -> %a
 >> b != %b
@@ -262,7 +260,7 @@
 ;; -7 \rem -4 == -3
 ;; The divisor is assumed to be non-zero.
 *def rem(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
     b: %a
 ) -> %a
 >> b != %b
@@ -292,7 +290,7 @@
 
 ;; Return 1 if {a} > {b}, 0 if {a} == {b}, -1 if {a} < {b} or there is no order
 *def cmp(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double, Char),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double, Char),
     b: %a
 ) -> Int {
     # implemented by the compiler
@@ -302,14 +300,14 @@
 
 *def add(
     ptr: Ptr,
-    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)
+    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long)
 ) -> Ptr~[^ptr..to] {
     # implemented by the compiler
 }
 
 *def sub(
     ptr: Ptr,
-    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long, Size)
+    offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long)
 ) -> Ptr~[^ptr..to] {
     # implemented by the compiler
 }
@@ -335,21 +333,21 @@
 
 ;; Operator ++
 *def inc(
-    a: mut (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+    a: mut (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
 ) -> void {
     # Implemented by the compiler
 }
 
 ;; Operator --
 *def dec(
-    a: mut (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+    a: mut (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
 ) -> void {
     # Implemented by the compiler
 }
 
 ;; Min of two numbers
 *def min(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
     # implemented by the compiler
@@ -357,7 +355,7 @@
 
 ;; Max of two numbers
 *def max(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
     # implemented by the compiler
@@ -367,7 +365,7 @@
 
 ;; Compute operation only if {b} is a constant
 *def add(
-    a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double),
     b: Int
 ) -> %a
 >> isConst(^b)
@@ -377,7 +375,7 @@
 
 ;; ...
 *def sub(
-    a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double),
     b: Int
 ) -> %a
 >> isConst(^b)
@@ -387,7 +385,7 @@
 
 ;; ...
 *def mul(
-    a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double),
     b: Int
 ) -> %a
 >> isConst(^b)
@@ -397,7 +395,7 @@
 
 ;; Equivalent to if ({b}) {a} else %{a}{}
 *def mul(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: Bool
 ) -> %a
 {
@@ -406,7 +404,7 @@
 
 *def mul(
     b: Bool,
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
 ) -> %a
 {
     # implemented by the compiler
@@ -414,7 +412,7 @@
 
 ;; ...
 *def div(
-    a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Size, Float, Double),
+    a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double),
     b: Int
 ) -> %a
 >> isConst(^b)
@@ -423,42 +421,42 @@
 }
 
 ;; ...
-*def cmp(a: (Ubyte, Ushort, Uint, Ulong, Size), b: Int) -> Int
+*def cmp(a: (Ubyte, Ushort, Uint, Ulong), b: Int) -> Int
 >> isConst(^b)
 {
     # implemented by the compiler
 }
 
 ;; Compute mixed signedness operation only if {a} is a constant
-*def add(a: Int, b: (Uint, Ulong, Size, Float, Double)) -> %b
+*def add(a: Int, b: (Uint, Ulong, Float, Double)) -> %b
 >> isConst(^a)
 {
     # implemented by the compiler
 }
 
 ;; ...
-*def sub(a: Int, b: (Uint, Ulong, Size, Float)) -> %b
+*def sub(a: Int, b: (Uint, Ulong, Float)) -> %b
 >> isConst(^a)
 {
     # implemented by the compiler
 }
 
 ;; ...
-*def mul(a: Int, b: (Uint, Ulong, Size, Float)) -> %b
+*def mul(a: Int, b: (Uint, Ulong, Float)) -> %b
 >> isConst(^a)
 {
     # implemented by the compiler
 }
 
 ;; ...
-*def div(a: Int, b: (Uint, Ulong, Size, Float)) -> %b
+*def div(a: Int, b: (Uint, Ulong, Float)) -> %b
 >> isConst(^a)
 {
     # implemented by the compiler
 }
 
 ;; ...
-*def cmp(a: Int, b: (Ubyte, Ushort, Uint, Ulong, Size)) -> Int
+*def cmp(a: Int, b: (Ubyte, Ushort, Uint, Ulong)) -> Int
 >> isConst(^a)
 {
     # implemented by the compiler
@@ -468,7 +466,7 @@
 
 ;; Convert {a} to Ubyte
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Ubyte
 ) -> Ubyte {
@@ -477,7 +475,7 @@
 
 ;; Convert {a} to Byte
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Byte
 ) -> Byte {
@@ -486,7 +484,7 @@
 
 ;; Convert {a} to Short
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Short
 ) -> Short {
@@ -495,7 +493,7 @@
 
 ;; Convert {a} to Ushort
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Ushort
 ) -> Ushort {
@@ -504,7 +502,7 @@
 
 ;; Convert {a} to Int
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Int
 ) -> Int {
@@ -514,7 +512,7 @@
 
 ;; Convert {a} to Uint
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Uint
 ) -> Uint {
@@ -523,7 +521,7 @@
 
 ;; Convert {a} to Long
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Long
 ) -> Long {
@@ -533,19 +531,10 @@
 
 ;; Convert {a} to Ulong
 *def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
+    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Ulong
 ) -> Ulong {
-    # Implemented by the compiler
-}
-
-;; Convert {a} to Size
-*def to(
-    a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size,
-        Float, Double, Char),
-    :Size
-) -> Size {
     # Implemented by the compiler
 }
 
@@ -623,7 +612,7 @@ struct UnstrCtor {
 ;; Get the element at position {index} from the array {arr}
 *def get(
     arr: pseudo @Any[],
-    index: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size)
+    index: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
 ) -> arr[ Ptr ] {
     # Implemented by the compiler
 }
@@ -631,7 +620,7 @@ struct UnstrCtor {
 ;; Set element at position {index} of the array {arr}
 *def set(
     arr: pseudo @Any[],
-    index: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Size),
+    index: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
     val: pseudo Any
 ) -> void {
     # Implemented by the compiler

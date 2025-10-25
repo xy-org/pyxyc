@@ -6,7 +6,7 @@ typedef struct dtors2_Array dtors2_Array;
 
 struct dtors2_Array {
     void* m_mem;
-    size_t m_len;
+    uint64_t m_len;
 };
 
 void dtors2_dtor(dtors2_Array* p_arr) {
@@ -17,7 +17,7 @@ void dtors2_test(void) {
     dtors2_Array l_arr2 = {0};
     dtors2_Array l_arr3 = {0};
     dtors2_Array l_arr4 = {0};
-    dtors2_Array l_arr5 = {0, (size_t)10};
+    dtors2_Array l_arr5 = {0, (uint64_t)10};
     dtors2_dtor(&l_arr5);
     dtors2_dtor(&l_arr4);
     dtors2_dtor(&l_arr3);

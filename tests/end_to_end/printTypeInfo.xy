@@ -7,7 +7,7 @@ struct MyStruct {
     name: Str~MemManaged;
 
     ;; Some number
-    num: Size;
+    num: Ulong;
 
     integer: Int = -1;
 

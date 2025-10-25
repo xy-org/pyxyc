@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-void* cimport_cstr(void* p_addr, size_t p_size) {
+void* cimport_cstr(void* p_addr, uint64_t p_size) {
     return p_addr;
 }
 

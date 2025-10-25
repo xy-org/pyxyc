@@ -8,7 +8,7 @@ typedef struct namedFields_Color namedFields_Color;
 
 struct namedFields_String {
     void* m_addr;
-    size_t m_size;
+    uint64_t m_size;
 };
 struct namedFields_Color {
     uint8_t m_r;
@@ -24,7 +24,7 @@ struct namedFields_Person {
     namedFields_Color m_favoriteColorClothes;
 };
 
-namedFields_String namedFields_string(void* p_addr, size_t p_size) {
+namedFields_String namedFields_string(void* p_addr, uint64_t p_size) {
     return (namedFields_String){p_addr, p_size};
 }
 

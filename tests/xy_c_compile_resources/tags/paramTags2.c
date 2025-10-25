@@ -6,7 +6,7 @@ typedef struct paramTags2_Str paramTags2_Str;
 
 struct paramTags2_Str {
     void* m_addr;
-    size_t m_size;
+    uint64_t m_size;
 };
 
 int32_t paramTags2_f1(paramTags2_Str p_s) {

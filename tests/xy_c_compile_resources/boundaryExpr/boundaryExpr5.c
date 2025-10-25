@@ -7,7 +7,7 @@ typedef struct boundaryExpr5_Log boundaryExpr5_Log;
 
 struct boundaryExpr5_Str {
     int8_t* m_data;
-    size_t m_size;
+    uint64_t m_size;
 };
 struct boundaryExpr5_Log {
     int32_t m_level;

@@ -21,7 +21,7 @@ void typeInferenceBasic_func(void) {
     const double l_y = .0;
     const uint64_t l_l = 1;
     const int16_t l_s = 10;
-    const size_t l_z = 1024;
+    const uint64_t l_z = 1024;
     const bool l_t = true;
     const bool l_f = false;
     const typeInferenceBasic_Pair l_p = {l_a, l_b};

@@ -8,7 +8,7 @@ typedef struct callbacks3__EMPTY_STRUCT_ callbacks3_Test3;
 typedef void (*xy_fp__void)(void) ;
 
 void callbacks3_test3(void);
-void callbacks3_runTests(xy_fp__void* p_tPtr, size_t p_tLen);
+void callbacks3_runTests(xy_fp__void* p_tPtr, uint64_t p_tLen);
 void callbacks3_special(void);
 void callbacks3_runSpecial(xy_fp__void p_x);
 
@@ -37,7 +37,7 @@ void callbacks3_special(void) {
 void callbacks3_test3(void) {
 }
 
-void callbacks3_runTests(xy_fp__void* p_tPtr, size_t p_tLen) {
+void callbacks3_runTests(xy_fp__void* p_tPtr, uint64_t p_tLen) {
 }
 
 void callbacks3_runSpecial(xy_fp__void p_x) {

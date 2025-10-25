@@ -36,7 +36,7 @@ int32_t guards_test(int32_t p_a, int32_t p_b) {
         abort();
     }
     l_res += guards_guards1(p_a, p_b);
-    size_t tmp_0_arg = sizeof(int32_t);
+    uint64_t tmp_0_arg = sizeof(int32_t);
     if (!(tmp_0_arg > sizeof(int32_t))) {
         abort();
     }
@@ -65,7 +65,7 @@ int32_t guards_test(int32_t p_a, int32_t p_b) {
     if (!(p_b > tmp_3_res)) {
         abort();
     }
-    size_t tmp_5_arg = sizeof(int32_t);
+    uint64_t tmp_5_arg = sizeof(int32_t);
     if (!(tmp_5_arg > sizeof(int32_t))) {
         abort();
     }

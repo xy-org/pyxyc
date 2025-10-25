@@ -25,7 +25,7 @@ struct MyStruct {
     ;; My name
     name: Str; # size=\d+ offset=\d+ alignof=\d+
     ;; Some number
-    num: Size; # size=\d offset=\d+ alignof=\d+
+    num: Ulong; # size=\d offset=\d+ alignof=\d+
     integer: Int; # size=4 offset=\d+ alignof=\d+
     ;; Array of
 floats

@@ -12,7 +12,7 @@ struct flags_OpenFlags {
 };
 struct flags_String {
     void* m_addr;
-    size_t m_size;
+    uint64_t m_size;
 };
 
 bool flags_get(flags_OpenFlags p_base, flags_OpenFlags p_fields) {
@@ -23,7 +23,7 @@ void flags_set(flags_OpenFlags* p_base, flags_OpenFlags p_fields, bool p_set) {
     p_base->m_value = (int32_t)((uint32_t)p_base->m_value | (uint32_t)(p_fields.m_value * (int32_t)p_set));
 }
 
-flags_String flags_string(void* p_addr, size_t p_size) {
+flags_String flags_string(void* p_addr, uint64_t p_size) {
     return (flags_String){p_addr, p_size};
 }
 

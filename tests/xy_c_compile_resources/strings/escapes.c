@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-void* escapes_str(void* p_addr, size_t p_size) {
+void* escapes_str(void* p_addr, uint64_t p_size) {
     return p_addr;
 }
 

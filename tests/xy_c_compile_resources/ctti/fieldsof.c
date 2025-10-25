@@ -15,14 +15,14 @@ struct fieldsof_MyStruct {
     fieldsof_SubStruct m_c;
 };
 struct fieldsof_FieldDesc {
-    size_t m_size;
+    uint64_t m_size;
 };
 
 void fieldsof_print(fieldsof_FieldDesc p_d) {
 }
 
-void fieldsof_printFields(fieldsof_FieldDesc* p_fieldsPtr, size_t p_fieldsLen) {
-    for (size_t i = 0; i < p_fieldsLen; ++i) {
+void fieldsof_printFields(fieldsof_FieldDesc* p_fieldsPtr, uint64_t p_fieldsLen) {
+    for (uint64_t i = 0; i < p_fieldsLen; ++i) {
         fieldsof_print(p_fieldsPtr[i]);
     }
 }
@@ -35,7 +35,7 @@ void fieldsof_test1(void) {
 void fieldsof_test2(void) {
     const fieldsof_MyStruct l_s = {0};
     fieldsof_FieldDesc tmp_0_arg[3] = {(fieldsof_FieldDesc){sizeof(int32_t)}, (fieldsof_FieldDesc){sizeof(float)}, (fieldsof_FieldDesc){sizeof(fieldsof_SubStruct)}};
-    for (size_t tmp_1_iter = 0; tmp_1_iter < 3; ++tmp_1_iter) {
+    for (uint64_t tmp_1_iter = 0; tmp_1_iter < 3; ++tmp_1_iter) {
     }
 }
 
