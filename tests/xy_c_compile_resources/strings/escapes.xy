@@ -1,4 +1,4 @@
-def str~[StrCtor{prefix="", interpolation=false}](addr: Ptr, size: Size) -> Ptr {
+def str~[StrCtor{prefix="", interpolation=false}](addr: Ptr, size: Usize) -> Ptr {
     return addr;
 }
 

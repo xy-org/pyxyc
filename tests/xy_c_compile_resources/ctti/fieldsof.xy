@@ -11,7 +11,7 @@ struct SubStruct {
 }
 
 struct FieldDesc {
-    size: Size;
+    size: Usize;
 }
 
 def print(d: FieldDesc) {
@@ -24,7 +24,7 @@ def printFields(
         size=sizeof(f)
     },
     fieldsPtr : Ptr~FieldDesc = fields'addrof,
-    fieldsLen : Size = fields'len,
+    fieldsLen : Usize = fields'len,
 ) -> void {
     for (i in :fieldsLen) {
         print(fieldsPtr[i]);

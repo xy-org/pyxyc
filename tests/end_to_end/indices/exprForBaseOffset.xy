@@ -13,7 +13,7 @@ def test(cond: Bool) {
 
 def funcReturningIdx(s: Str) -> s[ RangeSize ] {
     print("In funcReturningIdx\n");
-    res := 0z:(s.size-4);
+    res := 0uz:(s.size-4);
     return res;
 }
 

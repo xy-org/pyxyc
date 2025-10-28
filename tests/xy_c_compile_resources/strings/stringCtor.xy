@@ -1,13 +1,13 @@
 struct Str~[encoding: Any = Utf8] {
     addr: Ptr;
-    size: Size;
+    size: Usize;
 }
 
 struct Utf8~[xyTag := TagCtor{label="encoding"}] {}
 struct Ascii~[xytag := TagCtor{label="encoding"}] {}
 
 def str~[StrCtor{prefix="", interpolation=false}](
-    addr: Ptr, size: Size
+    addr: Ptr, size: Usize
 ) -> Str {
     return Str{addr, size};
 }
@@ -18,6 +18,6 @@ def createStrings() -> void {
     str2 := "def";
 }
 
-def strLen(str: Str) -> Size {
+def strLen(str: Str) -> Usize {
     return str.size;
 }

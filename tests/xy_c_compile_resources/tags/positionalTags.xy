@@ -1,5 +1,5 @@
 struct Array~[elemType: struct] {
-    len: Size;
+    len: Usize;
 }
 
 def len(arr: Array) = arr.len;
@@ -12,7 +12,7 @@ struct Point {
 def sizeof(:Int) = 4;
 def sizeof(:Point) = 8;
 
-def test() -> Size {
+def test() -> Usize {
     ints : Array~Int;
     points : Array~Point;
     return ints'len + points'len + ints..elemType'sizeof + points..elemType'sizeof;

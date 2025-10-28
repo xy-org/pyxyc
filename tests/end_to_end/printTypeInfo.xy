@@ -21,9 +21,9 @@ struct MyStruct {
 struct FieldDesc{
     name: Str~MemStatic;
     typename: Str~MemStatic;
-    size: Size;
-    offset: Size;
-    alignment: Size;
+    size: Usize;
+    offset: Usize;
+    alignment: Usize;
     comment: Str~MemStatic;
 }
 
@@ -40,7 +40,7 @@ def printTypeInfo(
         comment=f'commentof,
     },
     fieldsPtr : Ptr~FieldDesc = fields'addrof,
-    fieldsLen : Size = fields'len
+    fieldsLen : Usize = fields'len
 ) {
     if (typeComment.size > 0) {
         print(f";; {typeComment}\n");

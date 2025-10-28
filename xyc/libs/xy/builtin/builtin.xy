@@ -68,11 +68,13 @@
     # Implemented by the compiler
 }
 
-;; Integer type as large as the addressable memory space on the target
-;; architecture. This type is (by definition) platform dependant. It is
-;; provided for interfacing with native libraries and for building libraries.
-;; Size is always unsigned. For error handling use xy error-handling mechanisms.
-*Size := Ulong;
+;; Synonym for a *signed* integer type as large as the addressable memory on
+;; the target machine. This synonym is (by definition) platform dependant. It
+;; is provided for interfacing with native libraries.
+*Size := Long;
+
+;; Same as {Size} but unsigned.
+*Usize := Ulong;
 
 ;; A good old pointer. Use with caution.
 *struct Ptr~[to: struct] {
@@ -442,7 +444,10 @@
 }
 
 ;; ...
-*def mul(a: Int, b: (Uint, Ulong, Float)) -> %b
+*def mul(
+    a: Int,
+    b: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double)
+) -> %b
 >> isConst(^a)
 {
     # implemented by the compiler
@@ -636,19 +641,19 @@ struct EntryPoint {
 
 # Arrays
 
-*def iter(arr: pseudo @Any[]) -> arr[ Size ] {
+*def iter(arr: pseudo @Any[]) -> arr[ Usize ] {
     # Implemented by the compiler
 }
 
-*def valid(arr: pseudo @Any[], idx: Size) -> Bool {
+*def valid(arr: pseudo @Any[], idx: Usize) -> Bool {
     # Implemented by the compiler
 }
 
-*def next(arr: pseudo @Any[], idx: mut Size) -> void {
+*def next(arr: pseudo @Any[], idx: mut Usize) -> void {
     # Implemented by the compiler
 }
 
-*def len(arr: pseudo @Any[]) -> Size {
+*def len(arr: pseudo @Any[]) -> Usize {
     # Implemented by the compiler
 }
 

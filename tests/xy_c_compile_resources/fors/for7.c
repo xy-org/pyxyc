@@ -13,7 +13,7 @@ void for7_append(for7_Array* p_arr, void* p_elemPtr, uint64_t p_elemSize) {
 
 void for7_test(void) {
     for7_Array l_arr = {0};
-    for (uint64_t i = 0; i < (uint64_t)10; ++i) {
+    for (uint64_t i = 0; i < 10; ++i) {
         int32_t tmp_0_addrof = 0;
         for7_append(&l_arr, &tmp_0_addrof, sizeof(int32_t));
     }

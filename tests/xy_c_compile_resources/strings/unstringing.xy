@@ -1,13 +1,13 @@
 struct Str {
     addr: Ptr~Byte;
-    size: Size;
+    size: Usize;
 }
 
-def str~[StrCtor{}](addr: Ptr~Byte, len: Size) = Str{addr, len};
+def str~[StrCtor{}](addr: Ptr~Byte, len: Usize) = Str{addr, len};
 
-def unstr~[UnstrCtor{}](str: Str) = 0z;
+def unstr~[UnstrCtor{}](str: Str) = 0uz;
 
-def read(s: Str, i: mut Size, val: mut Int) {
+def read(s: Str, i: mut Usize, val: mut Int) {
     # ...
 }
 

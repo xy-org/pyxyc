@@ -11,7 +11,7 @@ def get(s: Str, i: Int) -> Str {
 }
 
 struct CharIter {
-    i: Size;
+    i: Usize;
     char: Char;
 }
 

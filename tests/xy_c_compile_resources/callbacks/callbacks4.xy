@@ -8,7 +8,7 @@ def test1~Test() {}
 def test2~Test() {}
 
 def str~[StrCtor{prefix="", interpolation=false}] (
-    addr: Ptr, size: Size
+    addr: Ptr, size: Usize
 ) -> Ptr {
     return addr;
 }

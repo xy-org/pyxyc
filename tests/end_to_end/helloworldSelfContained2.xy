@@ -7,11 +7,11 @@ struct File {
 
 struct Str {
     addr: Ptr~Byte;
-    len: Size;
+    len: Usize;
 }
 
 def str~[StrCtor{prefix="", interpolation=false}] (
-    addr: Ptr, size: Size
+    addr: Ptr, size: Usize
 ) -> Str {
     return Str{addr, size};
 }
@@ -26,9 +26,9 @@ def to(err: ErrnoError, :Bool) -> Bool {
 
 ;; Writes `msg` to `f`
 def write(f: File, msg: Str) -> void | ErrnoError {
-    total : mut Size;
+    total : mut Usize;
     while (total < msg.len) {
-        written : Size = c.write(
+        written : Usize = c.write(
             f.fd, msg.addr + total, msg.len - total
         );
         if (written < 0) {

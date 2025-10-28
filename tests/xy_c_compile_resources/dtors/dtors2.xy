@@ -1,6 +1,6 @@
 struct Array~[elemType: struct, xy_dtor=true] {
     mem: Ptr;
-    len: Size;
+    len: Usize;
 }
 
 def dtor(arr: mut Array) {
@@ -12,5 +12,5 @@ def test() {
     arr2: Array~Int;
     arr3: Array~[Float, myTag=10];
     arr4: Array~[myTag=10];
-    arr5 := Array~Int{0, 10z};
+    arr5 := Array~Int{0, 10uz};
 }

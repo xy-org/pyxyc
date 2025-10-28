@@ -1,6 +1,6 @@
 import xy.ctti;
 
-def str~[StrCtor{prefix=""}](addr: Ptr, size: Size) addr;
+def str~[StrCtor{prefix=""}](addr: Ptr, size: Usize) addr;
 
 def testFunc() {
 }

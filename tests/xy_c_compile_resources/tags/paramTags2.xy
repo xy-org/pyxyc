@@ -1,6 +1,6 @@
 struct Str~[hash: Int = void] {
     addr: Ptr;
-    size: Size;
+    size: Usize;
 }
 
 def f1(s: Str) -> Int {

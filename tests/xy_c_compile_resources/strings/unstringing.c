@@ -14,7 +14,7 @@ void unstringing_read(unstringing_Str p_s, uint64_t* p_i, int32_t* p_val) {
 
 void unstringing_test(void) {
     unstringing_Str tmp_0_arg = (unstringing_Str){(int8_t*)"123 456", 7};
-    uint64_t tmp_1_unstr = (uint64_t)0;
+    uint64_t tmp_1_unstr = 0;
     int32_t l_a = 0;
     unstringing_read(tmp_0_arg, &tmp_1_unstr, &l_a);
     int32_t l_b = 0;
@@ -22,7 +22,7 @@ void unstringing_test(void) {
 }
 
 void unstringing_test2(unstringing_Str p_s) {
-    uint64_t tmp_0_unstr = (uint64_t)0;
+    uint64_t tmp_0_unstr = 0;
     int32_t l_a = 0;
     unstringing_read(p_s, &tmp_0_unstr, &l_a);
     int32_t l_b = 0;

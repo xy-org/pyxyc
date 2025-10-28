@@ -5,22 +5,22 @@
 ;; An array of up to 100 floats
 struct Array {
     elems: @Float[100];
-    len: Size;
+    len: Usize;
 }
 
 
 struct Slice {
-    n: Size;
-    m: Size;
+    n: Usize;
+    m: Usize;
 }
 
 struct SliceIter {
-    i: Size;
-    lim: Size;
+    i: Usize;
+    lim: Usize;
 }
 
 
-def slice(start: Size, end: Size) -> Slice{
+def slice(start: Usize, end: Usize) -> Slice{
     return Slice{start, end};
 }
 
@@ -44,7 +44,7 @@ def set(arr: Array, iter: SliceIter, val: Float) {
     arr.elems[iter.i] = val;
 }
 
-def calmpTo0(arr: mut Array, n: Size, m: Size) {
+def calmpTo0(arr: mut Array, n: Usize, m: Usize) {
     for (elem in arr[n:m]) {
         if (elem < 0) {
             elem = 0.0f;

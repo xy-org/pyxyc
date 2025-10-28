@@ -5,7 +5,7 @@ struct Array~[elemType: struct] {
     ptr: Ptr;
 }
 
-*def fill(arr: mut Array, n: Size, value: Any = (arr..elemType){}) =
+*def fill(arr: mut Array, n: Usize, value: Any = (arr..elemType){}) =
     for (i in :n) {
         arr'append(value);
     };
@@ -14,12 +14,12 @@ struct Array~[elemType: struct] {
     arr: mut Array,
     elem: don Any,
     elemPtr: Ptr = elem'addrof,
-    elemSize: Size = sizeof(arr..elemType),
+    elemSize: Usize = sizeof(arr..elemType),
 ) {
     # ...
 }
 
 def test() {
     arr: Array~Int;
-    arr'fill(10z);
+    arr'fill(10uz);
 }

@@ -1,12 +1,12 @@
-*def sizeof(^arg: Any) -> Size {
+*def sizeof(^arg: Any) -> Usize {
     # Implemented by the compiler
 }
 
-*def offsetof(^arg: Any) -> Size {
+*def offsetof(^arg: Any) -> Usize {
     # Implemented by the compiler
 }
 
-*def alignof(^arg: Any) -> Size {
+*def alignof(^arg: Any) -> Usize {
     # Implemented by the compiler
 }
 

@@ -1,6 +1,6 @@
 struct Array {
     mem: Ptr~Long;
-    size: Size;
+    size: Usize;
 }
 
 def get(arr: Array, i: Int) -> arr[ Ptr~Long ] {

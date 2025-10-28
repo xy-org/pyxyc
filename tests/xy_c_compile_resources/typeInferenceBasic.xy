@@ -16,6 +16,7 @@ def func() -> void {
     l := 1ul;
     s := 10s;
     z := 1024z;
+    uz := 2048uz;
     t := true;
     f := false;
     p := Pair{a, b};

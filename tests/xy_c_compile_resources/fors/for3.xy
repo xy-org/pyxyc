@@ -1,26 +1,26 @@
 ;; An array of up to 100 floats
 struct Array {
     elems: @Float[100];
-    len: Size;
+    len: Usize;
 }
 
-def iter(arr: pseudo Array) -> arr[ Size ] {
+def iter(arr: pseudo Array) -> arr[ Usize ] {
     return 0;
 }
 
-def valid(arr: Array, idx: Size) = idx < arr.len;
+def valid(arr: Array, idx: Usize) = idx < arr.len;
 
-def next(arr: pseudo Array, idx: mut Size) {
+def next(arr: pseudo Array, idx: mut Usize) {
     idx++;
 }
 
-def get(arr: Array, idx: Size) -> arr[ Ptr~Float ]
+def get(arr: Array, idx: Usize) -> arr[ Ptr~Float ]
 >> valid(arr, idx)
 {
     return arr.elems[idx]'addrof;
 }
 
-def set(arr: mut Array, idx: Size, elem: Float)
+def set(arr: mut Array, idx: Usize, elem: Float)
 # >> valid(arr, idx)
 {
     arr.elems[idx] = elem;

@@ -876,7 +876,7 @@ def parse_num_const(token: str, tk_coords, itoken):
         "l": "Long", "ul": "Ulong", "u": "Uint",
         "s": "Short", "us": "Ushort",
         "b": "Byte", "ub": "Ubyte",
-        "z": "Size"
+        "z": "Size", "uz": "Usize",
     }
 
     if "." in token:

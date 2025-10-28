@@ -8,7 +8,7 @@ import libxy.error;
 
 struct Array~[elemType: struct, xy_dtor=true] {
     mem: Memory;
-    len: Size~Count;
+    len: Usize~Count;
 }
 
 def dtor(arr: mut Array) {
@@ -17,14 +17,14 @@ def dtor(arr: mut Array) {
 
 def len(a: Array) = a.len;
 
-def max(a: Size, b: Size) -> Size {
+def max(a: Usize, b: Usize) -> Usize {
     return if (a > b) a else b;
 }
 
 def ensureCapacity(
     arr: mut Array,
-    requiredCap: Size,
-    elemSize : Size = ctti.sizeof(arr..elemType)
+    requiredCap: Usize,
+    elemSize : Usize = ctti.sizeof(arr..elemType)
 ) {
     minRequiredSize := requiredCap * elemSize;
     if (arr.mem.size < minRequiredSize) {
@@ -47,21 +47,21 @@ def push(
 
 
 def get(
-    arr: Array, i: Size,
-    elemSize : Size = ctti.sizeof(arr..elemType)
+    arr: Array, i: Usize,
+    elemSize : Usize = ctti.sizeof(arr..elemType)
 ) -> arr[ Ptr~[^arr..elemType] ] {
     return (arr.mem.addr + i * elemSize)~[void];
 }
 
 def get(
     arr: Array, i: Int,
-    elemSize : Size = ctti.sizeof(arr..elemType)
+    elemSize : Usize = ctti.sizeof(arr..elemType)
 ) -> arr[ Ptr~[^arr..elemType] ] {
-    return (arr.mem.addr + i'to(Size) * elemSize)~void;
+    return (arr.mem.addr + i'to(Usize) * elemSize)~void;
 }
 
 struct ArrayIter {
-    idx: Size;
+    idx: Usize;
 }
 
 def iter(arr: Array) -> arr[ ArrayIter ] {
@@ -74,7 +74,7 @@ def next(arr: pseudo Array, iter: mut ArrayIter) {
    iter.idx++;
 }
 
-def get(arr: Array, iter: ArrayIter, elemSize : Size = ctti.sizeof(arr..elemType)) -> arr[ Ptr~[^arr..elemType] ] {
+def get(arr: Array, iter: ArrayIter, elemSize : Usize = ctti.sizeof(arr..elemType)) -> arr[ Ptr~[^arr..elemType] ] {
     return (arr.mem.addr + iter.idx * elemSize)~void;
 }
 
@@ -90,7 +90,7 @@ def main~EntryPoint() -> Int {
     points: Array~Point;
     for (i in :100) {
         ints'push(i);
-        points'push(Point{ints[ints'len -1 -i'to(Size)] + i, ints[i]});
+        points'push(Point{ints[ints'len -1 -i'to(Usize)] + i, ints[i]});
     }
 
     print(f"len={ints'len}\n");

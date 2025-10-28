@@ -9,10 +9,10 @@ struct Person {
 
 struct String {
     addr: Ptr;
-    size: Size;
+    size: Usize;
 }
 
-def string~[StrCtor{prefix=""}](addr: Ptr, size: Size) -> String {
+def string~[StrCtor{prefix=""}](addr: Ptr, size: Usize) -> String {
     return String{addr, size};
 }
 

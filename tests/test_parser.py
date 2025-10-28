@@ -358,6 +358,8 @@ def test_parse_comments(code, exp_ast):
             h := 0d;
             i := 0xF;
             j := 0xFFu;
+            u := 10uz;
+            z := 10z;
         }
         """,
         [
@@ -374,6 +376,8 @@ def test_parse_comments(code, exp_ast):
                     ast.VarDecl("h", value=ast.Const(0, type="Double", value_str="0")),
                     ast.VarDecl("i", value=ast.Const(0xF, type="Int", value_str="0xF")),
                     ast.VarDecl("j", value=ast.Const(0xFF, type="Uint", value_str="0xFFu")),
+                    ast.VarDecl("u", value=ast.Const(10, type="Usize", value_str="10")),
+                    ast.VarDecl("z", value=ast.Const(10, type="Size", value_str="10")),
                 ]
             )
         ]

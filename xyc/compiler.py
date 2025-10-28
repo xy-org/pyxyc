@@ -48,6 +48,12 @@ class TypeObj(CompiledObj):
             return "<Unknown>"
 
     @property
+    def fullname(self):
+        module_name = self.module_header.module_name if self.module_header else ""
+        type_name = self.xy_node.name
+        return module_name + type_name
+
+    @property
     def c_name(self):
         if self.builtin and self.xy_node.name == "Ptr" and "to" in self.tags \
             and self.tags["to"] is not calltime_expr_obj:
@@ -69,15 +75,24 @@ class TypeExprObj(CompiledObj):
 
     @property
     def c_name(self):
-        if self.builtin and self.type_obj.xy_node.name == "Ptr" and "to" in self.tags \
-            and self.tags["to"] is not calltime_expr_obj:
-            to_obj = self.tags["to"]
-            return to_obj.c_name + "*"
+        if self.builtin and hasattr(self.type_obj.xy_node, 'name'):
+            name = self.type_obj.xy_node.name
+            if name == "Ptr" and "to" in self.tags and self.tags["to"] is not calltime_expr_obj:
+                to_obj = self.tags["to"]
+                return to_obj.c_name + "*"
         return self.type_obj.c_name
 
     @property
     def name(self):
         return self.type_obj.name
+
+    @property
+    def fullname(self):
+        return self.type_obj.fullname
+
+    @property
+    def is_funcdef(self):
+        return self.type_obj.is_funcdef
 
     @property
     def fields(self):
@@ -134,6 +149,10 @@ class TypeExprObj(CompiledObj):
     @property
     def builtin(self):
         return self.type_obj.builtin
+
+    @builtin.setter
+    def builtin(self, val):
+        self.type_obj.builtin = val
 
     @property
     def is_init_value_zeros(self):
@@ -589,9 +608,7 @@ def cmp_arg_param_types(arg_type, param_type):
     if is_funddef_type(arg_type) and is_funddef_type(param_type):
         return True  # XXX
 
-    arg_type_module = arg_type.module_header.module_name if arg_type.module_header is not None else ""
-    param_type_module = param_type.module_header.module_name if param_type.module_header is not None else ""
-    if not (arg_type_module == param_type_module and arg_type.get_base_type().xy_node.name == param_type.get_base_type().xy_node.name):
+    if arg_type.get_base_type().fullname != param_type.get_base_type().fullname:
         return False
 
     return True
@@ -625,7 +642,7 @@ def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
     if src_type.is_any_type:
         return 0, []
 
-    if not (src_type.get_base_type().xy_node.name == dst_type.get_base_type().xy_node.name and src_type.get_base_type().c_name == dst_type.get_base_type().c_name):
+    if src_type.get_base_type().fullname != dst_type.get_base_type().fullname:
         return -1, [(f"Type mismatch in assignment: {fmt_type(src_type.get_base_type())} and {fmt_type(dst_type.get_base_type())}", xy_node)]
 
 
@@ -808,7 +825,6 @@ class CompilerContext:
             self.ptr_obj.xy_node, self.ptr_obj.c_node, self.ptr_obj,
             tags={"to": data_ns["Byte"]},
         )
-        self.size_obj = data_ns["Size"]
         self.tagctor_obj = data_ns["TagCtor"]
         self.uint_obj = data_ns["Uint"]
         self.int_obj = data_ns["Int"]
@@ -821,7 +837,6 @@ class CompilerContext:
             data_ns["Uint"],
             data_ns["Long"],
             data_ns["Ulong"],
-            data_ns["Size"],
         )
         self.prim_bit_objs = (
             data_ns["Bits8"],
@@ -835,6 +850,8 @@ class CompilerContext:
         self.void_obj = data_ns["void"]
         self.funcdef_obj = data_ns["FuncDef"]
         self.funcdef_obj.is_funcdef = self.funcdef_obj.is_ct_only =True
+        self.size_obj = data_ns["Size"]
+        self.usize_obj = data_ns["Usize"]
 
     def is_prim_int(self, type_obj):
         if isinstance(type_obj,TypeExprObj):
@@ -1980,7 +1997,6 @@ def compile_builtins(builder, module_name, asts, module_path):
                 "Char":   ("int32_t",  4),
                 "Long":   ("int64_t",  8),
                 "Ulong":  ("uint64_t", 8),
-                "Size":   ("size_t",   8), # TODO what about 32-bit systems
                 "Float":  ("float",    4),
                 "Double": ("double",   8),
                 "Bool":   ("bool",     0),
@@ -1990,10 +2006,6 @@ def compile_builtins(builder, module_name, asts, module_path):
                 "Bits16": ("uint16_t", 2),
                 "Bits32": ("uint32_t", 4),
                 "Bits64": ("uint64_t", 8),
-            }
-            bits_to_numeric_map = {
-                "Bits8": "Ubyte", "Bits16": "Ushort",
-                "Bits32": "Uint", "Bits64": "Ulong",
             }
             if obj.xy_node.name in ctype_map:
                 obj.c_node.name = ctype_map[obj.xy_node.name][0]
@@ -2904,7 +2916,8 @@ def compile_const(expr, cast, cfunc, ctx):
         "Ushort": (0, 2**16-1),
         "Uint": (0, 2**32-1),
         "Ulong": (0, 2**64-1),
-        "Size": (0, 2**64-1),  # TODO what about 32-bit archs
+        "Size": (-2**63, 2**63-1),  # TODO what about 32-bit archs
+        "Usize": (0, 2**64-1),  # TODO what about 32-bit archs
     }
     if expr.type in type_limits:
         min_lim, max_lim = type_limits[expr.type]
@@ -2991,7 +3004,7 @@ def reset_obj(obj: ExprObj, cast, cfunc, ctx):
         cfunc.body.append(c_reset)
 
 def create_loop_over_array(obj, cast, cfunc, ctx: CompilerContext):
-    tmp_i = ctx.create_tmp_var(ctx.size_obj, "i", obj.xy_node)
+    tmp_i = ctx.create_tmp_var(ctx.usize_obj, "i", obj.xy_node)
     cfor = c.For(
         [tmp_i.c_node],
         c.Expr(c.Id(tmp_i.c_node.name), c.Const(obj.inferred_type.dims[0]), op="<"),
@@ -3710,7 +3723,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                     ctx.ptr_to_byte_obj
                 ),
                 ExprObj(
-                    expr, c.Const(str_len), ctx.size_obj
+                    expr, c.Const(str_len), ctx.usize_obj
                 )
             ]
         )
@@ -3747,7 +3760,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                             c_node=c.Cast(c.Const('"' + part_value + '"'), to="int8_t*"),
                             inferred_type=ctx.ptr_to_byte_obj
                         ),
-                        ExprObj(c_node=c.Const(part_value_len), inferred_type=ctx.size_obj),
+                        ExprObj(c_node=c.Const(part_value_len), inferred_type=ctx.usize_obj),
                     ]),
                     cast,
                     cfunc,
@@ -3768,7 +3781,7 @@ def compile_strlit(expr, cast, cfunc, ctx: CompilerContext):
                                 c_node=c.Cast(c.Const('"' + part_str + '"'), to="int8_t*"),
                                 inferred_type=ctx.ptr_to_byte_obj
                             ),
-                            ExprObj(c_node=c.Const(part_str_len), inferred_type=ctx.size_obj),
+                            ExprObj(c_node=c.Const(part_str_len), inferred_type=ctx.usize_obj),
                         ]),
                         cast,
                         cfunc,
@@ -5014,7 +5027,7 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         return ExprObj(
             c_node=res,
             xy_node=expr,
-            inferred_type=ctx.size_obj
+            inferred_type=ctx.usize_obj
         )
     elif is_builtin_func(func_obj, "sizeof"):
         type_obj = arg_exprs[0].inferred_type
@@ -5025,7 +5038,7 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 c_node = c.Index(c_node, c.Const(dim))
         return ExprObj(
             c_node=c.FuncCall("sizeof", [c_node]),
-            inferred_type=ctx.size_obj
+            inferred_type=ctx.usize_obj
         )
     elif is_builtin_func(func_obj, "offsetof"):
         field_obj = arg_exprs[0].compiled_obj
@@ -5040,7 +5053,7 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 c.Id(field_obj.fieldof_obj.c_node.name),
                 c.Id(field_obj.c_node.name),
             ]),
-            inferred_type=ctx.size_obj,
+            inferred_type=ctx.usize_obj,
         )
     elif is_builtin_func(func_obj, "alignof"):
         if not ctx.added_alignof_macro:
@@ -5058,7 +5071,7 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             c_node=c.FuncCall("__XY_ALIGNOF", [
                 c.Id(type_obj.c_node.name),
             ]),
-            inferred_type=ctx.size_obj,
+            inferred_type=ctx.usize_obj,
         )
     elif is_builtin_func(func_obj, "addrof"):
         return compile_builtin_addrof(expr, arg_exprs[0], cast, cfunc, ctx)

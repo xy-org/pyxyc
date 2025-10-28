@@ -1,13 +1,13 @@
 struct Str {
     data: Ptr~Byte;
-    size: Size;
+    size: Usize;
 }
 
 def dtor(s: Str) {
         # ...
 }
 
-def str~[StrCtor{prefix=""}](data: Ptr, len: Size) Str{data, len};
+def str~[StrCtor{prefix=""}](data: Ptr, len: Usize) Str{data, len};
 
 struct Log {
     level: Int;
