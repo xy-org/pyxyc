@@ -2268,10 +2268,6 @@ def compile_vardecl(node, cast, cfunc, ctx):
         value_obj = idx_get(value_obj, cast, None, ctx)
 
     if value_obj is not None and value_obj.compiled_obj is not None:
-        if isinstance(value_obj.compiled_obj, (TypeObj, TypeExprObj)):
-            raise CompilationError(
-                "Cannot assign a type to a variable. Did you forget to instantiate it?", node
-            )
         if isinstance(value_obj.compiled_obj, ImportObj):
             raise CompilationError("Invalid value for variable", node)
 
@@ -2554,7 +2550,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
         arg_obj = compile_expr(expr.arg, cast, cfunc, ctx)
         return ExprObj(
             xy_node=expr,
-            c_node=c.Id(arg_obj.inferred_type.c_node.name),
+            c_node=arg_obj.inferred_type.init_value,
             inferred_type=arg_obj.inferred_type,
             tags=arg_obj.inferred_type.tags,
             compiled_obj=arg_obj.inferred_type,
@@ -2569,7 +2565,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
         elif isinstance(var_obj, TypeObj):
             return ExprObj(
                 xy_node=expr,
-                c_node=c.Id(var_obj.c_node.name),
+                c_node=var_obj.init_value,
                 inferred_type=var_obj,
                 compiled_obj=var_obj,
             )
@@ -4231,6 +4227,8 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
         tmp_obj.c_node.value = expand_array_to_init_list(expr_obj)
     else:
         tmp_obj.c_node.value = expr_obj.c_node
+    if tmp_obj.c_node.value is expr_obj.inferred_type.init_value:
+        tmp_obj.needs_dtor = False  # disable dtor for init values
     cfunc.body.append(tmp_obj.c_node)
     return ExprObj(
         xy_node=expr_obj.xy_node,

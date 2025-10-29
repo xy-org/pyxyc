@@ -92,6 +92,8 @@ from xyc.compiler import CompilationError
     "boundaryExpr/boundaryExpr3",
     "boundaryExpr/boundaryExpr4",
     "boundaryExpr/boundaryExpr5",
+    "structs/typeValueDuality1",
+    "structs/typeValueDuality2",
     "structs/properties",
     "exitWithError",
     "ctti/fieldsof",

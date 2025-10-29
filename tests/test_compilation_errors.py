@@ -519,18 +519,6 @@ src.xy:3:18: error: Integer constant overflows type 'Byte'
     ),
     (
         """
-        func test() {
-            a := Int;
-        }
-        """,
-        """\
-src.xy:3:13: error: Cannot assign a type to a variable. Did you forget to instantiate it?
-|             a := Int;
-              ^
-"""
-    ),
-    (
-        """
         import c~[Clib{defines=@{""}}] in c;
         func test() {}
         """,

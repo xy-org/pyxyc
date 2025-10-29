@@ -1,0 +1,21 @@
+struct A {
+    val: Int;
+}
+
+struct B {
+    val: Long;
+}
+
+func doSomething() {
+    # ...
+}
+
+func test() {
+    a := A;
+    b := B;
+
+    n := 10;
+    if (n == %n) {
+        doSomething();
+    }
+}

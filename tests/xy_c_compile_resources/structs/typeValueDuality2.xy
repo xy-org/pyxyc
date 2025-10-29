@@ -1,0 +1,24 @@
+struct A {
+    val: Int;
+}
+
+func dtor(a: A) {
+    # ...
+}
+
+struct B {
+    val: Long;
+}
+
+func dtor(b: B) {
+    # ...
+}
+
+func to(a: A, :B) -> B {
+    return B;
+}
+
+func test() {
+    a: A;
+    b := a'to(B);
+}
