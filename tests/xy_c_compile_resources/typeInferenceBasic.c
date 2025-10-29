@@ -9,7 +9,7 @@ struct typeInferenceBasic_Pair {
     int32_t m_b;
 };
 
-void typeInferenceBasic_func(void) {
+void typeInferenceBasic_fun(void) {
     const int32_t l_a = 0;
     const int32_t l_b = 0x10;
     const float l_c = 5.5f;
@@ -29,5 +29,5 @@ void typeInferenceBasic_func(void) {
 }
 
 void typeInferenceBasic_implicitVoid(void) {
-    typeInferenceBasic_func();
+    typeInferenceBasic_fun();
 }

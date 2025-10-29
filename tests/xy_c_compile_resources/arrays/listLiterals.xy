@@ -2,17 +2,17 @@ struct List~[elem: struct, xy_dtor=true] {
     mem: Ptr;
 }
 
-def copy(l: List) -> List {
+func copy(l: List) -> List {
     # ...
     return List{};
 }
 
-def append(l: mut List, num: Int) {
+func append(l: mut List, num: Int) {
 }
 
-def dtor(l: mut List) {}
+func dtor(l: mut List) {}
 
-def test() {
+func test() {
     list1 := List~Int@{1, 2, 3};
     list2 := list1@{3, 2, 1};
     list3 : mut = List~Int @for(i in @{1, 2, 3}) i*10;

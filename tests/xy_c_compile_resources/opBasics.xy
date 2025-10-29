@@ -1,4 +1,4 @@
-def test1(x: Int, y: %x) {
+func test1(x: Int, y: %x) {
     a := x + y;
     b := x - y;
     c := x * y;
@@ -6,7 +6,7 @@ def test1(x: Int, y: %x) {
     e := x \rem y;
 }
 
-def test2(x: Byte, y: %x) {
+func test2(x: Byte, y: %x) {
     a := x + y;
     b := x - y;
     c := x * y;
@@ -14,7 +14,7 @@ def test2(x: Byte, y: %x) {
     e := x \rem y;
 }
 
-def test3(x: Ushort, y: %x) {
+func test3(x: Ushort, y: %x) {
     a := x + y;
     b := x - y;
     c := x * y;
@@ -22,7 +22,7 @@ def test3(x: Ushort, y: %x) {
     e := x \rem y;
 }
 
-def test4(x: Float, y: %x) {
+func test4(x: Float, y: %x) {
     a := x + y;
     b := x - y;
     c := x * y;

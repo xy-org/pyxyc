@@ -12,7 +12,7 @@ struct String {
     size: Usize;
 }
 
-def string~[StrCtor{prefix=""}](addr: Ptr, size: Usize) -> String {
+func string~[StrCtor{prefix=""}](addr: Ptr, size: Usize) -> String {
     return String{addr, size};
 }
 
@@ -22,7 +22,7 @@ struct Color {
     b: Ubyte;
 }
 
-def test() {
+func test() {
     p1 : Person;
     p2 := Person{};
     p3 := Person{"Johnny", "Cash"};

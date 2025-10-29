@@ -1,10 +1,10 @@
-def noop() -> void {
+func noop() -> void {
 }
 
-def retVal() -> Int {
+func retVal() -> Int {
     return 0;
 }
 
-def myadd(a: Int, b: Int) -> Int {
+func myadd(a: Int, b: Int) -> Int {
     return a + b + retVal();
 }

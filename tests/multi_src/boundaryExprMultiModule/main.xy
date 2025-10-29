@@ -4,11 +4,11 @@ struct Struct {
     value: Int;
 }
 
-def rtti(:Struct) -> Rtti {
+func rtti(:Struct) -> Rtti {
     return Rtti{};
 }
 
-def main() {
+func main() {
     x : Struct;
     print(x);
 }

@@ -1,4 +1,4 @@
-def test(
+func test(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double)
 ) {
     bits := a'toBits;

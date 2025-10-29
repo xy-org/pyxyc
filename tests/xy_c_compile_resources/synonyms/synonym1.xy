@@ -1,12 +1,12 @@
 Real := Double;
 
-def r(x: Any) = x'to(Real);
+func r(x: Any) = x'to(Real);
 
-def sqr(x: Real) -> Real {
+func sqr(x: Real) -> Real {
     return x * x;
 }
 
-def test(x: Real) -> Real {
+func test(x: Real) -> Real {
     a : Real = 3.14'r;
     b := 3.14d'r;
     c := 10'r;

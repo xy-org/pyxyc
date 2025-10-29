@@ -2,12 +2,12 @@ struct Str {
     # ...
 }
 
-def dtor(s: Str) {
+func dtor(s: Str) {
     # ...
 }
 
 struct Person {
-    age: Int; 
+    age: Int;
     name: Str;
     family: Str;
 }
@@ -17,11 +17,11 @@ struct Mob {
     # ...
 }
 
-def dtor(m: Mob) {
+func dtor(m: Mob) {
     # ...
 }
 
-def test1() {
+func test1() {
     m := Mob{};
     # ...
 }
@@ -31,17 +31,17 @@ struct Array~[elem: struct] {
     # ...
 }
 
-def get(arr: Array, i:Size) arr[ arr.mem~[elem..elem] + i ];
+func get(arr: Array, i:Size) arr[ arr.mem~[elem..elem] + i ];
 
-def set(arr: Array, i: Size, elem: Any) {
+func set(arr: Array, i: Size, elem: Any) {
     # ...
 }
 
-def dtor(arr: Array) {
+func dtor(arr: Array) {
     # map cb over all elements
 }
 
-def test2(i) -> Mob {
+func test2(i) -> Mob {
     mobs : mut = Array~Mob{};
     return mobs[i];
 }

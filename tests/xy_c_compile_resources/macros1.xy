@@ -6,13 +6,13 @@ struct Tag1 {}
 struct Tag2 {}
 struct Tag3 {}
 
-def call(a: Struct~void) impl(a, a..tag);
+func call(a: Struct~void) impl(a, a..tag);
 
-def impl(s: Struct~void, :Tag1) -> Int {return 0;}
-def impl(s: Struct~void, :Tag2) -> Float {return 3.14f;}
-def impl(s: Struct~void, :Tag3) -> Bool {return true;}
+func impl(s: Struct~void, :Tag1) -> Int {return 0;}
+func impl(s: Struct~void, :Tag2) -> Float {return 3.14f;}
+func impl(s: Struct~void, :Tag3) -> Bool {return true;}
 
-def test() {
+func test() {
     a: Struct~[tag=Tag1];
     b: Struct~[tag=Tag2];
     c: Struct;

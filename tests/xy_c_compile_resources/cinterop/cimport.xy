@@ -2,12 +2,12 @@ import posix~[Clib{headers=@{"unistd.h"}}] in c;
 import libc~[Clib{headers=@{"errno.h"}}] in c;
 
 
-def cstr~[StrCtor{prefix="c"}](addr: Ptr, size: Usize) -> Ptr {
+func cstr~[StrCtor{prefix="c"}](addr: Ptr, size: Usize) -> Ptr {
     return addr;
 }
 
 
-def main~EntryPoint() -> Int {
+func main~EntryPoint() -> Int {
     c.write(0, c"Hello World\n", 12);
     return 0;
 }

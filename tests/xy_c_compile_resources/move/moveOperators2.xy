@@ -2,14 +2,14 @@ struct IntList {
     data: Ptr;
 }
 
-def get(arr: IntList, i: Int) -> arr[ Ptr~Int ] {
+func get(arr: IntList, i: Int) -> arr[ Ptr~Int ] {
     return Ptr{};
 }
 
-def set(arr: mut IntList, i: Int, val: Int) -> void {
+func set(arr: mut IntList, i: Int, val: Int) -> void {
     # ...
 }
 
-def test(a: mut IntList, b: mut IntList, i: Int, j: Int) {
+func test(a: mut IntList, b: mut IntList, i: Int, j: Int) {
     a[i] =< b[j];
 }

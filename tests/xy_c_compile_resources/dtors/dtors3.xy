@@ -2,22 +2,22 @@ struct Str {
     addr: Ptr~Byte;
 }
 
-def dtor(s: Str) {
+func dtor(s: Str) {
     # ...
 }
 
 struct Person {
-    age: Int; 
+    age: Int;
     name: Str;
     family: Str;
 }
 
-def test1() {
+func test1() {
     p := Person{};
     # ...
 }
 
-def test2(i: Int) -> Person {
+func test2(i: Int) -> Person {
     mob: @Person[20];
     # ...
     return mob[i];

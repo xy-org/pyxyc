@@ -1,16 +1,16 @@
-def func1(a: mut Int, b: Int) {}
-def func2(a: Int, b: mut Int) {}
+func func1(a: mut Int, b: Int) {}
+func func2(a: Int, b: mut Int) {}
 
-def test() {
+func test() {
     a: mut = 0;
     func1(a, a =>);
     func2(a, a =>);
 }
 
-def arrFunc1(a: @Int[10], b: @Int[10]) {}
-def arrFunc2(a: @Int[10], b: @Int[10]) {}
+func arrFunc1(a: @Int[10], b: @Int[10]) {}
+func arrFunc2(a: @Int[10], b: @Int[10]) {}
 
-def arrTest() {
+func arrTest() {
     arr: @Int[10];
     arrFunc1(arr, arr =>);
     arrFunc2(arr, arr =>);

@@ -1,12 +1,12 @@
-def calcDefaultValue(num: Int) -> Int {
+func calcDefaultValue(num: Int) -> Int {
     return num * 2;
 }
 
-def func(a: Int, b: Int = calcDefaultValue(a)) -> Int {
+func fun(a: Int, b: Int = calcDefaultValue(a)) -> Int {
     return a + b;
 }
 
-def test() {
-    _ = func(5);
-    _ = func(5, 10);
+func test() {
+    _ = fun(5);
+    _ = fun(5, 10);
 }

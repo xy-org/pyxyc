@@ -3,9 +3,9 @@ struct Str {
     size: Size;
 }
 
-def f1(s: Str) = s..hash;
+func f1(s: Str) = s..hash;
 
-def test() -> Int {
+func test() -> Int {
     s1: Str;
     s2: Str~[hash=10];
     y := f1(s2);

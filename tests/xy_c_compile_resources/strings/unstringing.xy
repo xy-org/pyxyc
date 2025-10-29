@@ -3,18 +3,18 @@ struct Str {
     size: Usize;
 }
 
-def str~[StrCtor{}](addr: Ptr~Byte, len: Usize) = Str{addr, len};
+func str~[StrCtor{}](addr: Ptr~Byte, len: Usize) = Str{addr, len};
 
-def unstr~[UnstrCtor{}](str: Str) = 0uz;
+func unstr~[UnstrCtor{}](str: Str) = 0uz;
 
-def read(s: Str, i: mut Usize, val: mut Int) {
+func read(s: Str, i: mut Usize, val: mut Int) {
     # ...
 }
 
-def test() {
+func test() {
     "{a: Int}{b: Int}" = "123 456";
 }
 
-def test2(s: Str) {
+func test2(s: Str) {
     "{a: Int}{b: Int}" = s;
 }

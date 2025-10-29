@@ -2,11 +2,11 @@ struct Data {
     val: Int;
 }
 
-def work(val: (Int, Char, Long)) {
+func work(val: (Int, Char, Long)) {
     # ...
 }
 
-def test() {
+func test() {
     d1: Data;
     d2: Data~[tag1=5, tag2=`z`];
     d3 := d2~[tag2=void];

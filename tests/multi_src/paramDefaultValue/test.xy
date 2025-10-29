@@ -1,11 +1,11 @@
 import paramDefaultValue.module1;
 import paramDefaultValue.module2;
 
-def test() {
+func test() {
     a := 5;
-    _ = func(a);
-    _ = func(a, 10);
-    _ = func(a*10);
+    _ = fun(a);
+    _ = fun(a, 10);
+    _ = fun(a*10);
 
     _ = myfunc(a);
     _ = myfunc(a, 10);

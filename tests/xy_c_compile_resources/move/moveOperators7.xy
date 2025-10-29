@@ -4,7 +4,7 @@ struct Elem {
     val: Char;
 }
 
-def dtor(e: Elem) {
+func dtor(e: Elem) {
     # ...
 }
 
@@ -12,26 +12,26 @@ struct Array {
     mem: Ptr~Elem;
 }
 
-def get(arr: Array, idx: Int) -> arr[Ptr~Elem] {
+func get(arr: Array, idx: Int) -> arr[Ptr~Elem] {
     return arr.mem;
 }
 
-def set(arr: Array, idx: Int, elem: Elem)  {
+func set(arr: Array, idx: Int, elem: Elem)  {
     # ...
 }
 
-def dtor(arr: Array) {
+func dtor(arr: Array) {
     # ...
 }
 
-def test1(arr: mut Array, i: Int, j: Int) {
+func test1(arr: mut Array, i: Int, j: Int) {
     arr[i] =< arr[j];
 }
 
-def test2(arr: mut Array, i: Int) {
+func test2(arr: mut Array, i: Int) {
     arr[i] =< void;
 }
 
-def test3(arr: mut Array, i: Int) {
+func test3(arr: mut Array, i: Int) {
     void =< arr[i];
 }

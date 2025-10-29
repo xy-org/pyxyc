@@ -8,11 +8,11 @@ struct Status {
     processed : pseudo = Status{4};
 }
 
-def get(st: Status, test: Status) st.value == test.value;
-def set(st: mut Status, val: Status) st.value = test.value;
-def cmp(l: Status, r: Status) cmp(l.value, r.value);
+func get(st: Status, test: Status) st.value == test.value;
+func set(st: mut Status, val: Status) st.value = test.value;
+func cmp(l: Status, r: Status) cmp(l.value, r.value);
 
-def printStatus(st: Status) {
+func printStatus(st: Status) {
     if (st.pending) {
         # ...
     } elif (st.canceled) {
@@ -22,7 +22,7 @@ def printStatus(st: Status) {
     }
 }
 
-def testEnums(a: Int) {
+func testEnums(a: Int) {
     orderStatus := Status.pending;
     printStatus(orderStatus);
 

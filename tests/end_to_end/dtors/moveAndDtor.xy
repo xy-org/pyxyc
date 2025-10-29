@@ -5,11 +5,11 @@ struct Struct {
     name: Str~MemManaged;
 }
 
-def dtor(s: Struct) {
+func dtor(s: Struct) {
     print(f"Destroying {s.name}\n");
 }
 
-def main~EntryPoint() {
+func main~EntryPoint() {
     s1 : mut = Struct{f"s1"};
     s2 : mut = Struct{f"s2"};
     s1 =< s2;

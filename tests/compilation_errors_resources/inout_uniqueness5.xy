@@ -1,4 +1,4 @@
-def swap(a: mut Int, b: mut Int) {
+func swap(a: mut Int, b: mut Int) {
     tmp := a;
     a = b;
     b = a;
@@ -14,7 +14,7 @@ struct SubState {
     nums: Int[10];
 }
 
-def test() {
+func test() {
     a : State;
     b : State;
     swap(a.subState.nums[0], b.subState.nums[0]);

@@ -3,25 +3,25 @@ struct Str {
     size: Usize;
 }
 
-def dtor(s: Str) {
+func dtor(s: Str) {
         # ...
 }
 
-def str~[StrCtor{prefix=""}](data: Ptr, len: Usize) Str{data, len};
+func str~[StrCtor{prefix=""}](data: Ptr, len: Usize) Str{data, len};
 
 struct Log {
     level: Int;
 }
 
-*def info(^msg: Str, log : Log) =
+*func info(^msg: Str, log : Log) =
 if (log.level <= 0) {
     write(^msg);
 };
 
-def write(msg: Str) {
+func write(msg: Str) {
     # ...
 }
 
-def test() {
+func test() {
     info("message", Log{});
 }

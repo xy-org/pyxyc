@@ -4,7 +4,7 @@ import libxy.string;
 import libxy.stdio;
 import libxy.memory;
 
-def main~EntryPoint() {
+func main~EntryPoint() {
     argc := [Global~CmdArgs].argc;
     argv := [Global~CmdArgs].argv;
     for (i in 1:argc) {

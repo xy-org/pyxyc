@@ -1,20 +1,20 @@
-def f1(x: Int) {
+func f1(x: Int) {
 
 }
 
-def f2(x: Int, y := x + 1) {
+func f2(x: Int, y := x + 1) {
     # ...
 }
 
-def f3(x: Int, y := x * 2) -> Int {
+func f3(x: Int, y := x * 2) -> Int {
     return y - x;
 }
 
-def f4(x: mut Int, y : Int) {
+func f4(x: mut Int, y : Int) {
     x -= y;
 }
 
-def f5(x: mut Int) -> Int | Long {
+func f5(x: mut Int) -> Int | Long {
     x++;
     if (x > 20) {
         error 20l;
@@ -22,7 +22,7 @@ def f5(x: mut Int) -> Int | Long {
     return x + 20;
 }
 
-def test1() {
+func test1() {
     cb1 := $f1(Int)'toCallback;
     cb2 := $f2(Int)'toCallback((:Int)->Int);
 

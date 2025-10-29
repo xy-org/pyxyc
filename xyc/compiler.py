@@ -1507,7 +1507,7 @@ def fill_missing_dtors(type_obj: TypeObj, all_fobjs, asts, cast, ctx):
     return False
 
 keywords = {
-    "if", "ef", "else", "for", "while", "def", "struct", "in", "inout",
+    "if", "ef", "else", "for", "while", "func", "struct", "in", "inout",
     "outin", "out", "ref", "macro", "yield", "do", "don", "switch", "continue",
     "break", "goto",
 }

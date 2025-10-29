@@ -1,11 +1,11 @@
-def fpToBits(double: Double, float: Float) -> Bits64 {
+func fpToBits(double: Double, float: Float) -> Bits64 {
     a := double'to(Bits64);
     b := float'to(Bits32);
     c := (2.0d * double)'to(Bits64);
     return a || b'to(Bits64) && c;
 }
 
-def bitsToFp(b64: Bits64, b32: Bits32) -> Double {
+func bitsToFp(b64: Bits64, b32: Bits32) -> Double {
     a := b64'to(Double);
     b := b32'to(Float);
     c := (!b32)'to(Float);

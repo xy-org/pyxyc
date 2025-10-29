@@ -9,6 +9,6 @@ struct Flag {
     value: Int;
 }
 
-def test() {
+func test() {
     s := MyStruct{.flag1};
 }

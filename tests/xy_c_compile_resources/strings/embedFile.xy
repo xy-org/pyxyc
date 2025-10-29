@@ -1,8 +1,8 @@
-def str~[StrCtor{prefix="", interpolation=false}](addr: Ptr, size: Usize) -> Ptr {
+func str~[StrCtor{prefix="", interpolation=false}](addr: Ptr, size: Usize) -> Ptr {
     return addr;
 }
 
-def test() {
+func test() {
     s1 := "{#! cat externalFile.txt }";
     s2 := "File has '{#! cat externalFile.txt }' as content";
 }

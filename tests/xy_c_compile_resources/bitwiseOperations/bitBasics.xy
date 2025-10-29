@@ -1,4 +1,4 @@
-def test() -> Uint {
+func test() -> Uint {
     ;; Let's try to blend letters and numbers
 
     a: mut = 0xABCDu'to(Bits32);

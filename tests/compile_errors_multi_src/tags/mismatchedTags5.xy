@@ -6,11 +6,11 @@ struct Struct {
     d: Data~[tag=Tag1];
 }
 
-def func(d: Data~[tag=Tag2]) {
+func fun(d: Data~[tag=Tag2]) {
     # ...
 }
 
-def test() {
+func test() {
     s := Struct{};
-    func(s.d);
+    fun(s.d);
 }

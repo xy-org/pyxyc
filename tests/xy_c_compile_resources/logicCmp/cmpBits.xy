@@ -1,4 +1,4 @@
-def test(a: Bits32, b: Bits32) {
+func test(a: Bits32, b: Bits32) {
     c := a == b;
     d := a != b;
     e := !a;

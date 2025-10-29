@@ -1,8 +1,8 @@
-def abs(a: Int) -> Int {
+func abs(a: Int) -> Int {
     return if (a >= 0) a else -a;
 }
 
-def test() {
+func test() {
     x := 1;
     abs := abs(x);
     y := abs(abs) + x;

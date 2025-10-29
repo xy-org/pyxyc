@@ -10,7 +10,7 @@ struct TypeInferenceData {
     ext2 : c.ptrdiff_t;
 }
 
-def test() {
+func test() {
     data := Data{a=10};
     tiData1 := TypeInferenceData{};
     tiData2 := TypeInferenceData{ext2=c.ptrdiff_t{30}};

@@ -1,7 +1,7 @@
 import libxy.string;
 import libxy.stdio;
 
-def main~EntryPoint() -> Int {
+func main~EntryPoint() -> Int {
     print("Hello World\n");
     return 0;
 }

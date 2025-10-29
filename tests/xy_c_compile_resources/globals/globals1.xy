@@ -2,19 +2,19 @@ struct Struct {
     val := 10;
 }
 
-def main~EntryPoint() -> Int {
+func main~EntryPoint() -> Int {
     _ = test1();
     _ = test2();
     return test3();
 }
 
-def test1(s := [Global~Struct]) -> Int {
+func test1(s := [Global~Struct]) -> Int {
     return s.val;
 }
 
-def test2() -> Int {
+func test2() -> Int {
     s := [Global~Struct];
     return s.val;
 }
 
-def test3() [Global~Struct].val;
+func test3() [Global~Struct].val;

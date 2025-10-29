@@ -17,7 +17,7 @@ struct Effects {
     bold: Bool;
 }
 
-def test() {
+func test() {
     a := Formatting{fontSize=12u, .effects.bold};
     b : mut = Formatting{fontSize=13u, bg.red=255ub, fg.green=255ub, .effects.bold};
     c : mut = b{effects.bold=false, .effects.underline};

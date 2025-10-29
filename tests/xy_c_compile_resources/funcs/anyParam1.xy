@@ -1,4 +1,4 @@
-def fun(a: Any, b: Int) {
+func fun(a: Any, b: Int) {
     # ...
 }
 
@@ -7,7 +7,7 @@ struct Struct {
     b: Int;
 }
 
-def test() {
+func test() {
     s := Struct{};
     fun(s, 10);
 }

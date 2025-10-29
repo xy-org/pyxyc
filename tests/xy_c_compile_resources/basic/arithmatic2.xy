@@ -1,6 +1,6 @@
 ;; Test bool arithmatic
 
-def test(
+func test(
     int: Int,
     float: Float,
     double: Double,

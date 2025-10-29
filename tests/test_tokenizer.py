@@ -48,8 +48,8 @@ from xyc.tokenizer import split_tokens
         [0]
     ),
     (
-        "def main~EntryPoint()->int{}",
-        ["def", "main", "~", "EntryPoint", "(", ")", "->", "int", "{", "}"],
+        "func main~EntryPoint()->int{}",
+        ["func", "main", "~", "EntryPoint", "(", ")", "->", "int", "{", "}"],
         None
     ),
     (
@@ -75,10 +75,10 @@ from xyc.tokenizer import split_tokens
         None
     ),
     (
-        """def f(x:int)
+        """func f(x:int)
         >> x > 0
         {}""",
-        ["def", "f", "(", "x", ":", "int", ")", "\n", ">>", "x", ">",
+        ["func", "f", "(", "x", ":", "int", ")", "\n", ">>", "x", ">",
          "0", "\n", "{", "}"],
         None
     ),
@@ -241,8 +241,8 @@ from xyc.tokenizer import split_tokens
         None
     ),
     (
-        "def func(y:Tag = ^x..elem)",
-        ['def', 'func', '(', 'y', ':', 'Tag', '=', '^', 'x', '..', 'elem', ')'],
+        "func func(y:Tag = ^x..elem)",
+        ['func', 'func', '(', 'y', ':', 'Tag', '=', '^', 'x', '..', 'elem', ')'],
         None
     ),
     (

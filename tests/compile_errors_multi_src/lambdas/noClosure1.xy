@@ -1,11 +1,11 @@
-def test(x: Int) {
-    def inner() {
+func test(x: Int) {
+    func inner() {
         print(x);
     }
 
     inner();
 }
 
-def print(x: Int) {
+func print(x: Int) {
     # ...
 }

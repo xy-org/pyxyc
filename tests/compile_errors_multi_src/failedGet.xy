@@ -9,6 +9,6 @@ struct Flag {
     value: Int;
 }
 
-def test(s: MyStruct) -> Bool {
+func test(s: MyStruct) -> Bool {
     return s.flag1;
 }

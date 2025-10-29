@@ -9,11 +9,11 @@ struct Struct {
     d: Data;
 }
 
-def func() -> Data~Tag2 {
+func fun() -> Data~Tag2 {
     return Data~Tag2{};
 }
 
-def test() {
+func test() {
     s : Struct;
-    s.d = func();
+    s.d = fun();
 }

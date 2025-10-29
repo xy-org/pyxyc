@@ -6,19 +6,19 @@ struct Fib {
     b := 1;
 }
 
-def fibonacci~IterCtor() -> [ Fib ] {
+func fibonacci~IterCtor() -> [ Fib ] {
     return Fib{};
 }
 
-def valid(fib: Fib) = true;
+func valid(fib: Fib) = true;
 
-def next(fib: mut Fib) {
+func next(fib: mut Fib) {
     fib = Fib{fib.a + fib.b, fib.a};
 }
 
-def get(fib: Fib) = fib.a;
+func get(fib: Fib) = fib.a;
 
 ;; Multiplies the first {lim} fibonacci numbers
-def mulFibs(lim: Int) -> Int {
+func mulFibs(lim: Int) -> Int {
     return for (_ in :lim, fib in fibonacci()) -> (res := 1) { res *= fib; };
 }

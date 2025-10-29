@@ -3,14 +3,14 @@ struct Str~[hash: Int = void] {
     size: Usize;
 }
 
-def f1(s: Str) -> Int {
+func f1(s: Str) -> Int {
     # calculate hash or something
     return -10;
 }
 
-def f2(s: Str) = s..(hash, -20);
+func f2(s: Str) = s..(hash, -20);
 
-def test() -> Int {
+func test() -> Int {
     s1: Str;
     s2: Str~10;
     s3: Str~[hash=20];

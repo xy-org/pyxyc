@@ -1,10 +1,10 @@
-def swap(a: mut Int, b: mut Int) {
+func swap(a: mut Int, b: mut Int) {
     tmp := a;
     a = b;
     b = a;
 }
 
-def test() {
+func test() {
     a : mut = 0;
     b : mut = 1;
     swap(a, b);

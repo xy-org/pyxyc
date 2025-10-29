@@ -5,7 +5,7 @@ struct Str {
     size: Usize;
 }
 
-def str~[StrCtor{prefix="", interpolation=false}](
+func str~[StrCtor{prefix="", interpolation=false}](
     addr: Ptr, size: Usize
 ) -> Str {
     return Str{addr, size};
@@ -19,32 +19,32 @@ struct StrBuilder {
     cap: Usize;
 }
 
-def append(builder: mut StrBuilder, str: Str) {
+func append(builder: mut StrBuilder, str: Str) {
     # left empty for brevity of test
 }
 
-def append(builder: mut StrBuilder, f: Float, precision:=6) {
+func append(builder: mut StrBuilder, f: Float, precision:=6) {
     # left empty for brevity of test
 }
 
-def append(builder: mut StrBuilder, addr: Ptr, size: Usize) {
+func append(builder: mut StrBuilder, addr: Ptr, size: Usize) {
     # left empty for brevity of test
 }
 
-def to(builder: mut StrBuilder, :Str) -> Str {
+func to(builder: mut StrBuilder, :Str) -> Str {
     res := Str{builder.addr, builder.size};
     # builder.addr = Ptr'null;
     # builder.[cap, size] = 0;
     return res;
 }
 
-def fstr~[StrCtor{prefix="f", interpolation=true, to=Str}](
+func fstr~[StrCtor{prefix="f", interpolation=true, to=Str}](
     addr: Ptr, size: Usize
 ) -> StrBuilder {
     return StrBuilder{};
 }
 
-def createStrings() {
+func createStrings() {
     pi := 3.1415f;
 
     str1 := f"string";

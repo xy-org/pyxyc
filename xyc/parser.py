@@ -226,7 +226,7 @@ def parse_def(itoken: TokenIter, check_semicolon=True):
     visibility = PackageVisibility
     if itoken.peak() in {"-", "+", "*"}:
         visibility = visibilityMap[itoken.consume()]
-    itoken.expect("def")
+    itoken.expect("func")
     if itoken.peak() in {"-", "+", "*"}:
         raise ParsingError("Visibility marker goes before 'def'", itoken)
     name_coords = itoken.peak_coords()
@@ -756,7 +756,7 @@ def parse_operand(itoken, precedence, op_prec):
         else:
             itoken.i -= 1
             arg1 = None
-    elif itoken.peak() == "def":
+    elif itoken.peak() == "func":
         arg1 = parse_def(itoken, check_semicolon=False)
     else:
         arg1 = None
@@ -1358,7 +1358,7 @@ def parse_stmt_list(itoken: TokenIter):
             node = parse_sl_comment(itoken)
         elif itoken.check(";;"):
             node = parse_ml_comment(itoken)
-        elif itoken.peak() == "def":
+        elif itoken.peak() == "func":
             node = parse_def(itoken)
         elif itoken.peak() == "struct":
             node = parse_struct(itoken)
@@ -1379,7 +1379,7 @@ def parse_stmt_list(itoken: TokenIter):
         elif itoken.peak() == ";;":
             itoken.consume()
             node = parse_ml_comment(itoken)
-        elif itoken.peak() == "def":
+        elif itoken.peak() == "func":
             raise ParsingError("Functions in functions are not allowed", itoken)
         elif itoken.peak() == "struct":
             raise ParsingError("Structs in functions are not allowed", itoken)

@@ -4,6 +4,6 @@ struct Universe {
     c := speedOfLight;
 }
 
-def test() {
+func test() {
     u : Universe;
 }

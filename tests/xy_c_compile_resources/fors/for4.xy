@@ -20,31 +20,31 @@ struct SliceIter {
 }
 
 
-def slice(start: Usize, end: Usize) -> Slice{
+func slice(start: Usize, end: Usize) -> Slice{
     return Slice{start, end};
 }
 
-def iter(arr: Array, slice: Slice) -> arr[ SliceIter ] {
+func iter(arr: Array, slice: Slice) -> arr[ SliceIter ] {
     return SliceIter{slice.n, slice.m};
 }
 
-def valid(arr: Array, iter: SliceIter) -> Bool {
+func valid(arr: Array, iter: SliceIter) -> Bool {
     return iter.i < arr.len && iter.i < iter.lim;
 }
 
-def next(arr: Array, iter: mut SliceIter) {
+func next(arr: Array, iter: mut SliceIter) {
     iter.i++;
 }
 
-def get(arr: Array, iter: SliceIter) -> Float {
+func get(arr: Array, iter: SliceIter) -> Float {
     return arr.elems[iter.i];
 }
 
-def set(arr: Array, iter: SliceIter, val: Float) {
+func set(arr: Array, iter: SliceIter, val: Float) {
     arr.elems[iter.i] = val;
 }
 
-def calmpTo0(arr: mut Array, n: Usize, m: Usize) {
+func calmpTo0(arr: mut Array, n: Usize, m: Usize) {
     for (elem in arr[n:m]) {
         if (elem < 0) {
             elem = 0.0f;

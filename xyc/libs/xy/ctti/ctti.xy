@@ -1,12 +1,12 @@
-*def sizeof(^arg: Any) -> Usize {
+*func sizeof(^arg: Any) -> Usize {
     # Implemented by the compiler
 }
 
-*def offsetof(^arg: Any) -> Usize {
+*func offsetof(^arg: Any) -> Usize {
     # Implemented by the compiler
 }
 
-*def alignof(^arg: Any) -> Usize {
+*func alignof(^arg: Any) -> Usize {
     # Implemented by the compiler
 }
 
@@ -14,7 +14,7 @@ struct FieldArray {
     # Compile-time only structure implemented by the compiler
 }
 
-*def fieldsof(^arg: Any) -> FieldArray {
+*func fieldsof(^arg: Any) -> FieldArray {
     # Implemented by the compiler
 }
 
@@ -22,50 +22,50 @@ struct StrLit {
     # Implemented by the compiler
 }
 
-*def nameof(^arg: Any) -> StrLit {
+*func nameof(^arg: Any) -> StrLit {
     # Implemented by the compiler
 }
 
-*def commentof(^arg: Any) -> StrLit {
+*func commentof(^arg: Any) -> StrLit {
     # Implemented by the compiler
 }
 
-*def packageof(^arg: Any) -> StrLit {
+*func packageof(^arg: Any) -> StrLit {
     # Implemented by the compiler
 }
 
 ;; Return the path to the file where {arg} is compiled
-*def fileof(^arg: Any) -> StrLit {
+*func fileof(^arg: Any) -> StrLit {
     # Implemented by the compiler
 }
 
 ;; Return path to the file where the function is called
-*def fileof() -> StrLit {
+*func fileof() -> StrLit {
     # Implemented by the compiler
 }
 
 ;; Return the line {arg} is defined on
-*def linenoof(^arg: Any) -> Uint {
+*func linenoof(^arg: Any) -> Uint {
     # Implemented by the compiler
 }
 
 ;; Return line number where the function is called
-*def linenoof() -> Uint {
+*func linenoof() -> Uint {
     # Implemented by the compiler
 }
 
 ;; Return the source code that was compiled into {expr}
-*def srcof(^expr: Any) -> StrLit {
+*func srcof(^expr: Any) -> StrLit {
     # Implemented by the compiler
 }
 
 ;; Return the line of code where {expr}'s src is located
-*def srclineof(^expr: Any) -> StrLit {
+*func srclineof(^expr: Any) -> StrLit {
     # Implemented by the compiler
 }
 
 ;; Return the line of code where this function was called
-*def srclineof() -> StrLit {
+*func srclineof() -> StrLit {
     # Implemented by the compiler
 }
 
@@ -73,7 +73,7 @@ struct StrLit {
 ;; Return 0 if types are identical including tags.
 ;; Return 1 if {a} and {b} have the same basic type but {a} has more tags.
 ;; return -1 otherwise
-*def cmpTypes(^a: Any, ^b: Any) -> Int {
+*func cmpTypes(^a: Any, ^b: Any) -> Int {
     # Implemented by the compiler
 }
 
@@ -82,6 +82,6 @@ struct StrLit {
 ;; This function is identical to just ">> cmpTypes({lhs}, {rhs}) >= 0" but
 ;; produces better error messages.
 ;; If types are compatible then the function always returns true
-*def assumeCompatibleTypes(^lhs: Any, ^rhs: Any) -> Bool {
+*func assumeCompatibleTypes(^lhs: Any, ^rhs: Any) -> Bool {
     # Implemented by the compiler
 }

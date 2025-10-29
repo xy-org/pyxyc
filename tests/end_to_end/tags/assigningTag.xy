@@ -6,18 +6,18 @@ struct Data {
     num: Int;
 }
 
-*def func(p1: Str) -> Data {
+*func fun(p1: Str) -> Data {
     return retagged(p1~[memory=MemStatic]);
 }
 
-*def retagged(p2: Str) -> Data
+*func retagged(p2: Str) -> Data
 >> nullTerminated(p2)
 {
     # ...
     return Data{};
 }
 
-def main~EntryPoint() {
-    _ = func("abc");
-    _ = func(f"abc");
+func main~EntryPoint() {
+    _ = fun("abc");
+    _ = fun(f"abc");
 }

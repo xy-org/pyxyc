@@ -1,5 +1,5 @@
 import package1;
 
-def test() {
-    func();
+func test() {
+    fun();
 }

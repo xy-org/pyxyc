@@ -2,15 +2,15 @@ struct Error {
     code: Int;
 }
 
-def to(err: Error, :Bool) err.code != 0;
+func to(err: Error, :Bool) err.code != 0;
 
-def errorProne(a: Int) -> Int | Error {
+func errorProne(a: Int) -> Int | Error {
     if (a < 0) {
         error Error{10};
     }
     return 0;
 }
 
-def test(var: Int) {
+func test(var: Int) {
     _ = errorProne(var - 1);
 }

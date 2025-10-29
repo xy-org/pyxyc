@@ -1,15 +1,15 @@
-def oneBit(:Bits64) 1l'to(Bits64);
+func oneBit(:Bits64) 1l'to(Bits64);
 
-def get(b: Bits64, i: Int) -> Bool {
+func get(b: Bits64, i: Int) -> Bool {
     return (b && (b'oneBit \shiftl i))'to(Long) != 0;
 }
 
-def set(b: mut Bits64, i: Int, val: Bool) -> b[ Int ] {
+func set(b: mut Bits64, i: Int, val: Bool) -> b[ Int ] {
     b = b || (val'to(Ulong)'to(Bits64) \shiftl i);
     return i;
 }
 
-def testBitGetSet(i: Int) -> Bits64 {
+func testBitGetSet(i: Int) -> Bits64 {
     b: Bits64;
     b[0] = true;
     b[1] = b[i];
@@ -21,23 +21,23 @@ def testBitGetSet(i: Int) -> Bits64 {
 
 struct Bits {}
 
-def bits(a: Long) -> a[ Bits ] {
+func bits(a: Long) -> a[ Bits ] {
     return Bits{};
 }
 
-def get(a: Long, b: pseudo Bits) -> Bits64 {
+func get(a: Long, b: pseudo Bits) -> Bits64 {
     return a'to(Bits64);
 }
 
-def set(num: mut Long, :Bits, i: Int, val: Bool) {
+func set(num: mut Long, :Bits, i: Int, val: Bool) {
     bits : mut = num'bits;
     bits[i] = val;
     num = bits'to(Long);
 }
 
-def set(num: mut Long, :Bits, bits: Bits64) num = bits'to(Long);
+func set(num: mut Long, :Bits, bits: Bits64) num = bits'to(Long);
 
-def test1() {
+func test1() {
     ;; Let's try to blend coffee and tea
 
     a: mut = 0Coffee(36)l;
@@ -48,7 +48,7 @@ def test1() {
     b'bits[2] = true;
 }
 
-def test2() {
+func test2() {
     a: mut = 0Coffee(36)l;
     b: mut = 0Tea(36)l;
 
@@ -56,7 +56,7 @@ def test2() {
     a'bits[11] = !a'bits[11];
 }
 
-def test3() {
+func test3() {
     a: mut = 0Coffee(36)l;
     b: mut = 0Tea(36)l;
 
@@ -65,7 +65,7 @@ def test3() {
     e := (a'bits != b'bits)'to(Long);
 }
 
-def test4() {
+func test4() {
     a: mut = 0Coffee(36)l;
     b: mut = 0Tea(36)l;
 

@@ -4,27 +4,27 @@ struct MyStruct {
     c: Float;
 }
 
-def func(a: Int, b: Float, c: MyStruct) -> void {
+func fun(a: Int, b: Float, c: MyStruct) -> void {
 
 }
 
-def test1() {
+func test1() {
     a := 0;
     b := .0f;
     c := MyStruct{};
-    func(...);
+    fun(...);
 }
 
-def test2(a: Int, b: Float, c: MyStruct) {
-    func(...);
+func test2(a: Int, b: Float, c: MyStruct) {
+    fun(...);
 }
 
-def test3(b: Float, c: MyStruct, a: Int) {
-    func(...);
+func test3(b: Float, c: MyStruct, a: Int) {
+    fun(...);
 }
 
-def test5(d: Double, c: MyStruct) {
+func test5(d: Double, c: MyStruct) {
     a := c.a;
     b := c.b'to(Float);
-    func(...);
+    fun(...);
 }

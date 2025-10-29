@@ -1,27 +1,27 @@
-def compute(a: Int, b: Int, c: Int) -> Int {
+func compute(a: Int, b: Int, c: Int) -> Int {
     return a + b * c;
 }
 
-def helper1()-> Int {return 1;}
-def helper2()-> Int {return 2;}
-def helper3()-> Int {return 3;}
+func helper1()-> Int {return 1;}
+func helper2()-> Int {return 2;}
+func helper3()-> Int {return 3;}
 
-def test1() -> Int {
+func test1() -> Int {
     return if (compute(helper1(), helper2(), helper3()) > 0) 1 else 0;
 }
 
-def test2() -> Int {
+func test2() -> Int {
     return if (compute(helper1(), helper2(), helper3()) > 0) 0
         elif (compute(helper3(), helper2(), helper1()) < 0) 1
         else 2;
 }
 
-def test3() -> Int {
+func test3() -> Int {
     return if (compute(helper1(), helper2(), helper3()) > 0) 0
         elif (compute(helper3(), helper2(), helper1()) == 0) compute(helper3(), helper2(), helper1())
         else 2;
 }
 
-def test4() {
+func test4() {
     _ = if (compute(helper1(), helper2(), helper3()) > 0) compute(helper3(), helper2(), helper1());
 }

@@ -10,7 +10,7 @@ struct Str {
     len: Usize;
 }
 
-def str~[StrCtor{prefix="", interpolation=false}] (
+func str~[StrCtor{prefix="", interpolation=false}] (
     addr: Ptr, size: Usize
 ) -> Str {
     return Str{addr, size};
@@ -20,12 +20,12 @@ struct ErrnoError {
     code: Int;
 }
 
-def to(err: ErrnoError, :Bool) -> Bool {
+func to(err: ErrnoError, :Bool) -> Bool {
 	return err.code!= 0;
 }
 
 ;; Writes `msg` to `f`
-def write(f: File, msg: Str) -> void | ErrnoError {
+func write(f: File, msg: Str) -> void | ErrnoError {
     total : mut Usize;
     while (total < msg.len) {
         written : Usize = c.write(
@@ -38,12 +38,12 @@ def write(f: File, msg: Str) -> void | ErrnoError {
     }
 }
 
-def print(msg: Str) -> void {
+func print(msg: Str) -> void {
     stdout := File{1};
     stdout'write(msg);
 }
 
-def main~EntryPoint() -> Int {
+func main~EntryPoint() -> Int {
     print("Hello World\n");
     return 0;
 }

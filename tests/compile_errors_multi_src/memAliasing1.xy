@@ -4,17 +4,17 @@ struct List~[type: struct] {
     # ...
 }
 
-def get(arr: List, i: Int) -> arr[ Ptr~[^arr..type] ] {
+func get(arr: List, i: Int) -> arr[ Ptr~[^arr..type] ] {
     return Ptr{};
 }
 
-def set(arr: mut List, i: Size, val: pseudo Any) -> void {
+func set(arr: mut List, i: Size, val: pseudo Any) -> void {
     # ...
 }
 
-def func(item: mut Int, list: mut List~Int) {}
+func fun(item: mut Int, list: mut List~Int) {}
 
-def test() {
+func test() {
     a: List~Int;
-    func(a[0], a);; should give an error.
+    fun(a[0], a);; should give an error.
 }

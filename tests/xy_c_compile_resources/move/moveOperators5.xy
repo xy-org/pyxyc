@@ -4,11 +4,11 @@ struct Point {
     w: Int = 1;
 }
 
-def testMovingOutInout(p: mut Point) -> Point {
+func testMovingOutInout(p: mut Point) -> Point {
     return p =>;
 }
 
-def testMovingSimple() -> Point {
+func testMovingSimple() -> Point {
     p1: Point;
     p1.x = 10;
     p2 : Point;
@@ -21,17 +21,17 @@ struct Array {
     data: Ptr;
 }
 
-def dtor(arr: Array) {
+func dtor(arr: Array) {
 }
 
-def testMovingDtor() -> Array {
+func testMovingDtor() -> Array {
     arr1: Array;
     arr2: Array;
     arr2 =< arr1;
     return arr2;  # local variables are moved out
 }
 
-def testMovingDtor(arr: Array) -> Array {
+func testMovingDtor(arr: Array) -> Array {
     arr1: Array;
     # ...
     return arr;

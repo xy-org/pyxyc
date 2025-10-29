@@ -4,19 +4,19 @@ struct Complex {
     that := 10;
 }
 
-def dtor(c: Complex) {
+func dtor(c: Complex) {
     # ...
 }
 
-def setupThis(c: mut Complex, val: Int) {
+func setupThis(c: mut Complex, val: Int) {
     c.this = val;
 }
 
-def setupThat(c: mut Complex) {
+func setupThat(c: mut Complex) {
     c.that += c.this;
 }
 
-def test() {
+func test() {
     a := Complex{
         5,
         that=20,

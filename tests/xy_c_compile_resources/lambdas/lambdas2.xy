@@ -1,11 +1,11 @@
-def inner(x: (Int, Long)) {
+func inner(x: (Int, Long)) {
     # ...
 }
 
-def test1(x: Int) {
+func test1(x: Int) {
     inner(10);
 
-    def inner(x: Int = 20) {
+    func inner(x: Int = 20) {
         # ...
     }
 
@@ -15,6 +15,6 @@ def test1(x: Int) {
     inner(x);
 }
 
-def test2(x: Int) {
+func test2(x: Int) {
     inner(x);
 }

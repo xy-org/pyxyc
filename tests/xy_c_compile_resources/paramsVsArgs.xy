@@ -2,20 +2,20 @@
 # c : (a + b)'typeof = a + b
 # The type expression is evaluated at definition time
 # The value expression is executed at call time
-def func1(a := 0, b := 1, c := a + b) -> Int {
+func func1(a := 0, b := 1, c := a + b) -> Int {
     return a * b * c;
 }
 
 # a + b is calculated at call time
-def func2(a: pseudo Any, b: pseudo Any, c: Int = a + b) -> Int{
+func func2(a: pseudo Any, b: pseudo Any, c: Int = a + b) -> Int{
     return c;
 }
 
-def func3(ptr: Ptr, arg: pseudo Any) -> Ptr~[%^arg] {
+func func3(ptr: Ptr, arg: pseudo Any) -> Ptr~[%^arg] {
     return ptr;
 }
 
-def test() {
+func test() {
     a := func1();
     b := func1(a, a~[label=10]);
 

@@ -2,18 +2,18 @@ struct IntList {
     ints: Ptr~Int;
 }
 
-def get(arr: IntList, i: Int) -> arr[ Ptr~Int ] {
+func get(arr: IntList, i: Int) -> arr[ Ptr~Int ] {
     return Ptr{};
 }
 
-def set(arr: mut IntList, i: Int, val: Int) -> void {
+func set(arr: mut IntList, i: Int, val: Int) -> void {
     # ...
 }
 
-def func(num: Int) -> Int {
+func fun(num: Int) -> Int {
     return num * num;
 }
 
-def test(a: mut IntList, b: mut IntList, i: Int, j: Int) {
-    a[i] =< func(b[j]);
+func test(a: mut IntList, b: mut IntList, i: Int, j: Int) {
+    a[i] =< fun(b[j]);
 }

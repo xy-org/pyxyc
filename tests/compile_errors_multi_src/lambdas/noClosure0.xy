@@ -1,9 +1,9 @@
-def test(x: Int) {
-    def inner() x;
+func test(x: Int) {
+    func inner() x;
 
     _ := inner();
 }
 
-def print(x: Int) {
+func print(x: Int) {
     # ...
 }

@@ -118,7 +118,7 @@ def test_parse_import_error(code, err_msg):
     [
         """
 ;; function
-def main() {}
+func main() {}
         """,
         [
             ast.FuncDef(
@@ -129,7 +129,7 @@ def main() {}
     ],
     [
         """
-def main() -> int {
+func main() -> int {
     return i;
 }
         """,
@@ -145,7 +145,7 @@ def main() -> int {
     ],
     [
         """
-def main(i: int) -> int {
+func main(i: int) -> int {
     i *= i; # first square i
     i *= i; ;; square i
     i *= i ;; square i again
@@ -173,7 +173,7 @@ def main(i: int) -> int {
         ],
     ],
     [
-        """def func(
+        """func fun(
             x: Float, ;; x coordinate
             y: Float = 0, ;; y coordinate
             ;; z
@@ -181,7 +181,7 @@ def main(i: int) -> int {
             z: Float = 0,
         ) {}""",
         [
-            ast.FuncDef(ast.Id("func"), body=[], params=[
+            ast.FuncDef(ast.Id("fun"), body=[], params=[
                 ast.VarDecl("x", ast.Id("Float"), is_param=True, comment=";; x coordinate"),
                 ast.VarDecl("y", ast.Id("Float"), value=ast.Const(0), is_param=True, comment=";; y coordinate"),
                 ast.VarDecl("z", ast.Id("Float"), value=ast.Const(0), is_param=True,
@@ -191,7 +191,7 @@ def main(i: int) -> int {
     ],
     [
         """
-        def func() {
+        func fun() {
             arr := @{
                 ;; comment 1
                 "Line 1",
@@ -202,7 +202,7 @@ def main(i: int) -> int {
         }
         """,
         [
-            ast.FuncDef(ast.Id("func"), body=[
+            ast.FuncDef(ast.Id("fun"), body=[
                 ast.VarDecl("arr", value=ast.ArrayLit(elems=[
                     ast.SimpleStr("Line 1", comment=";; comment 1"),
                     ast.SimpleStr("Line 2", comment=";; comment 2"),
@@ -230,7 +230,7 @@ def main(i: int) -> int {
     ],
     [
         """
-        def func() {
+        func fun() {
             return ;; comment after return
             return a ;; comment after return with arg
             return a, b ;; comment after return with multiple values
@@ -238,7 +238,7 @@ def main(i: int) -> int {
         """,
         [
             ast.FuncDef(
-                ast.Id("func"),
+                ast.Id("fun"),
                 params=[],
                 body=[
                     ast.Return([], comment=";; comment after return"),
@@ -250,7 +250,7 @@ def main(i: int) -> int {
     ],
     [
         """
-        def mkSchema() = Schema {
+        func mkSchema() = Schema {
             ;; comment 1
             ;; comment 2
 
@@ -275,7 +275,7 @@ def main(i: int) -> int {
     ],
     [
         """
-        def mkSchema() = Schema {
+        func mkSchema() = Schema {
             a, ;; comment for a
             'setup(), ;; comment for setup
         };
@@ -299,7 +299,7 @@ def main(i: int) -> int {
     ],
     [
         """
-        def mkSchema() = Schema {
+        func mkSchema() = Schema {
             ;; before a
             a,
             ;; before setup
@@ -325,7 +325,7 @@ def main(i: int) -> int {
     ],
     [
         """
-        def test() {
+        func test() {
             (assert) a, b;; comment
             (assert) c, d;
         }
@@ -347,7 +347,7 @@ def test_parse_comments(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def test() {
+        """func test() {
             a := 1.5;
             b := 0xCAFE;
             c := 0xCafeUS;
@@ -383,7 +383,7 @@ def test_parse_comments(code, exp_ast):
         ]
     ],
     [
-        """def test() {
+        """func test() {
             a := 10_000;
             b := 0xCA_FE;
             c := 0xCa_feUS;
@@ -409,7 +409,7 @@ def test_parse_comments(code, exp_ast):
         ]
     ],
     [
-        """def test() {
+        """func test() {
             a := 0xBB()b;
             b := 0xBB()ub;
         }
@@ -432,7 +432,7 @@ def test_parse_num_literals(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             print("abc");
         }
         """,
@@ -451,7 +451,7 @@ def test_parse_num_literals(code, exp_ast):
         """# multi word comment
         import xylib;
 
-        def main() -> int {
+        func main() -> int {
         }
         """,
         [
@@ -466,7 +466,7 @@ def test_parse_num_literals(code, exp_ast):
         """# multi word comment
         import xylib;
 
-        def main~EntryPoint() -> int {
+        func main~EntryPoint() -> int {
             return 0;
         }
         """,
@@ -484,7 +484,7 @@ def test_parse_num_literals(code, exp_ast):
     ],
     [
         """
-        def main~EntryPoint(a: int, b: long) -> int | Error
+        func main~EntryPoint(a: int, b: long) -> int | Error
         >> a > b
         {
             return a+b;
@@ -513,7 +513,7 @@ def test_parse_num_literals(code, exp_ast):
     ],
     [
         """
-        def add3(
+        func add3(
             a: int,
             b: int,
             c: int,
@@ -544,7 +544,7 @@ def test_parse_num_literals(code, exp_ast):
     ],
     [
         """
-        def add3(
+        func add3(
             a: int,
             # comment before last param
             b: int,
@@ -564,7 +564,7 @@ def test_parse_num_literals(code, exp_ast):
     ],
     [
         """
-        def add3(
+        func add3(
             a: int,
             b: int,
             # comment after last param
@@ -584,7 +584,7 @@ def test_parse_num_literals(code, exp_ast):
     ],
     [
         """
-        def add3(
+        func add3(
             a: int,
             b: int # comment at the same line as the last param
         ) -> void {}
@@ -602,19 +602,19 @@ def test_parse_num_literals(code, exp_ast):
         ]
     ],
 ])
-def test_parse_simple_func(code, exp_ast):
+def test_parse_simple_fun(code, exp_ast):
     act_ast = parse_code(code)
     assert act_ast == exp_ast
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def test() -> void {
+        """func test() -> void {
             [a];
-            'func(a);
-            ''func;  # valid syntax, invalid code
+            'fun(a);
+            ''fun;  # valid syntax, invalid code
             'f1'f2(a);
-            ['func];
-            'func[i];
+            ['fun];
+            'fun[i];
             'f1 + 'f2;
         }
         """,
@@ -631,10 +631,10 @@ def test_parse_simple_func(code, exp_ast):
                         )
                     ),
                     ast.FuncCall(
-                        name=ast.Id("func"), args=[ast.Id("a")], inject_context=True,
+                        name=ast.Id("fun"), args=[ast.Id("a")], inject_context=True,
                     ),
                     ast.FuncCall(
-                        name=ast.FuncCall(name=ast.Id("func"), inject_context=True),
+                        name=ast.FuncCall(name=ast.Id("fun"), inject_context=True),
                         inject_context=True,
                     ),
                     ast.FuncCall(
@@ -648,13 +648,13 @@ def test_parse_simple_func(code, exp_ast):
                         base=None,
                         args=ast.Args(
                             args=[
-                                ast.FuncCall(name=ast.Id("func"), inject_context=True),
+                                ast.FuncCall(name=ast.Id("fun"), inject_context=True),
                             ]
                         )
                     ),
                     ast.Select(
                         base=ast.FuncCall(
-                            name=ast.Id("func"), args=[], inject_context=True,
+                            name=ast.Id("fun"), args=[], inject_context=True,
                         ),
                         args=ast.Args(
                             args=[ast.Id("i")],
@@ -680,12 +680,12 @@ def test_parse_implied_context_expr(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def func() -> (int, int) {
+        """func fun() -> (int, int) {
            return 0, 1;
         }
         """,
         [
-            ast.FuncDef(ast.Id("func"), params=[],
+            ast.FuncDef(ast.Id("fun"), params=[],
                 returns=[
                     ast.VarDecl(type=ast.Id("int")),
                     ast.VarDecl(type=ast.Id("int")),
@@ -697,12 +697,12 @@ def test_parse_implied_context_expr(code, exp_ast):
         ]
     ],
     [
-        """def func() -> (a: int, b: int) {
+        """func fun() -> (a: int, b: int) {
            return 0, 1;
         }
         """,
         [
-            ast.FuncDef(ast.Id("func"), params=[],
+            ast.FuncDef(ast.Id("fun"), params=[],
                 returns=[
                     ast.VarDecl(name="a", type=ast.Id("int"), mutable=True),
                     ast.VarDecl(name="b", type=ast.Id("int"), mutable=True),
@@ -715,8 +715,8 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def double(x: int) x * 2;
-        def sqr(x: int) = x * x;
+        func double(x: int) x * 2;
+        func sqr(x: int) = x * x;
         """,
         [
             ast.FuncDef(ast.Id("double"),
@@ -735,8 +735,8 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def pseudoParam(x: pseudo int) 0;
-        def unnamedParam(:int) 0;
+        func pseudoParam(x: pseudo int) 0;
+        func unnamedParam(:int) 0;
         """,
         [
             ast.FuncDef(ast.Id("pseudoParam"),
@@ -755,12 +755,12 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def func(x: int) -> void | Error {
+        func fun(x: int) -> void | Error {
             error Error{x};
         }
         """,
         [
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[
                     ast.param("x", type=ast.Id("int")),
                 ],
@@ -781,11 +781,11 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def func(x: int)
+        func fun(x: int)
             x + 1;
         """,
         [
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[
                     ast.param("x", type=ast.Id("int")),
                 ],
@@ -795,7 +795,7 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def func(x: int)
+        func fun(x: int)
         # comment
         # >> comment
         # << comment
@@ -803,7 +803,7 @@ def test_parse_implied_context_expr(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[
                     ast.param("x", type=ast.Id("int")),
                 ],
@@ -816,15 +816,15 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def func(x: int) -> Ptr~int {}
-        def func(x: pseudo Any) -> Ptr~[^(a'typeof)] {}
-        def func(x: pseudo Any) -> Ptr~[^a'typeof] {}
-        def func(x: pseudo Any) -> Ptr~[^typeof(a)] {}
-        def func(x: pseudo Any) -> Ptr~[^(%a)] {}
-        def func(x: pseudo Any) -> Ptr~[%^a] {}
+        func fun(x: int) -> Ptr~int {}
+        func fun(x: pseudo Any) -> Ptr~[^(a'typeof)] {}
+        func fun(x: pseudo Any) -> Ptr~[^a'typeof] {}
+        func fun(x: pseudo Any) -> Ptr~[^typeof(a)] {}
+        func fun(x: pseudo Any) -> Ptr~[^(%a)] {}
+        func fun(x: pseudo Any) -> Ptr~[%^a] {}
         """,
         [
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[ast.param("x", type=ast.Id("int"))],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
@@ -833,7 +833,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 ],
                 body=[]
             ),
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
@@ -846,7 +846,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 ],
                 body=[]
             ),
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
@@ -859,7 +859,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 ],
                 body=[]
             ),
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
@@ -873,7 +873,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 ],
                 body=[]
             ),
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
@@ -886,7 +886,7 @@ def test_parse_implied_context_expr(code, exp_ast):
                 ],
                 body=[]
             ),
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[ast.param("x", type=ast.Id("Any"), is_pseudo=True)],
                 returns=[
                     ast.VarDecl(type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
@@ -904,10 +904,10 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def func(num: (Int, Float, Byte)) {}
+        func fun(num: (Int, Float, Byte)) {}
         """,
         [
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[ast.param(
                     "num",
                     type=ast.Enumeration([
@@ -921,7 +921,7 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def mkFunc() = def inner(x: Int, y: Int) -> Int {
+        func mkFunc() = func inner(x: Int, y: Int) -> Int {
             return x + y;
         };
         """,
@@ -945,7 +945,7 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def test() = f(def a() = 5, def b() = 10);
+        func test() = f(func a() = 5, func b() = 10);
         """,
         [
             ast.FuncDef(
@@ -969,7 +969,7 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def test() = def inner() = def deeper() = 5;
+        func test() = func inner() = func deeper() = 5;
         """,
         [
             ast.FuncDef(
@@ -987,7 +987,7 @@ def test_parse_implied_context_expr(code, exp_ast):
     ],
     [
         """
-        def test(param: don Struct) {}
+        func test(param: don Struct) {}
         """,
         [
             ast.FuncDef(
@@ -1007,13 +1007,13 @@ def test_parse_advanced_funcs(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def func(input: Int) -> Int | Error {
+        """func fun(input: Int) -> Int | Error {
               if (input < 0) return 0;
               return 100;
            }
         """,
         [
-            ast.FuncDef(ast.Id("func"), params=[ast.VarDecl("input", ast.Id("Int"), is_param=True)],
+            ast.FuncDef(ast.Id("fun"), params=[ast.VarDecl("input", ast.Id("Int"), is_param=True)],
                 returns=[
                     ast.VarDecl(type=ast.Id("Int")),
                 ],
@@ -1031,13 +1031,13 @@ def test_parse_advanced_funcs(code, exp_ast):
         ]
     ],
     [
-        """def func(input: Int) -> Int | Error {
+        """func fun(input: Int) -> Int | Error {
               if (input < 0) error Error{-1};
               return 100;
            }
         """,
         [
-            ast.FuncDef(ast.Id("func"), params=[ast.VarDecl("input", ast.Id("Int"), is_param=True)],
+            ast.FuncDef(ast.Id("fun"), params=[ast.VarDecl("input", ast.Id("Int"), is_param=True)],
                 returns=[
                     ast.VarDecl(type=ast.Id("Int")),
                 ],
@@ -1064,10 +1064,10 @@ def test_early_returns_and_errors(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        def func(x: pseudo Any, y : Metadata = ^metadata(x)) {}
+        func fun(x: pseudo Any, y : Metadata = ^metadata(x)) {}
         """,
         [
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[
                     ast.param("x", type=ast.Id("Any"), is_pseudo=True),
                     ast.param("y", type=ast.Id("Metadata"), value=ast.FuncCall(
@@ -1081,10 +1081,10 @@ def test_early_returns_and_errors(code, exp_ast):
     ],
     [
         """
-        def func(x: Array, y:Tag = ^x..elem) {}
+        func fun(x: Array, y:Tag = ^x..elem) {}
         """,
         [
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[
                     ast.param("x", type=ast.Id("Array")),
                     ast.param("y", type=ast.Id("Tag"), value=ast.BinExpr(
@@ -1099,7 +1099,7 @@ def test_early_returns_and_errors(code, exp_ast):
     ],
     [
         """
-        def log(^msg: Str, _ := if (loggingEnalbed) doLog(msg)) {}
+        func log(^msg: Str, _ := if (loggingEnalbed) doLog(msg)) {}
         """,
         [
             ast.FuncDef(ast.Id("log"),
@@ -1119,7 +1119,7 @@ def test_early_returns_and_errors(code, exp_ast):
     ],
     [
         """
-        def test(^msg: pseudo Any) {}
+        func test(^msg: pseudo Any) {}
         """,
         [
             ast.FuncDef(ast.Id("test"),
@@ -1132,10 +1132,10 @@ def test_early_returns_and_errors(code, exp_ast):
     ],
     [
         """
-        def func(x: pseudo Any, val: int = ^(x+1)) {}
+        func fun(x: pseudo Any, val: int = ^(x+1)) {}
         """,
         [
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 params=[
                     ast.param("x", type=ast.Id("Any"), is_pseudo=True),
                     ast.param("val", type=ast.Id("int"), value=ast.CallerContextExpr(
@@ -1158,11 +1158,11 @@ def test_parse_boundary_expressions(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def func(a: int, b: int = 0, c := a + b) -> int {
+        """func fun(a: int, b: int = 0, c := a + b) -> int {
         }
         """,
         [
-            ast.FuncDef(ast.Id("func"),
+            ast.FuncDef(ast.Id("fun"),
                 returns=[
                     ast.VarDecl(type=ast.Id("int")),
                 ],
@@ -1191,11 +1191,11 @@ def test_parse_default_param_values(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
-            func(a);
-            a'func;
-            a'func(b);
-            a \\func b;
+        """func main() -> void {
+            fun(a);
+            a'fun;
+            a'fun(b);
+            a \\fun b;
         }
         """,
         [
@@ -1203,23 +1203,23 @@ def test_parse_default_param_values(code, exp_ast):
                 ast.Id("main"),
                 returns=[ast.VarDecl(type=ast.Id("void"))],
                 body=[
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a")]),
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a")]),
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a"), ast.Id("b")]),
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a"), ast.Id("b")]),
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id("a")]),
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id("a")]),
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id("a"), ast.Id("b")]),
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id("a"), ast.Id("b")]),
             ]),
         ]
     ],
     [
-        """def main() -> void {
-            func(
+        """func main() -> void {
+            fun(
                 func1(
                     func11(),
                     func12()
                 ),
                 func2()
             );
-            c'func(
+            c'fun(
                 a,
                 b,
             );
@@ -1230,25 +1230,25 @@ def test_parse_default_param_values(code, exp_ast):
                 ast.Id("main"),
                 returns=[ast.VarDecl(type=ast.Id("void"))],
                 body=[
-                    ast.FuncCall(ast.Id("func"), args=[
+                    ast.FuncCall(ast.Id("fun"), args=[
                         ast.FuncCall(ast.Id("func1"), args=[
                             ast.FuncCall(ast.Id("func11")),
                             ast.FuncCall(ast.Id("func12")),
                         ]),
                         ast.FuncCall(ast.Id("func2")),
                     ]),
-                    ast.FuncCall(ast.Id("func"), args=[
+                    ast.FuncCall(ast.Id("fun"), args=[
                         ast.Id("c"), ast.Id("a"), ast.Id("b"),
                     ])
             ]),
         ]
     ],
     [
-        """def main() -> void {
-            func(...);
-            a'func(...);
-            func(a, b=c, ...);
-            func(b=a, ...);
+        """func main() -> void {
+            fun(...);
+            a'fun(...);
+            fun(a, b=c, ...);
+            fun(b=a, ...);
         }
         """,
         [
@@ -1256,26 +1256,26 @@ def test_parse_default_param_values(code, exp_ast):
                 ast.Id("main"),
                 returns=[ast.VarDecl(type=ast.Id("void"))],
                 body=[
-                    ast.FuncCall(ast.Id("func"),
+                    ast.FuncCall(ast.Id("fun"),
                                  inject_args=ast.ScopeArgsInject()),
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a")],
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id("a")],
                                  inject_args=ast.ScopeArgsInject()),
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a")],
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id("a")],
                                  kwargs={"b": ast.Id("c")},
                                  inject_args=ast.ScopeArgsInject()),
-                    ast.FuncCall(ast.Id("func"), kwargs={"b": ast.Id("a")},
+                    ast.FuncCall(ast.Id("fun"), kwargs={"b": ast.Id("a")},
                                  inject_args=ast.ScopeArgsInject()),
             ]),
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             (a);
-            (func) a, b;
-            (func) a, b=10;
-            (func) (func) x, y;
-            (func) x, (func) y;
-            (func) x + (func) y;
+            (fun) a, b;
+            (fun) a, b=10;
+            (fun) (fun) x, y;
+            (fun) x, (fun) y;
+            (fun) x + (fun) y;
         }
         """,
         [
@@ -1284,22 +1284,22 @@ def test_parse_default_param_values(code, exp_ast):
                 returns=[ast.VarDecl(type=ast.Id("void"))],
                 body=[
                     ast.Id("a"),
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a"), ast.Id("b")]),
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id("a")],
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id("a"), ast.Id("b")]),
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id("a")],
                                  kwargs={"b": ast.Const(10)}),
-                    ast.FuncCall(ast.Id("func"), args=[
-                        ast.FuncCall(ast.Id("func"), args=[ast.Id("x"), ast.Id("y")])
+                    ast.FuncCall(ast.Id("fun"), args=[
+                        ast.FuncCall(ast.Id("fun"), args=[ast.Id("x"), ast.Id("y")])
                     ]),
-                    ast.FuncCall(ast.Id("func"), args=[
+                    ast.FuncCall(ast.Id("fun"), args=[
                         ast.Id("x"),
-                        ast.FuncCall(ast.Id("func"), args=[ast.Id("y")])
+                        ast.FuncCall(ast.Id("fun"), args=[ast.Id("y")])
                     ]),
                     ast.FuncCall(
-                        ast.Id("func"),
+                        ast.Id("fun"),
                         args=[
                             ast.BinExpr(
                                 ast.Id("x"),
-                                ast.FuncCall(ast.Id("func"), args=[ast.Id("y")]),
+                                ast.FuncCall(ast.Id("fun"), args=[ast.Id("y")]),
                                 op="+",
                             )
                         ]
@@ -1316,7 +1316,7 @@ def test_parse_func_call(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             a := b;
         }
         """,
@@ -1327,7 +1327,7 @@ def test_parse_func_call(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             b := 0;
             c : int = 5;
             cv : int;
@@ -1374,9 +1374,9 @@ def test_parse_func_call(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
-            _ = func(a, b);
-            _ := func(a, b);
+        """func main() -> void {
+            _ = fun(a, b);
+            _ := fun(a, b);
             _:= a + b;
             _= a + b;
         }
@@ -1385,11 +1385,11 @@ def test_parse_func_call(code, exp_ast):
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.BinExpr(
                     ast.Id("_"),
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id('a'), ast.Id('b')]),
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id('a'), ast.Id('b')]),
                     op="=",
                 ),
                 ast.VarDecl(
-                    "_", value=ast.FuncCall(ast.Id("func"), args=[ast.Id('a'), ast.Id('b')]),
+                    "_", value=ast.FuncCall(ast.Id("fun"), args=[ast.Id('a'), ast.Id('b')]),
                 ),
                 ast.VarDecl(
                     "_", value=ast.BinExpr(ast.Id('a'), ast.Id('b'), op="+"),
@@ -1409,7 +1409,7 @@ def test_parse_var_decl(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             a := :;
             b:=:;
             c := :a;
@@ -1464,7 +1464,7 @@ def test_parse_var_decl(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             f := :x:;
         }
         """,
@@ -1482,7 +1482,7 @@ def test_parse_var_decl(code, exp_ast):
         ]
     ],
     [
-        """def main() -> Slice {
+        """func main() -> Slice {
             return ::-1;
         }
         """,
@@ -1497,15 +1497,15 @@ def test_parse_var_decl(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
-            func(a:b);
-            func(a'get:b'get);
+        """func main() -> void {
+            fun(a:b);
+            fun(a'get:b'get);
         }
         """,
         [
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.FuncCall(
-                    ast.Id("func"),
+                    ast.Id("fun"),
                     args=[
                         ast.SliceExpr(
                             ast.Id("a"),
@@ -1514,7 +1514,7 @@ def test_parse_var_decl(code, exp_ast):
                     ]
                 ),
                 ast.FuncCall(
-                    ast.Id("func"),
+                    ast.Id("fun"),
                     args=[
                         ast.SliceExpr(
                             ast.FuncCall(ast.Id("get"), args=[ast.Id("a")]),
@@ -1532,7 +1532,7 @@ def test_parse_slices(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             d := a +: b;
             e := a *: c;
             f := a -: b : -1;
@@ -1566,7 +1566,7 @@ def test_parse_operator_slices(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def test() {
+        """func test() {
             a : mut = 10;
             b : int;
             b =< a;
@@ -1585,7 +1585,7 @@ def test_parse_operator_slices(code, exp_ast):
         ]
     ],
     [
-        """def test() {
+        """func test() {
             a : mut = 10;
             b : int;
             b =< a;
@@ -1624,7 +1624,7 @@ def test_parse_operator_slices(code, exp_ast):
         ]
     ],
     [
-        """def test() {
+        """func test() {
             a : mut = 10;
             f(a =>);
             f(a, a =>);
@@ -1657,7 +1657,7 @@ def test_move_operators(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() {
+        """func main() {
             a;
         }
         """,
@@ -1668,7 +1668,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a + b;
         }
         """,
@@ -1679,7 +1679,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a + b + c;
         }
         """,
@@ -1693,7 +1693,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a = -a;
         }
         """,
@@ -1708,7 +1708,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a = b - -a;
         }
         """,
@@ -1727,7 +1727,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a = a*b + c;
         }
         """,
@@ -1748,7 +1748,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a = b = c;
         }
         """,
@@ -1767,7 +1767,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             sin();
         }
         """,
@@ -1778,7 +1778,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             sin(a);
         }
         """,
@@ -1789,7 +1789,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             sin(max());
         }
         """,
@@ -1802,7 +1802,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             sin(max(3, 4));
         }
         """,
@@ -1815,7 +1815,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             sin(max(3, 4)/3*pi);
         }
         """,
@@ -1836,7 +1836,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a'sin;
         }
         """,
@@ -1847,7 +1847,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a'sin(b);
         }
         """,
@@ -1858,7 +1858,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a \\sin b;
         }
         """,
@@ -1869,7 +1869,7 @@ def test_move_operators(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             a \\sin b(3, 4);
         }
         """,
@@ -1893,7 +1893,7 @@ def test_simple_expressions(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             a := 0 + 1 * 2 + 3;
             b := (0 + 1) * (2 + 3);
             c := (0 + 1) * 2 + 3;
@@ -1901,7 +1901,7 @@ def test_simple_expressions(code, exp_ast):
             e := (a + b - a + b);
             f := a'func1 \\func2 b'func2;
             g := (a + b)'func1'func2 \\func3 c'func4;
-            func(a, b'func, d \\add c);
+            fun(a, b'fun, d \\add c);
         }
         """,
         [
@@ -1984,16 +1984,16 @@ def test_simple_expressions(code, exp_ast):
                         ast.FuncCall(ast.Id("func4"), [ast.Id("c")])
                     ]
                 )),
-                ast.FuncCall(ast.Id("func"), [
+                ast.FuncCall(ast.Id("fun"), [
                     ast.Id("a"),
-                    ast.FuncCall(ast.Id("func"), [ast.Id("b")]),
+                    ast.FuncCall(ast.Id("fun"), [ast.Id("b")]),
                     ast.FuncCall(ast.Id("add"), [ast.Id("d"), ast.Id("c")]),
                 ]),
             ]),
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             minusone := -1;
             plusone := +1;
             addneg := a + -5;
@@ -2062,7 +2062,7 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             a : mut = 1;
             b := a++;
             a++;
@@ -2090,15 +2090,15 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def func() -> void {
+        """func fun() -> void {
             a := 0;
             b := &a;
-            c := &func(a, b);
+            c := &fun(a, b);
             d := func1(&func2(&a + 5, &b));
             e := &a[10][20];
         }""",
         [
-            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+            ast.FuncDef(ast.Id("fun"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl("a", value=ast.Const(0), mutable=False),
                 ast.VarDecl("b", value=ast.UnaryExpr(
                     arg=ast.Id("a"),
@@ -2106,7 +2106,7 @@ def test_simple_expressions(code, exp_ast):
                 )),
                 ast.VarDecl("c", value=ast.UnaryExpr(
                     arg=ast.FuncCall(
-                        ast.Id("func"),
+                        ast.Id("fun"),
                         args=[ast.Id("a"), ast.Id("b")]
                     ),
                     op="&",
@@ -2146,7 +2146,7 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def func() -> void {
+        """func fun() -> void {
             a : Ptr~Ptr~int;
             b : a..to;
             c : a..to..to;
@@ -2155,7 +2155,7 @@ def test_simple_expressions(code, exp_ast):
             f : %c = a..to'sizeof;
         }""",
         [
-            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+            ast.FuncDef(ast.Id("fun"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl("a", mutable=True, type=ast.AttachTags(
                     arg=ast.Id("Ptr"),
                     tags=ast.TagList(args=[ast.AttachTags(
@@ -2207,13 +2207,13 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def func() -> void {
+        """func fun() -> void {
             a := 5;
             b := -a;
             c := if(a < 0) -a else a;
         }""",
         [
-            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+            ast.FuncDef(ast.Id("fun"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl("a", mutable=False, value=ast.Const(5)),
                 ast.VarDecl("b", mutable=False, value=ast.UnaryExpr(ast.Id("a"), op="-")),
                 ast.VarDecl("c", value=ast.IfExpr(
@@ -2225,20 +2225,20 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def func() -> void {
-            a := func()~Tag;
-            b := func()~Tag1~Tag2;
+        """func fun() -> void {
+            a := fun()~Tag;
+            b := fun()~Tag1~Tag2;
         }""",
         [
-            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+            ast.FuncDef(ast.Id("fun"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl("a", mutable=False, value=ast.AttachTags(
-                    arg=ast.FuncCall(ast.Id("func")),
+                    arg=ast.FuncCall(ast.Id("fun")),
                     tags=ast.TagList(
                         args=[ast.Id("Tag")]
                     )
                 )),
                 ast.VarDecl("b", mutable=False, value=ast.AttachTags(
-                    arg=ast.FuncCall(ast.Id("func")),
+                    arg=ast.FuncCall(ast.Id("fun")),
                     tags=ast.TagList(
                         args=[
                             ast.AttachTags(
@@ -2254,10 +2254,10 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def test(a: Any) func(%a{0});""",
+        """func test(a: Any) fun(%a{0});""",
         [
             ast.FuncDef(ast.Id("test"), body=ast.FuncCall(
-                name=ast.Id("func"), args=[
+                name=ast.Id("fun"), args=[
                     ast.UnaryExpr(
                         ast.StructLiteral(
                             name=ast.Id("a"),
@@ -2272,7 +2272,7 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def test(s: Struct) {
+        """func test(s: Struct) {
             (s.addr)~[to=Byte];
         }""",
         [
@@ -2289,7 +2289,7 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def test(s: Struct) {
+        """func test(s: Struct) {
             Array~Int{0};
         }""",
         [
@@ -2304,13 +2304,13 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def test(s: Struct) {
-            func(s)~Tag;
+        """func test(s: Struct) {
+            fun(s)~Tag;
         }""",
         [
             ast.FuncDef(ast.Id("test"), body=[
                 ast.AttachTags(
-                    ast.FuncCall(ast.Id("func"), args=[ast.Id("s")]),
+                    ast.FuncCall(ast.Id("fun"), args=[ast.Id("s")]),
                     tags=ast.TagList(
                         [ast.Id("Tag")]
                     )
@@ -2321,7 +2321,7 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def test(s: mut Array) {
+        """func test(s: mut Array) {
             s @ Val{};
             s @= Val{};
             s @= { Val{}, Val{} };
@@ -2363,7 +2363,7 @@ def test_simple_expressions(code, exp_ast):
         ]
     ],
     [
-        """def test(x: Float, y: Float) {
+        """func test(x: Float, y: Float) {
             a := x ^ y;
             b := ^x ^ ^y;
             c := -x ^ y;
@@ -2430,7 +2430,7 @@ def test_expressions(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def test(s: Struct) {
+        """func test(s: Struct) {
             s.a~Tag;
         }""",
         [
@@ -2451,7 +2451,7 @@ def test_expressions(code, exp_ast):
         ]
     ],
     [
-        """def test() {
+        """func test() {
             a.b~c~d.e;
         }""",
         [
@@ -2473,7 +2473,7 @@ def test_expressions(code, exp_ast):
         ]
     ],
     [
-        """def test() {
+        """func test() {
             a + b~c~d;
         }""",
         [
@@ -2501,7 +2501,7 @@ def test_assigning_tags(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def test() {
+        """func test() {
             (assert) (
                 cond1 ||
                 cond2
@@ -2537,11 +2537,11 @@ def test_newlines_in_expressions(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def func() {
+        """func fun() {
             return % ! - - + ^ ' a;
         }""",
         [
-            ast.FuncDef(ast.Id("func"), body=[
+            ast.FuncDef(ast.Id("fun"), body=[
                 ast.Return(ast.UnaryExpr(
                     op="%",
                     arg=ast.UnaryExpr(
@@ -2567,11 +2567,11 @@ def test_newlines_in_expressions(code, exp_ast):
         ],
     ],
     [
-        """def func() {
+        """func fun() {
             return - - a --;
         }""",
         [
-            ast.FuncDef(ast.Id("func"), body=[
+            ast.FuncDef(ast.Id("fun"), body=[
                 ast.Return(ast.UnaryExpr(
                     op="-",
                     arg=ast.UnaryExpr(
@@ -2586,11 +2586,11 @@ def test_newlines_in_expressions(code, exp_ast):
         ],
     ],
     [
-        """def func() {
+        """func fun() {
             return a+b*c/d+:g+-g;
         }""",
         [
-            ast.FuncDef(ast.Id("func"), body=[
+            ast.FuncDef(ast.Id("fun"), body=[
                 ast.Return(ast.SliceExpr(
                     start=ast.BinExpr(
                         ast.Id("a"),
@@ -2623,7 +2623,7 @@ def test_weird_expressions(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def test() -> void {
+        """func test() -> void {
             cb1: (:int)->int;
             cb2: (a:int, b:int)->void|Error;
             cb3: (:mut int)->void;
@@ -2675,7 +2675,7 @@ def test_weird_expressions(code, exp_ast):
         ]
     ],
     [
-        """def test() -> void {
+        """func test() -> void {
             cb1 := $(int, int);
             cb2 := $ name(int, long);
             cb3 := $* ~Test();
@@ -2738,27 +2738,27 @@ def test_parse_callbacks(code, exp_ast):
 
 
 @pytest.mark.parametrize("code, err_msg", [
-    ("""def func() -> void {
+    ("""func fun() -> void {
         ++a;
     }""",
      "Prefix increment and decrement are not supported"),
-    ("""def func() -> void {
+    ("""func fun() -> void {
         b := ++a;
     }""",
      "Prefix increment and decrement are not supported"),
-    ("""def func() -> void {
+    ("""func fun() -> void {
         a+;
     }""",
      "Unexpected end of expression"),
-    ("""def func() -> void {
+    ("""func fun() -> void {
         a----b;
     }""",
      "Malformed expression."),
-    ("""def func() -> void {
+    ("""func fun() -> void {
         a-- b;
     }""",
      "Malformed expression."),
-    ("""def func() -> void {
+    ("""func fun() -> void {
         (b + (a+1)
     }""",
      "Missing closing bracket"),
@@ -2853,7 +2853,7 @@ def test_parse_struct(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        def func() -> void {
+        func fun() -> void {
             a := int{1};
             p := Pair{1, a};
             func2(Pair{3, 4} * Pair{5, 6});
@@ -2862,7 +2862,7 @@ def test_parse_struct(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+            ast.FuncDef(ast.Id("fun"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl("a", type=None, value=ast.StructLiteral(
                     name=ast.Id("int"), args=[ast.Const(1)]
                 )),
@@ -2917,12 +2917,12 @@ def test_parse_struct(code, exp_ast):
     ],
     [
         """
-        def func() -> void {
+        func fun() -> void {
             a .= {1};
         }
         """,
         [
-            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+            ast.FuncDef(ast.Id("fun"), returns=ast.SimpleRType("void"), body=[
                 ast.BinExpr(
                     ast.Id("a"),
                     ast.StructLiteral(name=None, args=[ast.Const(1)]),
@@ -2933,7 +2933,7 @@ def test_parse_struct(code, exp_ast):
     ],
     [
         """
-        def func() -> void {
+        func fun() -> void {
             argStr := Str{
                 addr=argv[i],
                 len=strlen(argv[i]),
@@ -2941,7 +2941,7 @@ def test_parse_struct(code, exp_ast):
         }
         """,
         [
-            ast.FuncDef(ast.Id("func"), returns=ast.SimpleRType("void"), body=[
+            ast.FuncDef(ast.Id("fun"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl(
                     name="argStr",
                     value=ast.StructLiteral(
@@ -2962,7 +2962,7 @@ def test_parse_struct(code, exp_ast):
     ],
     [
         """
-        def stringCtor(addr: Ptr, len: Size) Str{=addr, =len};
+        func stringCtor(addr: Ptr, len: Size) Str{=addr, =len};
         """,
         [
             ast.FuncDef(
@@ -2983,7 +2983,7 @@ def test_parse_struct(code, exp_ast):
     ],
     [
         """
-        def func() Struct{
+        func fun() Struct{
             positional,
             name=value,
             'setup(),
@@ -2991,7 +2991,7 @@ def test_parse_struct(code, exp_ast):
         """,
         [
             ast.FuncDef(
-                ast.Id("func"),
+                ast.Id("fun"),
                 params=[],
                 body=ast.StructLiteral(
                     ast.Id("Struct"),
@@ -3013,19 +3013,19 @@ def test_struct_literals(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        def func~Tag() -> void {}
-        def func~[Tag{val=1}]() -> void {}
-        def func~[Tag{val=Tag2{val2=2}}]() -> void {}
+        func fun~Tag() -> void {}
+        func fun~[Tag{val=1}]() -> void {}
+        func fun~[Tag{val=Tag2{val2=2}}]() -> void {}
         """,
         [
             ast.FuncDef(
-                ast.Id("func"), returns=ast.SimpleRType("void"), body=[],
+                ast.Id("fun"), returns=ast.SimpleRType("void"), body=[],
                 tags=ast.TagList(args=[
                     ast.Id("Tag")
                 ])
             ),
             ast.FuncDef(
-                ast.Id("func"), returns=ast.SimpleRType("void"), body=[],
+                ast.Id("fun"), returns=ast.SimpleRType("void"), body=[],
                 tags=ast.TagList(args=[
                     ast.StructLiteral(
                         name=ast.Id("Tag"),
@@ -3036,7 +3036,7 @@ def test_struct_literals(code, exp_ast):
                 ])
             ),
             ast.FuncDef(
-                ast.Id("func"), returns=ast.SimpleRType("void"), body=[],
+                ast.Id("fun"), returns=ast.SimpleRType("void"), body=[],
                 tags=ast.TagList(args=[
                     ast.StructLiteral(
                         name=ast.Id("Tag"),
@@ -3062,11 +3062,11 @@ def test_func_def_with_tags(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        def func() break "I will break compilation";
+        func fun() break "I will break compilation";
         """,
         [
             ast.FuncDef(
-                ast.Id("func"),
+                ast.Id("fun"),
                 body=ast.Break(ast.StrLiteral(
                     parts=[ast.Const("I will break compilation")],
                     full_str="I will break compilation"
@@ -3082,21 +3082,21 @@ def test_static_expr(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        -def func() -> void {}
-        +def func() -> void {}
-        *def func() -> void {}
+        -func fun() -> void {}
+        +func fun() -> void {}
+        *func fun() -> void {}
         """,
         [
             ast.FuncDef(
-                ast.Id("func"), returns=ast.SimpleRType("void"), body=[],
+                ast.Id("fun"), returns=ast.SimpleRType("void"), body=[],
                 visibility=ast.ModuleVisibility,
             ),
             ast.FuncDef(
-                ast.Id("func"), returns=ast.SimpleRType("void"), body=[],
+                ast.Id("fun"), returns=ast.SimpleRType("void"), body=[],
                 visibility=ast.PackageVisibility,
             ),
             ast.FuncDef(
-                ast.Id("func"), returns=ast.SimpleRType("void"), body=[],
+                ast.Id("fun"), returns=ast.SimpleRType("void"), body=[],
                 visibility=ast.PublicVisibility,
             ),
         ]
@@ -3149,24 +3149,24 @@ def test_visibility(code, exp_ast):
         struct Array {
         }
 
-        def func(arr: Array) -> arr[ int ] {
+        func fun(arr: Array) -> arr[ int ] {
             return 0;
         }
 
-        def func(arr: Array) -> (arr[int]) {
+        func fun(arr: Array) -> (arr[int]) {
             return 0;
         }
 
-        def func(arr: Array, idx: int) -> arr[ Ptr~int ] {
+        func fun(arr: Array, idx: int) -> arr[ Ptr~int ] {
         }
 
-        def func(idx: int) -> [Ptr~int] {
+        func fun(idx: int) -> [Ptr~int] {
         }
         """,
         [
             ast.StructDef("Array"),
             ast.FuncDef(
-                ast.Id("func"),
+                ast.Id("fun"),
                 returns=[
                     ast.VarDecl(type=ast.Id("int"), index_in=ast.Id("arr"), mutable=True),
                 ],
@@ -3178,7 +3178,7 @@ def test_visibility(code, exp_ast):
                 ],
             ),
             ast.FuncDef(
-                ast.Id("func"),
+                ast.Id("fun"),
                 returns=[
                     ast.VarDecl(type=ast.Id("int"), index_in=ast.Id("arr"), mutable=True),
                 ],
@@ -3190,7 +3190,7 @@ def test_visibility(code, exp_ast):
                 ],
             ),
             ast.FuncDef(
-                ast.Id("func"),
+                ast.Id("fun"),
                 params=[
                     ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, mutable=False),
                     ast.VarDecl("idx", type=ast.Id("int"), is_param=True, mutable=False),
@@ -3207,7 +3207,7 @@ def test_visibility(code, exp_ast):
                 body=[],
             ),
             ast.FuncDef(
-                ast.Id("func"),
+                ast.Id("fun"),
                 params=[
                     ast.VarDecl("idx", type=ast.Id("int"), is_param=True, mutable=False),
                 ],
@@ -3232,7 +3232,7 @@ def test_returning_indices(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        def test() {
+        func test() {
             a := [b];
             [a] = 10;
             [[a]];
@@ -3275,7 +3275,7 @@ def test_returning_indices(code, exp_ast):
     ],
     [
         """
-        def test() {
+        func test() {
             [b, 5, [c]] = 10;
             [b + [a]] = [[[d]] + c];
             [callback]();
@@ -3342,10 +3342,10 @@ def test_indexing_syntax(code, exp_ast):
 
 
 code_ast = [
-    ("def func~Tag1~Tag2~Tag3() -> void {}",
+    ("func fun~Tag1~Tag2~Tag3() -> void {}",
      "These long chains of tags get very ambiguous. "
      "Please be explicit and seprate the tags in square brackets."),
-    ("def func() -> void {c : Ptr~Type2{val=1}~Type3{val=Type4{val=5}};}",
+    ("func fun() -> void {c : Ptr~Type2{val=1}~Type3{val=Type4{val=5}};}",
      "Only simple positional tags can be chained. "
      "Please be explicit and put the tags in square brackets.")
 ]
@@ -3358,7 +3358,7 @@ def test_ambiguous_tags(code, err_msg):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             empty := "";
             str := "abc";
             prefixed := prefix"String with prefix";
@@ -3381,7 +3381,7 @@ def test_ambiguous_tags(code, err_msg):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             f := f"before{a + b}after";
             g := f"complex {a + b, 2, arg=3}";
             h := f"literal {arg=MyStruct{field=10}}";
@@ -3457,7 +3457,7 @@ def test_ambiguous_tags(code, err_msg):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             s := "\\" \\\\ \\a \\b \\f \\n \\r \\t \\v \\x \\0 \\\\\\\\";
         }
         """,
@@ -3476,7 +3476,7 @@ def test_ambiguous_tags(code, err_msg):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             s1 := "    ";
             s2 := "abc    ";
             s3 := "   abc   ";
@@ -3508,7 +3508,7 @@ def test_ambiguous_tags(code, err_msg):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             s1 := "{#! cat file.txt }";
             s2 := "before {#! command -a -b -c file.txt } after";
         }
@@ -3533,7 +3533,7 @@ def test_ambiguous_tags(code, err_msg):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             char1 := `a`;
             char2 := `ж`;
         }
@@ -3552,7 +3552,7 @@ def test_parse_string_literals(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() {
+        """func main() {
             str1 := "word 1\\
                 word 2\\
             ";
@@ -3576,7 +3576,7 @@ def test_parse_string_literals(code, exp_ast):
         ]
     ],
     [
-        """def main() {
+        """func main() {
             str1 := \"""
                 line 1
                 line 2
@@ -3608,7 +3608,7 @@ line 2
         ]
     ],
     [
-        """def main() {
+        """func main() {
             str1 := f\"""{expr}
                 line 2
                 line 3
@@ -3638,7 +3638,7 @@ def test_parse_multiline_strings(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             empty := @{};
             arr := @{2.718, 3.14};
             uninitialized : @int[10];
@@ -3671,7 +3671,7 @@ def test_parse_multiline_strings(code, exp_ast):
         ]
     ],
     [
-        """def main() -> Str {
+        """func main() -> Str {
             m: @int[2, 2] = @{@{0, 1}, @{2, 3}};
             letters := @{"a", "b", "c", "d"};
             return letters[m[1, 0]];
@@ -3708,7 +3708,7 @@ def test_parse_multiline_strings(code, exp_ast):
         ]
     ],
     [
-        """def sum(nums: @int[2]) -> int {
+        """func sum(nums: @int[2]) -> int {
             return nums[0] + nums[1];
         }
         """,
@@ -3730,7 +3730,7 @@ def test_parse_multiline_strings(code, exp_ast):
         ]
     ],
     [
-        """def mkArray() -> @int[2] {
+        """func mkArray() -> @int[2] {
             return @{0, 1};
         }
         """,
@@ -3752,7 +3752,7 @@ def test_parse_multiline_strings(code, exp_ast):
         ]
     ],
     [
-        """def arrayLiterals() {
+        """func arrayLiterals() {
             a := @{0, 1};
             b := @int[2]{0, 1};
             c := @int[]{0, 1};
@@ -3801,7 +3801,7 @@ def test_parse_multiline_strings(code, exp_ast):
         ]
     ],
     [
-        """def comprehension() -> void {
+        """func comprehension() -> void {
             a := @{0, 1};
             b := @for (i in a) i*2;
             c := list @for (i in a) i;
@@ -3848,7 +3848,7 @@ def test_arrays(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             if (cond) {
                 expr;
             }
@@ -3864,7 +3864,7 @@ def test_arrays(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             if (cond) {
                 expr1;
             } else {
@@ -3883,7 +3883,7 @@ def test_arrays(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             if (cond1) {
                 expr1;
             } elif(cond2) {
@@ -3908,7 +3908,7 @@ def test_arrays(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             a := if (cond1) 5 elif (cond2) 6 else 7;
         }
         """,
@@ -3927,7 +3927,7 @@ def test_arrays(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             a := if (cond) {
                 func1();
                 func2();
@@ -3952,7 +3952,7 @@ def test_arrays(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             a := if ifname(cond) -> (res: int) {
                 res = func1();
                 func2();
@@ -3995,7 +3995,7 @@ def test_if(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             while (a < b) {
                 a += b;
             }
@@ -4013,7 +4013,7 @@ def test_if(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             while (a < b) {
                 a += b;
             } else {
@@ -4036,7 +4036,7 @@ def test_if(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             return while res(a < b) -> int {
                 res += a;
                 a += b;
@@ -4059,7 +4059,7 @@ def test_if(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             return while (i < arr'len) -> (sum: int) { sum += arr[i]; };
         }
         """,
@@ -4084,7 +4084,7 @@ def test_if(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             while (a < b) {
                 a += b;
                 if (a > 10) break;
@@ -4110,7 +4110,7 @@ def test_if(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             while outer(a < b) {
                 while inner(b < c) {
                     if (c < d) {
@@ -4151,7 +4151,7 @@ def test_while(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             return do -> (res: int) {
                 a += 10;
                 res += a;
@@ -4179,7 +4179,7 @@ def test_do_while(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
-        """def main() -> void {
+        """func main() -> void {
             for (elem in arr) {
             }
         }
@@ -4196,7 +4196,7 @@ def test_do_while(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             for (e1 in arr1, e2 in arr2) {
             } else {
                 x = b;
@@ -4219,7 +4219,7 @@ def test_do_while(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             for (i in :, e in arr, i'isPrime) {
             }
         }
@@ -4246,7 +4246,7 @@ def test_do_while(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             for (e in arr) -> (or: Bool = true) {or |= e;};
         }
         """,
@@ -4272,7 +4272,7 @@ def test_do_while(code, exp_ast):
         ]
     ],
     [
-        """def main(limX: int, limY: int, limZ: int) {
+        """func main(limX: int, limY: int, limZ: int) {
             res: mut = 1;
             for (x in :limX) for (y in :limY) for (z in :limZ) {
                 res *= 2;
@@ -4330,7 +4330,7 @@ def test_do_while(code, exp_ast):
         ]
     ],
     [
-        """def main() -> void {
+        """func main() -> void {
             for (elem in arr) {
                 if (elem > 0) {
                     continue;
@@ -4392,7 +4392,7 @@ def test_global_constants(code, exp_ast):
             end := 2;
         }
 
-        def test() {
+        func test() {
             a : mut = Status.start;
             a =.pending;
             a = .end;
@@ -4477,7 +4477,7 @@ def test_global_constants(code, exp_ast):
             st2 : Status;
         }
 
-        def test() {
+        func test() {
             .a.st1.end;
         }
         """,
@@ -4517,7 +4517,7 @@ def test_global_constants(code, exp_ast):
     ],
     [
         """
-        def test() {
+        func test() {
             a : mut = Struct{st1=Status{.pending}, .st2.end};
         }
         """,
@@ -4559,7 +4559,7 @@ def test_global_constants(code, exp_ast):
     ],
     [
         """
-        def test() {
+        func test() {
             a : mut = Struct{};
             !.a.field.toggle;
         }
@@ -4598,9 +4598,9 @@ def test_toggles(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        def test() -> Int {
+        func test() -> Int {
             return -> (a: Int) {
-                a = func();
+                a = fun();
             };
         }
         """,
@@ -4615,7 +4615,7 @@ def test_toggles(code, exp_ast):
                             body=[
                                 ast.BinExpr(
                                     ast.Id("a"),
-                                    ast.FuncCall(ast.Id("func")),
+                                    ast.FuncCall(ast.Id("fun")),
                                     op="=",
                                 )
                             ]
@@ -4627,7 +4627,7 @@ def test_toggles(code, exp_ast):
     ],
     [
         """
-        def test() = -> (a: Int) {
+        func test() = -> (a: Int) {
             a = 0;
         };
         """,
@@ -4656,8 +4656,8 @@ def test_expr_blocks(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """
-        def test() {
-            a := func() | value;
+        func test() {
+            a := fun() | value;
         }
         """,
         [
@@ -4666,7 +4666,7 @@ def test_expr_blocks(code, exp_ast):
                 body=[
                     ast.VarDecl(
                         "a", mutable=False, value=ast.BinExpr(
-                            arg1=ast.FuncCall(ast.Id("func")),
+                            arg1=ast.FuncCall(ast.Id("fun")),
                             arg2=ast.Id("value"),
                             op="|",
                         )
@@ -4677,8 +4677,8 @@ def test_expr_blocks(code, exp_ast):
     ],
     [
         """
-        def test() {
-            a := func();
+        func test() {
+            a := fun();
             ||e: Error|| {
                 reportError();
             }
@@ -4689,7 +4689,7 @@ def test_expr_blocks(code, exp_ast):
                 ast.Id("test"),
                 body=[
                     ast.VarDecl(
-                        "a", mutable=False, value=ast.FuncCall(ast.Id("func")),
+                        "a", mutable=False, value=ast.FuncCall(ast.Id("fun")),
                     ),
                     ast.ErrorBlock(
                         param=ast.VarDecl("e", type=ast.Id("Error"), is_param=True),
@@ -4703,8 +4703,8 @@ def test_expr_blocks(code, exp_ast):
     ],
     [
         """
-        def test() {
-            a := func();
+        func test() {
+            a := fun();
             || || {
                 reportError();
             }
@@ -4715,7 +4715,7 @@ def test_expr_blocks(code, exp_ast):
                 ast.Id("test"),
                 body=[
                     ast.VarDecl(
-                        "a", mutable=False, value=ast.FuncCall(ast.Id("func"))
+                        "a", mutable=False, value=ast.FuncCall(ast.Id("fun"))
                     ),
                     ast.ErrorBlock(
                         body=[
@@ -4728,8 +4728,8 @@ def test_expr_blocks(code, exp_ast):
     ],
     [
         """
-        def test() {
-            a := func() | ||e: Error|| -> (res: Int) {
+        func test() {
+            a := fun() | ||e: Error|| -> (res: Int) {
                 log(e);
                 res = -1;
             };
@@ -4741,7 +4741,7 @@ def test_expr_blocks(code, exp_ast):
                 body=[
                     ast.VarDecl(
                         "a", mutable=False, value=ast.BinExpr(
-                            arg1=ast.FuncCall(ast.Id("func")),
+                            arg1=ast.FuncCall(ast.Id("fun")),
                             arg2=ast.ErrorBlock(
                                 param=ast.VarDecl("e", type=ast.Id("Error"), is_param=True),
                                 returns=[ast.VarDecl("res", type=ast.Id("Int"), mutable=True)],
@@ -4759,8 +4759,8 @@ def test_expr_blocks(code, exp_ast):
     ],
     [
         """
-        def test() {
-            err := | func() |;
+        func test() {
+            err := | fun() |;
         }
         """,
         [
@@ -4769,7 +4769,7 @@ def test_expr_blocks(code, exp_ast):
                 body=[
                     ast.VarDecl(
                         "err", mutable=False, value=ast.CatchExpr(
-                            expr=ast.FuncCall(ast.Id("func")),
+                            expr=ast.FuncCall(ast.Id("fun")),
                         )
                     ),
                 ]

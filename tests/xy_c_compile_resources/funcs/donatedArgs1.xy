@@ -2,23 +2,23 @@ struct WithDtor {
     ptr: Ptr;
 }
 
-def dtor(val: WithDtor) {
+func dtor(val: WithDtor) {
     # ...
 }
 
-def something(a: WithDtor) = (%a){};
+func something(a: WithDtor) = (%a){};
 
-def func1(a: WithDtor, b: don WithDtor) {
+func func1(a: WithDtor, b: don WithDtor) {
     # ...
 }
 
-def test1() {
+func test1() {
     withA: WithDtor;
     withB: WithDtor;
     func1(withA, withB =>);
 }
 
-def test2() {
+func test2() {
     withA: WithDtor;
     withB: WithDtor;
     func1(withA, withA'something);

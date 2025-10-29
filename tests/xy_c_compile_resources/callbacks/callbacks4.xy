@@ -4,10 +4,10 @@ import xy.ctti;
 
 struct Test~[xyTag := TagCtor{label="test"}] {}
 
-def test1~Test() {}
-def test2~Test() {}
+func test1~Test() {}
+func test2~Test() {}
 
-def str~[StrCtor{prefix="", interpolation=false}] (
+func str~[StrCtor{prefix="", interpolation=false}] (
     addr: Ptr, size: Usize
 ) -> Ptr {
     return addr;
@@ -18,6 +18,6 @@ struct FuncDesc {
     name: Ptr;
 }
 
-def test() {
+func test() {
     tests := @for (f in $*~Test()) FuncDesc{f'toCallback, f'nameof};
 }

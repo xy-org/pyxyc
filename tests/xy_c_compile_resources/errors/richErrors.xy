@@ -1,10 +1,10 @@
-def mydiv(a: Float, b: Float) -> Float
+func mydiv(a: Float, b: Float) -> Float
 >> b != 0
 >> a > b
 {
     return a / b;
 }
 
-def test(a: Float, b: Float) -> Float {
+func test(a: Float, b: Float) -> Float {
     return a * mydiv(a, b) - b;
 }

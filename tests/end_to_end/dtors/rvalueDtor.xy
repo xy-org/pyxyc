@@ -5,23 +5,23 @@ struct Data {
     num: Int;
 }
 
-def dtor(s: Data) {
+func dtor(s: Data) {
     print(f"Destroying {s.num}\n");
 }
 
-def makeStr(num := 0) -> Data {
+func makeStr(num := 0) -> Data {
     return Data{num};
 }
 
-def makeStrMacro() Data{10};
+func makeStrMacro() Data{10};
 
 
-def func(s1: mut Data, s2: Data, s3: Data) {
+func fun(s1: mut Data, s2: Data, s3: Data) {
     print("In func()\n");
     # ...
 }
 
-def main~EntryPoint() {
+func main~EntryPoint() {
     s := 'makeStr;
-    func(makeStr(1), 'makeStrMacro, Data{20});
+    fun(makeStr(1), 'makeStrMacro, Data{20});
 }

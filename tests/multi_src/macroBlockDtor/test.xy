@@ -4,11 +4,11 @@ struct Struct {
     ptr: Ptr;
 }
 
-def dtor(s: Struct) {
+func dtor(s: Struct) {
     # ...
 }
 
-def test() {
+func test() {
     a: Action~Struct;
     a'action;
 }

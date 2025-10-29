@@ -1,9 +1,9 @@
-def mkFunc(x: Int) =
-    def inner(base: Int, x := x) -> Int {
+func mkFunc(x: Int) =
+    func inner(base: Int, x := x) -> Int {
         return base + x;
     };
 
-def test() -> Int {
+func test() -> Int {
     cb1 := mkFunc(10)'toCallback((:Int)->Int);
     cb2 := mkFunc(20)'toCallback((:Int)->Int);
     return [cb1](30) + [cb2](0);

@@ -3,11 +3,11 @@ struct Array~[elemType: struct, xy_dtor=true] {
     len: Usize;
 }
 
-def dtor(arr: mut Array) {
+func dtor(arr: mut Array) {
     # free arr.mem
 }
 
-def test() {
+func test() {
     arr1: Array;
     arr2: Array~Int;
     arr3: Array~[Float, myTag=10];

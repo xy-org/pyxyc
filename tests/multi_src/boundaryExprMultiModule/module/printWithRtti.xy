@@ -2,7 +2,7 @@ struct Rtti {
     data: Int;
 }
 
-def print(x: pseudo Any, rtti: Rtti = ^rtti(x)) {
+func print(x: pseudo Any, rtti: Rtti = ^rtti(x)) {
     # omited for brevity
 }
 
@@ -10,6 +10,6 @@ struct Struct {
     data: Int;
 }
 
-def rtti(:Struct) -> Rtti {
+func rtti(:Struct) -> Rtti {
     return Rtti{};
 }

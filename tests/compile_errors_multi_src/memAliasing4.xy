@@ -13,9 +13,9 @@ struct Z {
     f: Y;
 }
 
-def func(v: mut X, a: Int) {}
+func fun(v: mut X, a: Int) {}
 
-def test() {
+func test() {
     s: Z;
-    func(s.e.c, s.e.c.a);
+    fun(s.e.c, s.e.c.a);
 }

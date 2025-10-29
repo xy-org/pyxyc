@@ -1,13 +1,13 @@
-def func(a: Int) -> Int {
+func fun(a: Int) -> Int {
     return 0;
 }
 
-def func(b: Double) -> Double {
+func fun(b: Double) -> Double {
     return 1.0d;
 }
 
-def main() -> Int {
-    a := func(0);
-    b := func(0.0d);
+func main() -> Int {
+    a := fun(0);
+    b := fun(0.0d);
     return 0;
 }

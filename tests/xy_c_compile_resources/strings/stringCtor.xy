@@ -6,18 +6,18 @@ struct Str~[encoding: Any = Utf8] {
 struct Utf8~[xyTag := TagCtor{label="encoding"}] {}
 struct Ascii~[xytag := TagCtor{label="encoding"}] {}
 
-def str~[StrCtor{prefix="", interpolation=false}](
+func str~[StrCtor{prefix="", interpolation=false}](
     addr: Ptr, size: Usize
 ) -> Str {
     return Str{addr, size};
 }
 
-def createStrings() -> void {
+func createStrings() -> void {
     str := "";
     str1 := "abc";
     str2 := "def";
 }
 
-def strLen(str: Str) -> Usize {
+func strLen(str: Str) -> Usize {
     return str.size;
 }

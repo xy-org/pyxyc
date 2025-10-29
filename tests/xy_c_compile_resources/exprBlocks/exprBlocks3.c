@@ -13,7 +13,7 @@ struct exprBlocks3_Container {
     exprBlocks3_Struct m_s2;
 };
 
-void exprBlocks3_func(exprBlocks3_Struct p_s) {
+void exprBlocks3_fun(exprBlocks3_Struct p_s) {
 }
 
 int64_t exprBlocks3_test(exprBlocks3_Struct p_s) {
@@ -22,8 +22,8 @@ int64_t exprBlocks3_test(exprBlocks3_Struct p_s) {
         exprBlocks3_Container l_c = {0};
         tmp_0_res = l_c.m_s1.m_val + l_c.m_s2.m_val;
         {
-            exprBlocks3_func(l_c.m_s1);
-            exprBlocks3_func(l_c.m_s2);
+            exprBlocks3_fun(l_c.m_s1);
+            exprBlocks3_fun(l_c.m_s2);
         }
     }
     return tmp_0_res;

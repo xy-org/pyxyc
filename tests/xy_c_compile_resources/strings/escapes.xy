@@ -1,8 +1,8 @@
-def str~[StrCtor{prefix="", interpolation=false}](addr: Ptr, size: Usize) -> Ptr {
+func str~[StrCtor{prefix="", interpolation=false}](addr: Ptr, size: Usize) -> Ptr {
     return addr;
 }
 
-def test() {
+func test() {
     s1 := "\a\b\f\n\r\t\v\{}\\\"";
     s2 := "\033[ \123 \033[0m \000";
     s3 := "\u0041\u0120\x00";

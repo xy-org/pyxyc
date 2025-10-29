@@ -5,11 +5,11 @@ struct Point {
     y: Int = 2;
 }
 
-def dtor(p: Point) {
+func dtor(p: Point) {
     # ...
 }
 
-def test(a: mut Point, b: mut Point) {
+func test(a: mut Point, b: mut Point) {
     a =< b;
     b =< void;
     void =< a;

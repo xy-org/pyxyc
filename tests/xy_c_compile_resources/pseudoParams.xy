@@ -1,20 +1,20 @@
-def func1(x: Int, y: pseudo Int) -> Int {
+func func1(x: Int, y: pseudo Int) -> Int {
     return x;
 }
 
-def func1(x: Int, y: Bool) -> Int {
+func func1(x: Int, y: Bool) -> Int {
     return if (y) x else x+2;
 }
 
-def func2(x: Int, :Int) -> Int {
+func func2(x: Int, :Int) -> Int {
     return x * 2;
 }
 
-def func2(x: Int, y: Double) -> Int {
+func func2(x: Int, y: Double) -> Int {
     return if (y > 0) x else x*2;
 }
 
-def test() {
+func test() {
     _ = func1(5, 0);
     _ = func1(5, true);
     _ = func2(5, 5);

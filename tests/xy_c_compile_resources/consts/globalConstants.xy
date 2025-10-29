@@ -2,6 +2,6 @@ c := 299792458;
 pi := 3.14d;
 e := 2.71828d;
 
-def func() -> Int {
+func fun() -> Int {
     return if (pi > e) c else 0;
 }

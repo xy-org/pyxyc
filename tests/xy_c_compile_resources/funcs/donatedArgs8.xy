@@ -2,24 +2,24 @@ struct WithDtor {
     ptr: Ptr~Int;
 }
 
-def dtor(val: WithDtor) {
+func dtor(val: WithDtor) {
     # ...
 }
 
-def fun(val: WithDtor) -> Int {
+func fun(val: WithDtor) -> Int {
     return 0;
 }
 
-def macro1(a: don WithDtor) = macro2(a);
+func macro1(a: don WithDtor) = macro2(a);
 
-def macro2(a: don WithDtor) = macro3(a);
+func macro2(a: don WithDtor) = macro3(a);
 
-def macro3(a: don WithDtor) = fun(a);
+func macro3(a: don WithDtor) = fun(a);
 
-def test1() {
+func test1() {
     res := macro1(WithDtor{});
 }
 
-def test2() {
+func test2() {
     res := macro1(a=WithDtor{});
 }

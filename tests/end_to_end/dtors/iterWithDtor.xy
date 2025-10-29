@@ -8,27 +8,27 @@ struct Iter {
     # ...
 }
 
-def dtor(m: Iter) {
+func dtor(m: Iter) {
     print("Destroying Iter\n");
 }
 
-def ls~IterCtor() -> [ Iter ] {
+func ls~IterCtor() -> [ Iter ] {
     return Iter{};
 }
 
-def valid(iter: Iter) -> Bool {
+func valid(iter: Iter) -> Bool {
     return iter.n < 10;
 }
 
-def next(iter: mut Iter) {
+func next(iter: mut Iter) {
     iter.n++;
 }
 
-def get(iter: Iter) -> Int {
+func get(iter: Iter) -> Int {
     return 0;
 }
 
-def main~EntryPoint() {
+func main~EntryPoint() {
     for (resource in ls()) {
         # ...
         x := resource;

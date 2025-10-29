@@ -1,12 +1,12 @@
-def sumWithTag(x: Int, y: Int = x..tag) -> Int {
+func sumWithTag(x: Int, y: Int = x..tag) -> Int {
     return x + y;
 }
 
-def print(num: Int) {
+func print(num: Int) {
     # omit for brevity
 }
 
-def main() {
+func main() {
     a : Int~[tag=10] = 1;
     print(a'sumWithTag);
 }

@@ -7,16 +7,16 @@ struct PointList {
     # ...
 }
 
-def get(arr: PointList, i: Int) -> arr[ Ptr~Point ] {
+func get(arr: PointList, i: Int) -> arr[ Ptr~Point ] {
     return Ptr{};
 }
 
-def set(arr: mut PointList, i: Int, val: Point) -> void {
+func set(arr: mut PointList, i: Int, val: Point) -> void {
     # ...
 }
 
-def func(item: Int, list: mut Point) {}
+func fun(item: Int, list: mut Point) {}
 
-def test(a: mut PointList) {
-    func(a[0].y, a[1]);
+func test(a: mut PointList) {
+    fun(a[0].y, a[1]);
 }

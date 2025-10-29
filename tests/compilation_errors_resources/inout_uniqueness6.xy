@@ -1,4 +1,4 @@
-def swap(a: mut Int, b: mut Int) {
+func swap(a: mut Int, b: mut Int) {
     tmp := a;
     a = b;
     b = a;
@@ -8,11 +8,11 @@ struct Array~[elemType : struct] {
     # omitted for brevity
 }
 
-def get(arr: Array, idx: Int) -> ref(arr) Ptr~[<< arr..elemType] {
+func get(arr: Array, idx: Int) -> ref(arr) Ptr~[<< arr..elemType] {
     # omitted for brevity
 }
 
-def test() {
+func test() {
     a : Array~Int;
     b : Array~Int;
     swap(a[0], b[0]);

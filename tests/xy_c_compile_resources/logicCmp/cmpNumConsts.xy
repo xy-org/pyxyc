@@ -1,9 +1,9 @@
-def test() {
+func test() {
     a := 0xFA()b == 0xFA;
     b := 0xFB()b == 0xFBs;
     c := 0xFAFCs == 0xFAFC;
     d := 0xFAu == 0xFAub;
     e := 0xFAub == 0xFABus;
-    f := (-1)'to(Uint) == 0xFFFFFFFFu; 
+    f := (-1)'to(Uint) == 0xFFFFFFFFu;
     g := 0x55BB == 0x55BBs;
 }

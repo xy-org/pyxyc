@@ -1,11 +1,11 @@
-def f1(x: Int) -> Int {
+func f1(x: Int) -> Int {
     return x * 2;
 }
 
-def f2(x: Int) -> Int {
+func f2(x: Int) -> Int {
     return x - 10;
 }
 
-def test(x: Int, y: Int) -> Int {
+func test(x: Int, y: Int) -> Int {
     return f1(x) / f2(y);
 }

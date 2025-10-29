@@ -25,7 +25,7 @@ float typeInferenceAdvanced_transform(int64_t p_num) {
     return 0;
 }
 
-void typeInferenceAdvanced_func(void) {
+void typeInferenceAdvanced_test(void) {
     const int32_t l_a = typeInferenceAdvanced_rng();
     const int32_t l_b = typeInferenceAdvanced_rng() + 10;
     const float l_c = typeInferenceAdvanced_transform(typeInferenceAdvanced_myadd(l_a, l_b));

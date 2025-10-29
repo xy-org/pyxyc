@@ -11,19 +11,19 @@ struct OpenFlags {
     append : pseudo = OpenFlags{c.O_APPEND};
 }
 
-def get(base: OpenFlags, fields: OpenFlags) -> Bool {
+func get(base: OpenFlags, fields: OpenFlags) -> Bool {
     return (base.value'to(Bits32) && fields.value'to(Bits32))'to(Int) == fields.value;
 }
 
-def set(base: mut OpenFlags, fields: OpenFlags, set: Bool) {
+func set(base: mut OpenFlags, fields: OpenFlags, set: Bool) {
     base.value = (base.value'to(Bits32) || (fields.value * set'to(Int))'to(Bits32))'to(Int);
 }
 
-def cmpEq(l: OpenFlags, r: OpenFlags) l.value == r.value;
+func cmpEq(l: OpenFlags, r: OpenFlags) l.value == r.value;
 
-def or(l: OpenFlags, r: OpenFlags) OpenFlags{(l.value'to(Bits32) || r.value'to(Bits32))'to(Int)};
+func or(l: OpenFlags, r: OpenFlags) OpenFlags{(l.value'to(Bits32) || r.value'to(Bits32))'to(Int)};
 
-def and(l: OpenFlags, r: OpenFlags) OpenFlags{(l.value'to(Bits32) && r.value'to(Bits32))'to(Int)};
+func and(l: OpenFlags, r: OpenFlags) OpenFlags{(l.value'to(Bits32) && r.value'to(Bits32))'to(Int)};
 
 # Testing structures and functions
 
@@ -32,11 +32,11 @@ struct String {
     size: Usize;
 }
 
-def string~[StrCtor{prefix=""}](addr: Ptr, size: Usize) -> String {
+func string~[StrCtor{prefix=""}](addr: Ptr, size: Usize) -> String {
     return String{addr, size};
 }
 
-def open(fn: String, flags:=OpenFlags.readOnly) {
+func open(fn: String, flags:=OpenFlags.readOnly) {
     if (flags.readWrite) {
         # reading, writing and maybe something else
     } elif (flags == OpenFlags{.readOnly, .append}) {
@@ -48,17 +48,17 @@ def open(fn: String, flags:=OpenFlags.readOnly) {
     }
 }
 
-def test1() {
+func test1() {
     open("file.txt");
     open("file.txt", OpenFlags.readOnly);
 }
 
-def test2() {
+func test2() {
     open("file.txt", OpenFlags.readOnly || OpenFlags.writeOnly);
     open("file.txt", OpenFlags{.writeOnly, .append});
 }
 
-def test3() {
+func test3() {
     flags: OpenFlags;
     flags.writeOnly = true;
     open("file.txt", flags);
@@ -67,7 +67,7 @@ def test3() {
     open("file.txt", flags || OpenFlags{.readOnly});
 }
 
-def test4(flags: OpenFlags) {
+func test4(flags: OpenFlags) {
     flags2 := OpenFlags{.append};
     open("file.txt", flags || flags2);
     open("file.txt", flags && flags2);

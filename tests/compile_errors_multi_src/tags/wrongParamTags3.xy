@@ -2,11 +2,11 @@ struct Struct {
     val: Int;
 }
 
-def f1(s: Struct~[min=0, max=300]) -> Int {
+func f1(s: Struct~[min=0, max=300]) -> Int {
     return 0;
 }
 
-def test() {
+func test() {
     _ := f1(Struct~[min=0, max=300]{0});
     _ := f1(Struct~[min=0]{0});  # error as missing required tag max
 }

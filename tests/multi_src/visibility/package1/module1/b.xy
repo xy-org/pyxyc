@@ -1,4 +1,4 @@
-def test() {
+func test() {
     work1();
     work2();
 }

@@ -16,7 +16,7 @@ struct Tag2~[xyTag:=TagCtor{label="tag"}] {
     val: Int;
 }
 
-def test() {
+func test() {
     a := Int \cmpTypes Int;
     b := Struct1 \cmpTypes Struct1;
     c := Struct1 \cmpTypes Struct2;

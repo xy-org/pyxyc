@@ -1,5 +1,5 @@
-def test() {
-    def lambda() {
+func test() {
+    func lambda() {
         # ...
     }
 

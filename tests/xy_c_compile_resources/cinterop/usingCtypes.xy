@@ -1,13 +1,13 @@
 import libc~[Clib{headers=@{"time.h"}}] in c;
 
 
-def timeFunc() -> c.clock_t {
+func timeFunc() -> c.clock_t {
     start: c.clock_t = c.clock();
-    func();
+    fun();
     finish: c.clock_t = c.clock();
     return inlinec"({finish} - {start}) / CLOCKS_PER_SEC";
 }
 
-def func() {
+func fun() {
     # ...
 }

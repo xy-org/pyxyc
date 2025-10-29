@@ -1,14 +1,14 @@
-def test() {
+func test() {
     arr: @Int[2];
     brr: @Float[10];
     f(arr);
     f(brr);
 }
 
-def f(ints: @Int[2]) {
+func f(ints: @Int[2]) {
     # ...
 }
 
-def f(floats: @Float[2]) {
+func f(floats: @Float[2]) {
     # ...
 }

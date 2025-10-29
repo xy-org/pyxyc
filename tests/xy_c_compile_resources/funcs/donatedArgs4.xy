@@ -1,19 +1,19 @@
 # test modifying a donated value with dtor
 
-def modifyFunc(a: don Int) {
+func modifyFunc(a: don Int) {
     a++;
 }
 
-def modifyMacro(a: don Int) = -> void {
+func modifyMacro(a: don Int) = -> void {
     a++;
 };
 
-def testFunc() {
+func testFunc() {
     modifyFunc(0);
     modifyFunc(5 + 10);
 }
 
-def testMacro() {
+func testMacro() {
     modifyMacro(0);
     modifyMacro(5 + 10);
 }

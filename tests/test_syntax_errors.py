@@ -4,26 +4,26 @@ from xyc.parser import parse_code, ParsingError
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        "def double(x: int) x*2",
+        "func double(x: int) x*2",
         "Macro functions require a terminating semicolon."
     ),
     (
-        """def double(x: int) {
+        """func double(x: int) {
             return x*2;
         } ;""",
         "Function definitions don't require a terminating semicolon."
     ),
     (
         """
-        def double(x: int) x*2;
+        func double(x: int) x*2;
         ;
-        def zero(x: int) 0;
+        func zero(x: int) 0;
         """,
         "Empty statements are not allowed. Please remove the semicolon."
     ),
     (
         """
-        def func() -> int {
+        func fun() -> int {
             retrn 0;
         }
         """,
@@ -31,7 +31,7 @@ from xyc.parser import parse_code, ParsingError
     ),
     (
         """
-        def func() -> int | Error {
+        func fun() -> int | Error {
             err Error{0};
         }
         """,
@@ -53,13 +53,13 @@ def test_misplaced_semicolon(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def double(x: int) -> int | Error {
+        """func double(x: int) -> int | Error {
             error;
         }""",
         "Missing value for \"error\" statement"
     ),
     (
-        """def double(x: int) -> int | Error {
+        """func double(x: int) -> int | Error {
             error Error{code=1}, Error{code=2};
         }""",
         "Only one error can be issued"
@@ -84,19 +84,19 @@ def test_semicolons(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def func() {
+        """func fun() {
             for (x in :) for (y in :) for (z in :) -> (res: int) { res *= x + y - z }
         }""",
         "Malformed expression. Maybe missing operator or semicolon"
     ),
     (
-        """def func() {
+        """func fun() {
             for (x in :) func2(x)
         }""",
         "Missing ';' at end of expression"
     ),
     (
-        """def func() {
+        """func fun() {
             for (x in :) {
                 func2(x);
             };
@@ -113,32 +113,32 @@ def test_semicolon_and_fors(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def main() {
+        """func main() {
             a := a +: b -: -c;
         }""",
         "Operator slices make sense only between the start and end expressions of a slice"
     ),
     (
-        """def main() {
+        """func main() {
             f := a : b +: c;
         }""",
         "Operator slices make sense only between the start and end expressions of a slice"
     ),
     (
-        """def main() {
+        """func main() {
             a := a +: ;
         }""",
         "Unexpected end of expression"
     ),
     (
-        """def main() {
+        """func main() {
             a := *: b;
         }""",
         "Operator slices require a start"
     ),
     (
-        """def main() {
-            a := a func: b;
+        """func main() {
+            a := a fun: b;
         }""",
         "Malformed expression."
     ),
@@ -149,59 +149,59 @@ def test_invalid_slices(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def main() {
+        """func main() {
             b := a + ;
         }""",
         "Unexpected end of expression"
     ),
     (
-        """def main() {
+        """func main() {
             a := ;
         }""",
         "Unexpected end of expression"
     ),
     (
-        """def funct(a: int, b: int) {
+        """func funct(a: int, b: int) {
             a = a + *b;
         }""",
         "Expected operand found operator"
     ),
     (
-        """def funct(a: int, b: int) {
+        """func funct(a: int, b: int) {
             a => b;
         }""",
         "Malformed expression"
     ),
     (
-        """def main() -> void {
+        """func main() -> void {
             a'bits := 0;
         }
         """,
         "Variable name must be an identifier"
     ),
     (
-        """def main() -> void {
-            ((func)) a;
+        """func main() -> void {
+            ((fun)) a;
         }
         """,
         "Malformed expression"
     ),
     (
-        """def main() -> void {
+        """func main() -> void {
             ()func;
         }
         """,
         "No expression in brackets"
     ),
     (
-        """def main() -> void {
+        """func main() -> void {
             a + ();
         }
         """,
         "No expression in brackets"
     ),
     (
-        """def main() -> void {
+        """func main() -> void {
             s.a{b=d}~Tag;
         }
         """,
@@ -214,7 +214,7 @@ def test_invalid_expression(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def func(
+        """func fun(
             a: int
             b: int,
         ) {
@@ -228,25 +228,25 @@ def test_param_lists(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def func() {
+        """func fun() {
             a := ....;
         }""",
         "... is not allowed in expressions"
     ),
     (
-        """def func() {
+        """func fun() {
             a := 0.5.0;
         }""",
         "Malformed expression."
     ),
     (
-        """def func() {
+        """func fun() {
             a := .5.;
         }""",
         "Invalid floating point literal"
     ),
     (
-        """def func() {
+        """func fun() {
             a := 0xABv;
         }""",
         "Invalid character in base-16 number"
@@ -258,20 +258,20 @@ def test_invalid_num_consts(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def main() {
-            func(..., a=5);
+        """func main() {
+            fun(..., a=5);
         }""",
         "Cannot have any arguments after ..."
     ),
     (
-        """def main() {
-            func(a=5, ..., b=4);
+        """func main() {
+            fun(a=5, ..., b=4);
         }""",
         "Cannot have any arguments after ..."
     ),
     (
-        """def main() {
-            func(5+...);
+        """func main() {
+            fun(5+...);
         }""",
         "... is not allowed in expressions"
     ),
@@ -283,7 +283,7 @@ def test_auto_inject_syntax(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def main() {
+        """func main() {
             cb := $(int)->int;
         }""",
         "Cannot select based on return type"
@@ -296,31 +296,31 @@ def test_callbacks_and_fselect(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def main~Tag{}() {
+        """func main~Tag{}() {
             cb := $(int)->int;
         }""",
         "Syntax ambiguity"
     ),
     (
-        """def get(ptr: Ptr, idx: int) -> ptr[ Ptr~[<< ptr..to] ] {
+        """func get(ptr: Ptr, idx: int) -> ptr[ Ptr~[<< ptr..to] ] {
         }""",
         "Guards are allowed only on new lines"
     ),
     (
-        """def get(^num: int = 0) {
+        """func get(^num: int = 0) {
         }""",
         "Caller context parameters cannot have default values"
     ),
     (
-        "def get(ptr: Ptr, idx: int) -> ptr[ Ptr~[^ptr..to] ] ptr",
+        "func get(ptr: Ptr, idx: int) -> ptr[ Ptr~[^ptr..to] ] ptr",
         "Blocks must have their body in curly brackets"
     ),
     (
-        "def *func() {}",
+        "func *fun() {}",
         "Visibility marker goes before 'def'"
     ),
     (
-        "*\ndef func() {}",
+        "*\ndef fun() {}",
         "Visibility marker cannot stand on its own"
     ),
     (
@@ -329,19 +329,19 @@ def test_callbacks_and_fselect(code, err_msg):
     ),
     (
         """
-        def x(a: Array) -> ref(a) Int {}
+        func x(a: Array) -> ref(a) Int {}
         """,
         "Blocks must have their body in curly brackets"
     ),
     (
         """
-        def x(a: Array) -> in(a) Int {}
+        func x(a: Array) -> in(a) Int {}
         """,
         "Expected operand found operator"
     ),
     (
         """
-        def x(start: Size := 0) {}
+        func x(start: Size := 0) {}
         """,
         "Extra ':' in variable declaration"
     ),
@@ -372,7 +372,7 @@ def test_struct_errors(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def test() {
+        """func test() {
             if(false) {
             }
             elif;
@@ -381,7 +381,7 @@ def test_struct_errors(code, err_msg):
         "Missing conditional expression"
     ),
     (
-        """def test() {
+        """func test() {
             if (cond1) {
             } if (cond2) {
             }
@@ -396,7 +396,7 @@ def test_if_errors(code, err_msg):
 
 @pytest.mark.parametrize("code, err_msg", [
     (
-        """def test() {
+        """func test() {
             arr := @{
                 "Line 1",
                 ;; comment 1

@@ -2,11 +2,11 @@ struct Test1~[xyTag := TagCtor{label="test1"}] {}
 struct Test2~[xyTag := TagCtor{label="test1"}] {}
 struct Test3~[xyTag := TagCtor{label="test3"}] {}
 
-def test1~Test1() {}
+func test1~Test1() {}
 
-def test2~Test2() {}
+func test2~Test2() {}
 
-def invokeTests() {
+func invokeTests() {
     tests := @for (f in $* ~Test1()) f'toCallback;
     runTests(tests);
 
@@ -17,13 +17,13 @@ def invokeTests() {
     runSpecial(specialTest);
 }
 
-def special~Test3() {}
+func special~Test3() {}
 
-def test3~Test1() {}
+func test3~Test1() {}
 
-def runTests(x: pseudo @()->()[], tPtr := x'addrof, tLen : Usize = x'len) {
+func runTests(x: pseudo @()->()[], tPtr := x'addrof, tLen : Usize = x'len) {
 }
 
-def runSpecial(x: ()->void) {
+func runSpecial(x: ()->void) {
     [x]();
 }

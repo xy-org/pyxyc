@@ -1,4 +1,4 @@
-def test() {
+func test() {
     a := Struct1{};
     b := Struct2{};
 }

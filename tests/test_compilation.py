@@ -193,11 +193,11 @@ def test_c_compilation(resource_dir, filename):
 
 
 code_ast = [
-    ("""def main() -> void {
+    ("""func main() -> void {
         arr: @Int[];
     }""",
     "Only pseudo params are allowed to have a length not known at compile time"),
-    ("""def func(nums: @Int[]) -> void {
+    ("""func fun(nums: @Int[]) -> void {
     }""",
     "Only pseudo params are allowed to have a length not known at compile time"),
 ]
@@ -211,26 +211,26 @@ def test_arrays_common_errors(code, err_msg, tmp_path):
         builder.compile_project(project, tmp_path)
 
 code_ast = [
-    ("""def func(t: MissingType) -> void {
+    ("""func fun(t: MissingType) -> void {
     }""",
     "Cannot find type"),
     ("""
-    def func(x: Int, y: Int) -> Int {
+    func fun(x: Int, y: Int) -> Int {
         return x + y;
     }
 
 
-    def main() -> void {
+    func main() -> void {
         x : Long = 0;
         y : Int = 0;
-        func(x, y);
+        fun(x, y);
     }
     """,
     "Cannot find function"),
     ("""
     import posix~[Clib{headers=@{"errno.h"}}] in c;
 
-    def main() -> Int {
+    func main() -> Int {
         x := c.errno;
         return x;
     }

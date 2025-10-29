@@ -1,15 +1,15 @@
-def func1(a: Int) -> Int {
+func func1(a: Int) -> Int {
     return func2(a);
 }
 
-def func2(b: Int) -> Int {
+func func2(b: Int) -> Int {
     return func2(b);
 }
 
-def func3(c: Int) -> Int {
+func func3(c: Int) -> Int {
     return func1(c) + func2(-c) + c - func4(c, -c);
 }
 
-def func4(a: Int, b: Int) -> Int {
+func func4(a: Int, b: Int) -> Int {
     return a + b;
 }

@@ -1,10 +1,10 @@
-def func(a: (Int, Float, Byte), b: %a) -> %a {
+func fun(a: (Int, Float, Byte), b: %a) -> %a {
     return a + b;
 }
 
-def test() -> Long {
-    a := func(5, 10);
-    b := func(3.14, 9.8);
-    c := func(127b, -1b);
+func test() -> Long {
+    a := fun(5, 10);
+    b := fun(3.14, 9.8);
+    c := fun(127b, -1b);
     return 0l;
 }

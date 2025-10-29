@@ -6,7 +6,7 @@ struct Struct {
     b: Int;
 }
 
-def main~EntryPoint() {
+func main~EntryPoint() {
     a : mut = 0;
     ptr := a'addrof;
     print(f"{a} {[ptr]}\n");

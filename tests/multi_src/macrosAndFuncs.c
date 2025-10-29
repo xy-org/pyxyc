@@ -21,7 +21,7 @@ int32_t macrosAndFuncs_module1_func3(void) {
     return 10;
 }
 
-void macrosAndFuncs_module1_func(void) {
+void macrosAndFuncs_module1_fun(void) {
     int32_t tmp_0_arg = macrosAndFuncs_module1_func2();
     macrosAndFuncs_module1_func1(tmp_0_arg, macrosAndFuncs_module1_func3());
 }

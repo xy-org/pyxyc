@@ -1,4 +1,4 @@
-def test(lim: mut Int) {
+func test(lim: mut Int) {
     do {
         if (lim \rem 10 == 0) continue;
         if (lim \rem 100 == 0) break;

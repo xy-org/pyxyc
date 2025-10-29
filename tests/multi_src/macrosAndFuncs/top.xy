@@ -1,14 +1,14 @@
 import macrosAndFuncs.module1;
 
-def func2() -> Int {
+func func2() -> Int {
     return 5;
 }
 
-def func1(a: Int, b: Int) -> Int {
+func func1(a: Int, b: Int) -> Int {
     return a + b;
 }
 
-def test() -> Int {
+func test() -> Int {
     # This "test" may look like random bs but there was an actual bug
     # that caused tmp variable names to get duplicated when mixing functions
     # and macros from different modules

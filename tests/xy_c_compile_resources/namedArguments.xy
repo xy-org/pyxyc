@@ -1,22 +1,22 @@
-def func(a: Int, b := 1, c := 2) -> Int{
+func fun(a: Int, b := 1, c := 2) -> Int{
     return a + b + c;
 }
 
-def func(a: Int, b: Int, c: Int, d:Int) -> Int {
+func fun(a: Int, b: Int, c: Int, d:Int) -> Int {
     return a*b*c*d;
 }
 
-def func(k := 1.0, m := 1.0) = k*m;
+func fun(k := 1.0, m := 1.0) = k*m;
 
-def testNamedArgs() {
-    a := func(0);
-    b := func(a, b=10);
-    c := func(b, c=10);
-    d := func(b, c=c, b=10);
-    e := func(a, b, c);
-    f := func(a=a, b=b, c=c);
-    g := func(c=c, b=b, a=a);
-    h := func(f, c=c, b=b);
-    i := func(1, 2, 3, 4);
-    j := func(k=5.0);
+func testNamedArgs() {
+    a := fun(0);
+    b := fun(a, b=10);
+    c := fun(b, c=10);
+    d := fun(b, c=c, b=10);
+    e := fun(a, b, c);
+    f := fun(a=a, b=b, c=c);
+    g := fun(c=c, b=b, a=a);
+    h := fun(f, c=c, b=b);
+    i := fun(1, 2, 3, 4);
+    j := fun(k=5.0);
 }

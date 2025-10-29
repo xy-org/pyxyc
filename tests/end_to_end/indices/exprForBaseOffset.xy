@@ -3,7 +3,7 @@ import libxy.slice;
 import libxy.stdio;
 import libxy.memory;
 
-def test(cond: Bool) {
+func test(cond: Bool) {
    if (cond) {
         print("Match\n");
     } else {
@@ -11,25 +11,25 @@ def test(cond: Bool) {
     }
 }
 
-def funcReturningIdx(s: Str) -> s[ RangeSize ] {
+func funcReturningIdx(s: Str) -> s[ RangeSize ] {
     print("In funcReturningIdx\n");
     res := 0uz:(s.size-4);
     return res;
 }
 
-def get(s: Str, int: RangeSize) -> Str~MemExt
+func get(s: Str, int: RangeSize) -> Str~MemExt
 >> int.start < s.size
 >> (int.end - int.start) <= s.size
 {
     return Str~MemExt{s.addr + int.start, int.end - int.start};
 }
 
-def returnString() -> Str~MemManaged {
+func returnString() -> Str~MemManaged {
     print("In returnString\n");
     return f"stringPartial";
 }
 
-def main~EntryPoint() {
+func main~EntryPoint() {
     test(funcReturningIdx("stringFull") == "string");
     test(funcReturningIdx(returnString()) == "string");
 }

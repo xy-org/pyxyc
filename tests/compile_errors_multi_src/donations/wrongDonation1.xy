@@ -2,15 +2,15 @@ struct Struct {
     val: Ptr;
 }
 
-def dtor(s: Struct) {
+func dtor(s: Struct) {
     # ...
 }
 
-def func(a: don Struct) {
+func fun(a: don Struct) {
     # ...
 }
 
-def test() {
+func test() {
     a: Struct;
-    a'func;
+    a'fun;
 }

@@ -1,14 +1,14 @@
 struct Test~[xyTag:=TagCtor{label="test"}] {}
 
-def test1~Test() {}
+func test1~Test() {}
 
-def test2~Test() {}
+func test2~Test() {}
 
-def invokeTests() {
+func invokeTests() {
     tests := @for (f in $* ~Test()) f'toCallback;
     for (f in tests) {
         [f]();
     }
 }
 
-def test3~Test() {}
+func test3~Test() {}

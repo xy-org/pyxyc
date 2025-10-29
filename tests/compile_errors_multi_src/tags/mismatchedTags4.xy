@@ -6,6 +6,6 @@ struct Struct {
     d: Data~[tag=Tag1];
 }
 
-def test() {
+func test() {
     s := Struct{Data~[tag=Tag2]{}};
 }

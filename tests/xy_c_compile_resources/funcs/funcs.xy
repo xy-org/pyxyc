@@ -4,21 +4,21 @@ struct A {
     num: Int;
 }
 
-def double(a: A) -> A {
+func double(a: A) -> A {
     return A{a.num * 2};
 }
 
-def doubleInout(a: mut A) {
+func doubleInout(a: mut A) {
     a.num *= 2;
 }
 
-def callDoubles(a: mut A) -> A {
+func callDoubles(a: mut A) -> A {
     a = double(a);
     doubleInout(a);
     return a;
 }
 
-def test() -> Int {
+func test() -> Int {
     a : mut = A{5};
     _ = double(a);
     doubleInout(a);
@@ -27,20 +27,20 @@ def test() -> Int {
 
 # Funcs with default arguments
 
-def defaultArg0(a: A, b : A = A{0}) -> A {return A{a.num + b.num};}
+func defaultArg0(a: A, b : A = A{0}) -> A {return A{a.num + b.num};}
 
-def defaultArg1(a: A, b := A{0}) -> A{ return A{a.num + b.num};}
+func defaultArg1(a: A, b := A{0}) -> A{ return A{a.num + b.num};}
 
-def defaultArg2(a: A, b := rndA()) -> A{ return A{a.num * b.num};}
+func defaultArg2(a: A, b := rndA()) -> A{ return A{a.num * b.num};}
 
-def defaultArg3(a: A, b := a'defaultArg1) -> A{ return A{a.num - b.num};}
+func defaultArg3(a: A, b := a'defaultArg1) -> A{ return A{a.num - b.num};}
 
-def rndA() -> A {
+func rndA() -> A {
     return A{5};
 }
 
 
-def testDefaultArgs() {
+func testDefaultArgs() {
     _ = defaultArg0(A{0});
 
     _ = A{0}'defaultArg1();

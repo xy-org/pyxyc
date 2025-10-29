@@ -1,4 +1,4 @@
-def test1() -> Int {
+func test1() -> Int {
     a := -> (res: Int) {
         res = 0;
     };
@@ -8,7 +8,7 @@ def test1() -> Int {
     return a + b;
 }
 
-# def test2() {
+# func test2() {
 #     return -> (res: Int) {
 #         res = 1;
 #     } + -> (res: Int) {

@@ -8,7 +8,7 @@ typedef struct xy_Global xy_Global;
 
 int32_t globals2_test1(void);
 int32_t globals2_test2(void);
-int32_t globals2_func(globals2_Struct* p_s);
+int32_t globals2_fun(globals2_Struct* p_s);
 void xy_global_init(xy_Global* global, xy_GlobalInitData* data);
 
 #define XY_GLOBALS2_STRUCT__ID 0
@@ -46,10 +46,10 @@ int32_t globals2_test1(void) {
 }
 
 int32_t globals2_test2(void) {
-    return globals2_func((globals2_Struct*)g__xy_global->stack[XY_GLOBALS2_STRUCT__ID]);
+    return globals2_fun((globals2_Struct*)g__xy_global->stack[XY_GLOBALS2_STRUCT__ID]);
 }
 
-int32_t globals2_func(globals2_Struct* p_s) {
+int32_t globals2_fun(globals2_Struct* p_s) {
     return p_s->m_val;
 }
 

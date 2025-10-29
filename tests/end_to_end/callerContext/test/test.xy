@@ -1,7 +1,7 @@
 import callerContext.mystruct;
 import callerContext.testing;
 
-def runTest() {
+func runTest() {
     a: My;
     b: My;
     equals(a, b);

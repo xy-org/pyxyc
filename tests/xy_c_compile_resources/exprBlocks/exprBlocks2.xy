@@ -2,21 +2,21 @@ struct Struct {
     val: Int;
 }
 
-def func(s: Struct) {
+func fun(s: Struct) {
     # ...
 }
 
-def dtor(s: Struct) {
+func dtor(s: Struct) {
     # ...
 }
 
-def test() -> void {
+func test() -> void {
     s: Struct;
     _ = -> void {
         s := Struct{10};
         a := -> (a: Int) {
             a = 10;
         };
-        s'func();
+        s'fun();
     };
 }

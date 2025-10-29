@@ -1,15 +1,15 @@
-def cond1(a: Int, b: Int) -> Bool
+func cond1(a: Int, b: Int) -> Bool
 >> a >= b
 {
     return a >= b * 10;
 }
 
-def cond2(^a: Int, b: Int) -> Bool
+func cond2(^a: Int, b: Int) -> Bool
 >> a < b
 {
     return b < 10;
 }
 
-def test(x: mut Int, y: mut Int) -> Bool {
+func test(x: mut Int, y: mut Int) -> Bool {
     return (cond1(x, y) && cond2(cond1(x, y)'to(Int), x));
 }

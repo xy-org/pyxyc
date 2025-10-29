@@ -1,11 +1,11 @@
 import xy.ctti;
 
-def func(a: mut Int) -> Int {
+func fun(a: mut Int) -> Int {
     a++;
     return a;
 }
 
-def test() {
+func test() {
     var: Int;
-    _ = sizeof(var'func);
+    _ = sizeof(var'fun);
 }

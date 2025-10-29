@@ -4,7 +4,7 @@ struct Color {
     b: Float;
 }
 
-def printColor(c: Color) {
+func printColor(c: Color) {
     # ...
 }
 
@@ -18,7 +18,7 @@ struct PaletteType {
 
 Palette := PaletteType{};
 
-def test() {
+func test() {
     c1 := Color{.2f, .2f, 1f};
     c2 := Palette.blue;
     printColor(c1);

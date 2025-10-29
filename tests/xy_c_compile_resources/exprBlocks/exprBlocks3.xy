@@ -2,7 +2,7 @@ struct Struct {
     val: Long;
 }
 
-def func(s: Struct) {
+func fun(s: Struct) {
     # ...
 }
 
@@ -11,12 +11,12 @@ struct Container {
     s2: Struct;
 }
 
-def dtor(c: Container) = -> void {
-    c.s1'func;
-    c.s2'func;
+func dtor(c: Container) = -> void {
+    c.s1'fun;
+    c.s2'fun;
 };
 
-def test(s: Struct) -> Long {
+func test(s: Struct) -> Long {
     return -> (res: Long) {
         c: Container;
         res = c.s1.val + c.s2.val;

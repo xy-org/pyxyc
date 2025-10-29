@@ -2,15 +2,15 @@ struct WithDtor {
     id: Int;
 }
 
-def dtor(val: WithDtor) {
+func dtor(val: WithDtor) {
     # ...
 }
 
-def action(a: WithDtor, b: don WithDtor, ptr: Ptr = b'addrof) {
+func action(a: WithDtor, b: don WithDtor, ptr: Ptr = b'addrof) {
     # ...
 }
 
-def test() {
+func test() {
     val := WithDtor{-1};
     action(val, WithDtor{});
     action(val, WithDtor{10});

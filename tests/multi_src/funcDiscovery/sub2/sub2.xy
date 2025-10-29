@@ -1,4 +1,4 @@
 import funcDiscovery.mark;
 
-def noop~MyMark(a: mut Int, b: Int) -> void {
+func noop~MyMark(a: mut Int, b: Int) -> void {
 }

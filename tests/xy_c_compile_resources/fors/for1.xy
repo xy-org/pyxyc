@@ -1,24 +1,24 @@
-def busywait() {
+func busywait() {
     for (i in :) {
         if (i == 10000) break;
     }
 }
 
-def busywait2() {
+func busywait2() {
     for (_ in :10000) {}
 }
 
-def sumUpTo(start: Int, end: Int) -> Int {
+func sumUpTo(start: Int, end: Int) -> Int {
     return for (i in start:end) -> (res: Int) { res += i; };
 }
 
-def multUpTo(start: Int, end: Int, step: Int) -> Int {
+func multUpTo(start: Int, end: Int, step: Int) -> Int {
     res : mut = 0;
     for (i in start:end:step) res *= sumUpTo(start, i);
     return res;
 }
 
-def doubleLoop(limX: Int, limY: Int) -> Int {
+func doubleLoop(limX: Int, limY: Int) -> Int {
     return for (i in :limX) -> (res := 1) {
         for (j in :limY) {
             res *= i + j;
@@ -26,6 +26,6 @@ def doubleLoop(limX: Int, limY: Int) -> Int {
     };
 }
 
-def zipLoop(limX: Int, limY: Int) -> Int {
+func zipLoop(limX: Int, limY: Int) -> Int {
     return for (i in :limX, j in :limY) -> (res := 1) { res *= i + j; };
 }

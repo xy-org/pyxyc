@@ -3,7 +3,7 @@ struct Pair {
     b : Int;
 }
 
-def func() -> void {
+func fun() -> void {
     a := 0;
     b := 0x10;
     c := 5.5;
@@ -22,6 +22,6 @@ def func() -> void {
     p := Pair{a, b};
 }
 
-def implicitVoid() {
-    func();
+func implicitVoid() {
+    fun();
 }

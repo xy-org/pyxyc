@@ -6,14 +6,14 @@ struct State {
     y: Float;
 }
 
-def fillAndReset(st: mut State, val: mut Int) {
+func fillAndReset(st: mut State, val: mut Int) {
     st.a = val;
     st.b = val;
     st.c = val;
     val = 0;
 }
 
-def test() {
+func test() {
     a : State;
     b : State;
     fillAndReset(a, b.c);

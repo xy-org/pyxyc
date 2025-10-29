@@ -6,7 +6,7 @@ struct Data {
     flt: Float;
 }
 
-def test() {
+func test() {
     a := Data{};
     b := Data{flt=2.0};
 }

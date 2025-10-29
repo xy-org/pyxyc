@@ -2,8 +2,8 @@ struct MyStruct {
     value: Int;
 }
 
-def get() = [Global~MyStruct]'func1();
+func get() = [Global~MyStruct]'func1();
 
-def func1(s: MyStruct) = s'func2();
+func func1(s: MyStruct) = s'func2();
 
-def func2(s: MyStruct) = s.value;
+func func2(s: MyStruct) = s.value;

@@ -1,13 +1,13 @@
-def test() {
+func test() {
     arr : @Int[20];
     f(arr);
     g(arr);
 }
 
-def f(arr: pseudo @Int[], ptr := arr'addrof, len := arr'len) {
+func f(arr: pseudo @Int[], ptr := arr'addrof, len := arr'len) {
     # ...
 }
 
-def g(arr: pseudo @Any[], ptr: Ptr = arr'addrof, len := arr'len) {
+func g(arr: pseudo @Any[], ptr: Ptr = arr'addrof, len := arr'len) {
     # ...
 }

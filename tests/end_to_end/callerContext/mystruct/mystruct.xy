@@ -4,7 +4,7 @@ struct My {
     num: Int;
 }
 
-*def cmp(a: My, b: My) -> Int {
+*func cmp(a: My, b: My) -> Int {
     print("In cmp\n");
     return a.num - b.num;
 }

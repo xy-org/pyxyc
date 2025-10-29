@@ -2,17 +2,17 @@ struct Array~[elemType: struct] {
     len: Usize;
 }
 
-def len(arr: Array) = arr.len;
+func len(arr: Array) = arr.len;
 
 struct Point {
     x: Float;
     y: Float;
 }
 
-def sizeof(:Int) = 4;
-def sizeof(:Point) = 8;
+func sizeof(:Int) = 4;
+func sizeof(:Point) = 8;
 
-def test() -> Usize {
+func test() -> Usize {
     ints : Array~Int;
     points : Array~Point;
     return ints'len + points'len + ints..elemType'sizeof + points..elemType'sizeof;

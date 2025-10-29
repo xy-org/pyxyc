@@ -4,26 +4,26 @@ struct Str {
     addr: Ptr;
 }
 
-def dtor(s: Str) {
+func dtor(s: Str) {
     c.free(s.addr);
 }
 
-def createStr1() -> Str {
+func createStr1() -> Str {
     return Str{};
 }
 
-def createStr2() -> Str {
+func createStr2() -> Str {
     return Str{};
 }
 
-def copy(s: Str) -> Str {
+func copy(s: Str) -> Str {
     return Str{};
 }
 
-def startswith(str: Str, prefix: Str) -> Bool {
+func startswith(str: Str, prefix: Str) -> Bool {
     return c.strcmp(str.addr, prefix.addr);
 }
 
-def test(s1: Str, s2: Str) -> Bool {
+func test(s1: Str, s2: Str) -> Bool {
     return createStr1()'copy'startswith(s1) || createStr2()'copy'startswith(s2);
 }

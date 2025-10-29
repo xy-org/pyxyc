@@ -2,7 +2,7 @@ struct Struct {
     val := 10;
 }
 
-def main~EntryPoint() -> Int {
+func main~EntryPoint() -> Int {
     a := test1();
 
     intVal := [Global~Struct].val;
@@ -17,14 +17,14 @@ def main~EntryPoint() -> Int {
     return a + b + c;
 }
 
-def test1() -> Int {
+func test1() -> Int {
     return [Global~Struct].val;
 }
 
-def test2() -> Int {
-    return func();
+func test2() -> Int {
+    return fun();
 }
 
-def func(s : mut = [Global~Struct]) -> Int {
+func fun(s : mut = [Global~Struct]) -> Int {
     return s.val;
 }

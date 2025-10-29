@@ -6,6 +6,6 @@ struct Small {
     num: Int;
 }
 
-def func1(a: Large, b: Small) {}
-def func2(a: Large, b: mut Small) {}
-def func3(a: mut Large, b: Small) {}
+func func1(a: Large, b: Small) {}
+func func2(a: Large, b: mut Small) {}
+func func3(a: mut Large, b: Small) {}

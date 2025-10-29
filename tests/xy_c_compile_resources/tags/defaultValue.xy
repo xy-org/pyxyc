@@ -5,25 +5,25 @@ struct Data {
     # ...
 }
 
-def func(data: Data) = func(data, data..(tag, MissingTag));
+func fun(data: Data) = fun(data, data..(tag, MissingTag));
 
-def func(data: Data, :Tag1) {
+func fun(data: Data, :Tag1) {
     # ...
 }
 
-def func(data: Data, :Tag2) {
+func fun(data: Data, :Tag2) {
     # ...
 }
 
 -struct MissingTag {}
-def func(data: Data, :MissingTag) {
+func fun(data: Data, :MissingTag) {
     # ...
 }
 
-def test() {
+func test() {
     a: Data~[tag=Tag2];
-    a'func;
+    a'fun;
 
     b: Data;
-    b'func;
+    b'fun;
 }

@@ -27,7 +27,7 @@ struct FieldDesc{
     comment: Str~MemStatic;
 }
 
-def printTypeInfo(
+func printTypeInfo(
     s: pseudo Any,
     typeName := nameof(%s),
     typeComment := commentof(%s),
@@ -56,7 +56,7 @@ def printTypeInfo(
     print("}\n");
 }
 
-def main~EntryPoint() {
+func main~EntryPoint() {
     s := MyStruct{};
     printTypeInfo(s);
 }

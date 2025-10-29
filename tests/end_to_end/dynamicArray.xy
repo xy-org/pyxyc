@@ -11,17 +11,17 @@ struct Array~[elemType: struct, xy_dtor=true] {
     len: Usize~Count;
 }
 
-def dtor(arr: mut Array) {
+func dtor(arr: mut Array) {
     arr.mem'free();
 }
 
-def len(a: Array) = a.len;
+func len(a: Array) = a.len;
 
-def max(a: Usize, b: Usize) -> Usize {
+func max(a: Usize, b: Usize) -> Usize {
     return if (a > b) a else b;
 }
 
-def ensureCapacity(
+func ensureCapacity(
     arr: mut Array,
     requiredCap: Usize,
     elemSize : Usize = ctti.sizeof(arr..elemType)
@@ -32,7 +32,7 @@ def ensureCapacity(
     }
 }
 
-def push(
+func push(
     arr: mut Array,
     elem: pseudo Any,
     elemMem: Ptr = elem'addrof,
@@ -46,14 +46,14 @@ def push(
 }
 
 
-def get(
+func get(
     arr: Array, i: Usize,
     elemSize : Usize = ctti.sizeof(arr..elemType)
 ) -> arr[ Ptr~[^arr..elemType] ] {
     return (arr.mem.addr + i * elemSize)~[void];
 }
 
-def get(
+func get(
     arr: Array, i: Int,
     elemSize : Usize = ctti.sizeof(arr..elemType)
 ) -> arr[ Ptr~[^arr..elemType] ] {
@@ -64,17 +64,17 @@ struct ArrayIter {
     idx: Usize;
 }
 
-def iter(arr: Array) -> arr[ ArrayIter ] {
+func iter(arr: Array) -> arr[ ArrayIter ] {
     return ArrayIter{};
 }
 
-def valid(arr: Array, iter: ArrayIter) = iter.idx < arr'len;
+func valid(arr: Array, iter: ArrayIter) = iter.idx < arr'len;
 
-def next(arr: pseudo Array, iter: mut ArrayIter) {
+func next(arr: pseudo Array, iter: mut ArrayIter) {
    iter.idx++;
 }
 
-def get(arr: Array, iter: ArrayIter, elemSize : Usize = ctti.sizeof(arr..elemType)) -> arr[ Ptr~[^arr..elemType] ] {
+func get(arr: Array, iter: ArrayIter, elemSize : Usize = ctti.sizeof(arr..elemType)) -> arr[ Ptr~[^arr..elemType] ] {
     return (arr.mem.addr + iter.idx * elemSize)~void;
 }
 
@@ -85,7 +85,7 @@ struct Point {
     y: Int;
 }
 
-def main~EntryPoint() -> Int {
+func main~EntryPoint() -> Int {
     ints: Array~Int;
     points: Array~Point;
     for (i in :100) {

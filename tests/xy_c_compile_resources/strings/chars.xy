@@ -1,4 +1,4 @@
-def test() {
+func test() {
     a := `a`;
     b := `\n`;
     c := `\\`;

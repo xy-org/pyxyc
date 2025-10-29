@@ -1,4 +1,4 @@
-def test(a: (Ushort, Int), b: %a) {
+func test(a: (Ushort, Int), b: %a) {
     c := a == b;
     d := a != b;
     e := !a;
@@ -10,7 +10,7 @@ def test(a: (Ushort, Int), b: %a) {
     k := cmp(a, b);
 }
 
-def test(a: (Float, Double), b: %a) {
+func test(a: (Float, Double), b: %a) {
     c := a == b;
     d := a != b;
     g := a > b;

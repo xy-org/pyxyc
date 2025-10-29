@@ -1,9 +1,9 @@
-def main~EntryPoint() -> Int {
+func main~EntryPoint() -> Int {
     test();
     return 0;
 }
 
-def test() {
+func test() {
     a : mut = 0;
     b : mut = 10;
     while (a < b) {

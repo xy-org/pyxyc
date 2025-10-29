@@ -6,18 +6,18 @@ struct Struct {
     d: Data~[tag=Tag1];
 }
 
-def func(s: Struct, desc : Desc~[tag=Tag1] = ^describe(s)) {
+func fun(s: Struct, desc : Desc~[tag=Tag1] = ^describe(s)) {
     # ...
 }
 
 struct Desc {}
 
-def describe(s: Struct) -> Desc~[tag=Tag2] {
+func describe(s: Struct) -> Desc~[tag=Tag2] {
     # ...
     return Desc{};
 }
 
-def test() {
+func test() {
     s := Struct{};
-    func(s);
+    fun(s);
 }

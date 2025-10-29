@@ -3,9 +3,9 @@ struct Struct {
     b: Int;
 }
 
-def func(v: mut Struct, a: Int) {}
+func fun(v: mut Struct, a: Int) {}
 
-def test() {
+func test() {
     v: Struct;
-    func(v, v.a);; not safe as v and v.a alias on different levels
+    fun(v, v.a);; not safe as v and v.a alias on different levels
 }

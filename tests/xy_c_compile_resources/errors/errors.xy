@@ -2,11 +2,11 @@ struct Error {
     errorCode: Int;
 }
 
-def to(err: Error, :Bool) err.errorCode != 0;
+func to(err: Error, :Bool) err.errorCode != 0;
 
 ;; Simple Error Issuing
 
-def power(x: Int, y: Int) -> Int | Error {
+func power(x: Int, y: Int) -> Int | Error {
     if (y < 0) {
         error Error{1};
     }
@@ -19,27 +19,27 @@ def power(x: Int, y: Int) -> Int | Error {
 
 ;; Error Propagation
 
-def errorPropagation(x: Int, y: Int) -> Int | Error {
+func errorPropagation(x: Int, y: Int) -> Int | Error {
     return power(x, y) - 1;
 }
 
-def doWork(x: Int) -> void | Error {
+func doWork(x: Int) -> void | Error {
     y := power(x, x);
     print(y);
 }
 
-def print(a: Int) -> void {}
+func print(a: Int) -> void {}
 
-def doNothing() -> void | Error {}
+func doNothing() -> void | Error {}
 
-def callReturningErrorButNoResult(a: Int, b: Int) -> void | Error {
+func callReturningErrorButNoResult(a: Int, b: Int) -> void | Error {
     doWork(a);
     doWork(b);
 }
 
 ;; Errors in functions that issue no errors or issue errors of a different kind
 
-def errorInFuncThatDoesNotIssueAndError(x: Int, y: Int) -> Int {
+func errorInFuncThatDoesNotIssueAndError(x: Int, y: Int) -> Int {
     if (x < y) {
         error Error{1};
     }
@@ -52,7 +52,7 @@ struct Error2 {
     b: Int;
 }
 
-def errorInFuncThatIssuesDifferentKindOfError(x: Int, y: Int) -> Int | Error2 {
+func errorInFuncThatIssuesDifferentKindOfError(x: Int, y: Int) -> Int | Error2 {
     if (x > 2*y) {
         error Error{1};
     }

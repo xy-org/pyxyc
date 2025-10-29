@@ -6,18 +6,18 @@ struct Msg {
     data: Long;
 }
 
-def info(log: Logger, ^msg: Msg, logged : Bool = if (log.enabled) doLog(log, ^msg) else false) {}
+func info(log: Logger, ^msg: Msg, logged : Bool = if (log.enabled) doLog(log, ^msg) else false) {}
 
-def doLog(log: Logger, msg: Msg) -> Bool {
+func doLog(log: Logger, msg: Msg) -> Bool {
     # log msg
     return true;
 }
 
-def longComputation() -> Msg {
+func longComputation() -> Msg {
     return Msg{};
 }
 
-def test() {
+func test() {
     log := Logger{};
     log \info longComputation();
 }

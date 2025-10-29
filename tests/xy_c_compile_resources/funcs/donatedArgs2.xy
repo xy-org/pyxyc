@@ -2,11 +2,11 @@ struct WithoutDtor {
     val: Int;
 }
 
-def action(a: WithoutDtor, b: don WithoutDtor) {
+func action(a: WithoutDtor, b: don WithoutDtor) {
     # ...
 }
 
-def test() {
+func test() {
     without := WithoutDtor{};
     action(without, without);
 }

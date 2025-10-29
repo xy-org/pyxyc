@@ -2,27 +2,27 @@
 ;; duplicate names after an if statement. So we have this test here to make sure
 ;; unique names are generated even in weird cases.
 
-def func1(x: Int, y: Int, z: Int) -> Int {
+func func1(x: Int, y: Int, z: Int) -> Int {
     return x * y + z;
 }
 
-def func2() -> Int {
+func func2() -> Int {
     return 20;
 }
 
-def func3() -> Int {
+func func3() -> Int {
     return 30;
 }
 
-def func4() -> Int {
+func func4() -> Int {
     return 40;
 }
 
-def func5(x: Int) -> Int {
+func func5(x: Int) -> Int {
     return x + x * 10;
 }
 
-def test~EntryPoint() -> Int {
+func test~EntryPoint() -> Int {
     a := func1(func2(), func3() + func4(), func5(func3() * 10));
     b := func1(func3(), func2() + func4(), func5(func3() * 10));
     c : Int;

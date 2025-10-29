@@ -1,8 +1,8 @@
-def mod(num: mut Int) {
+func mod(num: mut Int) {
     num *= 2;
 }
 
-def test() {
+func test() {
     arr : mut = @{1, 3, 5, 7, 9, 11};
     for (i in arr) {
         mod(i);

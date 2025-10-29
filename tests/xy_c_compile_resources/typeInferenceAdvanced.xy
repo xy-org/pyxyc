@@ -4,23 +4,23 @@ struct Pair {
 }
 
 
-def rng() -> Int {
+func rng() -> Int {
     return 0;
 }
 
-def myadd(a: Int, b: Int) -> Long {
+func myadd(a: Int, b: Int) -> Long {
     return 0l;
 }
 
-def ctorPair() -> Pair {
+func ctorPair() -> Pair {
     return Pair{0, 1};
 }
 
-def transform(num : Long) -> Float{
+func transform(num : Long) -> Float{
     return 0f;
 }
 
-def func() -> void {
+func test() -> void {
     a := rng();
     b := rng() + 10;
     c := (a \myadd b)'transform;

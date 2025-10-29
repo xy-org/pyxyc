@@ -1,5 +1,5 @@
 import crossModuleSelect.tag;
 
-def testSomething~Test() {
+func testSomething~Test() {
     # ...
 }

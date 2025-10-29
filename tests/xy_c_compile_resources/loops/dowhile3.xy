@@ -1,10 +1,10 @@
-def cond1(a: Int, b: Int) -> Bool
+func cond1(a: Int, b: Int) -> Bool
 >> a >= b
 {
     return a >= b * 2;
 }
 
-def cond2(a: Int, b: Int) -> Bool
+func cond2(a: Int, b: Int) -> Bool
 >> a < b
 {
     return b < 10;
@@ -14,11 +14,11 @@ struct TypeWithDtor{
     id: Int;
 }
 
-def dtor(resource: TypeWithDtor) {
+func dtor(resource: TypeWithDtor) {
     # ...
 }
 
-def test(x: mut Int, y: mut Int) {
+func test(x: mut Int, y: mut Int) {
     do {
         a := TypeWithDtor{-1};
         x--;

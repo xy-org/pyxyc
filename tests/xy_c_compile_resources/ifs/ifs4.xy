@@ -1,17 +1,17 @@
 # Test if statements with compile-time known consts
 
-def test1(a: Int, b: Int) -> Int {
+func test1(a: Int, b: Int) -> Int {
     if (false) return a + b;
     return a - b;
 }
 
-def test2(a: Int, b: Int) -> Int {
+func test2(a: Int, b: Int) -> Int {
     if (true) return a + b;
     return a - b;
     # TODO a double return will be generated
 }
 
-def test3(a: Int, b: Int) -> Int {
+func test3(a: Int, b: Int) -> Int {
     c: Int;
     if (false) {
         c = a + b;

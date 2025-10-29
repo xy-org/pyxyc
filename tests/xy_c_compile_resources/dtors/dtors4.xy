@@ -18,11 +18,11 @@ struct Str {
     addr: Ptr~Byte;
 }
 
-def dtor(s: Str) {
+func dtor(s: Str) {
     # ...
 }
 
-def test() {
+func test() {
     t := Top{};
     # ...
 }

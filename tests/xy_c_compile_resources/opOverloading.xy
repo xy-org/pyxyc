@@ -2,31 +2,31 @@ struct MyInt {
     num: Int;
 }
 
-def cmpGt(a: MyInt, b: MyInt) -> Bool {
+func cmpGt(a: MyInt, b: MyInt) -> Bool {
     return (a - b).num > 0;
 }
 
-def cmpLe(a: MyInt, b: MyInt) -> Bool {
+func cmpLe(a: MyInt, b: MyInt) -> Bool {
     return a.num <= b.num;
 }
 
-def add(a: MyInt, b: MyInt) -> MyInt {
+func add(a: MyInt, b: MyInt) -> MyInt {
     return MyInt{a.num + b.num};
 }
 
-def sub(a: MyInt, b: MyInt) -> MyInt {
+func sub(a: MyInt, b: MyInt) -> MyInt {
     return MyInt{a.num - b.num};
 }
 
-def mul(a: MyInt, b: MyInt) -> MyInt {
+func mul(a: MyInt, b: MyInt) -> MyInt {
     return MyInt{a.num * b.num};
 }
 
-def div(a: MyInt, b: MyInt) -> MyInt {
+func div(a: MyInt, b: MyInt) -> MyInt {
     return MyInt{a.num / b.num};
 }
 
-def cmpMyInts() -> Int {
+func cmpMyInts() -> Int {
     a := MyInt{0};
     b := MyInt{1};
 
@@ -51,15 +51,15 @@ struct Pair {
     b: MyInt;
 }
 
-def cmp(p1: MyInt, n: Int) -> Int {
+func cmp(p1: MyInt, n: Int) -> Int {
     return p1.num - n;
 }
 
-def cmpGt(p1: Pair, p2: Pair) -> Bool {
+func cmpGt(p1: Pair, p2: Pair) -> Bool {
     return p1.a > p2.a;
 }
 
-def cmpPairs() -> Int {
+func cmpPairs() -> Int {
     p1 := Pair{MyInt{0}, MyInt{1}};
     p2 := Pair{MyInt{2}, MyInt{3}};
     if (p1 > p2) {

@@ -6,7 +6,7 @@
 #define GLOBALCONSTANTS_PI 3.14
 #define GLOBALCONSTANTS_E 2.71828
 
-int32_t globalConstants_func(void) {
+int32_t globalConstants_fun(void) {
     int32_t tmp_0 = 0;
     if (GLOBALCONSTANTS_PI > GLOBALCONSTANTS_E) {
         tmp_0 = GLOBALCONSTANTS_C;

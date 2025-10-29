@@ -1,4 +1,4 @@
-def test() {
+func test() {
     a : mut = 10;
     b : Int;
     b =< a;
@@ -8,6 +8,6 @@ def test() {
     assert(c == 10);
 }
 
-def assert(cond: Bool) {
+func assert(cond: Bool) {
     # ...
 }

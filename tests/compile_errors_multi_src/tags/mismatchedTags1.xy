@@ -5,11 +5,11 @@ struct Data {
     # ...
 }
 
-def func() -> Data~Tag2 {
+func fun() -> Data~Tag2 {
     return Data~Tag2{};
 }
 
-def test() {
+func test() {
     d : Data~Tag1;
-    d = func();
+    d = fun();
 }

@@ -2,24 +2,24 @@ struct Error {
     code: Int;
 }
 
-def to(err: Error, :Bool) err.code != 0;
+func to(err: Error, :Bool) err.code != 0;
 
-def unhandled(err: Error) {
+func unhandled(err: Error) {
     # log the error or something ...
 }
 
-def errorProne() -> void | Error {
+func errorProne() -> void | Error {
     error Error{5};
 }
 
-def doWork() -> void | Error {
+func doWork() -> void | Error {
     errorProne();
 }
 
-def test1() {
+func test1() {
     doWork();
 }
 
-def test2() {
+func test2() {
     error Error{10};
 }

@@ -2,15 +2,15 @@ struct Data {
     mem: Ptr;
 }
 
-def get(d: Data, i: Int) -> Float {
+func get(d: Data, i: Int) -> Float {
     return (i*2)'to(Float);
 }
 
-def func1(d: Data, i: Int) -> d[ Int ] {
-    return i; 
+func func1(d: Data, i: Int) -> d[ Int ] {
+    return i;
 }
 
-def test() {
+func test() {
     a := 10;
     b := &a;
     c := a'addrof;

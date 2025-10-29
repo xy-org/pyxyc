@@ -4,32 +4,32 @@ struct Array {
     ptr: Ptr~Int;
 }
 
-def get(arr: Array, idx: Int) -> arr[ Ptr~Int ] {
+func get(arr: Array, idx: Int) -> arr[ Ptr~Int ] {
     return arr.ptr + idx;
 }
 
-def modifyFunc(a: don Int) {
+func modifyFunc(a: don Int) {
     void =< a;
 }
 
-def modifyMacro(a: don Int) = -> void {
+func modifyMacro(a: don Int) = -> void {
     void =< a;
 };
 
-def testFunc() {
+func testFunc() {
     s: Array;
     modifyFunc(s[1]);
 }
 
-def testMacro1() {
+func testMacro1() {
     s: Array;
     modifyMacro(s[1]);
 }
 
-def testMacro2(s: Array) {
+func testMacro2(s: Array) {
     modifyMacro(s[3]);
 }
 
-def testMacro3(s: Array) {
+func testMacro3(s: Array) {
     modifyMacro(a=s[3]);
 }

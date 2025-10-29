@@ -4,7 +4,7 @@ import package2.module3;
 import package2.module4;
 import package3.module4;
 
-def test() {
+func test() {
     work1();
     work2();
 }

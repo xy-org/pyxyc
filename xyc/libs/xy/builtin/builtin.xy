@@ -82,19 +82,19 @@
 }
 
 ;; Dereferencing a pointer
-*def get(ptr: Ptr) -> [ Ptr~[^ptr..to] ] {
+*func get(ptr: Ptr) -> [ Ptr~[^ptr..to] ] {
     # Implemented by the compiler
 }
 
 ;; Dereferencing a pointer at an index (offset)
-*def get(
+*func get(
     ptr: Ptr,
     idx: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
 ) -> [ Ptr~[^ptr..to] ] {
     # Implemented by the compiler
 }
 
-*def set(
+*func set(
     ptr: Ptr,
     idx: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
     value: pseudo Any
@@ -103,7 +103,7 @@
 }
 
 ;; The address of Any variable or even temporary value
-*def addrof(arg: Any) -> Ptr~[%^arg] {
+*func addrof(arg: Any) -> Ptr~[%^arg] {
     # Implemented by the compiler
 }
 
@@ -117,31 +117,31 @@
     # Implemented by the compiler
 }
 
-*def inf(: Float) -> Float {
+*func inf(: Float) -> Float {
     # implemented by the compiler
 }
 
-*def inf(: Double) -> Double {
+*func inf(: Double) -> Double {
     # implemented by the compiler
 }
 
-*def nan(: Float) -> Float {
+*func nan(: Float) -> Float {
     # implemented by the compiler
 }
 
-*def nan(: Double) -> Double {
+*func nan(: Double) -> Double {
     # implemented by the compiler
 }
 
 # Limits
 
-*def max(
+*func max(
     type: pseudo (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
  ) -> %type {
     # Implemented by the compiler
 }
 
-*def min(
+*func min(
     type: pseudo (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
  ) -> %type {
     # Implemented by the compiler
@@ -150,7 +150,7 @@
 # Arithmetic operations
 
 ;; Addition
-*def add(
+*func add(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
@@ -158,28 +158,28 @@
 }
 
 ;; Equivalent to if({b}) {a}+1 else {a};
-*def add(
+*func add(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: Bool
 ) -> %a {
     # Implemented by the compiler
 }
 
-*def add(
+*func add(
     b: Bool,
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
 ) -> %a {
     # Implemented by the compiler
 }
 
-*def add(
+*func add(
     char: Char,
     offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
 ) -> %char {
     # Implemented by the compiler
 }
 
-*def sub(
+*func sub(
     char: Char,
     offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
 ) -> %char {
@@ -188,7 +188,7 @@
 
 ;; Subtraction
 ;; Note! Only Numeric - Bool is defined
-*def sub(
+*func sub(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
@@ -196,7 +196,7 @@
 }
 
 ;; Equivalent to if({b}) {a}-1 else {a};
-*def sub(
+*func sub(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: Bool
 ) -> %a {
@@ -204,7 +204,7 @@
 }
 
 ;; Multiplication
-*def mul(
+*func mul(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
@@ -212,12 +212,12 @@
 }
 
 ;; Multiplie two 64-bit values, and return bits[64:127] of the 128-bit result
-*def mulhi(a: (Long, Ulong), b: %a) -> %a {
+*func mulhi(a: (Long, Ulong), b: %a) -> %a {
     # implemented by the compiler
 }
 
 ;; Power a.k.a. exponentiation
-*def pow(
+*func pow(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
@@ -229,7 +229,7 @@
 ;; Examples:
 ;; 7 / 4 == 1
 ;; 7 / -4 == -1
-*def div(
+*func div(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
     b: %a
 ) -> %a
@@ -239,13 +239,13 @@
 }
 
 ;; Floating Point Division
-*def div(
+*func div(
     a: (Float, Double), b: %a
 ) -> %a {
     # Implemented by the compiler
 }
 
-*def div(
+*func div(
     b: Bool,
     a: (Float, Double),
 ) -> %a {
@@ -261,7 +261,7 @@
 ;; -7 \rem 4 == -3
 ;; -7 \rem -4 == -3
 ;; The divisor is assumed to be non-zero.
-*def rem(
+*func rem(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
     b: %a
 ) -> %a
@@ -273,25 +273,25 @@
 ## Comparison operators
 
 ;; Compare {a} and {b}
-*def cmpEq(a: Any, b: Any) ^cmp(a, b) == 0;
+*func cmpEq(a: Any, b: Any) ^cmp(a, b) == 0;
 
 ;; Compare {a} and {b} for inequality
-*def cmpNe(a: Any, b: Any) ^cmp(a, b) != 0;
+*func cmpNe(a: Any, b: Any) ^cmp(a, b) != 0;
 
 ;; True if {a} > {b}
-*def cmpGt(a: Any, b: Any) ^cmp(a, b) > 0;
+*func cmpGt(a: Any, b: Any) ^cmp(a, b) > 0;
 
 ;; True if {a} >= {b}
-*def cmpGe(a: Any, b: Any) ^cmp(a, b) >= 0;
+*func cmpGe(a: Any, b: Any) ^cmp(a, b) >= 0;
 
 ;; True if {a} < {b}
-*def cmpLt(a: Any, b: Any) ^cmp(b, a) > 0;
+*func cmpLt(a: Any, b: Any) ^cmp(b, a) > 0;
 
 ;; True if {a} < {b}
-*def cmpLe(a: Any, b: Any) ^cmp(b, a) >= 0;
+*func cmpLe(a: Any, b: Any) ^cmp(b, a) >= 0;
 
 ;; Return 1 if {a} > {b}, 0 if {a} == {b}, -1 if {a} < {b} or there is no order
-*def cmp(
+*func cmp(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double, Char),
     b: %a
 ) -> Int {
@@ -300,14 +300,14 @@
 
 ## Ptr
 
-*def add(
+*func add(
     ptr: Ptr,
     offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long)
 ) -> Ptr~[^ptr..to] {
     # implemented by the compiler
 }
 
-*def sub(
+*func sub(
     ptr: Ptr,
     offset: (Byte, Ubyte, Short, Ushort, Int, Uint, Ulong, Long)
 ) -> Ptr~[^ptr..to] {
@@ -315,40 +315,40 @@
 }
 
 ;; Compare pointers
-*def cmp(a: Ptr, b: Ptr) -> Int {
+*func cmp(a: Ptr, b: Ptr) -> Int {
     # Implemented by the compiler
 }
 
 ## Logic Operations
 
 ;; Logic not
-*def not(
+*func not(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Bool)
 ) -> Bool {
     # Implemented by the compiler
 }
 
 ;; True if {a} is NULL, false otherwise
-*def not(a: Ptr) -> Bool {
+*func not(a: Ptr) -> Bool {
     # Implemented by the compiler
 }
 
 ;; Operator ++
-*def inc(
+*func inc(
     a: mut (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
 ) -> void {
     # Implemented by the compiler
 }
 
 ;; Operator --
-*def dec(
+*func dec(
     a: mut (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
 ) -> void {
     # Implemented by the compiler
 }
 
 ;; Min of two numbers
-*def min(
+*func min(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
@@ -356,7 +356,7 @@
 }
 
 ;; Max of two numbers
-*def max(
+*func max(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: %a
 ) -> %a {
@@ -366,7 +366,7 @@
 # Mixed signedness arithmetics
 
 ;; Compute operation only if {b} is a constant
-*def add(
+*func add(
     a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double),
     b: Int
 ) -> %a
@@ -376,7 +376,7 @@
 }
 
 ;; ...
-*def sub(
+*func sub(
     a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double),
     b: Int
 ) -> %a
@@ -386,7 +386,7 @@
 }
 
 ;; ...
-*def mul(
+*func mul(
     a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double),
     b: Int
 ) -> %a
@@ -396,7 +396,7 @@
 }
 
 ;; Equivalent to if ({b}) {a} else %{a}{}
-*def mul(
+*func mul(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
     b: Bool
 ) -> %a
@@ -404,7 +404,7 @@
     # implemented by the compiler
 }
 
-*def mul(
+*func mul(
     b: Bool,
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong, Float, Double),
 ) -> %a
@@ -413,7 +413,7 @@
 }
 
 ;; ...
-*def div(
+*func div(
     a: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double),
     b: Int
 ) -> %a
@@ -423,28 +423,28 @@
 }
 
 ;; ...
-*def cmp(a: (Ubyte, Ushort, Uint, Ulong), b: Int) -> Int
+*func cmp(a: (Ubyte, Ushort, Uint, Ulong), b: Int) -> Int
 >> isConst(^b)
 {
     # implemented by the compiler
 }
 
 ;; Compute mixed signedness operation only if {a} is a constant
-*def add(a: Int, b: (Uint, Ulong, Float, Double)) -> %b
+*func add(a: Int, b: (Uint, Ulong, Float, Double)) -> %b
 >> isConst(^a)
 {
     # implemented by the compiler
 }
 
 ;; ...
-*def sub(a: Int, b: (Uint, Ulong, Float)) -> %b
+*func sub(a: Int, b: (Uint, Ulong, Float)) -> %b
 >> isConst(^a)
 {
     # implemented by the compiler
 }
 
 ;; ...
-*def mul(
+*func mul(
     a: Int,
     b: (Byte, Ubyte, Short, Ushort, Uint, Long, Ulong, Float, Double)
 ) -> %b
@@ -454,14 +454,14 @@
 }
 
 ;; ...
-*def div(a: Int, b: (Uint, Ulong, Float)) -> %b
+*func div(a: Int, b: (Uint, Ulong, Float)) -> %b
 >> isConst(^a)
 {
     # implemented by the compiler
 }
 
 ;; ...
-*def cmp(a: Int, b: (Ubyte, Ushort, Uint, Ulong)) -> Int
+*func cmp(a: Int, b: (Ubyte, Ushort, Uint, Ulong)) -> Int
 >> isConst(^a)
 {
     # implemented by the compiler
@@ -470,7 +470,7 @@
 # Conversion between types
 
 ;; Convert {a} to Ubyte
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Ubyte
@@ -479,7 +479,7 @@
 }
 
 ;; Convert {a} to Byte
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Byte
@@ -488,7 +488,7 @@
 }
 
 ;; Convert {a} to Short
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Short
@@ -497,7 +497,7 @@
 }
 
 ;; Convert {a} to Ushort
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Ushort
@@ -506,7 +506,7 @@
 }
 
 ;; Convert {a} to Int
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Int
@@ -516,7 +516,7 @@
 
 
 ;; Convert {a} to Uint
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Uint
@@ -525,7 +525,7 @@
 }
 
 ;; Convert {a} to Long
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Long
@@ -535,7 +535,7 @@
 
 
 ;; Convert {a} to Ulong
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Ulong
@@ -544,7 +544,7 @@
 }
 
 ;; Convert {a} to Float
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Float
@@ -553,7 +553,7 @@
 }
 
 ;; Convert {a} to Double
-*def to(
+*func to(
     a: (Bool, Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Double
@@ -562,7 +562,7 @@
 }
 
 ;; Convert {a} to Bool
-*def to(
+*func to(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong,
         Float, Double, Char),
     :Bool
@@ -571,7 +571,7 @@
 }
 
 ;; Convert {a} to Char
-*def to(
+*func to(
     a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
     :Char
 ) -> Char {
@@ -580,15 +580,15 @@
 
 # Logical operations
 
-*def and(a: Bool, ^b: Bool) -> Bool {
+*func and(a: Bool, ^b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
-*def or(a: Bool, ^b: Bool) -> Bool {
+*func or(a: Bool, ^b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
-*def xor(a: Bool, b: Bool) -> Bool {
+*func xor(a: Bool, b: Bool) -> Bool {
     # Implemented by the compiler
 }
 
@@ -615,7 +615,7 @@ struct UnstrCtor {
 # Arrays
 
 ;; Get the element at position {index} from the array {arr}
-*def get(
+*func get(
     arr: pseudo @Any[],
     index: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong)
 ) -> arr[ Ptr ] {
@@ -623,7 +623,7 @@ struct UnstrCtor {
 }
 
 ;; Set element at position {index} of the array {arr}
-*def set(
+*func set(
     arr: pseudo @Any[],
     index: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
     val: pseudo Any
@@ -641,19 +641,19 @@ struct EntryPoint {
 
 # Arrays
 
-*def iter(arr: pseudo @Any[]) -> arr[ Usize ] {
+*func iter(arr: pseudo @Any[]) -> arr[ Usize ] {
     # Implemented by the compiler
 }
 
-*def valid(arr: pseudo @Any[], idx: Usize) -> Bool {
+*func valid(arr: pseudo @Any[], idx: Usize) -> Bool {
     # Implemented by the compiler
 }
 
-*def next(arr: pseudo @Any[], idx: mut Usize) -> void {
+*func next(arr: pseudo @Any[], idx: mut Usize) -> void {
     # Implemented by the compiler
 }
 
-*def len(arr: pseudo @Any[]) -> Usize {
+*func len(arr: pseudo @Any[]) -> Usize {
     # Implemented by the compiler
 }
 
@@ -680,10 +680,10 @@ struct Clib {
 
 ;; Create a callback from func {funcDef}.
 ;; The callback type is guessed from the function
-*def toCallback(funcDef : FuncDef) = funcDef'callback;
+*func toCallback(funcDef : FuncDef) = funcDef'callback;
 
 ;; Create a callback with type {cbType} from func {funcDef}
-*def toCallback(funcDef : FuncDef, cbType: Any) -> %cbType {
+*func toCallback(funcDef : FuncDef, cbType: Any) -> %cbType {
     # implemented by the compiler
 }
 
@@ -709,137 +709,137 @@ struct Clib {
 
 ;; Conversion integer type -> bits
 
-*def to(a: (Ubyte, Byte), :Bits8) -> Bits8 {
+*func to(a: (Ubyte, Byte), :Bits8) -> Bits8 {
     # implemented by the compiler
 }
 
-*def toBits(a: (Ubyte, Byte)) -> Bits8 {
+*func toBits(a: (Ubyte, Byte)) -> Bits8 {
     # implemented by the compiler
 }
 
-*def to(a: (Ushort, Short), :Bits16) -> Bits16 {
+*func to(a: (Ushort, Short), :Bits16) -> Bits16 {
     # implemented by the compiler
 }
 
-*def toBits(a: (Ushort, Short)) -> Bits16 {
+*func toBits(a: (Ushort, Short)) -> Bits16 {
     # implemented by the compiler
 }
 
-*def to(a: (Uint, Int), :Bits32) -> Bits32 {
+*func to(a: (Uint, Int), :Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
-*def toBits(a: (Uint, Int)) -> Bits32 {
+*func toBits(a: (Uint, Int)) -> Bits32 {
     # implemented by the compiler
 }
 
-*def to(a: (Ulong, Long), :Bits64) -> Bits64 {
+*func to(a: (Ulong, Long), :Bits64) -> Bits64 {
     # implemented by the compiler
 }
 
-*def toBits(a: (Ulong, Long)) -> Bits64 {
+*func toBits(a: (Ulong, Long)) -> Bits64 {
     # implemented by the compiler
 }
 
-*def to(a: Float, :Bits32) -> Bits32 {
+*func to(a: Float, :Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
-*def toBits(a: Float) -> Bits32 {
+*func toBits(a: Float) -> Bits32 {
     # implemented by the compiler
 }
 
-*def to (a: Bits32, :Float) -> Float {
+*func to (a: Bits32, :Float) -> Float {
     # implemented by the compiler
 }
 
-*def to(a: Double, :Bits64) -> Bits64 {
+*func to(a: Double, :Bits64) -> Bits64 {
     # implemented by the compiler
 }
 
-*def toBits(a: Double) -> Bits64 {
+*func toBits(a: Double) -> Bits64 {
     # implemented by the compiler
 }
 
-*def to (a: Bits64, :Double) -> Double {
+*func to (a: Bits64, :Double) -> Double {
     # implemented by the compiler
 }
 
 ;; Conversion bits -> integer type
 
-*def to(a: Bits8, :Byte) -> Byte {
+*func to(a: Bits8, :Byte) -> Byte {
     # implemented by the compiler
 }
 
-*def to(a: Bits8, :Ubyte) -> Ubyte {
+*func to(a: Bits8, :Ubyte) -> Ubyte {
     # implemented by the compiler
 }
 
-*def to(a: Bits16, :Short) -> Short {
+*func to(a: Bits16, :Short) -> Short {
     # implemented by the compiler
 }
 
-*def to(a: Bits16, :Ushort) -> Ushort {
+*func to(a: Bits16, :Ushort) -> Ushort {
     # implemented by the compiler
 }
 
-*def to(a: Bits32, :Int) -> Int {
+*func to(a: Bits32, :Int) -> Int {
     # implemented by the compiler
 }
 
-*def to(a: Bits32, :Uint) -> Uint {
+*func to(a: Bits32, :Uint) -> Uint {
     # implemented by the compiler
 }
 
-*def to(a: Bits64, :Long) -> Long {
+*func to(a: Bits64, :Long) -> Long {
     # implemented by the compiler
 }
 
-*def to(a: Bits64, :Ulong) -> Ulong {
+*func to(a: Bits64, :Ulong) -> Ulong {
     # implemented by the compiler
 }
 
 ;; Expanding or truncating bits
 
-*def to(a: (Bits8, Bits16, Bits32, Bits64), :Bits8) -> Bits8 {
+*func to(a: (Bits8, Bits16, Bits32, Bits64), :Bits8) -> Bits8 {
     # implemented by the compiler
 }
 
-*def to(a: (Bits8, Bits16, Bits32, Bits64), :Bits16) -> Bits16 {
+*func to(a: (Bits8, Bits16, Bits32, Bits64), :Bits16) -> Bits16 {
     # implemented by the compiler
 }
 
-*def to(a: (Bits8, Bits16, Bits32, Bits64), :Bits32) -> Bits32 {
+*func to(a: (Bits8, Bits16, Bits32, Bits64), :Bits32) -> Bits32 {
     # implemented by the compiler
 }
 
-*def to(a: (Bits8, Bits16, Bits32, Bits64), :Bits64) -> Bits64 {
+*func to(a: (Bits8, Bits16, Bits32, Bits64), :Bits64) -> Bits64 {
     # implemented by the compiler
 }
 
 
 ;; Bitwise and
-*def and(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
+*func and(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
     # implemented by the compiler
 }
 
 ;; Bitwise or
-*def or(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
+*func or(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
     # implemented by the compiler
 }
 
 ;; Bitwise xor
-*def sub(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
+*func sub(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> %a {
     # implemented by the compiler
 }
 
 ;; Bitwise not
-*def not(a: (Bits8, Bits16, Bits32, Bits64)) -> %a {
+*func not(a: (Bits8, Bits16, Bits32, Bits64)) -> %a {
     # implemented by the compiler
 }
 
 ;; Compare for equality
-*def cmp(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> Bool {
+*func cmp(a: (Bits8, Bits16, Bits32, Bits64), b: %a) -> Bool {
     # implemented by the compiler
 }
 
@@ -850,7 +850,7 @@ struct Clib {
 ;; * 0x0F - for Bits16 i.e. force a range of 0-15
 ;; * 0x1F - for Bits32 i.e. force a range of 0-31
 ;; * 0x3F - for Bits64 i.e. force a range of 0-61
-*def shiftl(
+*func shiftl(
     a: (Bits8, Bits16, Bits32, Bits64),
     times: (Byte, Ubyte, Short, Ushort, Int, Uint)
 ) -> %a {
@@ -859,7 +859,7 @@ struct Clib {
 
 ;; Shift bits right a given number of {times}
 ;; ...
-*def shiftr(
+*func shiftr(
     a: (Bits8, Bits16, Bits32, Bits64),
     times: (Byte, Ubyte, Short, Ushort, Int, Uint)
 ) -> %a {
@@ -868,7 +868,7 @@ struct Clib {
 
 ;; Arithmetic shift bits right a given number of {times}
 ;; ...
-*def ashiftr(
+*func ashiftr(
     a: (Bits8, Bits16, Bits32, Bits64),
     times: (Byte, Ubyte, Short, Ushort, Int, Uint)
 ) -> %a {
@@ -883,7 +883,7 @@ struct Clib {
 ;; Get the global variable with type {a..type} from the global stack.
 ;; This function is guaranteed to return a reference to a valid object
 ;; even if not values has been explicitly set
-*def get(a: pseudo Global) -> [ Ptr~[^a..type] ] {
+*func get(a: pseudo Global) -> [ Ptr~[^a..type] ] {
     # implemented by the compiler
 }
 
@@ -892,6 +892,6 @@ struct Clib {
 ;; It is not global in the sense of other programming langauges like C.
 ;; {a} must be a variable and the newly created etry on the stack is
 ;; auto popped when {a} goes out of scope
-*def set(a: pseudo Global, val: pseudo Any) -> void {
+*func set(a: pseudo Global, val: pseudo Any) -> void {
     # implemented by the compiler
 }

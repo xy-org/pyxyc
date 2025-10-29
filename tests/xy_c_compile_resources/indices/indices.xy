@@ -7,15 +7,15 @@ struct Point {
     w: Float = 1.0f;
 }
 
-def select(p: Point, idx: Int) -> p[ Int ] {
+func select(p: Point, idx: Int) -> p[ Int ] {
     return idx;
 }
 
-def get(p: Point, idx: Int) -> Float {
+func get(p: Point, idx: Int) -> Float {
     return @{p.x, p.y, p.z, p.w}[idx];
 }
 
-def set(p: mut Point, idx: Int, v: Float)
+func set(p: mut Point, idx: Int, v: Float)
 >> idx <= 3
 {
     if (idx == 0) {
@@ -29,7 +29,7 @@ def set(p: mut Point, idx: Int, v: Float)
     }
 }
 
-def testPoint(i: Int) -> Float {
+func testPoint(i: Int) -> Float {
     p1: mut = Point{w=i'to(Float)};
     p2: Point;
     p1.x = p1[i];
@@ -46,24 +46,24 @@ struct  PointCloud {
     len: Usize;
 }
 
-def append(pc: mut PointCloud, p: Point) {
+func append(pc: mut PointCloud, p: Point) {
     pc.len++;
     # rest omitted for brievity
 }
 
-def select(pc: PointCloud, i: Int) -> pc[ Int ] {
+func select(pc: PointCloud, i: Int) -> pc[ Int ] {
     return i;
 }
 
-def get(pc: PointCloud, i: Int) -> pc[ Ptr~Point ] {
+func get(pc: PointCloud, i: Int) -> pc[ Ptr~Point ] {
     return ((pc.mem)~[to=Byte] + i'to(Usize) * sizeof(Point))~Point;
 }
 
-def set(pc: mut PointCloud, i: Int, p: Point) {
+func set(pc: mut PointCloud, i: Int, p: Point) {
     # not implemented for brievity
 }
 
-def testPointCloud(m0: mut PointCloud, m1: PointCloud) {
+func testPointCloud(m0: mut PointCloud, m1: PointCloud) {
     ms : PointCloud;
     ms'append(Point{1.0f, 1.0f, .05f, 1.0f});
     ms'append(Point{1.0f, 1.0f, .05f, 1.0f});

@@ -14,11 +14,11 @@ struct FieldDesc {
     size: Usize;
 }
 
-def print(d: FieldDesc) {
+func print(d: FieldDesc) {
     # omitted for brevity
 }
 
-def printFields(
+func printFields(
     s: pseudo Any,
     fields: pseudo @FieldDesc[] = @for (f in s'fieldsof) FieldDesc{
         size=sizeof(f)
@@ -31,19 +31,19 @@ def printFields(
     }
 }
 
-def test1() {
+func test1() {
     s := MyStruct{};
     descs := @for (f in s'fieldsof) FieldDesc{f'sizeof};
 }
 
-def test2() {
+func test2() {
     s := MyStruct{};
     for (desc in @for (f in s'fieldsof) FieldDesc{f'sizeof}) {
         # ...
     }
 }
 
-def test3() {
+func test3() {
     s := MyStruct{};
     printFields(s);
 }

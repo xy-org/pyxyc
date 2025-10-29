@@ -6,13 +6,13 @@ struct Tag1 {}
 struct Tag2 {}
 struct DefaultTag {}
 
-def callBasedOnTag(s: Struct) call(s, s..(tag, DefaultTag));
+func callBasedOnTag(s: Struct) call(s, s..(tag, DefaultTag));
 
-def call(s: Struct, :Tag1) {}
-def call(s: Struct, :Tag2) {}
-def call(s: Struct, :DefaultTag) {}
+func call(s: Struct, :Tag1) {}
+func call(s: Struct, :Tag2) {}
+func call(s: Struct, :DefaultTag) {}
 
-def test() {
+func test() {
     s1: Struct~[tag=Tag1];
     s2: Struct~[tag=Tag2];
     s3: Struct;

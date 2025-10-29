@@ -5,7 +5,7 @@ struct Vec4 {
     w := 3;
 }
 
-def test() {
+func test() {
     p0 := Vec4{};
     p1 := Vec4{10};
     p2 := Vec4{10, 20};

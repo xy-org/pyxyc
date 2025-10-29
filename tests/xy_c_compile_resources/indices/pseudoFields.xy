@@ -10,14 +10,14 @@ struct CoordField{
     i: Uint;
 }
 
-def get(p: Point, f: CoordField) -> Float {
+func get(p: Point, f: CoordField) -> Float {
     return p.coords[f.i];
 }
-def set(p: mut Point, f: CoordField, val: Float) -> void {
+func set(p: mut Point, f: CoordField, val: Float) -> void {
     p.coords[f.i] = val;
 }
 
-def test() {
+func test() {
     p1: Point;
     p1.x = 10.0f;
     p1.y = 20.0f;

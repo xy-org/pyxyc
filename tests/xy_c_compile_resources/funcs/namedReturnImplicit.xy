@@ -1,9 +1,9 @@
-def test(a: mut Int) -> (num: Int) {
+func test(a: mut Int) -> (num: Int) {
     num = 2 * a;
-    func(a);
+    fun(a);
     # funcs with named retrun do not require an explicit return at the end
 }
 
-def func(a: mut Int) {
+func fun(a: mut Int) {
     a += 2;
 }

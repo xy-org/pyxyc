@@ -2,25 +2,25 @@ struct Error {
     code: Int;
 }
 
-def to(err: Error, :Bool) err.code != 0;
+func to(err: Error, :Bool) err.code != 0;
 
-def errorProne(num: Int) -> Int | Error {
+func errorProne(num: Int) -> Int | Error {
     if (num > 10_000) {
         error Error{num};
     }
     return num * 2;
 }
 
-def test1(x: Int) -> Int {
+func test1(x: Int) -> Int {
     err := | errorProne(x + 1) |;
     return err.code;
 }
 
-def mix(a: Int, b: Int) -> Int {
+func mix(a: Int, b: Int) -> Int {
     return a * b + a / b;
 }
 
-def test2(x: Int) -> Int {
+func test2(x: Int) -> Int {
     err := | mix(errorProne(x + 1), errorProne(x * 10)) |;
     return err.code;
 }

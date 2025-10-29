@@ -1,4 +1,4 @@
-def test(bits: (Bits8, Bits16, Bits32, Bits64), shift: Int) -> %bits {
+func test(bits: (Bits8, Bits16, Bits32, Bits64), shift: Int) -> %bits {
     a := bits \shiftl shift;
     b := bits \shiftr shift;
     c := bits \ashiftr shift;

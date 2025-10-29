@@ -1,4 +1,4 @@
-def pointerFun(a: Ptr) -> Ptr {
+func pointerFun(a: Ptr) -> Ptr {
     b := a~[to=Short];
     c := b + 1;
     d := c~[to=Ulong] - 2;

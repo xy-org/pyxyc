@@ -1,7 +1,7 @@
 import libc~[Clib{headers=@{"string.h"}}] in c;
 
-def str~[StrCtor{prefix=""}](addr: Ptr~Byte, len: pseudo Usize) = addr;
+func str~[StrCtor{prefix=""}](addr: Ptr~Byte, len: pseudo Usize) = addr;
 
-def test() -> Int {
+func test() -> Int {
     return c.strlen("abc123"~[c.char]);
 }

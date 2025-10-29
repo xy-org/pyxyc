@@ -1,4 +1,4 @@
-def test(a: Bool, b: Bool) {
+func test(a: Bool, b: Bool) {
     c := a == b;
     d := a != b;
     e := !a;
