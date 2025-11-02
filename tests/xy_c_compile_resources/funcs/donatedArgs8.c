@@ -20,20 +20,12 @@ void donatedArgs8_test1(void) {
     donatedArgs8_WithDtor tmp_1_arg = tmp_0_arg;
     donatedArgs8_WithDtor tmp_2_arg = tmp_1_arg;
     donatedArgs8_WithDtor tmp_3_arg = tmp_2_arg;
-    int32_t tmp_4_arg = donatedArgs8_fun(tmp_3_arg);
-    donatedArgs8_dtor(tmp_3_arg);
-    int32_t tmp_5_arg = tmp_4_arg;
-    int32_t tmp_6_arg = tmp_5_arg;
-    const int32_t l_res = tmp_6_arg;
+    const int32_t l_res = donatedArgs8_fun(tmp_3_arg);
 }
 
 void donatedArgs8_test2(void) {
     donatedArgs8_WithDtor tmp_0_arg = (donatedArgs8_WithDtor){0};
     donatedArgs8_WithDtor tmp_1_arg = tmp_0_arg;
     donatedArgs8_WithDtor tmp_2_arg = tmp_1_arg;
-    int32_t tmp_3_arg = donatedArgs8_fun(tmp_2_arg);
-    donatedArgs8_dtor(tmp_2_arg);
-    int32_t tmp_4_arg = tmp_3_arg;
-    int32_t tmp_5_arg = tmp_4_arg;
-    const int32_t l_res = tmp_5_arg;
+    const int32_t l_res = donatedArgs8_fun(tmp_2_arg);
 }

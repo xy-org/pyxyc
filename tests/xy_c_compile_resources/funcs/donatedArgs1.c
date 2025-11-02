@@ -12,7 +12,6 @@ void donatedArgs1_dtor(donatedArgs1_WithDtor p_val) {
 }
 
 void donatedArgs1_func1(donatedArgs1_WithDtor p_a, donatedArgs1_WithDtor p_b) {
-    donatedArgs1_dtor(p_b);
 }
 
 void donatedArgs1_test1(void) {

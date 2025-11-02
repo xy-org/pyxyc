@@ -1,0 +1,17 @@
+struct Array {
+    mem: Ptr;
+    # ...
+}
+
+func dtor(a: Array) {
+    # ...
+}
+
+func append(a: Array, elem: don Any, elemPtr: Ptr = elem'addrof) {
+    # ...
+}
+
+func test() {
+    a: Array;
+    a'append(0);
+}

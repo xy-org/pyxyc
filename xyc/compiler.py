@@ -1875,8 +1875,8 @@ def compile_params(params, cast, cfunc, ctx):
         cparam = c.VarDecl(mangle_var(param, ctx), c.QualType(c_type))
         param_obj.c_node = cparam
         param_obj.is_pseudo = param.is_pseudo
-        if param.is_donated:
-            param_obj.needs_dtor = param_obj.type_desc.needs_dtor
+        #if param.is_donated:
+        #    param_obj.needs_dtor = param_obj.type_desc.needs_dtor
         if not param.is_pseudo:
             cfunc.params.append(cparam)
 
@@ -2579,7 +2579,10 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
         elif isinstance(var_obj, ExprObj):
             if isinstance(var_obj, PoisonObj) and not allow_poison:
                 raise CompilationError(var_obj.reason, expr)
-            return maybe_deref(var_obj, deref, cast, cfunc, ctx)
+            res = maybe_deref(var_obj, deref, cast, cfunc, ctx)
+            res = copy(res)
+            res.xy_node = expr
+            return res
         elif isinstance(var_obj, LazyObj):
             if isinstance(var_obj.xy_node, xy.CallerContextExpr):
                 assert var_obj.ctx is not None
@@ -4635,13 +4638,13 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         )
 
     # call dtors of donated values if macro
-    if func_obj.is_macro and any(p.xy_node.is_donated for p in func_obj.param_objs):
-        if isinstance(raw_fcall_obj.c_node, c.Block):
-            dtor_cfunc = raw_fcall_obj.c_node
-        else:
-            dtor_cfunc = cfunc
-            raw_fcall_obj = move_to_temp(raw_fcall_obj, cast, cfunc, ctx)
-        call_dtors(callee_ctx.ns, cast, dtor_cfunc, ctx, False)
+    # if func_obj.is_macro and any(p.xy_node.is_donated for p in func_obj.param_objs):
+    #     if isinstance(raw_fcall_obj.c_node, c.Block):
+    #         dtor_cfunc = raw_fcall_obj.c_node
+    #     else:
+    #         dtor_cfunc = cfunc
+    #         raw_fcall_obj = move_to_temp(raw_fcall_obj, cast, cfunc, ctx)
+    #     call_dtors(callee_ctx.ns, cast, dtor_cfunc, ctx, False)
 
 
     if func_obj.xy_node is not None and len(func_obj.xy_node.returns) >= 1 and func_obj.xy_node.returns[0].is_index:
@@ -5834,9 +5837,11 @@ def compile_builtin_addrof(expr, arg_obj, cast, cfunc, ctx: CompilerContext):
         c_node=arg_obj.c_node
     else:
         arg_c_node = arg_obj.c_node
-        if isinstance(arg_c_node, (c.Const, c.CompoundLiteral)):
+        if not isinstance(arg_c_node, (c.Id, c.UnaryExpr, c.Index)):
             if isinstance(arg_obj.xy_node, (xy.Const, xy.StrLiteral)):
                 raise CompilationError("Cannot get address of a const", expr)
+            # XXX this code here is complete garbage. This functions should be
+            # a simple decay to pointer.
             tmp_obj = ctx.create_tmp_var(type_obj, "addrof", expr)
             tmp_obj.c_node.value = arg_c_node
             cfunc.body.append(tmp_obj.c_node)

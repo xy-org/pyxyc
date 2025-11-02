@@ -12,7 +12,6 @@ void donatedArgs6_dtor(donatedArgs6_WithDtor p_val) {
 }
 
 void donatedArgs6_action(donatedArgs6_WithDtor p_a, donatedArgs6_WithDtor p_b, void* p_ptr) {
-    donatedArgs6_dtor(p_b);
 }
 
 void donatedArgs6_test(void) {
