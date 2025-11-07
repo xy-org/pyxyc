@@ -1,0 +1,33 @@
+import xy.ctti;
+
+;; Structure of Arrays
+struct SoA {
+    mem: Ptr;
+}
+
+;; We need that in order to get the correct Field object
+func get(soa: SoA, idx: Int) = -> (res: Data) {
+};
+
+func set(
+    soa: SoA, idx: Int, field: pseudo Field, val: Any,
+    size: Usize = field'sizeof, offset: Usize = field'offsetof,
+    valPtr: Ptr = val'addrof
+) {
+    # ...
+}
+
+struct Data {
+    a: Int;
+    b: Ulong;
+}
+
+func test1(soa: mut SoA) {
+    soa[10].a = 10;
+    soa[12].b = 10ul;
+}
+
+func test2(data: mut Data) {
+    data.a = 10;
+    data.b = 10ul;
+}

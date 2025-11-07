@@ -48,6 +48,7 @@ src.xy:6:21: error: Cannot decay 'Array[ Int ]' because: Cannot find function 'g
                       ^
 note: Candidates are:
     in module xy.builtin
+        *get(Any, Field) -> Ptr
         *get(Ptr) -> Ptr
         *get(Ptr, Byte) -> Ptr
         *get(Ptr, Ubyte) -> Ptr

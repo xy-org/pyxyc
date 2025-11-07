@@ -1,0 +1,37 @@
+import xy.ctti;
+
+;; Structure of Arrays
+struct SoA {
+    mem: Ptr;
+}
+
+;; We need that in order to get the correct Field object
+func get(soa: SoA, idx: Int) = -> (res: Data) {
+};
+
+func get(
+    soa: SoA, idx: Int, field: pseudo Field,
+    size: Usize = field'sizeof, offset: Usize = field'offsetof
+) -> soa[ Ptr~[^field..type] ] {
+    return Ptr{};
+}
+
+struct Data {
+    a: Int;
+    b: Ulong;
+}
+
+func test1() -> Int {
+    soa: SoA;
+    a := soa[10].a;
+    b := soa[12].b'to(Int);
+    return a + b;
+}
+
+;; test that getting a member of data directly works
+func test2() -> Int {
+    data: Data;
+    a := data.a;
+    b := data.b'to(Int);
+    return a + b;
+}

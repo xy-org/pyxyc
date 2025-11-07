@@ -10,6 +10,26 @@
     # Compile-time only
 }
 
+;; Special type that describes a field in a struct.
+;; This struct is empty as all the information it carries is compile time.
+*struct Field~[
+    type: Any,
+] {
+    # Empty
+}
+
+;; Get the field {field} from {data}
+;; NYI
+*func get(data: Any, field: Field) -> data[ Ptr~[^field..type] ] {
+    # implemented by the compiler
+}
+
+;; Set field {field} of {data} to {val}
+;; NYI
+*func set(data: Any, field: Field, val: Any) {
+    # implemented by the compiler
+}
+
 # Primitive bool type
 
 ;; 1-bit true/false type

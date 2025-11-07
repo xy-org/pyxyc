@@ -141,6 +141,8 @@ from xyc.compiler import CompilationError
     "indices/enums/enums",
     "indices/enums/enums2",
     "indices/flags/flags",
+    # TODO "indices/indicesToFields1",
+    # TODO "indices/indicesToFields2",
     "logicCmp/cmpBools",
     "logicCmp/cmpBits",
     "logicCmp/cmpNums",
