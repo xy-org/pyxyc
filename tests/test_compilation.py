@@ -27,6 +27,7 @@ from xyc.compiler import CompilationError
     "arrays/listLiterals",
     "arrays/modifyingArrays",
     "arrays/arrayAppend",
+    "arrays/arrayAppendEnum",
     #"arrays/arrayTypeInference",
     #"arrays/arrayAddress",
     "cinterop/cimport",

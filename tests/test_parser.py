@@ -1063,6 +1063,31 @@ def test_early_returns_and_errors(code, exp_ast):
 
 @pytest.mark.parametrize("code, exp_ast", [
     [
+        """func fun() {
+              list @= (a, b, c);
+           }
+        """,
+        [
+            ast.FuncDef(ast.Id("fun"),
+                body=[
+                    ast.BinExpr(
+                        arg1=ast.Id('list'),
+                        arg2=ast.Enumeration(items=[
+                            ast.Id("a"), ast.Id("b"), ast.Id("c"),
+                        ]),
+                        op="@=",
+                    )
+                ]
+            ),
+        ]
+    ],
+])
+def test_parsing_enumeration(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
         """
         func fun(x: pseudo Any, y : Metadata = ^metadata(x)) {}
         """,

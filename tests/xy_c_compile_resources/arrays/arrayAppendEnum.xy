@@ -1,0 +1,11 @@
+struct Array {
+    # ...
+}
+
+func append(arr: mut Array, dim1: Int, dim2: Int, dim3: Int) {
+    # ...
+}
+
+func test(arr: mut Array) {
+    arr @= (2, 3, 4);
+}

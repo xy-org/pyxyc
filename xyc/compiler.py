@@ -2862,8 +2862,16 @@ def do_compile_append(dst_obj, val: xy.Node, cast, cfunc, ctx, expr):
     if isinstance(val, xy.StructLiteral) and val.name is None:
             vals = val.args
     for val_expr in vals:
-        val_obj = compile_expr(val_expr, cast, cfunc, ctx)
-        append_fcall = find_and_call_append(ArgList([dst_obj, val_obj]), cast, cfunc, ctx, expr)
+        append_args = ArgList([dst_obj])
+        val_items = [val_expr]
+        if isinstance(val_expr, xy.Enumeration):
+            val_items = val_expr.items
+
+        for val_item in val_items:
+            val_obj = compile_expr(val_item, cast, cfunc, ctx)
+            append_args.args.append(val_obj)
+
+        append_fcall = find_and_call_append(append_args, cast, cfunc, ctx, expr)
         cfunc.body.append(append_fcall.c_node)
     return dst_obj
 
