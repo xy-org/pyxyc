@@ -85,3 +85,8 @@ struct StrLit {
 *func assumeCompatibleTypes(^lhs: Any, ^rhs: Any) -> Bool {
     # Implemented by the compiler
 }
+
+;; Return a unique id for each {type}
+*func staticId(^type: Any) -> Uint {
+    # Implemented by the compiler
+}

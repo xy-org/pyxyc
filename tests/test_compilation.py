@@ -156,6 +156,7 @@ from xyc.compiler import CompilationError
     "ctti/srcLocFuncs",
     "ctti/sizeofNoEval",
     "ctti/cmpTypes",
+    "ctti/ids",
     "funcs/paramTypeEnum",
     "structs/fieldInit",
     "structs/subFieldInit",

@@ -1,0 +1,14 @@
+import xy.ctti;
+
+struct Type1 {
+    val: Int;
+}
+
+struct Type2 {
+    val: Float;
+}
+
+func test() {
+    a := staticId(Type1);
+    b := staticId(Type2);
+}

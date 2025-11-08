@@ -51,6 +51,7 @@ class Builder:
         self.module_import_index = {}
 
         self.global_type_reg = dict()
+        self.static_id_reg = dict()
 
     def build(self):
         module_name = path.basename(self.input)
@@ -137,6 +138,7 @@ class Builder:
             elif header.ctx.entrypoint_priority == self.entrypoint_priority:
                 self.entrypoint_module_names.append(module_name)
         self.add_global_types(header.ctx.global_types)
+        self.add_static_ids(header.ctx.static_id_macros)
         return header, c_srcs
 
     def locate_module(self, module_name: str):
@@ -158,6 +160,12 @@ class Builder:
             dummy_ast = c.Ast()
             gen_global_stack(self.global_type_reg, dummy_ast)
             self.module_cache["__XY__GLOBAL_STACK_AST"] = CompiledModule(None, dummy_ast)
+
+        if len(self.static_id_reg) > 0:
+            ast = c.Ast()
+            for i, name in enumerate(self.static_id_reg.keys()):
+                ast.consts.append(c.Define(name, value=c.Const(i, value_str=f"{i}u")))
+            self.module_cache["__XY__STATIC_IDS"] = CompiledModule(None, ast)
 
         if self.compile_only:
             self.write_output(list(self.module_cache.values()), self.output)
@@ -220,6 +228,10 @@ class Builder:
             if type.c_name not in self.global_type_reg:
                 self.global_type_reg[type.c_name] = type
 
+    def add_static_ids(self, static_id_names):
+        for name in static_id_names:
+            self.static_id_reg[name] = True
+
 def parse_module(input, module_name):
     # TODO remove the dict format
     if not path.exists(input):
@@ -255,6 +267,7 @@ def compile_project(project, module_path, rich_errors=False, abort_on_unhandled=
         if header.ctx.entrypoint_obj is not None:
             builder.entrypoint_module_names.append(module_name)
         builder.add_global_types(header.ctx.global_types)
+        builder.add_static_ids(header.ctx.static_id_macros)
 
     if len(builder.entrypoint_module_names) == 1:
         module = builder.module_cache[builder.entrypoint_module_names[0]]
@@ -266,6 +279,12 @@ def compile_project(project, module_path, rich_errors=False, abort_on_unhandled=
         dummy_ast = c.Ast()
         gen_global_stack(builder.global_type_reg, dummy_ast)
         builder.module_cache["__XY__GLOBAL_STACK_AST"] = CompiledModule(None, dummy_ast)
+
+    if len(builder.static_id_reg) > 0:
+        ast = c.Ast()
+        for i, name in enumerate(builder.static_id_reg.keys()):
+            ast.consts.append(c.Define(name, value=c.Const(i, value_str=f"{i}u")))
+        builder.module_cache["__XY__STATIC_IDS"] = CompiledModule(None, ast)
 
     big_ast = c.Ast()
     for module in builder.module_cache.values():

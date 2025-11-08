@@ -785,6 +785,7 @@ class CompilerContext:
     tmp_names: TmpNames = field(default_factory=TmpNames)
 
     global_types: list[TypeObj] = field(default_factory=list)
+    static_id_macros: list[str] = field(default_factory=list)
 
     catch_frames: list[CatchFrame] = field(default_factory=list)
 
@@ -993,6 +994,7 @@ class CompilerContext:
 
 
     def eval_tags(self, tag_objs: dict, tags: xy.TagList, tag_specs: list[VarObj] = [], cast=None, ast=None):
+        if cast is None: cast = c.Ast()
         res = set()
         no_label_msg = "Please associate default label by adding the TagCtor tag" \
         ": ~[TagCtor{label=\"default-label\"}] " \
@@ -1309,6 +1311,11 @@ class CompilerContext:
 
     def pop_caller_context(self):
         return self.caller_contexts.pop()
+
+    def request_id(self, type_obj):
+        macro_name = f"XY_{type_obj.c_node.name.upper()}_ID"
+        self.static_id_macros.append(macro_name)
+        return macro_name
 
 def compile_module(builder, module_name, asts, module_path):
     ctx = CompilerContext(builder, module_name)
@@ -4343,6 +4350,7 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     callee_ctx.tmp_names = caller_ctx.tmp_names
     callee_ctx.current_fobj = caller_ctx.current_fobj
     callee_ctx.global_types = caller_ctx.global_types
+    callee_ctx.static_id_macros = caller_ctx.static_id_macros
     callee_ctx.func_gen_state = caller_ctx.func_gen_state
     if func_obj.data_closure is not None:
         callee_ctx.data_namespaces.append(func_obj.data_closure)
@@ -4917,6 +4925,13 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 inferred_type=ctx.int_obj,
                 xy_node=expr,
             )
+    elif is_builtin_func(func_obj, "staticId"):
+        type_obj = arg_exprs[0].inferred_type
+        id_name = ctx.request_id(type_obj)
+        return ExprObj(
+            c_node=c.Id(id_name),
+            inferred_type=ctx.uint_obj
+        )
     elif is_builtin_func(func_obj, "mulhi"):
         int128_ctype = "__int128_t" if arg_exprs[0].inferred_type.name == "Long" else "__uint128_t"
         arg1 = c.Cast(arg_exprs[0].c_node, int128_ctype)
