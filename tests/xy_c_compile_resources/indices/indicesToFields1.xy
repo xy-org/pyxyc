@@ -5,12 +5,21 @@ struct SoA {
     mem: Ptr;
 }
 
+struct Index {
+    idx: Int;
+}
+
+func get(soa: SoA, idx: Int) -> soa[ Index, ... ] {
+    return Index{idx};
+}
+
 ;; We need that in order to get the correct Field object
-func get(soa: SoA, idx: Int) = -> (res: Data) {
-};
+func get(soa: Soa, idx: Index) -> soa[ Ptr~Data ] {
+    return Ptr;
+}
 
 func get(
-    soa: SoA, idx: Int, field: pseudo Field,
+    soa: SoA, idx: Index, field: pseudo Field,
     size: Usize = field'sizeof, offset: Usize = field'offsetof
 ) -> soa[ Ptr~[^field..type] ] {
     return Ptr{};
@@ -25,13 +34,5 @@ func test1() -> Int {
     soa: SoA;
     a := soa[10].a;
     b := soa[12].b'to(Int);
-    return a + b;
-}
-
-;; test that getting a member of data directly works
-func test2() -> Int {
-    data: Data;
-    a := data.a;
-    b := data.b'to(Int);
     return a + b;
 }
