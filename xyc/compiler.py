@@ -3126,31 +3126,21 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
             compiled_obj=idx_obj,
         )
 
-    idx_chain = idx_flatten_chain(idx_obj, cast, cfunc, ctx)
-    arg_objs = ArgList(idx_chain)
-    get_fobj = maybe_find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
-    if get_fobj is None:
-        shortened_idx = idx_find_widest_get(idx_obj, cast, cfunc, ctx)
-        if shortened_idx is None:
-            # call find_func_obj just to generate a nice error message
-            find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
-            raise CompilationError("Should not be reached", idx_obj.xy_node)
-        return idx_get(shortened_idx, cast, cfunc, ctx)
-    else:
-        args_prepared = ArgList([
-            maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
-        ])
-        #if get_fobj.move_args_to_temps:
-        #    args_prepared.args.append(maybe_move_to_temp(arg_objs.args[-1], cast, cfunc, ctx))
-        #else:
-        #    args_prepared.args.append(arg_objs.args[-1])
-        args_prepared.args.append(arg_objs.args[-1])
-        return do_compile_fcall(
-            idx_obj.xy_node,
-            get_fobj,
-            arg_exprs=args_prepared,
-            cast=cast, cfunc=cfunc, ctx=ctx
-        )
+    #idx_chain = idx_flatten_chain(idx_obj, cast, cfunc, ctx)
+    arg_objs = ArgList(args=[idx_obj.container, idx_obj.idx])
+    if idx_obj.container is global_memory:
+        arg_objs.args = arg_objs.args[1:]
+    get_fobj = find_func_obj("get", arg_objs, cast, cfunc, ctx, idx_obj.xy_node)
+    args_prepared = ArgList([
+        maybe_move_to_temp(arg, cast, cfunc, ctx) for arg in arg_objs.args[:-1]
+    ])
+    args_prepared.args.append(arg_objs.args[-1])
+    return do_compile_fcall(
+        idx_obj.xy_node,
+        get_fobj,
+        arg_exprs=args_prepared,
+        cast=cast, cfunc=cfunc, ctx=ctx
+    )
 
 def idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: CompilerContext):
     try:
