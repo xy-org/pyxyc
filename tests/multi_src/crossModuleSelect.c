@@ -15,6 +15,7 @@ void crossModuleSelect_module2_testSomething(void) {
 void crossModuleSelect_main(void) {
     const xy_fp__void l_tests[1] = {crossModuleSelect_module2_testSomething};
     for (uint64_t tmp_0_iter = 0; tmp_0_iter < 1; ++tmp_0_iter) {
-        l_tests[tmp_0_iter]();
+        xy_fp__void tmp_1_arg = l_tests[tmp_0_iter];
+        tmp_1_arg();
     }
 }

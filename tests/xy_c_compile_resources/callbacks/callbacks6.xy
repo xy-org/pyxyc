@@ -1,0 +1,31 @@
+;; Test calling callbacks as members in structs
+
+import xy.ctti;
+
+struct FuncDesc {
+    cb: ()->();
+}
+
+struct Vector {
+    mem: Ptr;
+}
+
+func get(v: Vector, i: Int) -> v[ Ptr~FuncDesc ] {
+    return Ptr{};
+}
+
+func test1(f: FuncDesc) {
+    [f.cb]();
+}
+
+func test2(fs: @FuncDesc[10]) {
+    for (f in fs) {
+        [f.cb]();
+    }
+}
+
+func test3(v: Vector) {
+    for (i in :10) {
+        [v[i].cb]();
+    }
+}

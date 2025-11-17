@@ -50,7 +50,7 @@ class TypeObj(CompiledObj):
     @property
     def fullname(self):
         module_name = self.module_header.module_name if self.module_header else ""
-        type_name = self.xy_node.name
+        type_name = self.name
         return module_name + type_name
 
     @property
@@ -314,6 +314,7 @@ class ConstObj(ExprObj):
 class IdxObj(ExprObj):
     container: CompiledObj = None
     idx: CompiledObj = None
+    chain_indices: bool = False
 
 @dataclass()
 class ExtSymbolObj(CompiledObj):
@@ -605,7 +606,7 @@ def cmp_arg_param_types(arg_type, param_type):
 
     if isinstance(arg_type, FuncTypeObj) and isinstance(param_type, FuncTypeObj):
         return True  # XXX
-    if is_funddef_type(arg_type) and is_funddef_type(param_type):
+    if is_funcdef_type(arg_type) and is_funcdef_type(param_type):
         return True  # XXX
 
     if arg_type.get_base_type().fullname != param_type.get_base_type().fullname:
@@ -613,7 +614,7 @@ def cmp_arg_param_types(arg_type, param_type):
 
     return True
 
-def is_funddef_type(type_obj):
+def is_funcdef_type(type_obj):
     if isinstance(type_obj, TypeExprObj):
         type_obj = type_obj.base_type_obj
     return type_obj.is_funcdef
@@ -634,9 +635,9 @@ def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
 
     if isinstance(src_type, FuncTypeObj) and isinstance(dst_type, FuncTypeObj):
         return 0, []  # XXX
-    if is_funddef_type(src_type) and is_funddef_type(dst_type):
+    if is_funcdef_type(src_type) and is_funcdef_type(dst_type):
         return 0, []  # XXX
-    if isinstance(src_type, FuncTypeObj) and is_funddef_type(dst_type):
+    if isinstance(src_type, FuncTypeObj) and is_funcdef_type(dst_type):
         return -1, [(f"FuncDef objects are not auto converted to callback", xy_node)]
 
     if src_type.is_any_type:
@@ -1073,8 +1074,8 @@ class CompilerContext:
                 return ns[name]
         return None
 
-    def eval(self, node, msg=None, is_func=False):
-        res = self.do_eval(node, msg=msg, is_func=is_func)
+    def eval(self, node, msg=None, is_func=False, cfunc=None):
+        res = self.do_eval(node, msg=msg, is_func=is_func, cfunc=cfunc)
         if isinstance(res, NameAmbiguity):
             modules_str = '\n    '.join(res.modules)
             raise CompilationError(
@@ -1096,7 +1097,7 @@ class CompilerContext:
         for ns in namespaces:
             print(ns.keys())
 
-    def do_eval(self, node, msg=None, is_func=False):
+    def do_eval(self, node, msg=None, is_func=False, cfunc=None):
         if isinstance(node, xy.Id):
             if node.name == "void":
                 raise CompilationError("void is a keyword not a type", node)
@@ -1212,17 +1213,20 @@ class CompilerContext:
             return obj
         else:
             try:
-                obj = compile_expr(node, c.Ast(), None, self, deref=False)
+                obj = compile_expr(node, c.Ast(), cfunc, self, deref=False)
             except NoCallerContextError:
                 return calltime_expr_obj
             if isinstance(obj, TypeObj):
+                return obj
+            elif isinstance(obj.inferred_type, FuncTypeObj):
+                # calling a callback
                 return obj
             elif obj.compiled_obj is not None:
                 return obj.compiled_obj
             elif isinstance(obj, IdxObj) and obj.container is global_memory and isinstance(obj.idx.inferred_type, FuncTypeObj):
                 # calling a callback
                 return obj.idx
-            elif isinstance(obj, IdxObj) and obj.container is global_memory and is_funddef_type(obj.idx.inferred_type):
+            elif isinstance(obj, IdxObj) and obj.container is global_memory and is_funcdef_type(obj.idx.inferred_type):
                 # calling a func select directly
                 return obj.idx.compiled_obj
             elif is_c_ct_const(obj.c_node):
@@ -2141,7 +2145,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 and not expr_obj.inferred_type.is_external and
                 (not isinstance(node, xy.BinExpr) or node.op in {"==", "!=", "."}) and
                 (not isinstance(node, xy.UnaryExpr) or node.op in {"-", "%"}) and
-                (not is_funddef_type(expr_obj.inferred_type))
+                (not is_funcdef_type(expr_obj.inferred_type))
             ):
                 raise CompilationError(
                     "Discarding values is not allowed. Rewrite expression as '_ = <expr>' to ignore the value",
@@ -2833,7 +2837,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
         raise CompilationError(f"Unknown xy ast node '{type(expr).__name__}'", expr)
 
 def is_known_at_ct(obj: ExprObj):
-    if is_funddef_type(obj.inferred_type):
+    if is_funcdef_type(obj.inferred_type):
         return True
     return is_c_ct_const(obj.c_node)
 
@@ -3107,7 +3111,7 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
             compiled_obj=idx_obj
         )
     # func selection
-    if is_funddef_type(idx_obj.idx.inferred_type):
+    if is_funcdef_type(idx_obj.idx.inferred_type):
         return idx_obj.idx
 
     # ptr's get simply dereferenced
@@ -4126,7 +4130,8 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         args=[arg.inferred_type for arg in arg_exprs.args],
         kwargs={key: arg.inferred_type for key, arg in arg_exprs.kwargs.items()}
     )
-    fspace = ctx.eval(expr.name, is_func=True)
+
+    fspace = ctx.eval(expr.name, is_func=True, cfunc=cfunc)
     if fspace is None:
         call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_inferred_types, expr.inject_args)
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
@@ -4327,6 +4332,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if len(arg_exprs.args) > 0 and len(arg_exprs.args_setup) == 0:
         # TODO remove that hack
         arg_exprs.args_setup = [c.Func("dummy") for _ in arg_exprs.args]
+    assert len(arg_exprs.args) == len(arg_exprs.args_setup)
+    assert len(arg_exprs.kwargs) == len(arg_exprs.kwargs_setup)
 
     if func_obj.builtin:
         builtin_res = compile_builtin_fcall(expr, func_obj, arg_exprs, cast, cfunc, ctx)
@@ -4677,7 +4684,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                 container=base,
                 idx=raw_fcall_obj,
                 xy_node=expr,
-                is_iter_ctor=is_iter_ctor_call(func_obj)
+                is_iter_ctor=is_iter_ctor_call(func_obj),
+                chain_indices=func_obj.xy_node.returns[0].index_chain
             ),
             cast, cfunc, ctx
         )
@@ -6937,34 +6945,45 @@ def rewrite_unaryop(expr: xy.UnaryExpr, ctx):
         src=expr.src, coords=expr.coords
     )
 
-# def rewrite_select(select, ctx):
-#     args = []
-#     if select.base is not None:
-#         args = [select.base]
-#     args.extend(select.args.args)
-
-#     fcall = xy.FuncCall(
-#         xy.Id("get"), args=args,
-#         kwargs=select.args.kwargs,
-#         src=select.src,
-#         coords=select.coords
-#     )
-#     return fcall
-
 def compile_select(expr: xy.Select, cast, cfunc, ctx):
-    if expr.base is not None:
-        container_obj = compile_expr(expr.base, cast, cfunc, ctx, deref=False)
-    else:
-        container_obj = global_memory
-    if len(expr.args.args) != 1:
-        # TODO
-        raise CompilationError("More than one arg in a [] expr is NYI", expr)
-    assert len(expr.args.kwargs) == 0  # TODO
-    idx_obj = compile_expr(expr.args.args[0], cast, cfunc, ctx, deref=False)
+    base_obj = compile_expr(expr.base, cast, cfunc, ctx, deref=False) if expr.base is not None else None
+    args = ArgList()
+    for arg in expr.args.args:
+        dummy = c.Func("dummy")
+        arg_obj = compile_expr(arg, cast, dummy, ctx, deref=False)
+        arg_obj = maybe_move_to_temp(arg_obj, cast, dummy, ctx)
+        args.args.append(arg_obj)
+        args.args_setup.append(dummy)
+    for key, arg in expr.args.kwargs.items():
+        dummy = c.Func("dummy")
+        arg_obj = compile_expr(arg, cast, dummy, ctx, deref=False)
+        arg_obj = maybe_move_to_temp(arg_obj, cast, dummy, ctx)
+        args.kwargs[key] = arg_obj
+        args.kwargs_setup[key] = dummy
 
-    idx_obj = IdxObj(xy_node=expr, container=container_obj, idx=idx_obj)
-    idx_setup(idx_obj, cast, cfunc, ctx)
-    return idx_obj
+    if isinstance(base_obj, IdxObj) and base_obj.chain_indices:
+        assert len(args.kwargs) == 0
+        assert len(args.args) == 1
+        chain = idx_flatten_chain(base_obj, cast, cfunc, ctx)
+        setups = [c.Func("dummy")] * len(chain)
+        chain.append(args.args[0])
+        setups.append(args.args_setup[0])
+        return find_and_call("get", ArgList(args=chain, args_setup=setups), cast, cfunc, ctx, expr)
+    else:
+        if len(args.args) == 1 and is_funcdef_type(args.args[0].inferred_type):
+            if cfunc is not None:
+                cfunc.body.extend(args.args_setup[0].body)
+            return args.args[0]
+        if len(args.args) == 1 and isinstance(args.args[0].inferred_type, FuncTypeObj):
+            if cfunc is not None:
+                cfunc.body.extend(args.args_setup[0].body)
+            return args.args[0]
+        if isinstance(base_obj, IdxObj):
+            base_obj = idx_decay_to_ptr_or_val(base_obj, cast, cfunc, ctx)
+        if base_obj is not None:
+            args.args.insert(0, base_obj)
+            args.args_setup.insert(0, c.Func("dummy"))
+        return find_and_call("get", args, cast, cfunc, ctx, expr)
 
 def compile_import(imprt, ctx: CompilerContext, ast, cast):
     compiled_tags = {}

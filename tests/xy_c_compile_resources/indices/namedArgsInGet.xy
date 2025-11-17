@@ -1,0 +1,13 @@
+struct Data {
+    mem: Ptr;
+}
+
+func get(data: Data, idx: Int, default := 0) -> Int {
+    return idx + default;
+}
+
+func test() {
+    d: Data;
+    a := d[5];
+    b := d[10, default=-5];
+}

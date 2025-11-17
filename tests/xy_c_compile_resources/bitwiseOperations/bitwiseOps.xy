@@ -21,7 +21,7 @@ func testBitGetSet(i: Int) -> Bits64 {
 
 struct Bits {}
 
-func bits(a: Long) -> a[ Bits ] {
+func bits(a: Long) -> a[ Bits, ... ] {
     return Bits{};
 }
 
@@ -33,6 +33,11 @@ func set(num: mut Long, :Bits, i: Int, val: Bool) {
     bits : mut = num'bits;
     bits[i] = val;
     num = bits'to(Long);
+}
+
+func get(num: Long, :Bits, i: Int) -> Bool {
+    bits := num'to(Bits64);
+    return bits[i];
 }
 
 func set(num: mut Long, :Bits, bits: Bits64) num = bits'to(Long);
@@ -72,4 +77,3 @@ func test4() {
     f := (a'bits - b'bits)'to(Long);
     g := (b'bits \shiftr 5)'to(Long);
 }
-

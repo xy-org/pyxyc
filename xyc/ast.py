@@ -94,7 +94,9 @@ class FuncCall(Node):
 class Args(Node):
     args: list[Node] = field(default_factory=list)
     kwargs: dict[str, Node] = field(default_factory=dict)
+    # used only in (un)string expression to mark a leading =
     is_introspective: bool = False
+    inject_args: 'ScopeArgsInject' = None
 
 @dataclass
 class Enumeration(Node):
@@ -254,6 +256,7 @@ class VarDecl(Node):
     is_callerContext: bool = False
     is_move: bool = False
     index_in: Node | None = None
+    index_chain: bool = False  # true if more values need to be chained to the index
     visibility: str = PackageVisibility
 
     @property

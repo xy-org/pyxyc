@@ -22,8 +22,7 @@ int32_t indices_select__Point__Int(indices_Point p_p, int32_t p_idx) {
 }
 
 float indices_get__Point__Int(indices_Point p_p, int32_t p_idx) {
-    float tmp_0_arg[4] = {p_p.m_x, p_p.m_y, p_p.m_z, p_p.m_w};
-    return tmp_0_arg[p_idx];
+    return (float[4]){p_p.m_x, p_p.m_y, p_p.m_z, p_p.m_w}[p_idx];
 }
 
 void indices_set__Point__Int__Float(indices_Point* p_p, int32_t p_idx, float p_v) {
@@ -88,6 +87,5 @@ void indices_testPointCloud(indices_PointCloud* p_m0, indices_PointCloud p_m1) {
     tmp_5_arg->m_x = tmp_4_arg->m_y;
     indices_Point* tmp_6_arg = indices_get__PointCloud__Int(l_ms, 4);
     tmp_6_arg->m_x = 5.0f;
-    indices_Point* tmp_7_arg = indices_get__PointCloud__Int(l_ms, 4);
-    tmp_7_arg->m_y = 10.0f;
+    tmp_6_arg->m_y = 10.0f;
 }

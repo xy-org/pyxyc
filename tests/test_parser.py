@@ -3249,6 +3249,52 @@ def test_visibility(code, exp_ast):
             ),
         ]
     ],
+    [
+        """
+        struct Array {
+        }
+
+        func fun(arr: Array) -> arr[ int, ... ] {
+            return 0;
+        }
+
+        func fun(arr: Array, idx: int) -> arr[ Ptr~int, ... ] {
+        }
+        """,
+        [
+            ast.StructDef("Array"),
+            ast.FuncDef(
+                ast.Id("fun"),
+                returns=[
+                    ast.VarDecl(type=ast.Id("int"), index_in=ast.Id("arr"), mutable=True, index_chain=True),
+                ],
+                params=[
+                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, mutable=False)
+                ],
+                body=[
+                    ast.Return(ast.Const(0)),
+                ],
+            ),
+            ast.FuncDef(
+                ast.Id("fun"),
+                params=[
+                    ast.VarDecl("arr", type=ast.Id("Array"), is_param=True, mutable=False),
+                    ast.VarDecl("idx", type=ast.Id("int"), is_param=True, mutable=False),
+                ],
+                returns=[
+                    ast.VarDecl(
+                        type=ast.AttachTags(ast.Id("Ptr"), tags=ast.TagList(
+                            args=[ast.Id("int")],
+                        )),
+                        index_in=ast.Id("arr"),
+                        index_chain=True,
+                        mutable=True
+                    ),
+                ],
+                body=[],
+            ),
+        ]
+    ],
 ])
 def test_returning_indices(code, exp_ast):
     act_ast = parse_code(code)

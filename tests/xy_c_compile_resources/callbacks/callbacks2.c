@@ -20,7 +20,8 @@ void callbacks2_test2(void) {
 void callbacks2_invokeTests(void) {
     const xy_fp__void l_tests[3] = {callbacks2_test1, callbacks2_test2, callbacks2_test3};
     for (uint64_t tmp_0_iter = 0; tmp_0_iter < 3; ++tmp_0_iter) {
-        l_tests[tmp_0_iter]();
+        xy_fp__void tmp_1_arg = l_tests[tmp_0_iter];
+        tmp_1_arg();
     }
 }
 

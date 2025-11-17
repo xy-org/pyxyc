@@ -324,7 +324,8 @@ def parse_block(itoken, accept_early_return=False):
             assert len(expr.args.kwargs) == 0
             index_in = expr.base if expr.base is not None else nobase
             block.returns.append(
-                VarDecl(type=expr.args.args[0], index_in=index_in, mutable=True, src=expr.src, coords=expr.coords)
+                VarDecl(type=expr.args.args[0], index_in=index_in, mutable=True,
+                        src=expr.src, coords=expr.coords, index_chain=expr.args.inject_args is not None)
             )
         else:
             block.returns.append(
@@ -825,9 +826,11 @@ def parse_operator(arg1, itoken, precedence, op_prec):
         arg1 = fcall
     elif op == "[":
         itoken.skip_empty_lines()
-        ret_args, kwargs = parse_args_kwargs(itoken, is_toplevel=False)
+        ret_args, kwargs, inject_args = parse_args_kwargs(itoken, is_toplevel=False, accept_inject=True)
         itoken.expect("]")
         if len(ret_args) == 1 and len(kwargs) == 0 and isinstance(ret_args[0], ForExpr):
+            if inject_args:
+                raise ParsingError("Auto injection is not allowed in this context", inject_args)
             # list comprehension with an explicit type
             arg1 = ListComprehension(
                 list_type=arg1,
@@ -835,7 +838,7 @@ def parse_operator(arg1, itoken, precedence, op_prec):
             )
         else:
             arg1 = Select(
-                arg1, Args(ret_args, kwargs), src=itoken.src, coords=op_coords
+                arg1, Args(ret_args, kwargs, inject_args=inject_args), src=itoken.src, coords=op_coords
             )
     elif op == "~":
         if isinstance(arg1, AttachTags):
