@@ -919,7 +919,7 @@ class CompilerContext:
         )
 
     def eval_to_fspace(self, name: xy.Node, msg=None):
-        space = self.eval(name, is_func=True, msg=msg)
+        space = eval(name, None, None, self, is_func=True, msg=msg)
         if space is None:
             if msg is not None:
                 raise CompilationError(msg, name)
@@ -942,7 +942,7 @@ class CompilerContext:
         return var_obj
 
     def eval_to_type(self, name: xy.Node, msg = None):
-        obj = self.eval(name, msg=msg)
+        obj = eval(name, None, None, self, msg=msg)
         if obj is None:
             raise CompilationError(f"Cannot find type '{self.eval_to_id(name)}'", name)
         if isinstance(obj, ExtSymbolObj):
@@ -1008,7 +1008,7 @@ class CompilerContext:
                 continue
 
             try:
-                tag_obj = self.eval(xy_tag, msg="Cannot find symbol")
+                tag_obj = eval(xy_tag, cast, None, self, msg="Cannot find symbol")
             except NoCallerContextError:
                 tag_obj = calltime_expr_obj
             if i < len(tag_specs):
@@ -1056,7 +1056,7 @@ class CompilerContext:
 
     def eval_tag(self, xy_tag, cast, ast):
         try:
-            tag_obj = self.eval(xy_tag)
+            tag_obj = eval(xy_tag, cast, None, self)
         except NoCallerContextError:
             tag_obj = calltime_expr_obj
         if isinstance(tag_obj, TypeObj):
@@ -1074,18 +1074,6 @@ class CompilerContext:
                 return ns[name]
         return None
 
-    def eval(self, node, msg=None, is_func=False, cfunc=None):
-        res = self.do_eval(node, msg=msg, is_func=is_func, cfunc=cfunc)
-        if isinstance(res, NameAmbiguity):
-            modules_str = '\n    '.join(res.modules)
-            raise CompilationError(
-                "Symbol is defined in multiple modules. Pelase be explicit and specify the module. See TBD for more info",
-                node, notes=(
-                    (f"Symbol is defined in the following modules\n    {modules_str}", None),
-                )
-            )
-        return res
-
     def register_global_type(self, type_obj):
         self.global_types.append(type_obj)
 
@@ -1096,144 +1084,6 @@ class CompilerContext:
         print(f"module: {ctx.module_name}")
         for ns in namespaces:
             print(ns.keys())
-
-    def do_eval(self, node, msg=None, is_func=False, cfunc=None):
-        if isinstance(node, xy.Id):
-            if node.name == "void":
-                raise CompilationError("void is a keyword not a type", node)
-            res = self.lookup(node.name, is_func=is_func)
-            if res is None and msg is not None:
-                raise CompilationError(msg, node)
-            return res
-        elif isinstance(node, xy.CallerContextExpr):
-            if not self.eval_calltime_exprs:
-                raise NoCallerContextError
-            if not self.has_caller_context():
-                raise CompilationError("No caller context", node)
-            return self.get_caller_context().eval(node.arg, msg=msg, is_func=is_func)
-        elif isinstance(node, xy.Const):
-            const_type_obj = None
-            if node.type is not None:
-                const_type_obj = self.get_compiled_type(node.type)
-
-            c_node = c.Const(node.value_str)
-            if node.type == "Char":
-                c_node.value_str = f"'{node.value_str}'"
-
-            return ConstObj(value=node.value, xy_node=node,
-                            c_node=c_node,
-                            inferred_type=const_type_obj)
-        elif isinstance(node, xy.StrLiteral):
-            if node.prefix != "inlinec":
-                return StrObj(
-                    prefix=node.prefix,
-                    parts=[self.eval(p) for p in node.parts],
-                    xy_node=node
-                )
-            else:
-                raise CompilationError("Cannot evaluate inline code. If you want to use an external symbol 'c.external_symbol' or 'c.\"struct type_t\"", node)
-        elif isinstance(node, xy.StructLiteral):
-            instance_type = self.eval(node.name)
-            if isinstance(instance_type, ExtSymbolObj):
-                instance_type = ext_symbol_to_type(instance_type)
-            if instance_type is None:
-                raise CompilationError(f"Cannot find name '{self.eval_to_id(node.name)}'", node.name)
-            obj = InstanceObj(type_obj=instance_type, xy_node=node)
-            if instance_type.is_external:
-                return obj  # no need to setup fields b/c there are none
-            pos_to_name = list(instance_type.fields.keys())
-            for i, arg in enumerate(node.args):
-                if isinstance(arg, xy.BinExpr) and arg.op=="=":
-                    # named field
-                    fname = arg.arg1.name
-                    obj.kwargs[fname] = self.eval(arg.arg2)
-                else:
-                    # positional field
-                    fname = pos_to_name[i]
-                    obj.kwargs[fname] = self.eval(arg)
-                if obj.kwargs[fname] is None:
-                    raise CompilationError("Cannot eval at compile-time", arg)
-            return obj
-        elif isinstance(node, xy.ArrayLit):
-            return ArrayObj(
-                # TODO inferred_type=
-                elems=[self.eval(elem) for elem in node.elems],
-                xy_node=node
-            )
-        elif isinstance(node, xy.BinExpr):
-            if node.op == ".":
-                base = self.eval(node.arg1, msg="Cannot find symbol")
-                if isinstance(base, ImportObj):
-                    if base.is_external:
-                        if isinstance(node.arg2, xy.Id):
-                            ext_name = node.arg2.name
-                        elif isinstance(node.arg2, xy.StrLiteral):
-                            if len(node.arg2.parts) > 1:
-                                raise CompilationError("No interpolation allowed when importing external symbols", node.arg2)
-                            if len(node.arg2.full_str) == 0:
-                                raise CompilationError("Missing external name", node.arg2)
-                            ext_name = node.arg2.full_str
-                        else:
-                            raise CompilationError("Not allowed in this context", node.arg2)
-                        return ExtSymbolObj(
-                            c_node=c.Id(ext_name),
-                            xy_node=node.arg2,
-                        )
-                    else:
-                        assert isinstance(node.arg2, xy.Id)
-                        return base.module_header.ctx.eval(node.arg2, msg, is_func=is_func)
-                elif isinstance(base, (TypeObj, TypeExprObj)):
-                    return base.fields[node.arg2.name]
-                elif isinstance(base, VarObj):
-                    if node.arg2.name not in base.type_desc.fields:
-                        raise CompilationError(f"No field {node.arg2.name}", node.arg2)
-                    return base.type_desc.fields[node.arg2.name]
-                else:
-                    raise CompilationError("Cannot evaluate", node)
-            elif node.op == "..":
-                base = self.eval(node.arg1, is_func=is_func)
-                return tag_get(node, base, node.arg2.name, self)
-            else:
-                raise CompilationError(f"Unexpected operator '{node.op}'", node)
-        elif isinstance(node, xy.AttachTags):
-            obj = self.eval(node.arg)
-            if isinstance(obj, ConstObj):
-                self.eval_tags(obj.tags, node.tags)
-            elif isinstance(obj, TypeObj):
-                base_type = obj
-                obj = TypeExprObj(
-                    xy_node=node, c_node=base_type.c_node, type_obj=base_type,
-                    tags=copy(obj.tags)
-                )
-                self.eval_tags(obj.tags, node.tags, base_type.tag_specs)
-            elif obj is None:
-                raise CompilationError("Cannot find symbol", node.arg)
-            else:
-                raise CompilationError(f"Cannot assign tags to obj of type {obj.__class__.__name__}", node)
-            return obj
-        else:
-            try:
-                obj = compile_expr(node, c.Ast(), cfunc, self, deref=False)
-            except NoCallerContextError:
-                return calltime_expr_obj
-            if isinstance(obj, TypeObj):
-                return obj
-            elif isinstance(obj.inferred_type, FuncTypeObj):
-                # calling a callback
-                return obj
-            elif obj.compiled_obj is not None:
-                return obj.compiled_obj
-            elif isinstance(obj, IdxObj) and obj.container is global_memory and isinstance(obj.idx.inferred_type, FuncTypeObj):
-                # calling a callback
-                return obj.idx
-            elif isinstance(obj, IdxObj) and obj.container is global_memory and is_funcdef_type(obj.idx.inferred_type):
-                # calling a func select directly
-                return obj.idx.compiled_obj
-            elif is_c_ct_const(obj.c_node):
-                return obj
-            raise CompilationError(
-                "Cannot evaluate at compile time.",
-                node)
 
     def create_tmp_var(self, type_obj, name_hint="", xy_node=None) -> VarObj:
         tmp_var_name = self.gen_tmp_name(name_hint)
@@ -1320,6 +1170,157 @@ class CompilerContext:
         macro_name = f"XY_{type_obj.c_node.name.upper()}_ID"
         self.static_id_macros.append(macro_name)
         return macro_name
+
+
+def eval(node, cast, cfunc, ctx, msg=None, is_func=False):
+    res = do_eval(node, None, cfunc, ctx, msg=msg, is_func=is_func)
+    if isinstance(res, NameAmbiguity):
+        modules_str = '\n    '.join(res.modules)
+        raise CompilationError(
+            "Symbol is defined in multiple modules. Pelase be explicit and specify the module. See TBD for more info",
+            node, notes=(
+                (f"Symbol is defined in the following modules\n    {modules_str}", None),
+            )
+        )
+    return res
+
+def do_eval(node, cast, cfunc, ctx, msg=None, is_func=False):
+    if isinstance(node, xy.Id):
+        if node.name == "void":
+            raise CompilationError("void is a keyword not a type", node)
+        res = ctx.lookup(node.name, is_func=is_func)
+        if res is None and msg is not None:
+            raise CompilationError(msg, node)
+        return res
+    elif isinstance(node, xy.CallerContextExpr):
+        if not ctx.eval_calltime_exprs:
+            raise NoCallerContextError
+        if not ctx.has_caller_context():
+            raise CompilationError("No caller context", node)
+        return eval(node.arg, cast, cfunc, ctx.get_caller_context(), msg=msg, is_func=is_func)
+    elif isinstance(node, xy.Const):
+        const_type_obj = None
+        if node.type is not None:
+            const_type_obj = ctx.get_compiled_type(node.type)
+
+        c_node = c.Const(node.value_str)
+        if node.type == "Char":
+            c_node.value_str = f"'{node.value_str}'"
+
+        return ConstObj(value=node.value, xy_node=node,
+                        c_node=c_node,
+                        inferred_type=const_type_obj)
+    elif isinstance(node, xy.StrLiteral):
+        if node.prefix != "inlinec":
+            return StrObj(
+                prefix=node.prefix,
+                parts=[eval(p, cast, cfunc, ctx) for p in node.parts],
+                xy_node=node
+            )
+        else:
+            raise CompilationError("Cannot evaluate inline code. If you want to use an external symbol 'c.external_symbol' or 'c.\"struct type_t\"", node)
+    elif isinstance(node, xy.StructLiteral):
+        instance_type = eval(node.name, cast, cfunc, ctx)
+        if isinstance(instance_type, ExtSymbolObj):
+            instance_type = ext_symbol_to_type(instance_type)
+        if instance_type is None:
+            raise CompilationError(f"Cannot find name '{ctx.eval_to_id(node.name)}'", node.name)
+        obj = InstanceObj(type_obj=instance_type, xy_node=node)
+        if instance_type.is_external:
+            return obj  # no need to setup fields b/c there are none
+        pos_to_name = list(instance_type.fields.keys())
+        for i, arg in enumerate(node.args):
+            if isinstance(arg, xy.BinExpr) and arg.op=="=":
+                # named field
+                fname = arg.arg1.name
+                obj.kwargs[fname] = eval(arg.arg2, cast, cfunc, ctx)
+            else:
+                # positional field
+                fname = pos_to_name[i]
+                obj.kwargs[fname] = eval(arg, cast, cfunc, ctx)
+            if obj.kwargs[fname] is None:
+                raise CompilationError("Cannot eval at compile-time", arg)
+        return obj
+    elif isinstance(node, xy.ArrayLit):
+        return ArrayObj(
+            # TODO inferred_type=
+            elems=[eval(elem, cast, cfunc, ctx) for elem in node.elems],
+            xy_node=node
+        )
+    elif isinstance(node, xy.BinExpr):
+        if node.op == ".":
+            base = eval(node.arg1,cast, cfunc, ctx, msg="Cannot find symbol")
+            if isinstance(base, ImportObj):
+                if base.is_external:
+                    if isinstance(node.arg2, xy.Id):
+                        ext_name = node.arg2.name
+                    elif isinstance(node.arg2, xy.StrLiteral):
+                        if len(node.arg2.parts) > 1:
+                            raise CompilationError("No interpolation allowed when importing external symbols", node.arg2)
+                        if len(node.arg2.full_str) == 0:
+                            raise CompilationError("Missing external name", node.arg2)
+                        ext_name = node.arg2.full_str
+                    else:
+                        raise CompilationError("Not allowed in this context", node.arg2)
+                    return ExtSymbolObj(
+                        c_node=c.Id(ext_name),
+                        xy_node=node.arg2,
+                    )
+                else:
+                    assert isinstance(node.arg2, xy.Id)
+                    return eval(node.arg2, cast, cfunc, base.module_header.ctx, msg=msg, is_func=is_func)
+            elif isinstance(base, (TypeObj, TypeExprObj)):
+                return base.fields[node.arg2.name]
+            elif isinstance(base, VarObj):
+                if node.arg2.name not in base.type_desc.fields:
+                    raise CompilationError(f"No field {node.arg2.name}", node.arg2)
+                return base.type_desc.fields[node.arg2.name]
+            else:
+                raise CompilationError("Cannot evaluate", node)
+        elif node.op == "..":
+            base = eval(node.arg1, cast, cfunc, ctx, is_func=is_func)
+            return tag_get(node, base, node.arg2.name, ctx)
+        else:
+            raise CompilationError(f"Unexpected operator '{node.op}'", node)
+    elif isinstance(node, xy.AttachTags):
+        obj = eval(node.arg, cast, cfunc, ctx)
+        if isinstance(obj, ConstObj):
+            ctx.eval_tags(obj.tags, node.tags)
+        elif isinstance(obj, TypeObj):
+            base_type = obj
+            obj = TypeExprObj(
+                xy_node=node, c_node=base_type.c_node, type_obj=base_type,
+                tags=copy(obj.tags)
+            )
+            ctx.eval_tags(obj.tags, node.tags, base_type.tag_specs)
+        elif obj is None:
+            raise CompilationError("Cannot find symbol", node.arg)
+        else:
+            raise CompilationError(f"Cannot assign tags to obj of type {obj.__class__.__name__}", node)
+        return obj
+    else:
+        try:
+            obj = compile_expr(node, c.Ast(), cfunc, ctx, deref=False)
+        except NoCallerContextError:
+            return calltime_expr_obj
+        if isinstance(obj, TypeObj):
+            return obj
+        elif isinstance(obj.inferred_type, FuncTypeObj):
+            # calling a callback
+            return obj
+        elif obj.compiled_obj is not None:
+            return obj.compiled_obj
+        elif isinstance(obj, IdxObj) and obj.container is global_memory and isinstance(obj.idx.inferred_type, FuncTypeObj):
+            # calling a callback
+            return obj.idx
+        elif isinstance(obj, IdxObj) and obj.container is global_memory and is_funcdef_type(obj.idx.inferred_type):
+            # calling a func select directly
+            return obj.idx.compiled_obj
+        elif is_c_ct_const(obj.c_node):
+            return obj
+        raise CompilationError(
+            "Cannot evaluate at compile time.",
+            node)
 
 def compile_module(builder, module_name, asts, module_path):
     ctx = CompilerContext(builder, module_name)
@@ -1445,7 +1446,7 @@ def try_compile_const_value(const_name, node, cast, ctx):
         return False
 
 def do_compile_const_value(const_name, node, cast, ctx):
-    ctx.eval(node)  # just to make sure it can be evaluated at compile-time
+    eval(node, cast, None, ctx)  # just to make sure it can be evaluated at compile-time
     value_obj = compile_expr(node, cast, None, ctx)
     if value_obj.compiled_obj is None:
         cdef = c.Define(
@@ -1653,7 +1654,7 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             default_value_obj = None
             field_type_obj = recursive_pseudo_field_type_obj
         elif field.value is not None:
-            default_value_obj = ctx.eval(field.value)
+            default_value_obj = eval(field.value, cast, None, ctx)
             if default_value_obj.inferred_type is type_obj:
                 raise CompilationError("Recursive structs are not possible", field)
             if isinstance(default_value_obj, InstanceObj):
@@ -1725,7 +1726,7 @@ def compile_pseudo_fields(type_obj, ast, cast, ctx):
         if field.value is None:
             raise CompilationError("All pseudo fields must have an explicit value")
         dvo_c_node = compile_expr(field.value, cast, None, ctx).c_node
-        default_value_obj = ctx.eval(field.value)
+        default_value_obj = eval(field.value, cast, None, ctx)
         default_value_obj.c_node = dvo_c_node
         if field_type_obj is None:
             field_type_obj = default_value_obj.inferred_type
@@ -2570,7 +2571,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
         fcall = rewrite_unaryop(expr, ctx)
         return compile_expr(fcall, cast, cfunc, ctx)
     elif isinstance(expr, xy.Id):
-        var_obj = ctx.eval(expr, f"Cannot find variable '{expr.name}'")
+        var_obj = eval(expr, cast, cfunc, ctx, msg=f"Cannot find variable '{expr.name}'")
         if isinstance(var_obj, VarObj):
             return var_to_expr_obj(expr, var_obj, cast, cfunc, ctx, deref)
         elif isinstance(var_obj, TypeObj):
@@ -3395,7 +3396,7 @@ def tag_get(expr, obj, tag_label, ctx, default_value_node: xy.Node = None):
 
     if tag_label not in obj.tags:
         if default_value_node is not None:
-            return ctx.eval(default_value_node)
+            return eval(default_value_node, None, None, ctx)
         available_tags = "Available Tags:" + "    \n".join(obj.tags.keys())
         if len(obj.tags) == 0:
             available_tags = "Tag list is empty"
@@ -3409,7 +3410,7 @@ def compile_struct_literal(expr: xy.StructLiteral, cast, cfunc, ctx: CompilerCon
     if expr.name is None:
         raise CompilationError("Anonymous struct literals are not supported", expr)
 
-    type_obj = ctx.eval(expr.name)
+    type_obj = eval(expr.name, cast, cfunc, ctx)
     var_obj = None
     if isinstance(type_obj, ExtSymbolObj):
         type_obj = ext_symbol_to_type(type_obj)
@@ -4121,7 +4122,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
         kwargs={key: arg.inferred_type for key, arg in arg_exprs.kwargs.items()}
     )
 
-    fspace = ctx.eval(expr.name, is_func=True, cfunc=cfunc)
+    fspace = eval(expr.name, cast, cfunc, ctx, is_func=True)
     if fspace is None:
         call_sig = fcall_sig(ctx.eval_to_id(expr.name), arg_inferred_types, expr.inject_args)
         raise CompilationError(f"Cannot find function {call_sig}", expr.name)
@@ -6804,7 +6805,7 @@ def find_type(texpr, cast, ctx, required=True):
         return any_struct_type_obj
     elif isinstance(texpr, xy.Id):
         validate_name(texpr, ctx)
-        res = ctx.eval(texpr, msg="Cannot find type")
+        res = eval(texpr, cast, None, ctx, msg="Cannot find type")
         if isinstance(res, ExtSymbolObj):
             res = ext_symbol_to_type(res)
         return res
@@ -6843,7 +6844,7 @@ def find_type(texpr, cast, ctx, required=True):
             func_obj=func_obj
         )
     else:
-        res = ctx.eval(texpr, msg="Cannot find type")
+        res = eval(texpr, cast, None, ctx, msg="Cannot find type")
         if isinstance(res, ExtSymbolObj):
             res = ext_symbol_to_type(res)
         return res
