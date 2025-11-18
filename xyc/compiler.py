@@ -1395,6 +1395,10 @@ def compile_header(ctx: CompilerContext, asts, cast):
 
     compile_structs(ctx, asts, cast)
 
+    # We need ptr as soon as possible. That's why we have this ugly if here
+    if ctx.module_name == "xy.builtin":
+        ctx.ptr_obj = ctx.data_ns["Ptr"]
+
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.VarDecl) and node.name not in ctx.data_ns:
@@ -2129,15 +2133,16 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
         else:
             expr_obj = compile_expr(node, cast, cfunc, ctx, deref=False)
             if isinstance(expr_obj, IdxObj):
+                pass
                 # a dangling index. No point in decaying it completely as the
                 # result will be discarded. But the base and index parts do need
                 # to be computed
-                base_obj = maybe_deref(expr_obj.container, True, cast, cfunc, ctx)
-                if base_obj.c_node is not None and not is_simple_cexpr(base_obj.c_node):
-                    cfunc.body.append(base_obj.c_node)
-                idx_obj = maybe_deref(expr_obj.idx, True, cast, cfunc, ctx)
-                if idx_obj.c_node is not None and not is_simple_cexpr(idx_obj.c_node):
-                    cfunc.body.append(idx_obj.c_node)
+                # base_obj = maybe_deref(expr_obj.container, True, cast, cfunc, ctx)
+                #if base_obj.c_node is not None and not is_simple_cexpr(base_obj.c_node) and not isinstance(base_obj, VarObj):
+                #    cfunc.body.append(base_obj.c_node)
+                #idx_obj = maybe_deref(expr_obj.idx, True, cast, cfunc, ctx)
+                #if idx_obj.c_node is not None and not is_simple_cexpr(idx_obj.c_node):
+                #    cfunc.body.append(idx_obj.c_node)
             elif expr_obj.c_node is not None and not isinstance(expr_obj.c_node, c.Id):
                 cfunc.body.append(expr_obj.c_node)
             if (
@@ -2571,47 +2576,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
         fcall = rewrite_unaryop(expr, ctx)
         return compile_expr(fcall, cast, cfunc, ctx)
     elif isinstance(expr, xy.Id):
-        var_obj = eval(expr, cast, cfunc, ctx, msg=f"Cannot find variable '{expr.name}'")
-        if isinstance(var_obj, VarObj):
-            return var_to_expr_obj(expr, var_obj, cast, cfunc, ctx, deref)
-        elif isinstance(var_obj, TypeObj):
-            return ExprObj(
-                xy_node=expr,
-                c_node=var_obj.init_value,
-                inferred_type=var_obj,
-                compiled_obj=var_obj,
-            )
-        elif isinstance(var_obj, ImportObj):
-            return ExprObj(
-                c_node=None,
-                xy_node=var_obj.xy_node,
-                inferred_type=var_obj,
-                compiled_obj=var_obj,
-            )
-        elif isinstance(var_obj, ExprObj):
-            if isinstance(var_obj, PoisonObj) and not allow_poison:
-                raise CompilationError(var_obj.reason, expr)
-            res = maybe_deref(var_obj, deref, cast, cfunc, ctx)
-            res = copy(res)
-            res.xy_node = expr
-            return res
-        elif isinstance(var_obj, LazyObj):
-            if isinstance(var_obj.xy_node, xy.CallerContextExpr):
-                assert var_obj.ctx is not None
-                res = compile_expr(var_obj.xy_node.arg, cast, cfunc, var_obj.ctx)
-            else:
-                res = compile_expr(var_obj.xy_node, cast, cfunc, var_obj.ctx or ctx)
-            res.from_lazy_ctx = var_obj.ctx or ctx
-            return res
-        elif isinstance(var_obj, InstanceObj):
-            return ExprObj(
-                c_node=var_obj.c_node,
-                xy_node=expr,
-                inferred_type=var_obj.type_obj,
-                compiled_obj=var_obj,
-            )
-        else:
-            raise CompilationError("Invalid expression", expr)
+        return compile_id(expr, cast, cfunc, ctx, deref, allow_poison)
     elif isinstance(expr, xy.CatchExpr):
         catch_var_name = ctx.gen_tmp_name("catch")
         catch_err_label = ctx.gen_tmp_label_name("catch")
@@ -2837,6 +2802,49 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
     else:
         raise CompilationError(f"Unknown xy ast node '{type(expr).__name__}'", expr)
 
+def compile_id(expr: xy.Id, cast, cfunc, ctx, deref, allow_poison):
+    var_obj = eval(expr, cast, cfunc, ctx, msg=f"Cannot find variable '{expr.name}'")
+    if isinstance(var_obj, VarObj):
+        return var_to_expr_obj(expr, var_obj, cast, cfunc, ctx, deref)
+    elif isinstance(var_obj, TypeObj):
+        return ExprObj(
+            xy_node=expr,
+            c_node=var_obj.init_value,
+            inferred_type=var_obj,
+            compiled_obj=var_obj,
+        )
+    elif isinstance(var_obj, ImportObj):
+        return ExprObj(
+            c_node=None,
+            xy_node=var_obj.xy_node,
+            inferred_type=var_obj,
+            compiled_obj=var_obj,
+        )
+    elif isinstance(var_obj, ExprObj):
+        if isinstance(var_obj, PoisonObj) and not allow_poison:
+            raise CompilationError(var_obj.reason, expr)
+        res = maybe_deref(var_obj, deref, cast, cfunc, ctx)
+        res = copy(res)
+        res.xy_node = expr
+        return res
+    elif isinstance(var_obj, LazyObj):
+        if isinstance(var_obj.xy_node, xy.CallerContextExpr):
+            assert var_obj.ctx is not None
+            res = compile_expr(var_obj.xy_node.arg, cast, cfunc, var_obj.ctx)
+        else:
+            res = compile_expr(var_obj.xy_node, cast, cfunc, var_obj.ctx or ctx)
+        res.from_lazy_ctx = var_obj.ctx or ctx
+        return res
+    elif isinstance(var_obj, InstanceObj):
+        return ExprObj(
+            c_node=var_obj.c_node,
+            xy_node=expr,
+            inferred_type=var_obj.type_obj,
+            compiled_obj=var_obj,
+        )
+    else:
+        raise CompilationError("Invalid expression", expr)
+
 def is_known_at_ct(obj: ExprObj):
     if is_funcdef_type(obj.inferred_type):
         return True
@@ -2862,12 +2870,20 @@ def var_to_expr_obj(expr, var_obj, cast, cfunc, ctx, deref):
         )
         return maybe_deref(res, deref, cast, cfunc, ctx)
 
-    return ExprObj(
+    addr_node = c.UnaryExpr(c_node, op="&", prefix=True)
+    res = IdxObj(
         xy_node=expr,
-        c_node=c_node,
         inferred_type=var_obj.type_desc,
+        container=var_obj,
+        c_node=c_node,  # references are the only one with a c_node
+        idx=ExprObj(
+            xy_node=expr,
+            c_node=addr_node,
+            inferred_type=ptr_type_to(var_obj.type_desc, ctx)
+        ),
         compiled_obj=var_obj,
     )
+    return maybe_deref(res, deref, cast, cfunc, ctx)
 
 def do_compile_append(dst_obj, val: xy.Node, cast, cfunc, ctx, expr):
     vals = [val]
@@ -3120,8 +3136,12 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
         idx_to_obj = idx_obj.idx.inferred_type.tags.get("to", None)
         if idx_to_obj is None:
             raise CompilationError("Cannot deref untagged pointer", idx_obj.idx.xy_node)
+        if isinstance(idx_obj.idx.c_node, c.UnaryExpr) and idx_obj.idx.c_node.op == "&":
+            c_deref = idx_obj.idx.c_node.arg
+        else:
+            c_deref = c.UnaryExpr(idx_obj.idx.c_node, op='*', prefix=True)
         return ExprObj(
-            c_node=c.UnaryExpr(idx_obj.idx.c_node, op='*', prefix=True),
+            c_node=c_deref,
             xy_node=idx_obj.xy_node,
             inferred_type=idx_to_obj,
             compiled_obj=idx_obj,
@@ -3164,12 +3184,13 @@ def do_idx_set(idx_obj: IdxObj, val_obj: CompiledObj, cast, cfunc, ctx: Compiler
         )
 
     if is_ptr_type(idx_obj.idx.inferred_type, ctx):
+        if isinstance(idx_obj.idx.c_node, c.UnaryExpr) and idx_obj.idx.c_node.op == "&":
+            c_deref = idx_obj.idx.c_node.arg
+        else:
+            c_deref = c.UnaryExpr(idx_obj.idx.c_node, op='*', prefix=True)
+
         return ExprObj(
-            c_node=c.Expr(
-                c.UnaryExpr(idx_obj.idx.c_node, op='*', prefix=True),
-                val_obj.c_node,
-                op="="
-            ),
+            c_node=c.Expr(c_deref, val_obj.c_node, op="="),
             xy_node=idx_obj.xy_node,
             inferred_type=idx_obj.idx.inferred_type.tags["to"]
         )
@@ -6519,10 +6540,15 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         needs_dtor = False
         if xyreturn.value:
             value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
-            if isinstance(value_obj.compiled_obj, VarObj):
+
+            maybe_var_obj = value_obj.compiled_obj
+            if isinstance(maybe_var_obj, IdxObj):
+                maybe_var_obj = maybe_var_obj.compiled_obj
+            if isinstance(maybe_var_obj, VarObj):
                 # Don't destory the value we return
-                needs_dtor = value_obj.compiled_obj.needs_dtor
-                value_obj.compiled_obj.needs_dtor = False
+                needs_dtor = maybe_var_obj.needs_dtor
+                maybe_var_obj.needs_dtor = False
+
             elif any_dtors(ctx):
                 tmp_obj = ctx.create_tmp_var(value_obj.inferred_type, "res")
                 tmp_obj.c_node.value = value_obj.c_node
@@ -6565,8 +6591,13 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
             if not xyreturn.value:
                 continue # return by param. Either void or named return. Either way nothing to do.
             value_obj = compile_expr(xyreturn.value, cast, cfunc, ctx)
-            if isinstance(value_obj.compiled_obj, VarObj):
-                value_obj.compiled_obj.needs_dtor = False
+
+            maybe_var_obj = value_obj.compiled_obj
+            if isinstance(maybe_var_obj, IdxObj):
+                maybe_var_obj = maybe_var_obj.compiled_obj
+            if isinstance(maybe_var_obj, VarObj):
+                maybe_var_obj.needs_dtor = False
+
             param_name = f"__{ret.name}" if ret.name else f"_res{iret}"
             cfunc.body.append(c.Expr(
                 arg1=c.UnaryExpr(op="*", arg=c.Id(param_name), prefix=True),
