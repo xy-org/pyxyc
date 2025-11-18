@@ -1313,9 +1313,6 @@ def do_eval(node, cast, cfunc, ctx, msg=None, is_func=False):
         elif isinstance(obj, IdxObj) and obj.container is global_memory and isinstance(obj.idx.inferred_type, FuncTypeObj):
             # calling a callback
             return obj.idx
-        elif isinstance(obj, IdxObj) and obj.container is global_memory and is_funcdef_type(obj.idx.inferred_type):
-            # calling a func select directly
-            return obj.idx.compiled_obj
         elif is_c_ct_const(obj.c_node):
             return obj
         raise CompilationError(
