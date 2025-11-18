@@ -2249,7 +2249,6 @@ def call_dtors(ns, cast, cfunc, ctx, reset_values=True):
                 xy_node=obj.xy_node,
                 c_node=c.Id(obj.c_node.name),
                 inferred_type=obj.inferred_type,
-                compiled_obj=obj
             )
             call_dtor(expr, cast, cfunc, ctx, reset_values=reset_values)
 

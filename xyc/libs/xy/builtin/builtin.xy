@@ -282,10 +282,10 @@
 ;; -7 \rem -4 == -3
 ;; The divisor is assumed to be non-zero.
 *func rem(
-    a: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
-    b: %a
-) -> %a
->> b != %b
+    dividend: (Byte, Ubyte, Short, Ushort, Int, Uint, Long, Ulong),
+    divisor: %dividend
+) -> %dividend
+>> divisor != %divisor
 {
     # implemented by the compiler
 }
