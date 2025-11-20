@@ -215,11 +215,6 @@ class FuncTypeObj(TypeObj):
         return res
 
 @dataclass
-class TypeInferenceError:
-    msg: str = ""
-    needs_dtor: bool = False
-
-@dataclass
 class StrObj(CompiledObj):
     prefix: str = ""
     parts: list[CompiledObj] = field(default_factory=list)
@@ -558,8 +553,6 @@ class ExtSpace(FuncSpace):
         return FuncObj(c_node=c.Func(name=self.ext_name, rtype=None))
 
 def fmt_type(obj: CompiledObj):
-    if isinstance(obj, TypeInferenceError):
-        return "???"
     return obj.name
 
 def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx):
@@ -642,7 +635,7 @@ def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
     if src_type is dst_type:
         return 0, []
 
-    if dst_type is unknown_c_type or isinstance(dst_type, TypeInferenceError) or dst_type.is_any_type:
+    if dst_type is unknown_c_type or dst_type.is_any_type:
         return 0, []
 
     if isinstance(src_type, ArrTypeObj):
@@ -1833,11 +1826,6 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
 
     ctx.pop_ns()
 
-    if isinstance(rtype_compiled, TypeInferenceError):
-        raise CompilationError(
-            rtype_compiled.msg,
-            node.returns[0] if len(node.returns) > 0 else node.body
-        )
     cfunc.rtype = (etype_compiled.c_name
                     if etype_compiled is not None
                     else rtype_compiled.c_name)
@@ -2176,7 +2164,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 cfunc.body.append(expr_obj.c_node)
             if (
                 expr_obj.inferred_type is not None and expr_obj.inferred_type is not ctx.void_obj
-                and not isinstance(expr_obj.inferred_type, (ExtSymbolObj, TypeInferenceError))
+                and not isinstance(expr_obj.inferred_type, ExtSymbolObj)
                 and not expr_obj.inferred_type.is_external and
                 (not isinstance(node, xy.BinExpr) or node.op in {"==", "!=", "."}) and
                 (not isinstance(node, xy.UnaryExpr) or node.op in {"-", "%"}) and
@@ -2324,11 +2312,6 @@ def compile_vardecl(node, cast, cfunc, ctx):
                 node
             )
         type_desc = value_obj.inferred_type
-        if isinstance(type_desc, TypeInferenceError):
-            raise CompilationError(
-                type_desc.msg,
-                node
-            )
         if type_desc is unknown_c_type:
             raise CompilationError(cexpr_type_inference_msg, node)
 
@@ -5773,9 +5756,7 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
                 base_type_obj=elem_type_obj
             )
         else:
-            inferred_type = TypeInferenceError(
-                "Cannot infer type of empty array"
-            )
+            raise CompilationError("Cannot infer type of empty array", expr)
 
         return dst_obj or ExprObj(
             xy_node=expr,
@@ -6687,7 +6668,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         )
 
 def assert_rtype_match(value_obj, fobj, ctx: CompilerContext):
-    c_expr = isinstance(value_obj.inferred_type, TypeInferenceError) or value_obj.inferred_type is None or value_obj.inferred_type is unknown_c_type
+    c_expr = value_obj.inferred_type is None or value_obj.inferred_type is unknown_c_type
     if not c_expr and not compatible_types(fobj.rtype_obj, value_obj.inferred_type):
         if implicit_zero_conversion(value_obj, fobj.rtype_obj, ctx):
             return
@@ -7125,8 +7106,6 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
 def assert_has_type(obj: ExprObj):
     if obj.inferred_type is None:
         raise CompilationError("Cannot determine type of expression", obj.xy_node)
-    if isinstance(obj.inferred_type, TypeInferenceError):
-        raise CompilationError(obj.inferred_type.msg, obj.xy_node)
     if obj.inferred_type is unknown_c_type:
         raise CompilationError(cexpr_type_inference_msg, obj.xy_node)
 

@@ -237,9 +237,9 @@ src.xy:4:22: error: Cannot find symbol
             tests := @for (f in $* ~Test()) f;
         }
      """, """\
-src.xy:4:13: error: Cannot infer type of empty array
+src.xy:4:22: error: Cannot infer type of empty array
 |             tests := @for (f in $* ~Test()) f;
-              ^^^^^
+                       ^
 """),
     ("""
         func main1~EntryPoint() {}
