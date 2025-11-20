@@ -676,6 +676,34 @@ src.xy:2:16: error: Type appears to need a dtor by no matching dtor(Struct) foun
                  ^^^^^^
 """
     ),
+    (
+        """
+        import libc~[Clib{}] in c;
+
+        struct MyStruct {
+            field: c.ExtStruct;
+        }
+        """,
+        """\
+src.xy:5:13: error: Fields with external types must have an explicit default value
+|             field: c.ExtStruct;
+              ^^^^^^^^^^^^^^^^^^
+"""
+    ),
+        (
+        """
+        import libc~[Clib{}] in c;
+
+        struct MyStruct {
+            field := c.ExtStruct;
+        }
+        """,
+        """\
+src.xy:5:13: error: The types of c symbols cannot be inferred. Please be explicit and specify the type.
+|             field := c.ExtStruct;
+              ^^^^^
+"""
+    ),
 ])
 def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

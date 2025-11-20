@@ -1681,6 +1681,9 @@ def compile_struct_fields(type_obj, ast, cast, ctx):
             field_type_obj = recursive_pseudo_field_type_obj
         elif field.value is not None:
             default_value_obj = eval(field.value, cast, None, ctx)
+            if isinstance(default_value_obj, ExtSymbolObj):
+                # TODO is that if really necessary
+                raise CompilationError(cexpr_type_inference_msg, field)
             if default_value_obj.inferred_type is type_obj:
                 raise CompilationError("Recursive structs are not possible", field)
             if isinstance(default_value_obj, InstanceObj):
