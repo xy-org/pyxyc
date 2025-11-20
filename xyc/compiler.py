@@ -642,7 +642,7 @@ def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
     if src_type is dst_type:
         return 0, []
 
-    if dst_type is c_symbol_type or isinstance(dst_type, TypeInferenceError) or dst_type.is_any_type:
+    if dst_type is unknown_c_type or isinstance(dst_type, TypeInferenceError) or dst_type.is_any_type:
         return 0, []
 
     if isinstance(src_type, ArrTypeObj):
@@ -2329,8 +2329,8 @@ def compile_vardecl(node, cast, cfunc, ctx):
                 type_desc.msg,
                 node
             )
-        if type_desc is c_symbol_type:
-            raise CompilationError(unknown_ctype_msg, node)
+        if type_desc is unknown_c_type:
+            raise CompilationError(cexpr_type_inference_msg, node)
 
     if isinstance(type_desc, ArrTypeObj):
         if len(type_desc.dims) == 0:
@@ -2421,7 +2421,7 @@ def expand_array_to_init_list(value_obj: ExprObj):
         res.elems.append(c.Index(value_obj.c_node, c.Const(i)))
     return res
 
-c_symbol_type = TypeExprObj(
+unknown_c_type = TypeExprObj(
     xy_node=None,
     c_node=c.Id("UNKNOWN_C_TYPE_REPORT_IF_YOU_SEE_ME"),
     type_obj=TypeObj(
@@ -2432,7 +2432,7 @@ c_symbol_type = TypeExprObj(
     )
 )
 
-unknown_ctype_msg = "The types of c symbols cannot be inferred. Please be explicit and specify the type."
+cexpr_type_inference_msg = "The types of c symbols cannot be inferred. Please be explicit and specify the type."
 
 def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_poison=False) -> ExprObj:
     res = do_compile_expr(expr, cast, cfunc, ctx, deref=deref, allow_poison=allow_poison)
@@ -2458,7 +2458,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
                 return ExprObj(
                     c_node=res,
                     xy_node=expr,
-                    inferred_type=c_symbol_type
+                    inferred_type=unknown_c_type
                 )
             else:
                 return do_compile_field_get(arg1_obj, expr.arg2, cast, cfunc, ctx, deref=deref, expr=expr)
@@ -3483,7 +3483,7 @@ def compile_struct_literal(expr: xy.StructLiteral, cast, cfunc, ctx: CompilerCon
 
     var_obj = compile_expr(expr.name, cast, cfunc, ctx)
     type_obj = var_obj.inferred_type
-    if type_obj is c_symbol_type:
+    if type_obj is unknown_c_type:
         # external symbols in that context are assumed to be types
         # so we have to generate a new type
         type_obj = ext_symbol_to_type(var_obj)
@@ -3962,7 +3962,7 @@ def compile_inlinec(expr, parts, cast, cfunc, ctx):
     return ExprObj(
         c_node=res,
         xy_node=expr,
-        inferred_type=c_symbol_type
+        inferred_type=unknown_c_type
     )
 
 def escape_str(s: str):
@@ -6687,7 +6687,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         )
 
 def assert_rtype_match(value_obj, fobj, ctx: CompilerContext):
-    c_expr = isinstance(value_obj.inferred_type, TypeInferenceError) or value_obj.inferred_type is None or value_obj.inferred_type is c_symbol_type
+    c_expr = isinstance(value_obj.inferred_type, TypeInferenceError) or value_obj.inferred_type is None or value_obj.inferred_type is unknown_c_type
     if not c_expr and not compatible_types(fobj.rtype_obj, value_obj.inferred_type):
         if implicit_zero_conversion(value_obj, fobj.rtype_obj, ctx):
             return
@@ -7127,8 +7127,8 @@ def assert_has_type(obj: ExprObj):
         raise CompilationError("Cannot determine type of expression", obj.xy_node)
     if isinstance(obj.inferred_type, TypeInferenceError):
         raise CompilationError(obj.inferred_type.msg, obj.xy_node)
-    if obj.inferred_type is c_symbol_type:
-        raise CompilationError(unknown_ctype_msg, obj.xy_node)
+    if obj.inferred_type is unknown_c_type:
+        raise CompilationError(cexpr_type_inference_msg, obj.xy_node)
 
 def maybe_add_main(ctx: CompilerContext, cast, has_global=False, uses_sys=False):
     if ctx.entrypoint_obj is not None:
