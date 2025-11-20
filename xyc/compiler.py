@@ -4286,7 +4286,6 @@ def move_to_temp(expr_obj, cast, cfunc, ctx):
             tmp_obj.c_node.value = get_obj.c_node.arg
             cfunc.body.append(tmp_obj.c_node)
             get_obj.c_node = c.UnaryExpr(arg=c.Id(tmp_obj.c_node.name), op="*", prefix=True)
-            get_obj.compiled_obj = expr_obj
             return get_obj
 
     res = copy_to_temp(expr_obj, cast, cfunc, ctx)
