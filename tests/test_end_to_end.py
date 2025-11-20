@@ -26,10 +26,11 @@ struct MyStruct {
     name: Str; # size=\d+ offset=\d+ alignof=\d+
     ;; Some number
     num: Ulong; # size=\d offset=\d+ alignof=\d+
+    ;; 32-bit signed integer type
     integer: Int; # size=4 offset=\d+ alignof=\d+
     ;; Array of
 floats
-    arr: Float\[10\]; # size=40 offset=\d+ alignof=\d+
+    arr: Float\[\]; # size=40 offset=\d+ alignof=\d+
     next: Ptr; # size=\d offset=\d+ alignof=\d+
 }\n""", False),
     ("uniqueTmpVarNames", "", False),

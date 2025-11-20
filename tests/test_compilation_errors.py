@@ -388,7 +388,7 @@ src.xy:2:39: error: Cannot set value for pseudo field `field`. Pseudo fields can
         }
         """,
         """\
-src.xy:5:27: error: Too many positional value in struct literal. Provided '1' but type has only '0' fields
+src.xy:5:27: error: Too many positional values in struct literal. Provided '1' but type has only '0' fields
 |             s := MyStruct{5};
                             ^
 """

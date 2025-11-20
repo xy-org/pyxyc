@@ -2,21 +2,25 @@ import posix~[Clib{headers=@{"unistd.h", "fcntl.h"}}] in c;
 
 # Flags structure
 
+struct Flag {
+    value: Int;
+}
+
 struct OpenFlags {
     value : Int;
 
-    readOnly : pseudo = OpenFlags{c.O_RDONLY};
-    writeOnly : pseudo = OpenFlags{c.O_WRONLY};
-    readWrite : pseudo = OpenFlags{c.O_RDWR};
-    append : pseudo = OpenFlags{c.O_APPEND};
+    readOnly : pseudo = Flag{c.O_RDONLY};
+    writeOnly : pseudo = Flag{c.O_WRONLY};
+    readWrite : pseudo = Flag{c.O_RDWR};
+    append : pseudo = Flag{c.O_APPEND};
 }
 
-func get(base: OpenFlags, fields: OpenFlags) -> Bool {
-    return (base.value'to(Bits32) && fields.value'to(Bits32))'to(Int) == fields.value;
+func get(base: OpenFlags, flag: Flag) -> Bool {
+    return (base.value'to(Bits32) && flag.value'to(Bits32))'to(Int) == flag.value;
 }
 
-func set(base: mut OpenFlags, fields: OpenFlags, set: Bool) {
-    base.value = (base.value'to(Bits32) || (fields.value * set'to(Int))'to(Bits32))'to(Int);
+func set(base: mut OpenFlags, flag: Flag, set: Bool) {
+    base.value = (base.value'to(Bits32) || (flag.value * set)'to(Bits32))'to(Int);
 }
 
 func cmpEq(l: OpenFlags, r: OpenFlags) l.value == r.value;
@@ -36,7 +40,7 @@ func string~[StrCtor{prefix=""}](addr: Ptr, size: Usize) -> String {
     return String{addr, size};
 }
 
-func open(fn: String, flags:=OpenFlags.readOnly) {
+func open(fn: String, flags := OpenFlags{.readOnly}) {
     if (flags.readWrite) {
         # reading, writing and maybe something else
     } elif (flags == OpenFlags{.readOnly, .append}) {
@@ -50,11 +54,11 @@ func open(fn: String, flags:=OpenFlags.readOnly) {
 
 func test1() {
     open("file.txt");
-    open("file.txt", OpenFlags.readOnly);
+    open("file.txt", OpenFlags{.readOnly});
 }
 
 func test2() {
-    open("file.txt", OpenFlags.readOnly || OpenFlags.writeOnly);
+    open("file.txt", OpenFlags{.readOnly} || OpenFlags{.writeOnly});
     open("file.txt", OpenFlags{.writeOnly, .append});
 }
 

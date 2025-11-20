@@ -1,16 +1,23 @@
 # --- Type Enums ---
 
+struct Enum {
+    value: Int;
+}
+
 struct Status {
     value: Int;
 
-    pending : pseudo = Status{1};
-    canceled : pseudo = Status{2};
-    processed : pseudo = Status{4};
+    pending : pseudo = Enum{1};
+    canceled : pseudo = Enum{2};
+    processed : pseudo = Enum{4};
 }
 
-func get(st: Status, test: Status) st.value == test.value;
-func set(st: mut Status, val: Status) st.value = test.value;
-func cmp(l: Status, r: Status) cmp(l.value, r.value);
+func get(st: Any, test: Enum) st.value == test.value;
+
+func set(st: mut Any, val: Enum, on: Bool) =
+    st.value = val.value * on + st.value * on'not;
+
+func cmp(lhs: Any, rhs: Status) = cmp(lhs.value, rhs.value);
 
 func printStatus(st: Status) {
     if (st.pending) {
@@ -23,14 +30,14 @@ func printStatus(st: Status) {
 }
 
 func testEnums(a: Int) {
-    orderStatus := Status.pending;
+    orderStatus := Status{.pending};
     printStatus(orderStatus);
 
-    printStatus(Status.processed);
+    printStatus(Status{.processed});
 
-    st : mut = Status.canceled;
+    st : mut = Status{.canceled};
     if (a > 0) {
-        st = Status.processed;
+        st = Status{.processed};
     }
     printStatus(st);
 }

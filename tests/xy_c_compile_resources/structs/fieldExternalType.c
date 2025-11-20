@@ -13,6 +13,6 @@ struct fieldExternalType_Data {
 };
 
 void fieldExternalType_test(void) {
-    const fieldExternalType_Data l_a = {0};
-    const fieldExternalType_Data l_b = {0, {0}, 2.0f};
+    const fieldExternalType_Data l_a = {0, (struct termios){0}, 0};
+    const fieldExternalType_Data l_b = {0, (struct termios){0}, 2.0f};
 }

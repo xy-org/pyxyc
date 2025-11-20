@@ -42,8 +42,10 @@ class TypeObj(CompiledObj):
 
     @property
     def name(self):
-        if self.xy_node is not None:
+        if not self.is_external and self.xy_node is not None:
             return self.xy_node.name
+        elif self.is_external:
+            return self.c_node.name
         else:
             return "<Unknown>"
 
@@ -58,6 +60,8 @@ class TypeObj(CompiledObj):
         if self.builtin and self.xy_node.name == "Ptr" and "to" in self.tags \
             and self.tags["to"] is not calltime_expr_obj:
             to_obj = self.tags["to"]
+            # TODO remove that
+            to_obj = getattr(to_obj, 'inferred_type', to_obj)
             return to_obj.c_name + "*"
         if self.c_node is not None:
             return self.c_node.name
@@ -79,6 +83,7 @@ class TypeExprObj(CompiledObj):
             name = self.type_obj.xy_node.name
             if name == "Ptr" and "to" in self.tags and self.tags["to"] is not calltime_expr_obj:
                 to_obj = self.tags["to"]
+                to_obj = getattr(to_obj, 'inferred_type', to_obj)
                 return to_obj.c_name + "*"
         return self.type_obj.c_name
 
@@ -301,8 +306,20 @@ class ImportObj(CompiledObj):
 @dataclass
 class ExprObj(CompiledObj):
     inferred_type: CompiledObj | str | None = None
+
+    # don't use that
+    # TODO remove
     compiled_obj: CompiledObj | None = None
+
+    # if the value can be used as an iterator directly
     is_iter_ctor: bool = False
+
+    # if the value refers directly to the type instead of an instance of that type
+    # this is used primarily for error message. e.g.
+    # v := 0; 'v' - refers to the variable v
+    # '%v' - refers to the type of v
+    refers_to_type: bool = False
+
     from_lazy_ctx: 'CompilerContext' = None
     tmp_var_names: set = field(default_factory=set)  # used for code redaction
 
@@ -625,7 +642,7 @@ def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
     if src_type is dst_type:
         return 0, []
 
-    if isinstance(dst_type, TypeInferenceError) or dst_type.is_any_type:
+    if dst_type is c_symbol_type or isinstance(dst_type, TypeInferenceError) or dst_type.is_any_type:
         return 0, []
 
     if isinstance(src_type, ArrTypeObj):
@@ -945,13 +962,27 @@ class CompilerContext:
         obj = eval(name, None, None, self, msg=msg)
         if obj is None:
             raise CompilationError(f"Cannot find type '{self.eval_to_id(name)}'", name)
-        if isinstance(obj, ExtSymbolObj):
-            return ext_symbol_to_type(obj)
-        if not isinstance(obj, (TypeObj, TypeExprObj)):
+
+        type_obj = None
+        if isinstance(obj, ExprObj):
+            if not obj.refers_to_type:
+                raise CompilationError("Not a type", name)
+            type_obj = obj.inferred_type
+        elif isinstance(obj, ExtSymbolObj):
+            type_obj = ext_symbol_to_type(obj)
+        elif isinstance(obj, (TypeObj, TypeExprObj)):
+            type_obj = obj
+        else:
             raise CompilationError("Not a type", name)
-        if not is_obj_visible(obj, self):
+
+        # TODO that should be just TypeExprObj
+        if not isinstance(type_obj, (TypeExprObj, TypeObj)):
+            raise CompilationError("[BUG] Internal object should be a type", name)
+
+        if not is_obj_visible(type_obj, self):
             raise CompilationError(f"Struct '{obj.name}' is not visible", name)
-        return obj
+
+        return type_obj
 
     def eval_to_id(self, name: xy.Node):
         if isinstance(name, xy.CallerContextExpr):
@@ -1308,13 +1339,14 @@ def do_eval(node, cast, cfunc, ctx, msg=None, is_func=False):
         elif isinstance(obj.inferred_type, FuncTypeObj):
             # calling a callback
             return obj
-        elif obj.compiled_obj is not None:
-            return obj.compiled_obj
         elif isinstance(obj, IdxObj) and obj.container is global_memory and isinstance(obj.idx.inferred_type, FuncTypeObj):
             # calling a callback
             return obj.idx
         elif is_c_ct_const(obj.c_node):
             return obj
+        elif is_funcdef_type(obj.inferred_type) and obj.compiled_obj is not None:
+            # TODO put the Func object in the type and remove this if
+            return obj.compiled_obj
         raise CompilationError(
             "Cannot evaluate at compile time.",
             node)
@@ -1449,7 +1481,7 @@ def try_compile_const_value(const_name, node, cast, ctx):
 def do_compile_const_value(const_name, node, cast, ctx):
     eval(node, cast, None, ctx)  # just to make sure it can be evaluated at compile-time
     value_obj = compile_expr(node, cast, None, ctx)
-    if value_obj.compiled_obj is None:
+    if not value_obj.refers_to_type:
         cdef = c.Define(
             name=mangle_define(const_name, ctx.module_name),
             value=value_obj.c_node,
@@ -2297,6 +2329,8 @@ def compile_vardecl(node, cast, cfunc, ctx):
                 type_desc.msg,
                 node
             )
+        if type_desc is c_symbol_type:
+            raise CompilationError(unknown_ctype_msg, node)
 
     if isinstance(type_desc, ArrTypeObj):
         if len(type_desc.dims) == 0:
@@ -2387,9 +2421,18 @@ def expand_array_to_init_list(value_obj: ExprObj):
         res.elems.append(c.Index(value_obj.c_node, c.Const(i)))
     return res
 
-c_symbol_type = TypeInferenceError(
-    "The types of c symbols cannot be inferred. Please be explicit and specify the type."
+c_symbol_type = TypeExprObj(
+    xy_node=None,
+    c_node=c.Id("UNKNOWN_C_TYPE_REPORT_IF_YOU_SEE_ME"),
+    type_obj=TypeObj(
+        xy_node=None,
+        c_node=c.Id("UNKNOWN_C_TYPE_REPORT_IF_YOU_SEE_ME"),
+        fully_compiled=True,
+        is_external=True,
+    )
 )
+
+unknown_ctype_msg = "The types of c symbols cannot be inferred. Please be explicit and specify the type."
 
 def compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_poison=False) -> ExprObj:
     res = do_compile_expr(expr, cast, cfunc, ctx, deref=deref, allow_poison=allow_poison)
@@ -2405,9 +2448,12 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
             arg1_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
             if isinstance(arg1_obj.inferred_type, ImportObj):
                 assert arg1_obj.inferred_type.is_external
-                if not isinstance(expr.arg2, xy.Id):
+                if isinstance(expr.arg2, xy.Id):
+                    field_name = expr.arg2.name
+                elif isinstance(expr.arg2, xy.StrLiteral):
+                    field_name = expr.arg2.full_str
+                else:
                     raise CompilationError("Expected identifier", expr.arg2)
-                field_name = expr.arg2.name
                 res = c.Id(field_name)
                 return ExprObj(
                     c_node=res,
@@ -2431,11 +2477,12 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
             return compile_list_comprehension(list_comp, cast, cfunc, ctx, is_assign=True)
         elif expr.op == '@':
             acc_obj = compile_expr(expr.arg1, cast, cfunc, ctx, deref=False)
-            if not isinstance(acc_obj.compiled_obj, (TypeExprObj, TypeObj)):
+            if not acc_obj.refers_to_type:
+                #TODO raise CompilationError("Cannot auto donated to @ operator. Be explicit and make a copy", expr.arg1)
                 copy_obj = find_and_call("copy", ArgList([acc_obj]), cast, cfunc, ctx, expr)
             else:
                 copy_obj = ExprObj(
-                    expr, c_node=acc_obj.compiled_obj.init_value, inferred_type=acc_obj.inferred_type,
+                    expr, c_node=acc_obj.inferred_type.init_value, inferred_type=acc_obj.inferred_type,
                 )
             tmp_obj = ctx.create_tmp_var(copy_obj.inferred_type, "comp")
             tmp_obj.c_node.value = copy_obj.c_node
@@ -2533,11 +2580,15 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
             tag_obj = tag_get(expr, arg1_obj, field_name, ctx, def_val_node)
             if isinstance(tag_obj, (TypeObj, TypeExprObj)):
                 return ExprObj(
-                    c_node=c.Id(tag_obj.c_node.name),
+                    xy_node=expr,
+                    c_node=tag_obj.init_value,
                     inferred_type=tag_obj,
+                    refers_to_type=True,
                 )
             else:
+                # TODO if tag_obj is ExprObj can we simply return it
                 return ExprObj(
+                    xy_node=expr,
                     c_node=tag_obj.c_node,
                     inferred_type=tag_obj.inferred_type,
                 )
@@ -2566,7 +2617,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
             c_node=arg_obj.inferred_type.init_value,
             inferred_type=arg_obj.inferred_type,
             tags=arg_obj.inferred_type.tags,
-            compiled_obj=arg_obj.inferred_type,
+            refers_to_type=True,
         )
     elif isinstance(expr, xy.UnaryExpr):
         fcall = rewrite_unaryop(expr, ctx)
@@ -2803,11 +2854,14 @@ def compile_id(expr: xy.Id, cast, cfunc, ctx, deref, allow_poison):
     if isinstance(var_obj, VarObj):
         return var_to_expr_obj(expr, var_obj, cast, cfunc, ctx, deref)
     elif isinstance(var_obj, TypeObj):
+        if not is_obj_visible(var_obj, ctx):
+            raise CompilationError(f"Struct '{var_obj.name}' is not visible", expr)
+
         return ExprObj(
             xy_node=expr,
             c_node=var_obj.init_value,
             inferred_type=var_obj,
-            compiled_obj=var_obj,
+            refers_to_type=True,
         )
     elif isinstance(var_obj, ImportObj):
         return ExprObj(
@@ -3427,24 +3481,35 @@ def compile_struct_literal(expr: xy.StructLiteral, cast, cfunc, ctx: CompilerCon
     if expr.name is None:
         raise CompilationError("Anonymous struct literals are not supported", expr)
 
-    type_obj = eval(expr.name, cast, cfunc, ctx)
-    var_obj = None
-    if isinstance(type_obj, ExtSymbolObj):
-        type_obj = ext_symbol_to_type(type_obj)
-    elif not isinstance(type_obj, (TypeObj, TypeExprObj)):
-        var_obj = compile_expr(expr.name, cast, cfunc, ctx)
-        type_obj = var_obj.inferred_type
-
-    if not is_obj_visible(type_obj, ctx):
-        raise CompilationError(f"Struct '{type_obj.name}' is not visible", expr.name)
+    var_obj = compile_expr(expr.name, cast, cfunc, ctx)
+    type_obj = var_obj.inferred_type
+    if type_obj is c_symbol_type:
+        # external symbols in that context are assumed to be types
+        # so we have to generate a new type
+        type_obj = ext_symbol_to_type(var_obj)
+        var_obj.inferred_type = type_obj
+        var_obj.refers_to_type = True
 
     tmp_obj = None
-    if var_obj is not None and not isinstance(var_obj.compiled_obj, (TypeObj, TypeExprObj)):
+    if not var_obj.refers_to_type:
         tmp_obj = ctx.create_tmp_var(type_obj, xy_node=expr)
         tmp_obj.c_node.value = c.Id(var_obj.c_node.name) if isinstance(var_obj, VarObj) else var_obj.c_node
         cfunc.body.append(tmp_obj.c_node)
 
     return do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx)
+
+def ext_symbol_to_type(obj: ExprObj):
+    """ Convert expr obj (presumably pointing to some external object) to a type obj """
+    return TypeExprObj(
+        xy_node=obj.xy_node,
+        c_node=obj.c_node,
+        type_obj=TypeObj(
+            xy_node=obj.xy_node,
+            c_node=obj.c_node,
+            is_external=True,
+            fully_compiled=True,
+        ),
+    )
 
 def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: CompilerContext):
     fully_compile_type(type_obj, cast, None, ctx)
@@ -3495,7 +3560,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
                 raise CompilationError("Cannot mix named and positional arguments", arg)
             if i >= len(field_objs):
                 raise CompilationError(
-                    f"Too many positional value in struct literal. Provided '{len(expr_args)}' but type has only '{len(field_objs)}' fields",
+                    f"Too many positional values in struct literal. Provided '{len(expr_args)}' but type has only '{len(field_objs)}' fields",
                     arg
                 )
             already_set_fields.add(field_objs[i].xy_node.name)
@@ -4269,6 +4334,7 @@ def copy_to_temp(expr_obj, cast, cfunc, ctx):
         compiled_obj=tmp_obj,
         tmp_var_names={tmp_obj.c_node.name},
         from_lazy_ctx=expr_obj.from_lazy_ctx,
+        refers_to_type=expr_obj.refers_to_type,
     )
 
 def is_simple_cexpr(expr):
@@ -5140,6 +5206,8 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         comment = ""
         if arg_exprs[0].compiled_obj is not None:
             comment = arg_exprs[0].compiled_obj.xy_node.comment
+        if len(comment) == 0 and arg_exprs[0].refers_to_type is not None:
+            comment = arg_exprs[0].inferred_type.xy_node.comment
         if not comment:
             comment = arg_exprs[0].xy_node.comment
         comment = fmt_comment(comment)  # delay parsing of comments because they may not be needed
@@ -5453,6 +5521,7 @@ def fmt_tags(tags: dict, ctx: CompilerContext):
 
 def compile_nameof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     redact_code(arg_exprs[0], cast, cfunc, ctx)
+    # TODO remove these ifs
     if isinstance(arg_exprs[0].compiled_obj, ArrTypeObj):
         name = arg_exprs[0].compiled_obj.base_type_obj.xy_node.name
         name += "[" + ",".join(str(d) for d in arg_exprs[0].compiled_obj.dims) + "]"
@@ -5467,6 +5536,8 @@ def compile_nameof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             name = "UNKNOWN"
     elif isinstance(arg_exprs[0].compiled_obj, FuncObj):
         name = arg_exprs[0].compiled_obj.xy_node.name.name
+    elif arg_exprs[0].refers_to_type:
+        name = arg_exprs[0].inferred_type.name
     else:
         raise CompilationError("Cannot determine name", expr)
     return compile_expr(
@@ -5603,11 +5674,12 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
     if expr.list_type is not None:
         dst_obj = compile_expr(expr.list_type, cast, cfunc, ctx, deref=False)
         if not is_assign:
-            if not isinstance(dst_obj.compiled_obj, (TypeExprObj, TypeObj)):
+            if not dst_obj.refers_to_type:
+                # TODO raise an error
                 copy_obj = find_and_call("copy", ArgList([dst_obj]), cast, cfunc, ctx, expr)
             else:
                 copy_obj = ExprObj(
-                    expr, c_node=dst_obj.compiled_obj.init_value, inferred_type=dst_obj.inferred_type,
+                    expr, c_node=dst_obj.inferred_type.init_value, inferred_type=dst_obj.inferred_type,
                 )
             tmp_obj = ctx.create_tmp_var(copy_obj.inferred_type, "comp")
             tmp_obj.c_node.value = copy_obj.c_node
@@ -5852,6 +5924,9 @@ def compile_builtin_get(expr, func_obj, arg_exprs, cast, cfunc, ctx):
         assert is_ptr_type(arg_exprs[0].inferred_type, ctx)
         base_cnode = arg_exprs[0].c_node
         inferred_type=arg_exprs[0].inferred_type.tags["to"]
+        # TODO is that if necessary
+        if isinstance(inferred_type, ExprObj):
+            inferred_type = inferred_type.inferred_type
 
     if len(arg_exprs) == 1:
         res = c.UnaryExpr(arg=base_cnode, op="*", prefix=True)
@@ -6612,7 +6687,7 @@ def compile_return(xyreturn, cast, cfunc, ctx: CompilerContext):
         )
 
 def assert_rtype_match(value_obj, fobj, ctx: CompilerContext):
-    c_expr = isinstance(value_obj.inferred_type, TypeInferenceError) or value_obj.inferred_type is None
+    c_expr = isinstance(value_obj.inferred_type, TypeInferenceError) or value_obj.inferred_type is None or value_obj.inferred_type is c_symbol_type
     if not c_expr and not compatible_types(fobj.rtype_obj, value_obj.inferred_type):
         if implicit_zero_conversion(value_obj, fobj.rtype_obj, ctx):
             return
@@ -6832,10 +6907,7 @@ def find_type(texpr, cast, ctx, required=True):
         return any_struct_type_obj
     elif isinstance(texpr, xy.Id):
         validate_name(texpr, ctx)
-        res = eval(texpr, cast, None, ctx, msg="Cannot find type")
-        if isinstance(res, ExtSymbolObj):
-            res = ext_symbol_to_type(res)
-        return res
+        return ctx.eval_to_type(texpr, msg="Cannot find type")
     elif isinstance(texpr, xy.ArrayType):
         base_type = find_type(texpr.base, cast, ctx)
         dims = []
@@ -6871,10 +6943,7 @@ def find_type(texpr, cast, ctx, required=True):
             func_obj=func_obj
         )
     else:
-        res = eval(texpr, cast, None, ctx, msg="Cannot find type")
-        if isinstance(res, ExtSymbolObj):
-            res = ext_symbol_to_type(res)
-        return res
+        return ctx.eval_to_type(texpr, msg="Cannot find type")
 
 def ct_eval(expr_obj):
     return c_eval(expr_obj.c_node)
@@ -7058,6 +7127,8 @@ def assert_has_type(obj: ExprObj):
         raise CompilationError("Cannot determine type of expression", obj.xy_node)
     if isinstance(obj.inferred_type, TypeInferenceError):
         raise CompilationError(obj.inferred_type.msg, obj.xy_node)
+    if obj.inferred_type is c_symbol_type:
+        raise CompilationError(unknown_ctype_msg, obj.xy_node)
 
 def maybe_add_main(ctx: CompilerContext, cast, has_global=False, uses_sys=False):
     if ctx.entrypoint_obj is not None:

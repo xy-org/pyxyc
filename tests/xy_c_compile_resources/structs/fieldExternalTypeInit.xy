@@ -1,13 +1,13 @@
 import libc~[Clib{headers=@{"stddef.h"}}] in c;
 
 struct Data {
-    ext : c.ptrdiff_t;
+    ext := c.ptrdiff_t{0};
     a: Int;
 }
 
 struct TypeInferenceData {
     ext1 := c.ptrdiff_t{20};
-    ext2 : c.ptrdiff_t;
+    ext2 := c.ptrdiff_t{0};
 }
 
 func test() {
