@@ -1,0 +1,8 @@
+func f(a: Int) {}
+
+func f(cb: (:Int)->Int) {}
+
+func test(a: Int, cb: (:Int)->Int) {
+    f(10);
+    f(cb);
+}

@@ -33,7 +33,7 @@ moveOperators5_Point moveOperators5_testMovingSimple(void) {
 void moveOperators5_dtor(moveOperators5_Array p_arr) {
 }
 
-moveOperators5_Array moveOperators5_testMovingDtor(void) {
+moveOperators5_Array moveOperators5_testMovingDtor__1(void) {
     moveOperators5_Array l_arr1 = {0};
     moveOperators5_Array l_arr2 = {0};
     moveOperators5_Array tmp_0_arg = l_arr1;
@@ -44,7 +44,7 @@ moveOperators5_Array moveOperators5_testMovingDtor(void) {
     return l_arr2;
 }
 
-moveOperators5_Array moveOperators5_testMovingDtor__Array(moveOperators5_Array p_arr) {
+moveOperators5_Array moveOperators5_testMovingDtor__2(moveOperators5_Array p_arr) {
     moveOperators5_Array l_arr1 = {0};
     moveOperators5_dtor(l_arr1);
     return p_arr;

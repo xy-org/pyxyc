@@ -8,7 +8,7 @@ typedef struct dtors4_Bottom dtors4_Bottom;
 typedef struct dtors4_Data dtors4_Data;
 typedef struct dtors4_Str dtors4_Str;
 
-void dtors4_dtor__Top(dtors4_Top l_obj);
+void dtors4_dtor__5(dtors4_Top l_obj);
 
 struct dtors4_Str {
     int8_t* m_addr;
@@ -31,25 +31,25 @@ void dtors4_dtor(dtors4_Str p_s) {
 
 void dtors4_test(void) {
     dtors4_Top l_t = {0};
-    dtors4_dtor__Top(l_t);
+    dtors4_dtor__5(l_t);
 }
 
-void dtors4_dtor__Data(dtors4_Data l_obj) {
+void dtors4_dtor__2(dtors4_Data l_obj) {
     dtors4_dtor(l_obj.m_s);
     l_obj.m_s = (dtors4_Str){0};
 }
 
-void dtors4_dtor__Bottom(dtors4_Bottom l_obj) {
-    dtors4_dtor__Data(l_obj.m_d);
+void dtors4_dtor__3(dtors4_Bottom l_obj) {
+    dtors4_dtor__2(l_obj.m_d);
     l_obj.m_d = (dtors4_Data){0};
 }
 
-void dtors4_dtor__Middle(dtors4_Middle l_obj) {
-    dtors4_dtor__Bottom(l_obj.m_b);
+void dtors4_dtor__4(dtors4_Middle l_obj) {
+    dtors4_dtor__3(l_obj.m_b);
     l_obj.m_b = (dtors4_Bottom){0};
 }
 
-void dtors4_dtor__Top(dtors4_Top l_obj) {
-    dtors4_dtor__Middle(l_obj.m_m);
+void dtors4_dtor__5(dtors4_Top l_obj) {
+    dtors4_dtor__4(l_obj.m_m);
     l_obj.m_m = (dtors4_Middle){0};
 }

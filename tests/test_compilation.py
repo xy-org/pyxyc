@@ -105,6 +105,7 @@ from xyc.compiler import CompilationError
     "callbacks/callbacks4",
     "callbacks/callbacks5",
     "callbacks/callbacks6",
+    "callbacks/overloadingAndCallbacks1",
     "lambdas/lambdas1",
     "lambdas/lambdas2",
     "lambdas/lambdas3",

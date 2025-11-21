@@ -1439,6 +1439,12 @@ def compile_header(ctx: CompilerContext, asts, cast):
             if isinstance(node, xy.FuncDef):
                 create_fobj(node, fobjs, ctx)
 
+    # shorten overly long names
+    for fobj in fobjs:
+        fspace = ctx.ensure_func_space(fobj.xy_node.name)
+        if len(fspace) <= 1:
+            fobj.c_node.name = mangle_def(fobj.xy_node, ctx, False)
+
     for fobj in fobjs:
         compile_func_prototype(fobj, cast, ctx)
 
@@ -1516,11 +1522,17 @@ def create_fobj(node: xy.FuncDef, fobjs, ctx):
     # No param type enumeration
     fobj = FuncObj(
         xy_node=node,
+        c_node=c.Func(None),
     )
     validate_name(node, ctx)
     func_space = ctx.ensure_func_space(node.name)
+
+    fobj.c_node.name = mangle_def(node, ctx, True, len(func_space) + 1)
+
     func_space.append(fobj)
     fobjs.append(fobj)
+
+    return fobj
 
 def fill_missing_dtors(type_obj: TypeObj, all_fobjs, asts, cast, ctx):
     if type_obj.module_header is not None:
@@ -1540,14 +1552,9 @@ def fill_missing_dtors(type_obj: TypeObj, all_fobjs, asts, cast, ctx):
             params=[xy.VarDecl("obj", xy.Id(type_obj.xy_node.name), src=type_obj.xy_node.src, coords=type_obj.xy_node.coords)],
             body=[],
         )
-        fobj = FuncObj(
-            xy_node=dtor_node,
-        )
-        func_space = ctx.ensure_func_space(dtor_node.name)
-        func_space.append(fobj)
+
+        fobj = create_fobj(dtor_node, all_fobjs, ctx)
         compile_func_prototype(fobj, cast, ctx)
-        asts[0].append(dtor_node)
-        all_fobjs.append(fobj)
         return True
     return False
 
@@ -1799,17 +1806,14 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
 
     node: xy.FuncDef = fobj.xy_node
 
-    cfunc = c.Func(None)
+    cfunc: c.Func = fobj.c_node
+    assert cfunc is not None
     ctx.push_ns()
 
     move_args_to_temps = len(node.in_guards) > 0 or len(node.out_guards) > 0
     param_objs, any_default_values = compile_params(node.params, cast, cfunc, ctx)
     move_args_to_temps = move_args_to_temps or any_default_values
     move_args_to_temps = move_args_to_temps or any(p.is_pseudo for p in node.params)
-
-    func_space = ctx.ensure_func_space(node.name)
-    expand_name = len(func_space) > 1
-    cfunc.name = mangle_def(node, param_objs, ctx, expand=expand_name)
 
     fobj.params_compiled = True
     fobj.param_objs = param_objs
@@ -2804,9 +2808,9 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
         current_fobj = ctx.current_fobj
         create_fobj(expr, fobjs, ctx)
         fobj = fobjs[0]
-        compile_func_prototype(fobj, cast, ctx)
-        fobj.c_node.name = mangle_def(expr, fobj.param_objs, ctx, False) + "_func_" + str(ctx.func_gen_state.gen_i)
+        fobj.c_node.name = mangle_def(expr, ctx, False) + "_func_" + str(ctx.func_gen_state.gen_i)
         ctx.func_gen_state.gen_i += 1
+        compile_func_prototype(fobj, cast, ctx)
         fill_param_default_values(fobj, cast, ctx)
 
         fobj.data_closure = IdTable()
@@ -6763,22 +6767,10 @@ def get_c_type(type_expr, cast, ctx):
     id_desc = find_type(type_expr, cast, ctx, required=True)
     return id_desc.c_name
 
-def mangle_def(fdef: xy.FuncDef, param_objs: list[VarObj], ctx, expand=False):
+def mangle_def(fdef: xy.FuncDef, ctx, expand=False, fidx=0):
     mangled = mangle_name(fdef.name.name, ctx.module_name)
     if expand:
-        mangled = [mangled]
-        for param_obj in param_objs:
-            mangled.append("__")
-            if isinstance(param_obj.type_desc.xy_node, xy.ArrayType):
-                if len(param_obj.type_desc.xy_node.dims) > 0:
-                    dim = param_obj.type_desc.xy_node.dims[0].value_str
-                else:
-                    dim = "0"
-                mangled.append(dim)
-                mangled.append(param_obj.type_desc.xy_node.base.name)
-            else:
-                mangled.append(param_obj.type_desc.name)
-        mangled = "".join(mangled)
+        return f"{mangled}__{fidx}"
     return mangled
 
 def mangle_fptr(func_obj: FuncObj, ctx):

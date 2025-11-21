@@ -12,10 +12,10 @@ struct typeValueDuality2_B {
     int64_t m_val;
 };
 
-void typeValueDuality2_dtor__A(typeValueDuality2_A p_a) {
+void typeValueDuality2_dtor__1(typeValueDuality2_A p_a) {
 }
 
-void typeValueDuality2_dtor__B(typeValueDuality2_B p_b) {
+void typeValueDuality2_dtor__2(typeValueDuality2_B p_b) {
 }
 
 typeValueDuality2_B typeValueDuality2_to(typeValueDuality2_A p_a) {
@@ -26,6 +26,6 @@ void typeValueDuality2_test(void) {
     typeValueDuality2_A l_a = {0};
     typeValueDuality2_B tmp_0_arg = (typeValueDuality2_B){0};
     typeValueDuality2_B l_b = typeValueDuality2_to(l_a);
-    typeValueDuality2_dtor__B(l_b);
-    typeValueDuality2_dtor__A(l_a);
+    typeValueDuality2_dtor__2(l_b);
+    typeValueDuality2_dtor__1(l_a);
 }
