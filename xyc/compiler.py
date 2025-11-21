@@ -19,6 +19,7 @@ class LazyObj(CompiledObj):
 
 @dataclass
 class TypeObj(CompiledObj):
+    """Represent a struct as defined in code"""
     tag_specs: list['VarObj'] = field(default_factory=list)
     builtin : bool = False
     is_external: bool = False
@@ -75,6 +76,10 @@ class TypeObj(CompiledObj):
 
 @dataclass
 class TypeExprObj(CompiledObj):
+    """Represent an typeobj + any tags attached to it.
+
+    In a sense this is an instance of a type.
+    """
     type_obj: TypeObj = None
 
     @property
@@ -195,7 +200,7 @@ class ArrTypeObj(TypeObj):
         return self.base_type_obj.name + '[' + ']'
 
 @dataclass
-class FuncTypeObj(TypeObj):
+class CallbackTypeObj(TypeObj):
     func_obj: 'FuncObj' = None
     c_typename: str = ""
 
@@ -213,6 +218,11 @@ class FuncTypeObj(TypeObj):
         res += ")"
         res += "->" + self.func_obj.rtype_obj.name
         return res
+
+@dataclass
+class FuncTypeExprObj(TypeExprObj):
+    """The result of $. I.e. type of xy.builtin.Func."""
+    func_obj: 'FuncObj' = None
 
 @dataclass
 class StrObj(CompiledObj):
@@ -614,7 +624,7 @@ def cmp_arg_param_types(arg_type, param_type):
             return False
         return True
 
-    if isinstance(arg_type, FuncTypeObj) and isinstance(param_type, FuncTypeObj):
+    if isinstance(arg_type, CallbackTypeObj) and isinstance(param_type, CallbackTypeObj):
         return True  # XXX
     if is_funcdef_type(arg_type) and is_funcdef_type(param_type):
         return True  # XXX
@@ -643,11 +653,11 @@ def cmp_types(src_type: TypeObj, dst_type: TypeObj, xy_node):
             return -1, [("Left side is not an array", dst_type.xy_node)]
         return 0, []
 
-    if isinstance(src_type, FuncTypeObj) and isinstance(dst_type, FuncTypeObj):
+    if isinstance(src_type, CallbackTypeObj) and isinstance(dst_type, CallbackTypeObj):
         return 0, []  # XXX
     if is_funcdef_type(src_type) and is_funcdef_type(dst_type):
         return 0, []  # XXX
-    if isinstance(src_type, FuncTypeObj) and is_funcdef_type(dst_type):
+    if isinstance(src_type, CallbackTypeObj) and is_funcdef_type(dst_type):
         return -1, [(f"FuncDef objects are not auto converted to callback", xy_node)]
 
     if src_type.is_any_type:
@@ -680,7 +690,7 @@ def ct_equals(tag, other_tag):
         return False
     if tag == other_tag:
         return True
-    if isinstance(tag, FuncTypeObj):
+    if isinstance(tag, CallbackTypeObj):
         return tag.c_name == other_tag.c_name
     return False
 
@@ -860,8 +870,8 @@ class CompilerContext:
         self.any_type_obj.is_any_type = True
         self.any_type_obj.is_ct_only = True
         self.void_obj = data_ns["void"]
-        self.funcdef_obj = data_ns["FuncDef"]
-        self.funcdef_obj.is_funcdef = self.funcdef_obj.is_ct_only =True
+        self.func_type_obj = data_ns["Func"]
+        self.func_type_obj.is_funcdef = self.func_type_obj.is_ct_only =True
         self.size_obj = data_ns["Size"]
         self.usize_obj = data_ns["Usize"]
 
@@ -1327,19 +1337,16 @@ def do_eval(node, cast, cfunc, ctx, msg=None, is_func=False):
             obj = compile_expr(node, c.Ast(), cfunc, ctx, deref=False)
         except NoCallerContextError:
             return calltime_expr_obj
-        if isinstance(obj, TypeObj):
+        if is_c_ct_const(obj.c_node):
             return obj
-        elif isinstance(obj.inferred_type, FuncTypeObj):
+        elif isinstance(obj.inferred_type, CallbackTypeObj):
             # calling a callback
             return obj
-        elif isinstance(obj, IdxObj) and obj.container is global_memory and isinstance(obj.idx.inferred_type, FuncTypeObj):
+        elif isinstance(obj, IdxObj) and obj.container is global_memory and isinstance(obj.idx.inferred_type, CallbackTypeObj):
             # calling a callback
             return obj.idx
-        elif is_c_ct_const(obj.c_node):
-            return obj
-        elif is_funcdef_type(obj.inferred_type) and obj.compiled_obj is not None:
-            # TODO put the Func object in the type and remove this if
-            return obj.compiled_obj
+        elif isinstance(obj.inferred_type, FuncTypeExprObj):
+            return obj.inferred_type.func_obj
         raise CompilationError(
             "Cannot evaluate at compile time.",
             node)
@@ -1608,7 +1615,7 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
             name=type_obj.base_type_obj.c_node.name,
             dims=type_obj.dims,
         )
-    elif isinstance(type_obj, FuncTypeObj):
+    elif isinstance(type_obj, CallbackTypeObj):
         pass
         # assert type_obj.c_node is not None
     else:
@@ -1630,7 +1637,7 @@ def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
             name=None,
             args=[c.Const(0)]
         )
-    elif isinstance(type_obj, FuncTypeObj):
+    elif isinstance(type_obj, CallbackTypeObj):
         type_obj.init_value = c.Const(0)
     else:
         compile_pseudo = True
@@ -2342,7 +2349,7 @@ def compile_vardecl(node, cast, cfunc, ctx):
     if type_desc.needs_dtor:
         cvar.qtype.is_const = False
 
-    if isinstance(type_desc, FuncTypeObj):
+    if isinstance(type_desc, CallbackTypeObj):
         # XXX Hack to corrent the name of the function that should be called
         type_desc = copy(type_desc)
         type_desc.func_obj = copy(type_desc.func_obj)
@@ -2829,8 +2836,9 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
         return ExprObj(
             xy_node=expr,
             c_node=c.Id(fobj.c_name),
-            inferred_type=TypeExprObj(expr, type_obj=ctx.funcdef_obj),
-            compiled_obj=fobj
+            inferred_type=FuncTypeExprObj(
+                expr, type_obj=ctx.func_type_obj, func_obj=fobj
+            ),
         )
     else:
         raise CompilationError(f"Unknown xy ast node '{type(expr).__name__}'", expr)
@@ -3322,7 +3330,7 @@ def idx_find_widest_get(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
 def idx_setup(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
     if idx_obj.inferred_type is not None:
         return idx_obj
-    if isinstance(idx_obj.idx.inferred_type, FuncTypeObj):
+    if isinstance(idx_obj.idx.inferred_type, CallbackTypeObj):
         # calling a callback is easy to know the return type
         idx_obj.inferred_type = idx_obj.idx.inferred_type.func_obj.rtype_obj
     else:
@@ -4109,8 +4117,9 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
         return ExprObj(
             xy_node=expr,
             c_node=c.Id(func_obj.c_name),
-            inferred_type=TypeExprObj(expr, type_obj=ctx.funcdef_obj),
-            compiled_obj=func_obj
+            inferred_type=FuncTypeExprObj(
+                expr, type_obj=ctx.func_type_obj, func_obj=func_obj,
+            ),
         )
     else:
         # select multiple
@@ -4127,8 +4136,9 @@ def compile_fselect(expr: xy.FuncSelect, cast, cfunc, ctx: CompilerContext):
                 res_objs.append(ExprObj(
                     xy_node=expr,
                     c_node=c.Id(cand.c_name),
-                    inferred_type=TypeExprObj(expr, type_obj=ctx.funcdef_obj),
-                    compiled_obj=cand,
+                    inferred_type=FuncTypeExprObj(
+                        expr, type_obj=ctx.func_type_obj, func_obj=cand
+                    ),
                 ))
 
         return ExprObj(
@@ -4226,7 +4236,7 @@ def compile_fcall(expr: xy.FuncCall, cast, cfunc, ctx: CompilerContext):
     else:
         if isinstance(fspace, (VarObj, ExprObj)):
             inferred_type = fspace.inferred_type if isinstance(fspace, ExprObj) else fspace.type_desc
-            if not isinstance(inferred_type, FuncTypeObj):
+            if not isinstance(inferred_type, CallbackTypeObj):
                 raise CompilationError(f"Not a callback. Type is {type(inferred_type)}", expr)
             func_obj = copy(fspace.inferred_type.func_obj)
             func_obj.c_node = fspace.c_node
@@ -5273,16 +5283,16 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             inferred_type=arg_exprs[0].inferred_type
         )
     elif is_builtin_func(func_obj, "toCallback") and len(arg_exprs) == 1:
-        func_obj = arg_exprs[0].compiled_obj
+        func_obj = arg_exprs[0].inferred_type.func_obj
         c_typename = create_fptr_type(func_obj, cast, ctx)
-        inferred_type = FuncTypeObj(c_typename=c_typename, xy_node=expr, func_obj=func_obj)
+        inferred_type = CallbackTypeObj(c_typename=c_typename, xy_node=expr, func_obj=func_obj)
         return ExprObj(
             c_node=c.Id(func_obj.c_name),
             xy_node=expr,
             inferred_type=inferred_type
         )
     elif is_builtin_func(func_obj, "toCallback") and len(arg_exprs) == 2:
-        func_obj = arg_exprs[0].compiled_obj
+        func_obj = arg_exprs[0].inferred_type.func_obj
         required_cb_type = arg_exprs[1].inferred_type
         params = required_cb_type.func_obj.param_objs
         c_typename = create_fptr_type(required_cb_type.func_obj, cast, ctx)
@@ -5313,7 +5323,7 @@ def compile_builtin_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             gen_cfun.body.append(c.Return(fcall_obj.c_node))
             gen_cfun.rtype = fcall_obj.inferred_type.c_name
 
-        inferred_type = FuncTypeObj(c_typename=c_typename, xy_node=expr, func_obj=required_cb_type.func_obj)
+        inferred_type = CallbackTypeObj(c_typename=c_typename, xy_node=expr, func_obj=required_cb_type.func_obj)
         return ExprObj(
             c_node=c.Id(gen_cfun.name),
             xy_node=expr,
@@ -5514,11 +5524,13 @@ def compile_nameof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
         name = arg_exprs[0].compiled_obj.xy_node.name
     elif isinstance(arg_exprs[0].compiled_obj, (TypeObj, TypeExprObj)):
         name = arg_exprs[0].compiled_obj.name
-    elif isinstance(arg_exprs[0].compiled_obj, FuncTypeObj):
+    elif isinstance(arg_exprs[0].compiled_obj, CallbackTypeObj):
         if arg_exprs[0].compiled_obj.func_obj is not None:
             name = arg_exprs[0].compiled_obj.func_obj.xy_node.name
         else:
             name = "UNKNOWN"
+    elif isinstance(arg_exprs[0].inferred_type, FuncTypeExprObj):
+        name = arg_exprs[0].inferred_type.func_obj.xy_node.name.name
     elif isinstance(arg_exprs[0].compiled_obj, FuncObj):
         name = arg_exprs[0].compiled_obj.xy_node.name.name
     elif arg_exprs[0].refers_to_type:
@@ -5573,9 +5585,9 @@ def compile_fileof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
 def compile_linenoof(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     if len(arg_exprs) > 0:
         redact_code(arg_exprs[0], cast, cfunc, ctx)
-        obj = arg_exprs[0].compiled_obj
-        if obj is None:
-            obj = arg_exprs[0]
+        obj = arg_exprs[0]
+        if isinstance(arg_exprs[0].inferred_type, FuncTypeExprObj):
+            obj = arg_exprs[0].inferred_type.func_obj
         xy_node = obj.xy_node
     else:
         xy_node = expr
@@ -5736,7 +5748,7 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
             inferred_type=res_inferred_type
         )
     elif container_obj.inferred_type is fselection_type_obj:
-        func_type_objs: list[FuncTypeObj] = container_obj.compiled_obj
+        func_type_objs: list[CallbackTypeObj] = container_obj.compiled_obj
         arr_len = len(func_type_objs)
 
         c_node = c.InitList()
@@ -6921,7 +6933,7 @@ def find_type(texpr, cast, ctx, required=True):
             decl_visible = True,
         )
         c_typename = create_fptr_type(func_obj, cast, ctx)
-        return FuncTypeObj(
+        return CallbackTypeObj(
             c_typename=c_typename, xy_node=texpr,
             func_obj=func_obj
         )
@@ -7044,7 +7056,7 @@ def compile_select(expr: xy.Select, cast, cfunc, ctx):
             if cfunc is not None:
                 cfunc.body.extend(args.args_setup[0].body)
             return args.args[0]
-        if len(args.args) == 1 and isinstance(args.args[0].inferred_type, FuncTypeObj):
+        if len(args.args) == 1 and isinstance(args.args[0].inferred_type, CallbackTypeObj):
             if cfunc is not None:
                 cfunc.body.extend(args.args_setup[0].body)
             return args.args[0]

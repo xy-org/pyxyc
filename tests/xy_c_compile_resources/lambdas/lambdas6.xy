@@ -1,4 +1,4 @@
-func fun(f: FuncDef) =
+func fun(f: Func) =
     f2(toCallback(
         func wrapper(p: Ptr, f := f) = [f]([p~Int])'to(Int), (:Ptr) -> Int
     ));

@@ -691,19 +691,26 @@ struct Clib {
     # Implemented by the compiler
 }
 
-;; Compile-time only structure representing a function.
-;; The result type of the '$' operator.
-;; The '$*' operators returns an array of {FuncDef}s.
-*struct FuncDef {
+;; Represent a function as defined in the source code
+;; The '$' operator returns a {Func}, '$*' returns array of {Func}s.
+;;
+;; The compiler creates one instance of this structure for each function
+;; defined in the source code. It is intended to be used as argument to the
+;; -of introspection functions (nameof, commentof, etcs).
+;;
+;; Manually creating instances of this struct is possible but will not generate
+;; any actual functions (neither in the internal compiler-state nor in the
+;; compiled code) and as such makes no sense.
+*struct Func {
     # Empty
 }
 
-;; Create a callback from func {funcDef}.
+;; Create a callback from func {func}.
 ;; The callback type is guessed from the function
-*func toCallback(funcDef : FuncDef) = funcDef'callback;
+*func toCallback(fun : Func) = fun'callback;
 
-;; Create a callback with type {cbType} from func {funcDef}
-*func toCallback(funcDef : FuncDef, cbType: Any) -> %cbType {
+;; Create a callback with type {cbType} from func {func}
+*func toCallback(fun : Func, cbType: Any) -> %cbType {
     # implemented by the compiler
 }
 
