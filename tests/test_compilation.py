@@ -112,6 +112,7 @@ from xyc.compiler import CompilationError
     "lambdas/lambdas4",
     "lambdas/lambdas5",
     "lambdas/lambdas6",
+    "lambdas/lambdas7",
     "macros1",
     "move/moveOperators1",
     "move/moveOperators2",

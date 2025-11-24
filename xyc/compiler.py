@@ -2829,7 +2829,9 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
                             reason="Not captured in closure"
                         )
         ctx.data_namespaces.append(fobj.data_closure)
+        pushed_tmp_names = ctx.tmp_names.tmp_var_i
         compile_func(fobj, cast, ctx)
+        ctx.tmp_names.tmp_var_i = pushed_tmp_names  # restore tmp var name counting
         ctx.data_namespaces.pop()
         for obj in fobj.data_closure.values():
             if isinstance(obj, PoisonObj):

@@ -1,0 +1,20 @@
+# Test func lambda in the middle of another functions with expressions
+# that produce temporary values
+
+func do1(a: Int) -> Int {
+    return a + 1;
+}
+
+func do2(a: Int) -> Int {
+    return a * 2;
+}
+
+func cond(a: Int, b := do1(a), c := do2(b)) -> Bool {
+    return (b + a) > c;
+}
+
+func test(a: Int) {
+    x := cond(a + 10);
+    func noop() {}
+    y := cond(a+10);
+}
