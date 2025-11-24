@@ -4431,7 +4431,6 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
     callee_ctx.current_fobj = caller_ctx.current_fobj
     callee_ctx.global_types = caller_ctx.global_types
     callee_ctx.static_id_macros = caller_ctx.static_id_macros
-    callee_ctx.func_gen_state = caller_ctx.func_gen_state
     if func_obj.data_closure is not None:
         callee_ctx.data_namespaces.append(func_obj.data_closure)
 

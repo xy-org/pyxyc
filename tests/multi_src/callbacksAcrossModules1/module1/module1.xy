@@ -1,0 +1,11 @@
+func something(
+    cb: (:Int, :Int)->Int = func indirectCmp(a: Int, b: Int) -> Int {
+        return [^$cmp(Int, Int)](a, b);
+    }'toCallback((:Int, :Int)->Int)
+) -> Int {
+    return [cb](10, 100);
+}
+
+func inModule1() {
+    x := something();
+}

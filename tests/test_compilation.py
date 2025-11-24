@@ -272,6 +272,7 @@ def test_common_errors(code, err_msg, tmp_path):
     "macroErrorAndDtor",
     "globalAndMacro",
     "macroBlockDtor",
+    "callbacksAcrossModules1",
 ])
 def test_module_compilation(resource_dir, module, tmp_path):
     base_dir = resource_dir / "multi_src"
