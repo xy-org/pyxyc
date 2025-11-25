@@ -53,6 +53,18 @@ code_ast = [
             ast.Import(lib="libxy.mod1.mod2", in_name="libxy"),
         ],
     ],
+    [
+        """
+        import .string;
+        import ..string;
+        import ...string;
+        """,
+        [
+            ast.Import(lib=".string"),
+            ast.Import(lib="..string"),
+            ast.Import(lib="...string"),
+        ],
+    ],
 ]
 @pytest.mark.parametrize("code, exp_ast", code_ast)
 def test_parse_import(code, exp_ast):

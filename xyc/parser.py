@@ -153,16 +153,19 @@ def parse_code(src) -> Ast:
 semicolon_error_explanation = "All statements or expressions not using a '{}' block require a terminating ';'"
 def parse_import(itoken):
     coords = itoken.peak_coords()
-    itoken.consume()  # "import"
-    lib = itoken.consume()
+    assert itoken.check("import")
+    lib = ""
     multi = []
-    while not itoken.peak_eol() and itoken.check("."):
+    def valid_lib_token(token):
+        dots = all(ch == '.' for ch in token)
+        return token != "in" and (token.isalnum() or dots or token == '(')
+    while valid_lib_token(itoken.peak()):
         if itoken.check("("):
             multi = parse_expr_list(itoken, is_toplevel=False)
             itoken.expect(")")
             break
         else:
-            lib += "." + itoken.consume()
+            lib += itoken.consume()
 
     tags = TagList()
     if itoken.check("~"):
@@ -192,7 +195,7 @@ def parse_import(itoken):
         )
     else:
         for sub_expr in multi:
-            sub_lib = lib + "." + sub_expr.src.code[sub_expr.coords[0]:sub_expr.coords[1]]
+            sub_lib = lib + sub_expr.src.code[sub_expr.coords[0]:sub_expr.coords[1]]
             res.append(
                 Import(
                     lib=sub_lib, in_name=in_name, tags=tags, src=itoken.src, coords=coords
