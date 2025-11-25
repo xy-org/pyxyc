@@ -1,0 +1,5 @@
+import ..module1;
+
+func func2() {
+    func1();
+}

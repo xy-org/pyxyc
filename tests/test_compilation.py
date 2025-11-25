@@ -274,6 +274,7 @@ def test_common_errors(code, err_msg, tmp_path):
     "globalAndMacro",
     "macroBlockDtor",
     "callbacksAcrossModules1",
+    "relativeImports",
 ])
 def test_module_compilation(resource_dir, module, tmp_path):
     base_dir = resource_dir / "multi_src"

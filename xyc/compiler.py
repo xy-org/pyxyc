@@ -7063,7 +7063,23 @@ def compile_select(expr: xy.Select, cast, cfunc, ctx):
 def compile_import(imprt, ctx: CompilerContext, ast, cast):
     compiled_tags = {}
     ctx.eval_tags(compiled_tags, imprt.tags)
-    import_obj = ImportObj(name=imprt.lib)
+
+    lib_name = imprt.lib
+    leading_dots = 0
+    for ch in lib_name:
+        if ch == '.':
+            leading_dots += 1
+        else:
+            break
+    if leading_dots > 0:
+        components = ctx.module_name.split('.')
+        components = components[:len(components) - leading_dots + 1]
+        remaining_name = lib_name[leading_dots:]
+        lib_name = '.'.join(components)
+        if len(remaining_name) > 0:
+            lib_name += '.' + remaining_name
+
+    import_obj = ImportObj(name=lib_name)
     if "xyc.lib" in compiled_tags:
         obj = compiled_tags["xyc.lib"]
         # TODO assert obj.xy_node.name.name == "Clib"
@@ -7087,13 +7103,13 @@ def compile_import(imprt, ctx: CompilerContext, ast, cast):
             cast.defines.append(c.Define(code))
         import_obj.is_external = True
     else:
-        if imprt.lib in ctx.imported_modules:
+        if lib_name in ctx.imported_modules:
             # already imported nothing to do
             return
-        ctx.imported_modules.add(imprt.lib)
-        module_header = ctx.builder.import_module(imprt.lib, imprt)
+        ctx.imported_modules.add(lib_name)
+        module_header = ctx.builder.import_module(lib_name, imprt)
         if module_header is None:
-            raise CompilationError(f"Cannot find module '{imprt.lib}'", imprt)
+            raise CompilationError(f"Cannot find module '{lib_name}'", imprt)
         import_obj.module_header = module_header
         if imprt.in_name is None:
             ctx.global_data_ns.merge(module_header.data_namespace, ctx, module_header.module_name)
