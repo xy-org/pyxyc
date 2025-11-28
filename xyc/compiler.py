@@ -2175,6 +2175,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 #if idx_obj.c_node is not None and not is_simple_cexpr(idx_obj.c_node):
                 #    cfunc.body.append(idx_obj.c_node)
             elif expr_obj.c_node is not None and not isinstance(expr_obj.c_node, c.Id):
+                assert expr_obj.c_node is not None
                 cfunc.body.append(expr_obj.c_node)
             if (
                 expr_obj.inferred_type is not None and expr_obj.inferred_type is not ctx.void_obj
@@ -6131,7 +6132,7 @@ def compile_if(ifexpr, cast, cfunc, ctx):
     elif inferred_type is not ctx.void_obj:
         res_assign = c.Expr(c_res, if_exp_obj.c_node, op='=')
         c_if.body.append(res_assign)
-    else:
+    elif if_exp_obj.c_node is not None:  # in case of void it is possible for the c_node to be None
         c_if.body.append(if_exp_obj.c_node)
     ctx.pop_ns()
 

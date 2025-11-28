@@ -35,6 +35,7 @@ from xyc.compiler import CompilationError
     "ifs/ifs2",
     "ifs/ifs3",
     "ifs/ifs4",
+    "ifs/errorInBody",
     "loops/whiles",
     "loops/while1",
     "loops/while2",
@@ -172,6 +173,7 @@ from xyc.compiler import CompilationError
     "globals/globals2",
     "errors/handling1",
     "errors/handling2",
+    # "errors/handling3",  # TODO implement
     "errors/uncaught1",
     "strings/unstringing",
     "funcs/namedReturn",

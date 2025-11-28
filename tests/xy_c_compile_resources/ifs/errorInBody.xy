@@ -1,0 +1,19 @@
+struct Error {
+    status: Int;
+}
+
+func to(e: Error, :Bool) e.status != 0;
+
+func fail() -> void | Error {
+    error Error{10};
+}
+
+func test1(b: Bool) {
+    if (b) fail();
+}
+
+func test2(b: Bool) {
+    if (b) {
+        fail();
+    }
+}
