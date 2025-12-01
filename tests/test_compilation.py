@@ -9,13 +9,13 @@ from xyc.compiler import CompilationError
 
 @pytest.mark.parametrize("filename", [
     "basic/noop",
-    "typeInferenceBasic",
+    "typeInference/typeInferenceBasic",
     "basic/arithmatic1",
     "basic/arithmatic2",
     "basic/arithmatic3",
     "basic/arithmatic4",
     "basic/checkedDivision",
-    "typeInferenceAdvanced",
+    "typeInference/typeInferenceAdvanced",
     "funcs/funcOverloadingSimple",
     "funcs/funcRecursive",
     "funcs/anyParam1",
