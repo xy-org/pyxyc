@@ -45,6 +45,7 @@ from xyc.compiler import CompilationError
     "loops/dowhile1",
     "loops/dowhile2",
     "loops/dowhile3",
+    "loops/dowhile4",
     "slices",
     "fors/for1",
     "fors/for2",

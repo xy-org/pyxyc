@@ -21,9 +21,11 @@ void dowhile3_dtor(dowhile3_TypeWithDtor p_resource) {
 }
 
 void dowhile3_test(int32_t* p_x, int32_t* p_y) {
+    bool tmp_1;
     do {
         dowhile3_TypeWithDtor l_a = {-1};
         (*p_x)--;
+        bool tmp_0;
         do {
             dowhile3_TypeWithDtor l_b = {-2};
             (*p_y)++;
@@ -42,11 +44,13 @@ void dowhile3_test(int32_t* p_x, int32_t* p_y) {
             if (!(*p_y < *p_x)) {
                 abort();
             }
-        } while (dowhile3_cond2(*p_y, *p_x));
+            tmp_0 = dowhile3_cond2(*p_y, *p_x);
+        } while (tmp_0);
         (*p_y)--;
         dowhile3_dtor(l_a);
         if (!(*p_x >= *p_y)) {
             abort();
         }
-    } while (dowhile3_cond1(*p_x, *p_y));
+        tmp_1 = dowhile3_cond1(*p_x, *p_y);
+    } while (tmp_1);
 }

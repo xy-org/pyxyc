@@ -6332,8 +6332,17 @@ def compile_dowhile(xydowhile, cast, cfunc, ctx):
         update_expr_obj = compile_expr(xydowhile.block.body, cast, cdowhile, ctx)
         inferred_type = update_expr_obj.inferred_type
 
+    complex_cond = len(cdowhile.body)
     cond_obj = compile_expr(xydowhile.cond, cast, cdowhile, ctx)
-    cdowhile.cond = cond_obj.c_node
+    complex_cond = len(cdowhile.body) != complex_cond
+    if complex_cond:
+        cond_tmp = ctx.create_tmp_var(cond_obj.inferred_type, "", cond_obj.xy_node)
+        cond_tmp.c_node.value = None
+        cfunc.body.append(cond_tmp.c_node)
+        cdowhile.body.append(c.Expr(c.Id(cond_tmp.c_node.name), cond_obj.c_node, op="="))
+        cdowhile.cond = c.Id(cond_tmp.c_node.name)
+    else:
+        cdowhile.cond = cond_obj.c_node
 
     # Remove the label if it hasn't been used
     if not loop_data.label_used:
