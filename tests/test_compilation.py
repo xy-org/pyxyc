@@ -117,6 +117,7 @@ from xyc.compiler import CompilationError
     "lambdas/lambdas6",
     "lambdas/lambdas7",
     "macros1",
+    "macros2",
     "move/moveOperators1",
     "move/moveOperators2",
     "move/moveOperators3",
@@ -186,6 +187,7 @@ from xyc.compiler import CompilationError
     "exprBlocks/exprBlocks3",
     "exprBlocks/exprBlocks4",
     "synonyms/synonym1",
+    "typeInference/inferenceGet",
 ])
 def test_c_compilation(resource_dir, filename):
     module_name=os.path.basename(filename)

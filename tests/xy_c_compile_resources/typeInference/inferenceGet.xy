@@ -1,0 +1,28 @@
+struct Ecs {
+    mem: Ptr;
+}
+
+struct Idx {
+    id: Int;
+}
+
+func get(ecs: Ecs, idx: Idx, comp: Any) = get(ecs, idx.id, comp);
+
+func get(ecs: Ecs, num: Int, comp: Any) -> ecs[ Ptr~[^%comp] ] {
+    return Ptr;
+}
+
+struct Comp1 {
+    field1: Float;
+}
+
+struct Comp2 {
+    field2: Double;
+}
+
+func test(idx: Idx) {
+    ecs: Ecs;
+
+    v1 := ecs[idx, Comp1];
+    #v2 := ecs[Idx{10}, Comp2];
+}

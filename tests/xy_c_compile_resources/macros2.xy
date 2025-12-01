@@ -1,0 +1,12 @@
+
+func macro1(arg1: Int, arg2: Any) = macro2(arg1+1, arg2);
+
+func macro2(arg1: Int, arg2: Any) = macro3(arg1+1, ^arg2);
+
+func macro3(arg1: Int, arg2: Int) = arg1 + arg2;
+
+func test() {
+    arg1 := 10;
+    arg2 := 20;
+    res := macro1(arg1, arg2);
+}

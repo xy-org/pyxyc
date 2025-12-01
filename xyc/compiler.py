@@ -3187,6 +3187,9 @@ def do_idx_get_once(idx_obj: IdxObj, cast, cfunc, ctx: CompilerContext):
         idx_to_obj = idx_obj.idx.inferred_type.tags.get("to", None)
         if idx_to_obj is None:
             raise CompilationError("Cannot deref untagged pointer", idx_obj.idx.xy_node)
+        elif isinstance(idx_to_obj, ExprObj):
+            idx_to_obj = idx_to_obj.inferred_type
+
         if isinstance(idx_obj.idx.c_node, c.UnaryExpr) and idx_obj.idx.c_node.op == "&":
             c_deref = idx_obj.idx.c_node.arg
         else:
@@ -4468,9 +4471,15 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
             arg = arg_exprs.args[iarg]
             args_list.append(arg)
             args_writable.append(False)
-            caller_ctx.ns[pobj.xy_node.name] = LazyObj(
-                xy_node=arg.xy_node, tags=arg.tags, compiled_obj=arg, inferred_type=arg.inferred_type,
-            )
+            if not isinstance(arg.xy_node, xy.Id):
+                # if arg.xy_node is id when we overwrite in the caller that id with an lazy obj
+                # and when the lazyobj is evaluated it, we evaluate it, and if in the
+                # eval process we get a variable with the same name
+                caller_ctx.ns[pobj.xy_node.name] = LazyObj(
+                    xy_node=arg.xy_node, tags=arg.tags, compiled_obj=arg, inferred_type=arg.inferred_type,
+                )
+            else:
+                caller_ctx.ns[pobj.xy_node.name] = arg
             callee_ctx.ns[pobj.xy_node.name] = arg
             if pobj.xy_node.is_callerContext:
                 lazy_ctx = arg.from_lazy_ctx or caller_ctx
