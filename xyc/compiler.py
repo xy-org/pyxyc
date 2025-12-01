@@ -6205,6 +6205,8 @@ def compile_while(xywhile: xy.WhileExpr, cast, cfunc, ctx: CompilerContext):
     complex_cond = len(cfunc.body)
     cond_obj = compile_expr(xywhile.cond, cast, cfunc, ctx)
     complex_cond = len(cfunc.body) != complex_cond
+    if complex_cond and not isinstance(cond_obj.c_node, c.Id):
+        cond_obj = move_to_temp(cond_obj, cast, cfunc, ctx)
     cwhile.cond = cond_obj.c_node
 
     # determine return type if any

@@ -1,0 +1,21 @@
+;; Test while with a macro as condition that causes a tmp var to be generated
+
+;; These conditions are designed to be as convoluted as possible
+func subcond(a: Int, b: Int) -> Bool
+>> a < b
+{
+    return a*10 < b;
+}
+
+func cond(a: Int, b: Int, c: Bool) = if (subcond(a, b)) c else false;
+
+func test() {
+    i: Int;
+    a: mut = 1;
+    b: mut = 100;
+    while (cond(a, b, true) && a < 200) {
+        a *= 10;
+        b *= 2;
+        i++;
+    }
+}

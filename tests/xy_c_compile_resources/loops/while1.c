@@ -11,10 +11,12 @@ void while1_test(int32_t* p_x, int32_t* p_y) {
     if (!(*p_x >= *p_y)) {
         abort();
     }
-    while (while1_cond(*p_x, *p_y)) {
+    bool tmp_0_arg = while1_cond(*p_x, *p_y);
+    while (tmp_0_arg) {
         (*p_x)--;
         if (!(*p_x >= *p_y)) {
             abort();
         }
+        tmp_0_arg = while1_cond(*p_x, *p_y);
     }
 }
