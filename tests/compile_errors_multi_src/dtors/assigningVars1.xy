@@ -1,0 +1,11 @@
+struct WithDtor {
+    mem: Ptr;
+}
+
+func dtor(wd: WithDtor) {
+    # ...
+}
+
+func test(wd1: mut WithDtor, wd2: WithDtor) {
+    wd1 = wd2;
+}

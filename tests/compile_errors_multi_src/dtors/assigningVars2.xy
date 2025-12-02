@@ -1,0 +1,23 @@
+struct WithDtor {
+    mem: Ptr;
+}
+
+func dtor(wd: WithDtor) {
+    # ...
+}
+
+struct List {
+    mem: Ptr;
+}
+
+func dtor(l: List) {
+    # ...
+}
+
+func get(l: List, i: Int) -> l[ Ptr~WithDtor ] {
+    return Ptr;
+}
+
+func test(wd1: mut WithDtor, l: List) {
+    wd1 = l[10];
+}

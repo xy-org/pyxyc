@@ -2532,6 +2532,9 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
                     idx_setup(lhs_obj, cast, cfunc, ctx)
                     if getattr(lhs_obj.inferred_type, 'needs_dtor', False):
                         call_dtor(idx_get(lhs_obj, cast, cfunc, ctx), cast, cfunc, ctx)
+
+                check_assign_dtor_rules(lhs_obj, value_obj, is_move=expr.op=="=<")
+
                 return idx_set(lhs_obj, value_obj, cast, cfunc, ctx)
             elif isinstance(expr.arg1, xy.StrLiteral):
                 return compile_unstring(expr.arg1, expr.arg2, cast, cfunc, ctx)
@@ -3029,8 +3032,16 @@ def compile_const(expr, cast, cfunc, ctx):
         inferred_type=rtype_obj,
     )
 
+assignment_with_dtor_error = "Cannot assign to a variable with a dtor. Please copy or move the lhs value."
+
+def check_assign_dtor_rules(lhs_obj, value_obj, is_move):
+    if not is_move and getattr(value_obj.inferred_type, 'needs_dtor', False):
+        if not is_rhv_expr(value_obj):
+            raise CompilationError(assignment_with_dtor_error, value_obj.xy_node)
+
 def compile_assign(dest_obj, value_obj, cast, cfunc, ctx, expr_node, is_move=False):
     check_type_compatibility(expr_node, dest_obj, value_obj, ctx)
+    check_assign_dtor_rules(dest_obj, value_obj, is_move)
 
     if is_move:
         value_obj = move_out(value_obj, cast, cfunc, ctx)
@@ -3139,6 +3150,13 @@ def is_tmp_expr(obj: ExprObj):
     return (
         c_name.startswith("tmp") and '_' in c_name
     )
+
+def is_rhv_expr(obj: ExprObj):
+    if isinstance(obj.c_node, (c.Id, c.VarDecl)):
+        return is_tmp_expr(obj)
+    elif isinstance(obj.c_node, c.UnaryExpr) and obj.c_node.op == "*":
+        return False
+    return True
 
 def maybe_deref(obj: CompiledObj, deref: bool, cast, cfunc, ctx):
     if not deref:

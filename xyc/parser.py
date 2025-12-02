@@ -1304,7 +1304,7 @@ def parse_expr_list(itoken, ignore_eols=True, is_toplevel=True, is_taglist=False
             expr = parse_expression(itoken, is_toplevel=is_toplevel)
             if introspective:
                 if not isinstance(expr, Id):
-                    raise ParsingError("Only simply identifiers can use the leading '=' shortcut")
+                    raise ParsingError("Only simply identifiers can use the leading '=' shortcut", itoken)
                 expr = BinExpr(
                     expr, expr, op="=", src=expr.src, coords=expr.coords
                 )
