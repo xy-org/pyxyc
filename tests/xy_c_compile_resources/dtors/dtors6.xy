@@ -1,0 +1,43 @@
+;; Test dtors for array elements are called
+
+struct Str {
+    mem: Ptr;
+}
+
+func dtor(s: Str) {
+    # ...
+}
+
+struct Person {
+    age: Int;
+    name: Str;
+    family: Str;
+}
+
+struct Mob {
+    people: @Person[20];
+}
+
+func dtor(m: Mob) {
+    # ...
+}
+
+struct Array~[elem: struct] {
+    mem: Ptr;
+    # ...
+}
+
+func get(arr: Array, i:Size) arr[ arr.mem~[elem..elem] + i ];
+
+func set(arr: Array, i: Size, elem: Any) {
+    # ...
+}
+
+func dtor(arr: Array) {
+    # map cb over all elements
+}
+
+func test(i: Size) -> Mob {
+    mobs : mut = Array~Mob{};
+    return mobs[i];
+}

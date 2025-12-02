@@ -1,5 +1,7 @@
+;; Test dtors for array elements are called
+
 struct Str {
-    # ...
+    mem: Ptr;
 }
 
 func dtor(s: Str) {
@@ -14,7 +16,6 @@ struct Person {
 
 struct Mob {
     people: @Person[20];
-    # ...
 }
 
 func dtor(m: Mob) {
@@ -24,24 +25,4 @@ func dtor(m: Mob) {
 func test1() {
     m := Mob{};
     # ...
-}
-
-struct Array~[elem: struct] {
-    mem: Ptr;
-    # ...
-}
-
-func get(arr: Array, i:Size) arr[ arr.mem~[elem..elem] + i ];
-
-func set(arr: Array, i: Size, elem: Any) {
-    # ...
-}
-
-func dtor(arr: Array) {
-    # map cb over all elements
-}
-
-func test2(i) -> Mob {
-    mobs : mut = Array~Mob{};
-    return mobs[i];
 }
