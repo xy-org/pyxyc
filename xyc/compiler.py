@@ -3618,6 +3618,7 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
 
         if field_obj is not None and not field_obj.xy_node.is_pseudo:
             check_type_compatibility(arg, field_obj, val_obj, ctx)
+            check_assign_dtor_rules(field_obj, val_obj, getattr(arg, 'op', '=') == "=<")
 
         if i < first_non_trivial_idx:
             pos_objs[field_i] = val_obj

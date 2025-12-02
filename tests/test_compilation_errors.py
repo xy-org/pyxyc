@@ -771,6 +771,9 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
     ("dtors/assigningVars1.xy", r".*Cannot assign to a variable with a dtor. Please copy or move the lhs value.*"),
     ("dtors/assigningVars2.xy", r".*Cannot assign to a variable with a dtor. Please copy or move the lhs value.*"),
     ("dtors/assigningVars3.xy", r".*Cannot assign to a variable with a dtor. Please copy or move the lhs value.*"),
+    ("dtors/assigningVars4.xy", r".*Cannot assign to a variable with a dtor. Please copy or move the lhs value.*"),
+    ("dtors/assigningVars5.xy", r".*Cannot assign to a variable with a dtor. Please copy or move the lhs value.*"),
+    ("dtors/assigningVars6.xy", r".*Cannot assign to a variable with a dtor. Please copy or move the lhs value.*"),
 ])
 def test_compilation_errors_src(package, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

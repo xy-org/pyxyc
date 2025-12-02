@@ -1,0 +1,15 @@
+struct WithDtor {
+    mem: Ptr;
+}
+
+func dtor(wd: WithDtor) {
+    # ...
+}
+
+struct Container {
+    wd: WithDtor;
+}
+
+func test(c: mut Container, wd: WithDtor) {
+    c.wd = wd;
+}

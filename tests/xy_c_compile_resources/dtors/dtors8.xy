@@ -1,0 +1,27 @@
+;; Test dtor of an rvalue is not called if assigned to a different var
+
+struct WithDtor {
+    mem: Ptr;
+}
+
+func dtor(wd: WithDtor) {
+    # ...
+}
+
+func mkWithDtor() -> WithDtor {
+    return WithDtor;
+}
+
+func doSomething(wd: WithDtor) {
+    # ...
+}
+
+struct Container {
+    wd: WithDtor;
+}
+
+func test() {
+    c := Container{mkWithDtor()};
+    doSomething(c.wd);
+    c.wd = mkWithDtor();
+}

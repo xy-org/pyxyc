@@ -91,6 +91,7 @@ from xyc.compiler import CompilationError
     # "dtors/dtors5",
     # "dtors/dtors6",
     "dtors/dtors7",
+    #"dtors/dtors8",
     "dtors/dtorsInLogicExpr",
     "dtors/funcParamWithDtor",
     "paramsVsArgs",
