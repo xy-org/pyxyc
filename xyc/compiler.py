@@ -3156,6 +3156,8 @@ def is_rhv_expr(obj: ExprObj):
         return is_tmp_expr(obj)
     elif isinstance(obj.c_node, c.UnaryExpr) and obj.c_node.op == "*":
         return False
+    elif isinstance(obj.c_node, c.Expr) and obj.c_node.op in {"->", "."}:
+        return False
     return True
 
 def maybe_deref(obj: CompiledObj, deref: bool, cast, cfunc, ctx):
