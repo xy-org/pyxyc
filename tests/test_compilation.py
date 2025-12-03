@@ -66,6 +66,7 @@ from xyc.compiler import CompilationError
     "consts/arrayConstants",
     "funcs/funcs",
     "funcs/largeParams",
+    "funcs/largeParams2",
     "strings/stringInterpolation",
     "strings/embedFile",
     "strings/chars",

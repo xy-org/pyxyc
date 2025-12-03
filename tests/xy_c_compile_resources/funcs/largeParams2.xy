@@ -1,0 +1,19 @@
+struct Large {
+    nums: @Int[100];
+}
+
+func mkLarge() -> Large {
+    return Large;
+}
+
+func func1(a := mkLarge()) {
+    # ...
+}
+
+func test1() {
+    func1();
+}
+
+func test2() {
+    func1(mkLarge());
+}

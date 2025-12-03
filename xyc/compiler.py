@@ -3763,6 +3763,9 @@ def should_pass_by_ref(param: xy.VarDecl, type_obj):
         return False
     if param.mutable:
         return True
+    return is_fat_type(type_obj)
+
+def is_fat_type(type_obj):
     return type_obj.sizeof > 16  # TODO should be 8 on 32-bit systems
 
 def c_deref(c_node, field=None):
@@ -4577,7 +4580,8 @@ def do_compile_fcall(expr, func_obj, arg_exprs: ArgList, cast, cfunc, ctx):
                     to_move = (
                         (i < len(leftover_params) - 1) or
                         isinstance(value_obj.c_node, (c.InitList, c.CompoundLiteral)) or
-                        (len(func_obj.xy_node.in_guards) > 0)
+                        (len(func_obj.xy_node.in_guards) > 0) or
+                        is_fat_type(value_obj.inferred_type)
                     )
                     if to_move:
                         value_obj = maybe_move_to_temp(value_obj, cast, cfunc, ctx)
