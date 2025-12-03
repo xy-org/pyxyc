@@ -5809,7 +5809,7 @@ def compile_list_comprehension(expr: xy.ListComprehension, cast, cfunc, ctx: Com
                 xy_node=expr, c_node=c_node, dims=[arr_len],
                 base_type_obj=elem_type_obj
             )
-        else:
+        elif dst_obj is None:
             raise CompilationError("Cannot infer type of empty array", expr)
 
         return dst_obj or ExprObj(
