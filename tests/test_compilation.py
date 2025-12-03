@@ -157,6 +157,7 @@ from xyc.compiler import CompilationError
     "indices/namedArgsInGet",
     # TODO "indices/indicesToFields1",
     # TODO "indices/indicesToFields2",
+    "indices/compoundOperators",
     "logicCmp/cmpBools",
     "logicCmp/cmpBits",
     "logicCmp/cmpNums",

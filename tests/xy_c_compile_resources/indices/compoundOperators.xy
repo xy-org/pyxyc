@@ -1,0 +1,19 @@
+struct Str {
+    addr: Ptr;
+
+    sizeFlags: % Usize'toBits;
+
+    size: pseudo = SizeField{};
+}
+
+struct SizeField {}
+
+func get(s: Str, :SizeField) = s.sizeFlags'shiftr(1)'to(Usize);
+func set(s: Str, :SizeField, new: Usize) =
+    s.sizeFlags = new'toBits'shiftl(1) || (s.sizeFlags && 1uz'toBits);
+
+func test(s: mut Str, param: Usize) {
+    size := s.size;
+    s.size = param;
+    s.size += 10uz;
+}
