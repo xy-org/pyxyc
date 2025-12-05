@@ -4,7 +4,7 @@ import libxy.(stdio, string, memory);
 ;; MyStruct comment
 struct MyStruct {
     ;; My name
-    name: Str~MemManaged;
+    name: Str;
 
     ;; Some number
     num: Ulong;
@@ -19,12 +19,12 @@ struct MyStruct {
 }
 
 struct FieldDesc{
-    name: Str~MemStatic;
-    typename: Str~MemStatic;
+    name: Str;
+    typename: Str;
     size: Usize;
     offset: Usize;
     alignment: Usize;
-    comment: Str~MemStatic;
+    comment: Str;
 }
 
 func printTypeInfo(
@@ -42,13 +42,13 @@ func printTypeInfo(
     fieldsPtr : Ptr~FieldDesc = fields'addrof,
     fieldsLen : Usize = fields'len
 ) {
-    if (typeComment.size > 0) {
+    if (typeComment'isEmpty'not) {
         print(f";; {typeComment}\n");
     }
     print(f"struct {typeName} \{\n");
     for (i in :fieldsLen) {
         f := fieldsPtr[i];
-        if (f.comment.size > 0) {
+        if (f.comment'isEmpty'not) {
             print(f"    ;; {f.comment}\n");
         }
         print(f"    {f.name}: {f.typename}; # size={f.size} offset={f.offset} alignof={f.alignment}\n");

@@ -2,7 +2,7 @@ import libxy.(string, memory);
 import libxy.stdio;
 
 func test~EntryPoint() -> Int {
-    str : Str~MemManaged;
+    str : Str;
     a := 0;
     b := 10;
     if (a > b) {

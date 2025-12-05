@@ -13,20 +13,19 @@ func test(cond: Bool) {
 
 func funcReturningIdx(s: Str) -> s[ RangeSize ] {
     print("In funcReturningIdx\n");
-    res := 0uz:(s.size-4);
+    res := 0uz:6uz;
     return res;
 }
 
-func get(s: Str, int: RangeSize) -> Str~MemExt
->> int.start < s.size
->> (int.end - int.start) <= s.size
+func get(s: Str, int: RangeSize) -> Str
+>> int.start < int.end
 {
-    return Str~MemExt{s.addr + int.start, int.end - int.start};
+    return str(s.addr + int.start, int.end - int.start, false);
 }
 
-func returnString() -> Str~MemManaged {
+func returnString() -> Str {
     print("In returnString\n");
-    return f"stringPartial";
+    return f"partialString";
 }
 
 func main~EntryPoint() {

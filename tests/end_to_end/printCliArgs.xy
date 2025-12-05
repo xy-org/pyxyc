@@ -8,10 +8,10 @@ func main~EntryPoint() {
     argc := [Global~CmdArgs].argc;
     argv := [Global~CmdArgs].argv;
     for (i in 1:argc) {
-        argStr := Str~MemExt {
+        argStr := str (
             addr=argv[i]~Byte,
-            size=c.strlen(argv[i]),
-        };
+            size=Usize{c.strlen(argv[i])},
+        );
         print(f"{argStr}\n");
     }
 }

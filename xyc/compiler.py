@@ -4413,6 +4413,10 @@ def maybe_find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     if fspace is None:
         return None
 
+    for arg in arg_objs:
+        if arg.inferred_type is None:
+            raise CompilationError("Cannot infer type", arg.xy_node)
+
     return fspace.find(
         xy.FuncCall(xy.Id(name), src=xy_node.src, coords=xy_node.coords),
         ArgList([obj.inferred_type for obj in arg_objs]),
@@ -4421,6 +4425,10 @@ def maybe_find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
     )
 
 def find_func_obj(name: str, arg_objs, cast, cfunc, ctx, xy_node):
+    for arg in arg_objs:
+        if arg.inferred_type is None:
+            raise CompilationError("Cannot infer type", arg.xy_node)
+
     return ctx.eval_to_fspace(
         xy.Id(name, src=xy_node.src, coords=xy_node.coords),
         msg=f"Cannot find function {name}",

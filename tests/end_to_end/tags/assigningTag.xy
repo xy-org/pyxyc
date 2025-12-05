@@ -11,7 +11,7 @@ struct Data {
 }
 
 *func retagged(p2: Str) -> Data
->> nullTerminated(p2)
+>> isNullTerminated(p2)
 {
     # ...
     return Data{};

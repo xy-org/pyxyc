@@ -2,7 +2,7 @@ import libxy.stdio;
 import libxy.(string, memory);
 
 struct Struct {
-    name: Str~MemManaged;
+    name: Str;
 }
 
 func dtor(s: Struct) {
