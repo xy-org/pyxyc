@@ -1367,7 +1367,7 @@ def parse_stmt_list(itoken: TokenIter):
         elif itoken.peak() == "func":
             node = parse_def(itoken)
         elif itoken.peak() == "struct":
-            node = parse_struct(itoken)
+            node = parse_struct(itoken, visibility or PackageVisibility)
         elif itoken.check("from"):
             raise ParsingError(
                 "The correct syntax to import a library is 'import <libname>'",
@@ -1512,8 +1512,7 @@ def parse_tags(itoken):
         res.args = [tag]
     return res
 
-def parse_struct(itoken: TokenIter):
-    visibility = PackageVisibility
+def parse_struct(itoken: TokenIter, visibility=PackageVisibility):
     if itoken.peak() in visibilityMap:
         visibility = visibilityMap[itoken.consume()]
     itoken.expect("struct")
@@ -1524,17 +1523,29 @@ def parse_struct(itoken: TokenIter):
     node = StructDef(name=name, src=itoken.src, coords=coords, visibility=visibility)
     if itoken.check("~"):
         node.tags = parse_tags(itoken)
+
     itoken.expect("{")
     # TODO should that be here
     itoken.skip_empty_lines()
+
+    default_field_vis = visibility
+    if itoken.peak() in {"+:", "-:", "*:"}:
+        default_field_vis = visibilityMap[itoken.consume()[0]]
+
     comment = None
     while itoken.peak() != "}":
         if itoken.check(";;"):
             comment = parse_ml_comment(itoken).comment
             itoken.skip_empty_lines()
+
+        fieldVisibility = default_field_vis
+        if itoken.peak() in visibilityMap:
+            fieldVisibility = visibilityMap[itoken.consume()]
         field = parse_expression(itoken, is_struct=True)
         if not isinstance(field, VarDecl):
             raise ParsingError("Unexpected expression in struct definition. Only variable declarations are valid.", itoken)
+        field.visibility = fieldVisibility
+
         node.fields.append(field)
         itoken.expect_semicolon(msg="Missing ';' at end of field")
 

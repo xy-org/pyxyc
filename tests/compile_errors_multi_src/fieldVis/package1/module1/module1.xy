@@ -1,0 +1,4 @@
+struct Struct {
+    visible: Int;
+    -notVisible: Int;
+}

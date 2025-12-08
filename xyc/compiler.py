@@ -302,6 +302,12 @@ class VarObj(CompiledObj):
     def inferred_type(self):
         return self.type_desc
 
+    @property
+    def visibility(self):
+        if hasattr(self.xy_node, 'visibility'):
+            return self.xy_node.visibility
+        return xy.PackageVisibility
+
 @dataclass
 class ImportObj(CompiledObj):
     name: str | None = None
@@ -605,11 +611,14 @@ def cmp_call_def(fcall_args_types: ArgList, fobj: FuncObj, partial_matches, ctx)
     return True
 
 def is_obj_visible(obj, ctx: 'CompilerContext'):
-    if obj.visibility == xy.ModuleVisibility:
-        return obj.module_header is None or obj.module_header.module_name == ctx.module_name
-    if obj.visibility == xy.PackageVisibility:
-        if obj.module_header is not None:
-            if ctx.module_name.split('.')[0] != obj.module_header.module_name.split('.')[0]:
+    return is_visible(obj.visibility, obj.module_header, ctx)
+
+def is_visible(obj_visibility, obj_module_header, from_ctx):
+    if obj_visibility == xy.ModuleVisibility:
+        return obj_module_header is None or obj_module_header.module_name == from_ctx.module_name
+    if obj_visibility== xy.PackageVisibility:
+        if obj_module_header is not None:
+            if from_ctx.module_name.split('.')[0] != obj_module_header.module_name.split('.')[0]:
                 return False
     return True
 
@@ -3440,7 +3449,10 @@ def field_set(obj: CompiledObj, field: VarObj, val: CompiledObj, cast, cfunc, ct
         )
         return idx_set(idx_obj, val, cast, cfunc, ctx)
 
-def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerContext):
+def field_get(obj: CompiledObj, field_obj: VarObj, cast, cfunc, ctx: CompilerContext, check_visibility=True):
+    if check_visibility and not is_visible(field_obj.visibility, obj.inferred_type.module_header, ctx):
+        raise CompilationError(f"Field '{field_obj.xy_node.name}' is not visible. (current module '{ctx.module_name}')", obj.xy_node)
+
     if field_obj.xy_node.is_pseudo:
         idx_obj = IdxObj(
             container=obj,
@@ -5536,7 +5548,7 @@ def decompose_obj_in_prints(obj, fmt, args, cast, cfunc, ctx: CompilerContext):
             if field.is_pseudo: continue
             if field.c_node is None: continue
             fmt.append(field.xy_node.name + "=")
-            fget_obj = field_get(obj, field, None, None, ctx)
+            fget_obj = field_get(obj, field, None, None, ctx, check_visibility=False)
             decompose_obj_in_prints(fget_obj, fmt, args, cast, cfunc, ctx)
             fmt.append(", ")
             trailing_comma = True

@@ -2881,6 +2881,62 @@ def test_invalid_expressions(code, err_msg):
             ),
         ]
     ],
+    [
+        """
+        struct Point2d {
+            -x: Float;
+            *y: Float;
+        }
+        """,
+        [
+            ast.StructDef(
+                name="Point2d",
+                fields=[
+                    ast.VarDecl("x", type=ast.Id("Float"), mutable=False, visibility=ast.ModuleVisibility),
+                    ast.VarDecl("y", type=ast.Id("Float"), mutable=False, visibility=ast.PublicVisibility),
+                ],
+            ),
+        ]
+    ],
+    [
+        """
+        *struct Point2d {
+            x: Float;
+            y: Float;
+            -secret: Float;
+        }
+        """,
+        [
+            ast.StructDef(
+                name="Point2d",
+                fields=[
+                    ast.VarDecl("x", type=ast.Id("Float"), mutable=False, visibility=ast.PublicVisibility),
+                    ast.VarDecl("y", type=ast.Id("Float"), mutable=False, visibility=ast.PublicVisibility),
+                    ast.VarDecl("secret", type=ast.Id("Float"), mutable=False, visibility=ast.ModuleVisibility),
+                ],
+                visibility=ast.PublicVisibility,
+            ),
+        ]
+    ],
+    [
+        """
+        *struct Point2d {
+        -:
+            x: Float;
+            y: Float;
+        }
+        """,
+        [
+            ast.StructDef(
+                name="Point2d",
+                fields=[
+                    ast.VarDecl("x", type=ast.Id("Float"), mutable=False, visibility=ast.ModuleVisibility),
+                    ast.VarDecl("y", type=ast.Id("Float"), mutable=False, visibility=ast.ModuleVisibility),
+                ],
+                visibility=ast.PublicVisibility,
+            ),
+        ]
+    ],
 ])
 def test_parse_struct(code, exp_ast):
     act_ast = parse_code(code)

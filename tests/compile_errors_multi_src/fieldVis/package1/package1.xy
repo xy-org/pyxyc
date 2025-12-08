@@ -1,0 +1,5 @@
+import package1.module1;
+
+func test(s: Struct) -> Int {
+    return s.visible + s.notVisible;
+}
