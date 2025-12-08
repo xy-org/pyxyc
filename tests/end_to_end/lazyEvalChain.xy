@@ -1,14 +1,14 @@
 import libxy.(string, stdio);
 
-func func1(^msg: Str) func2(msg);
+func func1(^msg: String) func2(msg);
 
-func func2(^msg: Str) func3(msg);
+func func2(^msg: String) func3(msg);
 
-func func3(^msg: Str) func4(msg);
+func func3(^msg: String) func4(msg);
 
-func func4(^msg: Str) func5(msg);
+func func4(^msg: String) func5(msg);
 
-func func5(^msg: Str) print(msg);
+func func5(^msg: String) print(msg);
 
 func main~EntryPoint() {
     m := 0;

@@ -23,7 +23,7 @@ valgrind_supported = "linux" in sys.platform
 r""";; MyStruct comment
 struct MyStruct {
     ;; My name
-    name: Str; # size=\d+ offset=\d+ alignof=\d+
+    name: String; # size=\d+ offset=\d+ alignof=\d+
     ;; Some number
     num: Ulong; # size=\d offset=\d+ alignof=\d+
     ;; 32-bit signed integer type

@@ -4,7 +4,7 @@ import libxy.(stdio, string, memory);
 ;; MyStruct comment
 struct MyStruct {
     ;; My name
-    name: Str;
+    name: String;
 
     ;; Some number
     num: Ulong;
@@ -19,12 +19,12 @@ struct MyStruct {
 }
 
 struct FieldDesc{
-    name: Str;
-    typename: Str;
+    name: String;
+    typename: String;
     size: Usize;
     offset: Usize;
     alignment: Usize;
-    comment: Str;
+    comment: String;
 }
 
 func printTypeInfo(

@@ -11,19 +11,19 @@ func test(cond: Bool) {
     }
 }
 
-func funcReturningIdx(s: Str) -> s[ RangeSize ] {
+func funcReturningIdx(s: String) -> s[ RangeSize ] {
     print("In funcReturningIdx\n");
     res := 0uz:6uz;
     return res;
 }
 
-func get(s: Str, int: RangeSize) -> Str
+func get(s: String, int: RangeSize) -> String
 >> int.start < int.end
 {
-    return str(s.addr + int.start, int.end - int.start, false);
+    return str(s'memory.addr + int.start, int.end - int.start, false);
 }
 
-func returnString() -> Str {
+func returnString() -> String {
     print("In returnString\n");
     return f"partialString";
 }

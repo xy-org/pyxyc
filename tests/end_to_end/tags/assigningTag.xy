@@ -6,11 +6,11 @@ struct Data {
     num: Int;
 }
 
-*func fun(p1: Str) -> Data {
+*func fun(p1: String) -> Data {
     return retagged(p1~[memory=MemStatic]);
 }
 
-*func retagged(p2: Str) -> Data
+*func retagged(p2: String) -> Data
 >> isNullTerminated(p2)
 {
     # ...
