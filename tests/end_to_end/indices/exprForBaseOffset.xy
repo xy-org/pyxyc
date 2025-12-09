@@ -18,9 +18,9 @@ func funcReturningIdx(s: String) -> s[ RangeSize ] {
 }
 
 func get(s: String, int: RangeSize) -> String
->> int.start < int.end
+>> int.begin < int.end
 {
-    return str(s'memory.addr + int.start, int.end - int.start, false);
+    return str(s'memory.addr + int.begin, int.end - int.begin, false);
 }
 
 func returnString() -> String {

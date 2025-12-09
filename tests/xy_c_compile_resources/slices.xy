@@ -6,7 +6,7 @@ struct AllSlice {
 func slice() = AllSlice{};
 
 struct IntSlice {
-    start: Int;
+    begin: Int;
     end: Int;
     step: Int;
 }
@@ -15,7 +15,7 @@ func max(:Int) -> Int {
     return c.INT32_MAX;
 }
 
-func slice(start: Int, end := Int'max, step := 1) = IntSlice{start, end, step};
+func slice(begin: Int, end := Int'max, step := 1) = IntSlice{begin, end, step};
 func slice(end : Int, step := 1) = IntSlice{0, end, step};
 func slice(step : Int) = IntSlice{0, max(Int), step};
 
@@ -39,7 +39,7 @@ struct Date {
 }
 
 struct DateSlice {
-    start: Date;
+    begin: Date;
     end: Date;
     step: Date;
 }
@@ -49,7 +49,7 @@ func max(:Long) -> Long {
 }
 func max(:Date) = Date{max(Long)};
 
-func slice(start: Date, end := Date'max, step := Date{1L}) = DateSlice{start, end, step};
+func slice(begin: Date, end := Date'max, step := Date{1L}) = DateSlice{begin, end, step};
 func slice(end: Date, step := Date{1L}) = DateSlice{Date{0}, end, step};
 func slice(step: Date) = DateSlice{Date{0}, Date'max, step};
 

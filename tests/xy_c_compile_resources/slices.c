@@ -15,7 +15,7 @@ struct slices__EMPTY_STRUCT_ {
     char __empty_structs_are_not_allowed_in_c__;
 };
 struct slices_IntSlice {
-    int32_t m_start;
+    int32_t m_begin;
     int32_t m_end;
     int32_t m_step;
 };
@@ -23,7 +23,7 @@ struct slices_Date {
     int64_t m_unixtime;
 };
 struct slices_DateSlice {
-    slices_Date m_start;
+    slices_Date m_begin;
     slices_Date m_end;
     slices_Date m_step;
 };

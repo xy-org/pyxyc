@@ -20,8 +20,8 @@ struct SliceIter {
 }
 
 
-func slice(start: Usize, end: Usize) -> Slice{
-    return Slice{start, end};
+func slice(begin: Usize, end: Usize) -> Slice{
+    return Slice{begin, end};
 }
 
 func iter(arr: Array, slice: Slice) -> arr[ SliceIter ] {

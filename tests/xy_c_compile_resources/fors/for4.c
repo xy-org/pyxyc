@@ -19,8 +19,8 @@ struct for4_SliceIter {
     uint64_t m_lim;
 };
 
-for4_Slice for4_slice(uint64_t p_start, uint64_t p_end) {
-    return (for4_Slice){p_start, p_end};
+for4_Slice for4_slice(uint64_t p_begin, uint64_t p_end) {
+    return (for4_Slice){p_begin, p_end};
 }
 
 for4_SliceIter for4_iter(for4_Array* p_arr, for4_Slice p_slice) {

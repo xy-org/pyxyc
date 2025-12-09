@@ -12,16 +12,16 @@ func len() -> Int {
 }
 
 struct Slice {
-    start: Int;
+    begin: Int;
     end: Int;
 }
 
-func slice(start: Int, end: Int) = Slice{start, end};
+func slice(begin: Int, end: Int) = Slice{begin, end};
 
 func main~EntryPoint() -> Int {
     s0 := compute() +: len();
-    print(f"Slice {s0.start} {s0.end}\n");
+    print(f"Slice {s0.begin} {s0.end}\n");
     s1 := s0.end +: 10;
-    print(f"Slice {s1.start} {s1.end}\n");
+    print(f"Slice {s1.begin} {s1.end}\n");
     return 0;
 }

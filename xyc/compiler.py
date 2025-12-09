@@ -2792,7 +2792,7 @@ def do_compile_expr(expr, cast, cfunc, ctx: CompilerContext, deref=True, allow_p
             expr.end = xy.BinExpr(expr.start, expr.end, op=expr.op, src=expr.src, coords=expr.coords)
         kwargs = {}
         if expr.start is not None:
-            kwargs["start"] = expr.start
+            kwargs["begin"] = expr.start
         if expr.end is not None:
             kwargs["end"] = expr.end
         if expr.step is not None:
