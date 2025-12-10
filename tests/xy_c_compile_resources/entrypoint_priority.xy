@@ -1,5 +1,0 @@
-func main~EntryPoint() -> void | Int {
-}
-
-func moreImportant~[EntryPoint{priority=10}]() -> void | Int {
-}

@@ -45,7 +45,7 @@ class Builder:
         self.work_dir = work_dir
 
         self.entrypoint_module_names = []
-        self.entrypoint_priority = 0
+        self.top_module_name = None
 
         self.module_import_stack = []
         self.module_import_index = {}
@@ -58,6 +58,7 @@ class Builder:
         if "." in module_name:
             module_name = path.splitext(module_name)[0]
 
+        self.top_module_name = module_name
         self.compile_builtins()
         self.do_compile_module(module_name, self.input)
         self.do_build()
@@ -132,11 +133,7 @@ class Builder:
         )
         self.module_cache[module_name] = CompiledModule(header, c_srcs)
         if header.ctx.entrypoint_obj is not None:
-            if header.ctx.entrypoint_priority > self.entrypoint_priority:
-                self.entrypoint_module_names = [module_name]
-                self.entrypoint_priority = header.ctx.entrypoint_priority
-            elif header.ctx.entrypoint_priority == self.entrypoint_priority:
-                self.entrypoint_module_names.append(module_name)
+            self.entrypoint_module_names.append(module_name)
         self.add_global_types(header.ctx.global_types)
         self.add_static_ids(header.ctx.static_id_macros)
         return header, c_srcs
@@ -150,8 +147,8 @@ class Builder:
         return None
 
     def do_build(self):
-        if len(self.entrypoint_module_names) == 1:
-            module = self.module_cache[self.entrypoint_module_names[0]]
+        if self.top_module_name in self.entrypoint_module_names:
+            module = self.module_cache[self.top_module_name]
             maybe_add_main(module.header.ctx, module.source, len(self.global_type_reg) > 0, "xy.sys" in self.module_cache)
         elif len(self.entrypoint_module_names) > 0:
             raise ValueError("Multiple entry points found")

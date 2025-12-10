@@ -21,7 +21,6 @@ from xyc.compiler import CompilationError
     "funcs/anyParam1",
     "strings/stringCtor",
     "entrypoint",
-    "entrypoint_priority",
     "arrays/arrays",
     "arrays/arrayComprehension",
     "arrays/listLiterals",
@@ -287,6 +286,7 @@ def test_common_errors(code, err_msg, tmp_path):
     "macroBlockDtor",
     "callbacksAcrossModules1",
     "relativeImports",
+    "multipleEntryPoints",
 ])
 def test_module_compilation(resource_dir, module, tmp_path):
     base_dir = resource_dir / "multi_src"

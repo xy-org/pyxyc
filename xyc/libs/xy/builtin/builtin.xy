@@ -652,12 +652,9 @@ struct UnstrCtor {
 }
 
 ;; Use this struct to mark the function that should be used as the program
-;; entry point. If multiple entry points are found during compilation
-;; the one with the highest priority is used. If there are more than one
-;; function with the highest priority then a compilation error is reported.
-struct EntryPoint {
-    priority: Int;
-}
+;; entry point. Such a function must have void as return type and optinally
+;; {Int} as error type.
+struct EntryPoint {}
 
 # Arrays
 
