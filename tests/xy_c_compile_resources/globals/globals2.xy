@@ -2,7 +2,7 @@ struct Struct {
     val := 10;
 }
 
-func main~EntryPoint() -> Int {
+func main~EntryPoint() -> void | Int {
     a := test1();
 
     intVal := [Global~Struct].val;
@@ -14,7 +14,7 @@ func main~EntryPoint() -> Int {
     s.val++;
     c := test2();
 
-    return a + b + c;
+    error a + b + c;
 }
 
 func test1() -> Int {

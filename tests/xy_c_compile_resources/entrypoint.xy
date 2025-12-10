@@ -1,3 +1,2 @@
-func main~EntryPoint() -> Int {
-    return 0;
+func main~EntryPoint() -> void | Int {
 }

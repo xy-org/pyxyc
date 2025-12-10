@@ -1,6 +1,5 @@
-func main~EntryPoint() -> Int {
+func main~EntryPoint() {
     test();
-    return 0;
 }
 
 func test() {

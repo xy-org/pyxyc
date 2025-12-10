@@ -44,7 +44,10 @@ int32_t globals1_test2(void) {
 int main(int argc, char** argv) {
     xy_global_init(&g__xy_globalInstance, &g__xy_globalInitData);
     g__xy_global = &g__xy_globalInstance;
-    globals1_main();
+    const int32_t tmp_0_err = globals1_main();
+    if ((bool)tmp_0_err) {
+        return tmp_0_err;
+    }
     return 0;
 }
 

@@ -11,6 +11,9 @@ int32_t submodules_main(void) {
 }
 
 int main(int argc, char** argv) {
-    submodules_main();
+    const int32_t tmp_0_err = submodules_main();
+    if ((bool)tmp_0_err) {
+        return tmp_0_err;
+    }
     return 0;
 }

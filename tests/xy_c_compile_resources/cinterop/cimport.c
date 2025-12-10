@@ -8,9 +8,8 @@ void* cimport_cstr(void* p_addr, uint64_t p_size) {
     return p_addr;
 }
 
-int32_t cimport_main(void) {
+void cimport_main(void) {
     write(0, cimport_cstr((int8_t*)"Hello World\n", 12), 12);
-    return 0;
 }
 
 int main(int argc, char** argv) {

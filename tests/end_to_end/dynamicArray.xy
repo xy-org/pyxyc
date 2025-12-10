@@ -85,7 +85,7 @@ struct Point {
     y: Int;
 }
 
-func main~EntryPoint() -> Int {
+func main~EntryPoint() {
     ints: Array~Int;
     points: Array~Point;
     for (i in :100) {
@@ -106,6 +106,4 @@ func main~EntryPoint() -> Int {
     };
 
     print(f"{=res}\n");
-
-    return 0;
 }

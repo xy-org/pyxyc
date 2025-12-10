@@ -5,8 +5,7 @@ import libxy.unit;
 c := 299792458~mps;
 pi := 3.1415d;
 
-func main~EntryPoint() -> Int {
+func main~EntryPoint() {
     print(f"Speed of Light = {c} m/s\n");
     print(f"Pi = {pi, precision=2}\n");
-    return 0;
 }

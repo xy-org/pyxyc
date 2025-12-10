@@ -22,7 +22,7 @@ func func5(x: Int) -> Int {
     return x + x * 10;
 }
 
-func test~EntryPoint() -> Int {
+func test~EntryPoint() -> void | Int {
     a := func1(func2(), func3() + func4(), func5(func3() * 10));
     b := func1(func3(), func2() + func4(), func5(func3() * 10));
     c : Int;
@@ -30,5 +30,5 @@ func test~EntryPoint() -> Int {
         c = func1(func2(), func3() + func4(), func5(func3() * 10));
     }
     d := func1(func2(), func3() + func4(), func5(func3() * 10));
-    return a + b + c + d;
+    error a + b + c + d;
 }

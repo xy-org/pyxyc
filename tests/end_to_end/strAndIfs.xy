@@ -1,7 +1,7 @@
 import libxy.(string, memory);
 import libxy.stdio;
 
-func test~EntryPoint() -> Int {
+func test~EntryPoint() {
     str : String;
     a := 0;
     b := 10;
@@ -11,5 +11,4 @@ func test~EntryPoint() -> Int {
         str = f"{b}{a}";
     }
     print(str);
-    return 0;
 }

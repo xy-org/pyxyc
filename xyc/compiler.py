@@ -1880,6 +1880,11 @@ def compile_func_prototype(fobj: FuncObj, cast, ctx):
         if isinstance(tag_obj, InstanceObj):
             priority = tag_obj.kwargs["priority"].value
 
+        if fobj.rtype_obj is not ctx.void_obj:
+            raise CompilationError("Entry point functions should be void", fobj.xy_node)
+        if fobj.etype_obj is not None and fobj.etype_obj is not ctx.int_obj:
+            raise CompilationError("The error type of entry point functions should be Int", fobj.xy_node)
+
         if ctx.entrypoint_obj is not None and priority == ctx.entrypoint_priority:
             raise CompilationError("Multiple entry points found.", fobj.xy_node, notes=[
                 ("Previous entrypoint", ctx.entrypoint_obj.xy_node),
@@ -2203,7 +2208,7 @@ def compile_body(body, cast, cfunc, ctx, is_func_body=False):
                 )
 
     # call dtors if any
-    if len(body) == 0 or not isinstance(body[-1], (xy.Return, xy.Break)):
+    if len(body) == 0 or not isinstance(body[-1], (xy.Return, xy.Break, xy.Error)):
         call_dtors(ctx.ns, cast, cfunc, ctx, reset_values=False)
 
     # add no error return if needed
@@ -6791,7 +6796,19 @@ def compile_error(xyerror, cast, cfunc, ctx: CompilerContext):
 
     # normal error
     ret = c.Return()
+    if any_dtors(ctx):
+        tmp_obj = ctx.create_tmp_var(value_obj.inferred_type, "res")
+        tmp_obj.c_node.value = value_obj.c_node
+        tmp_obj.needs_dtor = False
+        cfunc.body.append(tmp_obj.c_node)
+        value_obj = ExprObj(
+            xy_node=value_obj.xy_node,
+            c_node=c.Id(tmp_obj.c_node.name),
+            inferred_type=value_obj.inferred_type,
+        )
+    call_all_dtors(cast, cfunc, ctx, reset_values=False)
     ret.value = value_obj.c_node
+
     return ExprObj(
         xy_node=xyerror,
         c_node=ret,

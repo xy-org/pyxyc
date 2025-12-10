@@ -11,6 +11,9 @@ int32_t entrypoint_priority_moreImportant(void) {
 }
 
 int main(int argc, char** argv) {
-    entrypoint_priority_moreImportant();
+    const int32_t tmp_0_err = entrypoint_priority_moreImportant();
+    if ((bool)tmp_0_err) {
+        return tmp_0_err;
+    }
     return 0;
 }

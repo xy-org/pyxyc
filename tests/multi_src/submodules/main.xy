@@ -1,5 +1,5 @@
 import submodules.sub;
 
-func main~EntryPoint() -> Int {
-    return callme();
+func main~EntryPoint() -> void | Int {
+    error callme();
 }

@@ -7,6 +7,9 @@ int32_t entrypoint_main(void) {
 }
 
 int main(int argc, char** argv) {
-    entrypoint_main();
+    const int32_t tmp_0_err = entrypoint_main();
+    if ((bool)tmp_0_err) {
+        return tmp_0_err;
+    }
     return 0;
 }

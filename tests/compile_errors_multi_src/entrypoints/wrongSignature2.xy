@@ -1,0 +1,6 @@
+struct MyError {
+    code: Int;
+}
+
+func main~EntryPoint() -> void | MyError {
+}

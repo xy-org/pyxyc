@@ -56,7 +56,10 @@ int32_t globals2_fun(globals2_Struct* p_s) {
 int main(int argc, char** argv) {
     xy_global_init(&g__xy_globalInstance, &g__xy_globalInitData);
     g__xy_global = &g__xy_globalInstance;
-    globals2_main();
+    const int32_t tmp_0_err = globals2_main();
+    if ((bool)tmp_0_err) {
+        return tmp_0_err;
+    }
     return 0;
 }
 

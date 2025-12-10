@@ -1,0 +1,3 @@
+func main~EntryPoint() -> Int {
+    return 0;
+}

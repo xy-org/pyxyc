@@ -2,10 +2,10 @@ struct Struct {
     val := 10;
 }
 
-func main~EntryPoint() -> Int {
+func main~EntryPoint() -> void | Int {
     _ = test1();
     _ = test2();
-    return test3();
+    error test3();
 }
 
 func test1(s := [Global~Struct]) -> Int {

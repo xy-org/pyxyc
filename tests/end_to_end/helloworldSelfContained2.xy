@@ -43,7 +43,6 @@ func print(msg: Str) -> void {
     stdout'write(msg);
 }
 
-func main~EntryPoint() -> Int {
+func main~EntryPoint() {
     print("Hello World\n");
-    return 0;
 }

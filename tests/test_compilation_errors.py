@@ -776,6 +776,9 @@ def test_compilation_errors_embedded(input_src, exp_err_msg, tmp_path, resource_
     ("dtors/assigningVars4.xy", r".*Cannot assign to a variable with a dtor. Please copy or move the lhs value.*"),
     ("dtors/assigningVars5.xy", r".*Cannot assign to a variable with a dtor. Please copy or move the lhs value.*"),
     ("dtors/assigningVars6.xy", r".*Cannot assign to a variable with a dtor. Please copy or move the lhs value.*"),
+
+    ("entrypoints/wrongSignature1.xy", r".*Entry point functions should be void.*"),
+    ("entrypoints/wrongSignature2.xy", r".*The error type of entry point functions should be Int.*"),
 ])
 def test_compilation_errors_src(package, exp_err_msg, tmp_path, resource_dir):
     executable = tmp_path / "a.out"

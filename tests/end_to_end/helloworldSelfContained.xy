@@ -7,7 +7,6 @@ func cstr~[StrCtor{prefix="c"}](addr: Ptr, size: Usize) -> Ptr {
 }
 
 
-func main~EntryPoint() -> Int {
+func main~EntryPoint() {
     c.write(1, c"Hello World\n", 12);
-    return 0;
 }
