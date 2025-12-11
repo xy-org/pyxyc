@@ -22,8 +22,6 @@ class Builder:
         self.input = input
         self.output = output
         self.project_name = path.splitext(path.basename(path.abspath(input)))[0]
-        if not output:
-            self.output = self.project_name
         self.module_cache = {}
         self.rich_errors = rich_errors
         self.abort_on_unhandled = abort_on_unhandled
@@ -35,6 +33,12 @@ class Builder:
         if not path.isfile(input):
             current_package_path = path.dirname(path.abspath(input))
             package_paths = package_paths + [current_package_path]
+
+        if not output:
+            self.output = self.project_name
+            if not path.isfile(input):
+                self.output = "bin/" + self.output
+                os.makedirs("bin", exist_ok=True)
 
         if builtin_lib_path is None:
             builtin_lib_path = path.join(path.dirname(__file__), "libs")
