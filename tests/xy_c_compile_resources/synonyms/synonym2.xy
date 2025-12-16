@@ -1,0 +1,27 @@
+struct Str~[
+    memory := void,
+] {
+    addr: Ptr~Byte;
+    size: Usize;
+}
+
+struct Managed {}
+struct Static {}
+
+String := Str~Managed;
+
+struct Iter {
+    s: String;
+}
+
+func call(s: Str) call(s, s..memory);
+func call(s: Str, :Managed) -> Int {
+    return 1;
+}
+func call(s: Str, :Static) -> Int {
+    return 2;
+}
+
+func test(iter: Iter) -> Int {
+    return call(iter.s);
+}

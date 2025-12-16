@@ -192,6 +192,7 @@ from xyc.compiler import CompilationError
     "exprBlocks/exprBlocks3",
     "exprBlocks/exprBlocks4",
     "synonyms/synonym1",
+    "synonyms/synonym2",
     "typeInference/inferenceGet",
 ])
 def test_c_compilation(resource_dir, filename):

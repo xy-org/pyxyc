@@ -1437,11 +1437,6 @@ def compile_header(ctx: CompilerContext, asts, cast):
     if ctx.module_name == "xy.builtin":
         ctx.ptr_obj = ctx.data_ns["Ptr"]
 
-    for ast in asts:
-        for node in ast:
-            if isinstance(node, xy.VarDecl) and node.name not in ctx.data_ns:
-                do_compile_const_value(node.name, node.value, cast, ctx)
-
     fobjs = []
     for ast in asts:
         for node in ast:
@@ -1605,12 +1600,14 @@ def compile_structs(ctx: CompilerContext, asts, cast: c.Ast):
                     )
                 ctx.data_ns[node.name] = type_obj
 
-    # 2nd pass - compile fields
+    # 2nd pass - compile fields and global variables
     for ast in asts:
         for node in ast:
             if isinstance(node, xy.StructDef):
                 type_obj = ctx.data_ns[node.name]
                 fully_compile_type(type_obj, cast, ast, ctx)
+            elif isinstance(node, xy.VarDecl) and node.name not in ctx.data_ns:
+                do_compile_const_value(node.name, node.value, cast, ctx)
 
 def fully_compile_type(type_obj: TypeObj, cast, ast, ctx):
     if isinstance(type_obj, TypeExprObj):
