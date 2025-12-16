@@ -1,6 +1,6 @@
 struct Str~[mark := 0] {
-    addr: Ptr;
-    size: Usize;
+    addr: Ptr,
+    size: Usize,
 }
 
 func f1(s: Str) -> Int {

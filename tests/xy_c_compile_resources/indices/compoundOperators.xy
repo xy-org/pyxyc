@@ -1,9 +1,9 @@
 struct Str {
-    addr: Ptr;
+    addr: Ptr,
 
-    sizeFlags: % Usize'toBits;
+    sizeFlags: % Usize'toBits,
 
-    size: pseudo = SizeField{};
+    size: pseudo = SizeField{},
 }
 
 struct SizeField {}

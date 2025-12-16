@@ -1,7 +1,7 @@
 struct Color {
-    r: Float;
-    g: Float;
-    b: Float;
+    r: Float,
+    g: Float,
+    b: Float,
 }
 
 func printColor(c: Color) {
@@ -9,11 +9,11 @@ func printColor(c: Color) {
 }
 
 struct PaletteType {
-    red    := Color{1f, 0f, 0f};
-    green  := Color{0f, 2f, 0f};
-    blue   := Color{0f, 0f, 1f};
-    orange := Color{1f, 0.647f, 0f};
-    white  := Color{1f, 1f, 1f};
+    red    := Color{1f, 0f, 0f},
+    green  := Color{0f, 2f, 0f},
+    blue   := Color{0f, 0f, 1f},
+    orange := Color{1f, 0.647f, 0f},
+    white  := Color{1f, 1f, 1f},
 }
 
 Palette := PaletteType{};

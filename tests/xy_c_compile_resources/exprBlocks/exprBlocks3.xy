@@ -1,5 +1,5 @@
 struct Struct {
-    val: Long;
+    val: Long,
 }
 
 func fun(s: Struct) {
@@ -7,8 +7,8 @@ func fun(s: Struct) {
 }
 
 struct Container {
-    s1: Struct;
-    s2: Struct;
+    s1: Struct,
+    s2: Struct,
 }
 
 func dtor(c: Container) = -> void {

@@ -2,7 +2,7 @@ import xy.ctti;
 
 
 struct Array~[elemType: struct] {
-    ptr: Ptr;
+    ptr: Ptr,
 }
 
 *func fill(arr: mut Array, n: Usize, value: Any = (arr..elemType){}) =

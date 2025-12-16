@@ -228,7 +228,7 @@ func main(i: int) -> int {
         struct Struct {
             ;; First field
 
-            field := 0;
+            field := 0,
         }
         """,
         [
@@ -2815,8 +2815,8 @@ def test_invalid_expressions(code, err_msg):
     ],
     [
         """struct Str{
-            ptr: Ptr;
-            len: Size;
+            ptr: Ptr,
+            len: Size,
         }
         """,
         [
@@ -2828,7 +2828,7 @@ def test_invalid_expressions(code, err_msg):
     ],
     [
         """struct MyName~[copy=False] {
-            name: Str;
+            name: Str,
         }
         """,
         [
@@ -2849,8 +2849,8 @@ def test_invalid_expressions(code, err_msg):
     ],
     [
         """struct Point2d{
-            x: float;; x coordinate
-            y: float;; y coordinate
+            x: float, ;; x coordinate
+            y: float, ;; y coordinate
         }
         """,
         [
@@ -2865,9 +2865,9 @@ def test_invalid_expressions(code, err_msg):
         ;; Point2d comment
         struct Point2d{
             ;; x coordinate
-            x: float;
+            x: float,
             ;; y coordinate
-            y: float;
+            y: float,
         }
         """,
         [
@@ -2884,8 +2884,8 @@ def test_invalid_expressions(code, err_msg):
     [
         """
         struct Point2d {
-            -x: Float;
-            *y: Float;
+            -x: Float,
+            *y: Float,
         }
         """,
         [
@@ -2901,9 +2901,9 @@ def test_invalid_expressions(code, err_msg):
     [
         """
         *struct Point2d {
-            x: Float;
-            y: Float;
-            -secret: Float;
+            x: Float,
+            y: Float,
+            -secret: Float,
         }
         """,
         [
@@ -2922,8 +2922,8 @@ def test_invalid_expressions(code, err_msg):
         """
         *struct Point2d {
         -:
-            x: Float;
-            y: Float;
+            x: Float,
+            y: Float,
         }
         """,
         [
@@ -4526,9 +4526,9 @@ def test_global_constants(code, exp_ast):
     [
         """
         struct TaskStatus~Enum {
-            start := 0;
-            pending := 1;
-            end := 2;
+            start := 0,
+            pending := 1,
+            end := 2,
         }
 
         func test() {
@@ -4606,14 +4606,14 @@ def test_global_constants(code, exp_ast):
     [
         """
         struct Status {
-            start : Bool;
-            pending : Bool;
-            end : Bool;
+            start : Bool,
+            pending : Bool,
+            end : Bool,
         }
 
         struct Struct {
-            st1 : Status;
-            st2 : Status;
+            st1 : Status,
+            st2 : Status,
         }
 
         func test() {

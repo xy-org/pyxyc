@@ -1,10 +1,10 @@
 struct Fib {
-    a := 0;
-    b := 1;
+    a := 0,
+    b := 1,
 }
 
 struct Error {
-    num := 0;
+    num := 0,
 }
 
 func to(e: Error, :Bool) e.num != 0;

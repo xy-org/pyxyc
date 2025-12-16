@@ -14,8 +14,8 @@ func str~[StrCtor{prefix="", interpolation=false}] (
 }
 
 struct FuncDesc {
-    cb: ()->();
-    name: Ptr;
+    cb: ()->(),
+    name: Ptr,
 }
 
 func test() {

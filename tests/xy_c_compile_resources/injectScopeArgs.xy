@@ -1,7 +1,7 @@
 struct MyStruct {
-    a: Int;
-    b: Int;
-    c: Float;
+    a: Int,
+    b: Int,
+    c: Float,
 }
 
 func fun(a: Int, b: Float, c: MyStruct) -> void {

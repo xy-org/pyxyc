@@ -6,7 +6,7 @@ struct Data {
 }
 
 struct Struct {
-    d: Data;
+    d: Data,
 }
 
 func fun() -> Data~Tag2 {

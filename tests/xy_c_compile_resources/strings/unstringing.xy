@@ -1,6 +1,6 @@
 struct Str {
-    addr: Ptr~Byte;
-    size: Usize;
+    addr: Ptr~Byte,
+    size: Usize,
 }
 
 func str~[StrCtor{}](addr: Ptr~Byte, len: Usize) = Str{addr, len};

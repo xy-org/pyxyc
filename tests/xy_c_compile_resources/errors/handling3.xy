@@ -1,5 +1,5 @@
 struct Error {
-    code: Int;
+    code: Int,
 }
 
 func to(err: Error, :Bool) err.code != 0;

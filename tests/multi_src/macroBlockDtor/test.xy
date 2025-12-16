@@ -1,7 +1,7 @@
 import macroBlockDtor.module;
 
 struct Struct {
-    ptr: Ptr;
+    ptr: Ptr,
 }
 
 func dtor(s: Struct) {

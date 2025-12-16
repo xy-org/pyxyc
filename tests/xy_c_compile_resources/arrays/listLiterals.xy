@@ -1,5 +1,5 @@
 struct List~[elem: struct, xy_dtor=true] {
-    mem: Ptr;
+    mem: Ptr,
 }
 
 func copy(l: List) -> List {

@@ -1,15 +1,15 @@
 struct Person {
-    firstName: String;
-    lastName: String;
-    age: Int;
-    height: Double;
-    married: Bool;
-    favoriteColorClothes: Color;
+    firstName: String,
+    lastName: String,
+    age: Int,
+    height: Double,
+    married: Bool,
+    favoriteColorClothes: Color,
 }
 
 struct String {
-    addr: Ptr;
-    size: Usize;
+    addr: Ptr,
+    size: Usize,
 }
 
 func string~[StrCtor{prefix=""}](addr: Ptr, size: Usize) -> String {
@@ -17,9 +17,9 @@ func string~[StrCtor{prefix=""}](addr: Ptr, size: Usize) -> String {
 }
 
 struct Color {
-    r: Ubyte;
-    g: Ubyte;
-    b: Ubyte;
+    r: Ubyte,
+    g: Ubyte,
+    b: Ubyte,
 }
 
 func test() {

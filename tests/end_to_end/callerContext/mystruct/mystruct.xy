@@ -1,7 +1,7 @@
 import libxy.(string, stdio);
 
 struct My {
-    num: Int;
+    num: Int,
 }
 
 *func cmp(a: My, b: My) -> Int {

@@ -37,14 +37,6 @@ from xyc.parser import parse_code, ParsingError
         """,
         "Malformed expression. Maybe missing operator or semicolon."
     ),
-    (
-        """
-        struct Struct {
-            field: int
-        }
-        """,
-        "Missing ';' at end of field"
-    ),
 ])
 def test_misplaced_semicolon(code, err_msg):
     with pytest.raises(ParsingError, match=err_msg):

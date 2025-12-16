@@ -1,13 +1,13 @@
 struct Point {
-    x : pseudo = CoordField{0u};
-    y : pseudo = CoordField{1u};
-    z : pseudo = CoordField{2u};
+    x : pseudo = CoordField{0u},
+    y : pseudo = CoordField{1u},
+    z : pseudo = CoordField{2u},
 
-    coords: @Float[3];
+    coords: @Float[3],
 }
 
 struct CoordField{
-    i: Uint;
+    i: Uint
 }
 
 func get(p: Point, f: CoordField) -> Float {

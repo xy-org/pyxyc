@@ -2,7 +2,7 @@ import libxy.stdio;
 import libxy.string;
 
 struct Data {
-    num: Int;
+    num: Int,
 }
 
 func dtor(s: Data) {

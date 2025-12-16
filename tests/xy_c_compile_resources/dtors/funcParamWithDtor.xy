@@ -1,9 +1,9 @@
 struct SmallStruct {
-    ptr: Ptr;
+    ptr: Ptr,
 }
 
 struct LargeStruct {
-    ptr: @Ptr[10];
+    ptr: @Ptr[10],
 }
 
 func dtor(s: (SmallStruct, LargeStruct)) {

@@ -1,5 +1,5 @@
 struct Struct {
-    val := 10;
+    val := 10,
 }
 
 func main~EntryPoint() -> void | Int {

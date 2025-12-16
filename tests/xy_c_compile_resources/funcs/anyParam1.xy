@@ -3,8 +3,8 @@ func fun(a: Any, b: Int) {
 }
 
 struct Struct {
-    a: Int;
-    b: Int;
+    a: Int,
+    b: Int,
 }
 
 func test() {

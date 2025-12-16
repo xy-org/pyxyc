@@ -1,5 +1,5 @@
 struct A {
-    val: Int;
+    val: Int,
 }
 
 func dtor(a: A) {
@@ -7,7 +7,7 @@ func dtor(a: A) {
 }
 
 struct B {
-    val: Long;
+    val: Long,
 }
 
 func dtor(b: B) {

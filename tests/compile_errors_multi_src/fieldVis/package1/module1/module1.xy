@@ -1,4 +1,4 @@
 struct Struct {
-    visible: Int;
-    -notVisible: Int;
+    visible: Int,
+    -notVisible: Int,
 }

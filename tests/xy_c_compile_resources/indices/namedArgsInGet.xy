@@ -1,5 +1,5 @@
 struct Data {
-    mem: Ptr;
+    mem: Ptr,
 }
 
 func get(data: Data, idx: Int, default := 0) -> Int {

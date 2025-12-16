@@ -1,16 +1,16 @@
 struct X {
-    a: Int;
-    b: Int;
+    a: Int,
+    b: Int,
 }
 
 struct Y {
-    c: X;
-    d: X;
+    c: X,
+    d: X,
 }
 
 struct Z {
-    e: Y;
-    f: Y;
+    e: Y,
+    f: Y,
 }
 
 func fun(v: mut X, a: Int) {}

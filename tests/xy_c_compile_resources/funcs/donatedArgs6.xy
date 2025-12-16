@@ -1,5 +1,5 @@
 struct WithDtor {
-    id: Int;
+    id: Int,
 }
 
 func dtor(val: WithDtor) {

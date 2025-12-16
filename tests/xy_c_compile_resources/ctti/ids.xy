@@ -1,11 +1,11 @@
 import xy.ctti;
 
 struct Type1 {
-    val: Int;
+    val: Int,
 }
 
 struct Type2 {
-    val: Float;
+    val: Float,
 }
 
 func test() {

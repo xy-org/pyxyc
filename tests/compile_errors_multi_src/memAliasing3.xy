@@ -1,6 +1,6 @@
 struct Struct {
-    a: Int;
-    b: Int;
+    a: Int,
+    b: Int,
 }
 
 func fun(v: mut Struct, a: Int) {}

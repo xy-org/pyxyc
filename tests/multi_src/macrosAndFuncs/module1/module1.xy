@@ -1,6 +1,6 @@
 struct Struct {
-    a: Int;
-    b: Float;
+    a: Int,
+    b: Float,
 }
 
 func macro1(s: Struct) = s.a;

@@ -4,27 +4,27 @@ import libxy.(stdio, string, memory);
 ;; MyStruct comment
 struct MyStruct {
     ;; My name
-    name: String;
+    name: String,
 
     ;; Some number
-    num: Ulong;
+    num: Ulong,
 
-    integer: Int = -1;
+    integer: Int = -1,
 
     ;; Array of
     ;; floats
-    arr: @Float[10];
+    arr: @Float[10],
 
-    next: Ptr~MyStruct;
+    next: Ptr~MyStruct,
 }
 
 struct FieldDesc{
-    name: String;
-    typename: String;
-    size: Usize;
-    offset: Usize;
-    alignment: Usize;
-    comment: String;
+    name: String,
+    typename: String,
+    size: Usize,
+    offset: Usize,
+    alignment: Usize,
+    comment: String,
 }
 
 func printTypeInfo(

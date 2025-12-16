@@ -1,6 +1,6 @@
 struct Struct {
-    val1: Long;
-    val2: Long;
+    val1: Long,
+    val2: Long,
 }
 
 func cmp(a: Struct, b: Struct) -> Int {

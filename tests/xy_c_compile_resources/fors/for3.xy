@@ -1,7 +1,7 @@
 ;; An array of up to 100 floats
 struct Array {
-    elems: @Float[100];
-    len: Usize;
+    elems: @Float[100],
+    len: Usize,
 }
 
 func iter(arr: pseudo Array) -> arr[ Usize ] {

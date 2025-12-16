@@ -1,7 +1,7 @@
 import boundaryExprMultiModule.module;
 
 struct Struct {
-    value: Int;
+    value: Int,
 }
 
 func rtti(:Struct) -> Rtti {

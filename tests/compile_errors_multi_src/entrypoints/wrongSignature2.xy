@@ -1,5 +1,5 @@
 struct MyError {
-    code: Int;
+    code: Int,
 }
 
 func main~EntryPoint() -> void | MyError {

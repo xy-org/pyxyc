@@ -1,5 +1,5 @@
 struct Str {
-    mem: Ptr~Char;
+    mem: Ptr~Char,
 }
 
 func dtor(s: Str) {
@@ -11,8 +11,8 @@ func get(s: Str, i: Int) -> Str {
 }
 
 struct CharIter {
-    i: Usize;
-    char: Char;
+    i: Usize,
+    char: Char,
 }
 
 *func chars~IterCtor(str: Str) -> str[ CharIter ] {

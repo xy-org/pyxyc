@@ -1,17 +1,17 @@
 import xy.ctti;
 
 struct MyStruct {
-    a: Int;
-    b: Float;
-    c: SubStruct;
+    a: Int,
+    b: Float,
+    c: SubStruct,
 }
 
 struct SubStruct {
-    d: Ptr~MyStruct;
+    d: Ptr~MyStruct,
 }
 
 struct FieldDesc {
-    size: Usize;
+    size: Usize,
 }
 
 func print(d: FieldDesc) {

@@ -1,9 +1,9 @@
 struct Large {
-    nums: @Int[100];
+    nums: @Int[100],
 }
 
 struct Small {
-    num: Int;
+    num: Int,
 }
 
 func func1(a: Large, b: Small) {}

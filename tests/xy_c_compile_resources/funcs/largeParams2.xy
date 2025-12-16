@@ -1,5 +1,5 @@
 struct Large {
-    nums: @Int[100];
+    nums: @Int[100],
 }
 
 func mkLarge() -> Large {

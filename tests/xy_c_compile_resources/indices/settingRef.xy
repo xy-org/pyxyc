@@ -1,6 +1,6 @@
 struct Array {
-    mem: Ptr~Long;
-    size: Usize;
+    mem: Ptr~Long,
+    size: Usize,
 }
 
 func get(arr: Array, i: Int) -> arr[ Ptr~Long ] {

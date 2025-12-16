@@ -1,7 +1,7 @@
 # Test moving to/from void
 
 struct Elem {
-    val: Char;
+    val: Char,
 }
 
 func dtor(e: Elem) {
@@ -9,7 +9,7 @@ func dtor(e: Elem) {
 }
 
 struct Array {
-    mem: Ptr~Elem;
+    mem: Ptr~Elem,
 }
 
 func get(arr: Array, idx: Int) -> arr[Ptr~Elem] {

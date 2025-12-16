@@ -1,19 +1,19 @@
 import xy.ctti;
 
 struct Struct1 {
-    val: Int;
+    val: Int,
 }
 
 struct Struct2 {
-    val: Int;
+    val: Int,
 }
 
 struct Tag1~[xyTag:=TagCtor{label="tag"}] {
-    val: Int;
+    val: Int,
 }
 
 struct Tag2~[xyTag:=TagCtor{label="tag"}] {
-    val: Int;
+    val: Int,
 }
 
 func test() {

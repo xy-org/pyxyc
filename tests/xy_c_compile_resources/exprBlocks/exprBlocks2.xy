@@ -1,5 +1,5 @@
 struct Struct {
-    val: Int;
+    val: Int,
 }
 
 func fun(s: Struct) {

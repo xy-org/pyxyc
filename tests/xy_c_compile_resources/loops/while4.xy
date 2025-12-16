@@ -11,7 +11,7 @@ func cond2(a: Int, b: Int) -> Bool
 }
 
 struct TypeWithDtor{
-    id: Int;
+    id: Int,
 }
 
 func dtor(resource: TypeWithDtor) {

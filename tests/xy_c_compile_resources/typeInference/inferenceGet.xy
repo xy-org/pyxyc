@@ -1,9 +1,9 @@
 struct Ecs {
-    mem: Ptr;
+    mem: Ptr,
 }
 
 struct Idx {
-    id: Int;
+    id: Int,
 }
 
 func get(ecs: Ecs, idx: Idx, comp: Any) = get(ecs, idx.id, comp);
@@ -13,11 +13,11 @@ func get(ecs: Ecs, num: Int, comp: Any) -> ecs[ Ptr~[^%comp] ] {
 }
 
 struct Comp1 {
-    field1: Float;
+    field1: Float,
 }
 
 struct Comp2 {
-    field2: Double;
+    field2: Double,
 }
 
 func test(idx: Idx) {

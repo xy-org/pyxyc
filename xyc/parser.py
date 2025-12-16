@@ -1533,7 +1533,11 @@ def parse_struct(itoken: TokenIter, visibility=PackageVisibility):
         default_field_vis = visibilityMap[itoken.consume()[0]]
 
     comment = None
+    has_comma = True
     while itoken.peak() != "}":
+        if not has_comma:
+            raise ParsingError("Missing ',' at end of field", itoken)
+
         if itoken.check(";;"):
             comment = parse_ml_comment(itoken).comment
             itoken.skip_empty_lines()
@@ -1547,7 +1551,7 @@ def parse_struct(itoken: TokenIter, visibility=PackageVisibility):
         field.visibility = fieldVisibility
 
         node.fields.append(field)
-        itoken.expect_semicolon(msg="Missing ';' at end of field")
+        has_comma = itoken.check(",")
 
         if itoken.check(";;"):
             comment = parse_ml_comment(itoken).comment
@@ -1556,6 +1560,7 @@ def parse_struct(itoken: TokenIter, visibility=PackageVisibility):
 
         comment = None
         itoken.skip_empty_lines()
+
     itoken.expect("}")
     if itoken.peak() == ";":
         raise ParsingError("';' at end of struct def is not needed", itoken)

@@ -1,5 +1,5 @@
 struct Action~[type: struct] {
-    code: Int;
+    code: Int,
 }
 
 func action(act: Action) = if (act.code >= 5) {

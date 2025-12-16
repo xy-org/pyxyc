@@ -1,5 +1,5 @@
 struct Rtti {
-    data: Int;
+    data: Int,
 }
 
 func print(x: pseudo Any, rtti: Rtti = ^rtti(x)) {
@@ -7,7 +7,7 @@ func print(x: pseudo Any, rtti: Rtti = ^rtti(x)) {
 }
 
 struct Struct {
-    data: Int;
+    data: Int,
 }
 
 func rtti(:Struct) -> Rtti {

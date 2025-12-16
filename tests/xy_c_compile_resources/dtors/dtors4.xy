@@ -1,21 +1,21 @@
 struct Top {
-    m: Middle;
+    m: Middle,
 }
 
 struct Middle {
-    b: Bottom;
+    b: Bottom,
 }
 
 struct Bottom {
-    d: Data;
+    d: Data,
 }
 
 struct Data {
-    s: Str;
+    s: Str,
 }
 
 struct Str {
-    addr: Ptr~Byte;
+    addr: Ptr~Byte,
 }
 
 func dtor(s: Str) {

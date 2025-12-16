@@ -1,7 +1,7 @@
 # test modifying a donated value with dtor
 
 struct Array {
-    ptr: Ptr~Int;
+    ptr: Ptr~Int,
 }
 
 func get(arr: Array, idx: Int) -> arr[ Ptr~Int ] {

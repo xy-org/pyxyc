@@ -6,9 +6,9 @@ struct AllSlice {
 func slice() = AllSlice{};
 
 struct IntSlice {
-    begin: Int;
-    end: Int;
-    step: Int;
+    begin: Int,
+    end: Int,
+    step: Int,
 }
 
 func max(:Int) -> Int {
@@ -35,13 +35,13 @@ func testIntSlices() {
 }
 
 struct Date {
-    unixtime: Long;
+    unixtime: Long,
 }
 
 struct DateSlice {
-    begin: Date;
-    end: Date;
-    step: Date;
+    begin: Date,
+    end: Date,
+    step: Date,
 }
 
 func max(:Long) -> Long {

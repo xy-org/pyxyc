@@ -2,12 +2,12 @@ import posix~[Clib{headers=@{"unistd.h", "errno.h"}}] in c;
 
 ;; Struct representing a file handle.
 struct File {
-    fd: Int = -1;
+    fd: Int = -1,
 }
 
 struct Str {
-    addr: Ptr~Byte;
-    len: Usize;
+    addr: Ptr~Byte,
+    len: Usize,
 }
 
 func str~[StrCtor{prefix="", interpolation=false}] (
@@ -17,7 +17,7 @@ func str~[StrCtor{prefix="", interpolation=false}] (
 }
 
 struct ErrnoError {
-    code: Int;
+    code: Int,
 }
 
 func to(err: ErrnoError, :Bool) -> Bool {

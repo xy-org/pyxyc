@@ -1,6 +1,6 @@
 struct Array~[elemType: struct, xy_dtor=true] {
-    mem: Ptr;
-    len: Usize;
+    mem: Ptr,
+    len: Usize,
 }
 
 func dtor(arr: mut Array) {

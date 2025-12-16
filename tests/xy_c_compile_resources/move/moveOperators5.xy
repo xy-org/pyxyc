@@ -1,7 +1,7 @@
 struct Point {
-    x: Int;
-    y: Int;
-    w: Int = 1;
+    x: Int,
+    y: Int,
+    w: Int = 1,
 }
 
 func testMovingOutInout(p: mut Point) -> Point {
@@ -18,7 +18,7 @@ func testMovingSimple() -> Point {
 
 # --- Test move and dtor ---
 struct Array {
-    data: Ptr;
+    data: Ptr,
 }
 
 func dtor(arr: Array) {

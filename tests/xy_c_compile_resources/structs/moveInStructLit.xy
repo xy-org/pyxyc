@@ -1,6 +1,6 @@
 struct Data {
-    a: Int;
-    b: Long;
+    a: Int,
+    b: Long,
 }
 
 func test(val: mut Int) -> Data {

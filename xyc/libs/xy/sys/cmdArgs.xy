@@ -15,6 +15,6 @@ import libc~[Clib{headers=@{}}] in c;
 ;; Hold the raw arguments as given to the program by the OS.
 ;; Just pop this struct from the global stack to access them.
 *struct CmdArgs {
-    argc: Int;; size of {argv}
-    argv: Ptr~Ptr~[c.char];; pointers to the command line arguments
+    argc: Int, ;; size of {argv}
+    argv: Ptr~Ptr~[c.char], ;; pointers to the command line arguments
 }

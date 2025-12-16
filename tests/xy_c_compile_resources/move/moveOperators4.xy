@@ -1,5 +1,5 @@
 struct IntList {
-    ints: Ptr~Int;
+    ints: Ptr~Int,
 }
 
 func get(arr: IntList, i: Int) -> arr[ Ptr~Int ] {

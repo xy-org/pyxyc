@@ -1,5 +1,5 @@
 struct Struct~[tag:=Tag1] {
-    field: Int;
+    field: Int,
 }
 
 struct Tag1 {}

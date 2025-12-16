@@ -1,8 +1,8 @@
 # Test moving to/from void
 
 struct Point {
-    x: Int = 1;
-    y: Int = 2;
+    x: Int = 1,
+    y: Int = 2,
 }
 
 func dtor(p: Point) {

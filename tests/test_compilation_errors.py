@@ -164,7 +164,7 @@ src.xy:2:28: error: Cannot infer type because: Cannot find symbol
     ("""
         import xy.ctti;
         struct Desc {
-            size: Size;
+            size: Size,
         }
         func parse(args: pseudo Any, desc := @for(f in args'fieldsof) Desc{f'sizeof}) -> void {
         }
@@ -349,33 +349,33 @@ src.xy:1:18: error: Functions cannot return a type
     ),
     (
         """struct MyStruct {
-            field: MyStruct;
+            field: MyStruct,
         }""",
         """\
 src.xy:2:13: error: Recursive structs are not possible
-|             field: MyStruct;
+|             field: MyStruct,
               ^^^^^^^^^^^^^^^
 """
     ),
     (
         """struct MyStruct {
-            field := MyStruct{};
+            field := MyStruct{},
         }""",
         """\
 src.xy:2:13: error: Recursive structs are not possible
-|             field := MyStruct{};
+|             field := MyStruct{},
               ^^^^^
 """
     ),
     (
         """struct MyStruct {
-            field : pseudo = MyStruct{0};
+            field : pseudo = MyStruct{0},
 
-            value: Int;
+            value: Int,
         }""",
         """\
 src.xy:2:39: error: Cannot set value for pseudo field `field`. Pseudo fields cannot initialize other pseudo fields.
-|             field : pseudo = MyStruct{0};
+|             field : pseudo = MyStruct{0},
                                         ^^^
 """
     ),
@@ -681,12 +681,12 @@ src.xy:2:16: error: Type appears to need a dtor by no matching dtor(Struct) foun
         import libc~[Clib{}] in c;
 
         struct MyStruct {
-            field: c.ExtStruct;
+            field: c.ExtStruct,
         }
         """,
         """\
 src.xy:5:13: error: Fields with external types must have an explicit default value
-|             field: c.ExtStruct;
+|             field: c.ExtStruct,
               ^^^^^^^^^^^^^^^^^^
 """
     ),
@@ -695,12 +695,12 @@ src.xy:5:13: error: Fields with external types must have an explicit default val
         import libc~[Clib{}] in c;
 
         struct MyStruct {
-            field := c.ExtStruct;
+            field := c.ExtStruct,
         }
         """,
         """\
 src.xy:5:13: error: The types of c symbols cannot be inferred. Please be explicit and specify the type.
-|             field := c.ExtStruct;
+|             field := c.ExtStruct,
               ^^^^^
 """
     ),

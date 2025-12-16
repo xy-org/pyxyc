@@ -1,9 +1,9 @@
 import posix~[Clib{headers=@{"termios.h", "unistd.h"}}] in c;
 
 struct Data {
-    num: Int;
-    ext := c."struct termios"{0};
-    flt: Float;
+    num: Int,
+    ext := c."struct termios"{0},
+    flt: Float,
 }
 
 func test() {

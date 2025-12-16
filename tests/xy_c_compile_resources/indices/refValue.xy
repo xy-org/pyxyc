@@ -1,5 +1,5 @@
 struct Data {
-    mem: Ptr;
+    mem: Ptr,
 }
 
 func get(d: Data, i: Int) -> Float {

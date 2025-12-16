@@ -1,7 +1,7 @@
 # Funcs having in and mut params
 
 struct A {
-    num: Int;
+    num: Int,
 }
 
 func double(a: A) -> A {

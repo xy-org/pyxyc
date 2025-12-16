@@ -1,5 +1,5 @@
 struct Str {
-    addr: Ptr~Byte;
+    addr: Ptr~Byte,
 }
 
 func dtor(s: Str) {
@@ -7,9 +7,9 @@ func dtor(s: Str) {
 }
 
 struct Person {
-    age: Int;
-    name: Str;
-    family: Str;
+    age: Int,
+    name: Str,
+    family: Str,
 }
 
 func test1() {

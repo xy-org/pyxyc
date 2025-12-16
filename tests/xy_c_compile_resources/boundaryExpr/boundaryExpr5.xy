@@ -1,6 +1,6 @@
 struct Str {
-    data: Ptr~Byte;
-    size: Usize;
+    data: Ptr~Byte,
+    size: Usize,
 }
 
 func dtor(s: Str) {
@@ -10,7 +10,7 @@ func dtor(s: Str) {
 func str~[StrCtor{prefix=""}](data: Ptr, len: Usize) Str{data, len};
 
 struct Log {
-    level: Int;
+    level: Int
 }
 
 *func info(^msg: Str, log : Log) =

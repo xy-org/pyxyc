@@ -3,11 +3,11 @@
 import xy.ctti;
 
 struct FuncDesc {
-    cb: ()->();
+    cb: ()->(),
 }
 
 struct Vector {
-    mem: Ptr;
+    mem: Ptr,
 }
 
 func get(v: Vector, i: Int) -> v[ Ptr~FuncDesc ] {

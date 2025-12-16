@@ -19,7 +19,7 @@ func guards3(a: pseudo Any, b: pseudo Any) -> Int
 }
 
 struct ErrorCode {
-    code: Int;
+    code: Int,
 }
 
 func to(ec: ErrorCode, :Bool) -> Bool {

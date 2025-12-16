@@ -1,7 +1,7 @@
 struct Complex {
     # fields ...
-    this := 0;
-    that := 10;
+    this := 0,
+    that := 10,
 }
 
 func dtor(c: Complex) {

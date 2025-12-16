@@ -1,7 +1,7 @@
 ;; Test dtor of an rvalue is not called if assigned to a different var
 
 struct WithDtor {
-    mem: Ptr;
+    mem: Ptr,
 }
 
 func dtor(wd: WithDtor) {
@@ -17,7 +17,7 @@ func doSomething(wd: WithDtor) {
 }
 
 struct Container {
-    wd: WithDtor;
+    wd: WithDtor,
 }
 
 func test() {

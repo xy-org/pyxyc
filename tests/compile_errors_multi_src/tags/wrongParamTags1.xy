@@ -1,6 +1,6 @@
 struct Str~[hash := 10] {
-    addr: Ptr;
-    size: Size;
+    addr: Ptr,
+    size: Size,
 }
 
 func f1(s: Str) -> Int {

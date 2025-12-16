@@ -1,5 +1,5 @@
 struct Struct {
-    val: Ptr;
+    val: Ptr,
 }
 
 func dtor(s: Struct) {

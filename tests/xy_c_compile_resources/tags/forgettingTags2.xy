@@ -1,5 +1,5 @@
 struct Data {
-    val: Int;
+    val: Int,
 }
 
 func work(val: (Int, Char, Long)) {

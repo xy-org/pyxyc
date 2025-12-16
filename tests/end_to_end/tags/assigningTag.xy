@@ -3,7 +3,7 @@ import libxy.string;
 import libxy.memory;
 
 struct Data {
-    num: Int;
+    num: Int,
 }
 
 *func fun(p1: String) -> Data {

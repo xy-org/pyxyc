@@ -1,10 +1,10 @@
 import xy.ctti;
 
 struct Point {
-    x: Float;
-    y: Float;
-    z: Float;
-    w: Float = 1.0f;
+    x: Float,
+    y: Float,
+    z: Float,
+    w: Float = 1.0f,
 }
 
 func select(p: Point, idx: Int) -> p[ Int ] {
@@ -42,8 +42,8 @@ func testPoint(i: Int) -> Float {
 }
 
 struct  PointCloud {
-    mem: Ptr;
-    len: Usize;
+    mem: Ptr,
+    len: Usize,
 }
 
 func append(pc: mut PointCloud, p: Point) {

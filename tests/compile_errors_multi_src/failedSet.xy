@@ -1,12 +1,12 @@
 struct MyStruct {
-    value := 0;
+    value := 0,
 
-    flag1 : pseudo = Flag{1};
-    flag2 : pseudo = Flag{2};
+    flag1 : pseudo = Flag{1},
+    flag2 : pseudo = Flag{2},
 }
 
 struct Flag {
-    value: Int;
+    value: Int,
 }
 
 func test() {

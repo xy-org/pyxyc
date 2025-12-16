@@ -1,16 +1,16 @@
 struct Vec2 {
-    x: pseudo = 0;
-    y: pseudo = 1;
+    x: pseudo = 0,
+    y: pseudo = 1,
 
-    xx: pseudo = Pair{0, 0};
-    xy: pseudo = Pair{0, 1};
-    yx: pseudo = Pair{1, 0};
-    yy: pseudo = Pair{1, 1};
+    xx: pseudo = Pair{0, 0},
+    xy: pseudo = Pair{0, 1},
+    yx: pseudo = Pair{1, 0},
+    yy: pseudo = Pair{1, 1},
 
-    coords: @Float[2];
+    coords: @Float[2],
 }
 
-struct Pair {i: Int; j: Int;}
+struct Pair { i: Int, j: Int }
 
 func get(p: Vec2, idx: Int) = p.coords[idx];
 func set(p: Vec2, idx: Int, v: Float) p.coords[idx] = v;

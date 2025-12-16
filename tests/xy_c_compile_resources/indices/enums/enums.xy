@@ -1,15 +1,15 @@
 # --- Type Enums ---
 
 struct Enum {
-    value: Int;
+    value: Int,
 }
 
 struct Status {
-    value: Int;
+    value: Int,
 
-    pending : pseudo = Enum{1};
-    canceled : pseudo = Enum{2};
-    processed : pseudo = Enum{4};
+    pending : pseudo = Enum{1},
+    canceled : pseudo = Enum{2},
+    processed : pseudo = Enum{4},
 }
 
 func get(st: Any, test: Enum) st.value == test.value;

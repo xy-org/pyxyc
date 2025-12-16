@@ -3,16 +3,16 @@ import posix~[Clib{headers=@{"unistd.h", "fcntl.h"}}] in c;
 # Flags structure
 
 struct Flag {
-    value: Int;
+    value: Int,
 }
 
 struct OpenFlags {
-    value : Int;
+    value : Int,
 
-    readOnly : pseudo = Flag{c.O_RDONLY};
-    writeOnly : pseudo = Flag{c.O_WRONLY};
-    readWrite : pseudo = Flag{c.O_RDWR};
-    append : pseudo = Flag{c.O_APPEND};
+    readOnly : pseudo = Flag{c.O_RDONLY},
+    writeOnly : pseudo = Flag{c.O_WRONLY},
+    readWrite : pseudo = Flag{c.O_RDWR},
+    append : pseudo = Flag{c.O_APPEND},
 }
 
 func get(base: OpenFlags, flag: Flag) -> Bool {
@@ -32,8 +32,8 @@ func and(l: OpenFlags, r: OpenFlags) OpenFlags{(l.value'to(Bits32) && r.value'to
 # Testing structures and functions
 
 struct String {
-    addr: Ptr;
-    size: Usize;
+    addr: Ptr,
+    size: Usize,
 }
 
 func string~[StrCtor{prefix=""}](addr: Ptr, size: Usize) -> String {

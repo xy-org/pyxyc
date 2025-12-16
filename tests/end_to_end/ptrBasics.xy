@@ -2,8 +2,8 @@ import libxy.stdio;
 import libxy.string;
 
 struct Struct {
-    a: Int;
-    b: Int;
+    a: Int,
+    b: Int,
 }
 
 func main~EntryPoint() {

@@ -1,8 +1,8 @@
 # --- Normal strings ---
 
 struct Str {
-    addr: Ptr;
-    size: Usize;
+    addr: Ptr,
+    size: Usize,
 }
 
 func str~[StrCtor{prefix="", interpolation=false}](
@@ -14,9 +14,9 @@ func str~[StrCtor{prefix="", interpolation=false}](
 # --- f-strings ---
 
 struct StrBuilder {
-    addr: Ptr;
-    size: Usize;
-    cap: Usize;
+    addr: Ptr,
+    size: Usize,
+    cap: Usize,
 }
 
 func append(builder: mut StrBuilder, str: Str) {

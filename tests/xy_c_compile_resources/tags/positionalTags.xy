@@ -1,12 +1,12 @@
 struct Array~[elemType: struct] {
-    len: Usize;
+    len: Usize,
 }
 
 func len(arr: Array) = arr.len;
 
 struct Point {
-    x: Float;
-    y: Float;
+    x: Float,
+    y: Float,
 }
 
 func sizeof(:Int) = 4;

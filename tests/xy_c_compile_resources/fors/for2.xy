@@ -2,8 +2,8 @@
 ;; --------------------------
 
 struct Fib {
-    a := 0;
-    b := 1;
+    a := 0,
+    b := 1,
 }
 
 func fibonacci~IterCtor() -> [ Fib ] {

@@ -4,19 +4,19 @@
 
 ;; An array of up to 100 floats
 struct Array {
-    elems: @Float[100];
-    len: Usize;
+    elems: @Float[100],
+    len: Usize,
 }
 
 
 struct Slice {
-    n: Usize;
-    m: Usize;
+    n: Usize,
+    m: Usize,
 }
 
 struct SliceIter {
-    i: Usize;
-    lim: Usize;
+    i: Usize,
+    lim: Usize,
 }
 
 

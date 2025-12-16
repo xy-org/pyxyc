@@ -1,7 +1,7 @@
 ;; Test dtors for array elements are called
 
 struct Str {
-    mem: Ptr;
+    mem: Ptr,
 }
 
 func dtor(s: Str) {
@@ -9,13 +9,13 @@ func dtor(s: Str) {
 }
 
 struct Person {
-    age: Int;
-    name: Str;
-    family: Str;
+    age: Int,
+    name: Str,
+    family: Str,
 }
 
 struct Mob {
-    people: @Person[20];
+    people: @Person[20],
 }
 
 func dtor(m: Mob) {
@@ -23,7 +23,7 @@ func dtor(m: Mob) {
 }
 
 struct Array~[elem: struct] {
-    mem: Ptr;
+    mem: Ptr,
     # ...
 }
 

@@ -1,6 +1,6 @@
 struct Str~[encoding: Any = Utf8] {
-    addr: Ptr;
-    size: Usize;
+    addr: Ptr,
+    size: Usize,
 }
 
 struct Utf8~[xyTag := TagCtor{label="encoding"}] {}

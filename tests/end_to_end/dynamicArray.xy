@@ -7,8 +7,8 @@ import libxy.slice;
 import libxy.error;
 
 struct Array~[elemType: struct, xy_dtor=true] {
-    mem: Memory;
-    len: Usize~Count;
+    mem: Memory,
+    len: Usize~Count,
 }
 
 func dtor(arr: mut Array) {
@@ -61,7 +61,7 @@ func get(
 }
 
 struct ArrayIter {
-    idx: Usize;
+    idx: Usize,
 }
 
 func iter(arr: Array) -> arr[ ArrayIter ] {
@@ -81,8 +81,8 @@ func get(arr: Array, iter: ArrayIter, elemSize : Usize = ctti.sizeof(arr..elemTy
 # ----------------- test code -----------------
 
 struct Point {
-    x: Int;
-    y: Int;
+    x: Int,
+    y: Int,
 }
 
 func main~EntryPoint() {

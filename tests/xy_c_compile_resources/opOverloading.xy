@@ -1,5 +1,5 @@
 struct MyInt {
-    num: Int;
+    num: Int,
 }
 
 func cmpGt(a: MyInt, b: MyInt) -> Bool {
@@ -47,8 +47,8 @@ func cmpMyInts() -> Int {
 
 
 struct Pair {
-    a: MyInt;
-    b: MyInt;
+    a: MyInt,
+    b: MyInt,
 }
 
 func cmp(p1: MyInt, n: Int) -> Int {

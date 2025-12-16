@@ -1,5 +1,5 @@
 struct Struct {
-    val: Int;
+    val: Int,
 }
 
 func f1(s: Struct~[min=0, max=300]) -> Int {

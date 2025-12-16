@@ -1,20 +1,20 @@
 struct Color {
-    red: Ubyte;
-    green: Ubyte;
-    blue: Ubyte;
-    alpha: Ubyte;
+    red: Ubyte,
+    green: Ubyte,
+    blue: Ubyte,
+    alpha: Ubyte,
 }
 
 struct Formatting {
-    bg: Color;
-    fg: Color;
-    fontSize: Uint;
-    effects: Effects;
+    bg: Color,
+    fg: Color,
+    fontSize: Uint,
+    effects: Effects,
 }
 
 struct Effects {
-    underline: Bool;
-    bold: Bool;
+    underline: Bool,
+    bold: Bool,
 }
 
 func test() {

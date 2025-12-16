@@ -1,9 +1,9 @@
 struct Logger{
-    enabled: Bool;
+    enabled: Bool,
 }
 
 struct Msg {
-    data: Long;
+    data: Long,
 }
 
 func info(log: Logger, ^msg: Msg, logged : Bool = if (log.enabled) doLog(log, ^msg) else false) {}

@@ -1,5 +1,5 @@
 struct Array~[managed:=true] {
-    mem: Ptr;
+    mem: Ptr,
 }
 
 func free(mem: Ptr) {
