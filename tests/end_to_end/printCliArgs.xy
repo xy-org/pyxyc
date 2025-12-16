@@ -8,7 +8,7 @@ func main~EntryPoint() {
     argc := [Global~CmdArgs].argc;
     argv := [Global~CmdArgs].argv;
     for (i in 1:argc) {
-        argStr := str (
+        argStr := string (
             addr=argv[i]~Byte,
             size=Usize{c.strlen(argv[i])},
         );
