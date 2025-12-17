@@ -30,14 +30,14 @@ func printStatus(st: Status) {
 }
 
 func testEnums(a: Int) {
-    orderStatus := Status{.pending};
+    orderStatus := Status{+pending};
     printStatus(orderStatus);
 
-    printStatus(Status{.processed});
+    printStatus(Status{+processed});
 
-    st : mut = Status{.canceled};
+    st : mut = Status{+canceled};
     if (a > 0) {
-        st = Status{.processed};
+        st = Status{+processed};
     }
     printStatus(st);
 }

@@ -10,5 +10,5 @@ struct Flag {
 }
 
 func test() {
-    s := MyStruct{.flag1};
+    s := MyStruct{+flag1};
 }

@@ -143,7 +143,7 @@ def parse_code(src) -> Ast:
     tokens, token_pos = split_tokens(src.code)
     itoken = TokenIter(tokens, token_pos, src)
 
-    ast = parse_stmt_list(itoken)
+    ast = parse_stmt_list(itoken, is_module=True)
 
     if itoken.has_more():
         raise ParsingError("Unexpected token", itoken)
@@ -740,16 +740,15 @@ def parse_operand(itoken, precedence, op_prec):
     elif itoken.peak() in {"+", "-", "!", "&", "%", "."}:
         coords = itoken.peak_coords()
         op = itoken.consume()
-        switch_off = op == "!" and itoken.check(".")
+        switch_off = op == "-" and itoken.check("!")
         # NOTE no precedence + 1 in order to allow for chaining unary operators
         arg1 = parse_expression(itoken, UNARY_PRECEDENCE, op_prec=op_prec)
-        if switch_off or op == ".":
-            # unary '.' aka. toggle
+        if switch_off or op == "+":
+            # unary '+' aka toggle
             arg1 = BinExpr(arg1, Const(not switch_off, src=arg1.src, coords=arg1.coords), op="=")
-        elif op in {'-', '+'} and isinstance(arg1, Const) and arg1.type != "str":
-            if op == '-':
-                arg1.value = -arg1.value
-                arg1.value_str = f'-{arg1.value_str}'
+        elif op == '-' and isinstance(arg1, Const) and arg1.type != "str":
+            arg1.value = -arg1.value
+            arg1.value_str = f'-{arg1.value_str}'
         else:
             arg1 = UnaryExpr(arg=arg1, op=op, src=itoken.src, coords=coords)
     elif itoken.peak() == ":":
@@ -1342,14 +1341,14 @@ def parse_body(itoken):
     itoken.expect("}")
     return body
 
-def parse_stmt_list(itoken: TokenIter):
+def parse_stmt_list(itoken: TokenIter, is_module=False):
     body = []
     attach_comment_to_prev = False
     comment_node = None
     itoken.skip_empty_lines()
     while itoken.has_more() and itoken.peak() != "}":
         visibility = None
-        if itoken.peak() in visibilityMap:
+        if is_module and itoken.peak() in visibilityMap:
             vis_idx = itoken.i
             visibility = visibilityMap[itoken.consume()]
             if itoken.peak() == "\n":
@@ -1385,8 +1384,6 @@ def parse_stmt_list(itoken: TokenIter):
         elif itoken.peak() == ";;":
             itoken.consume()
             node = parse_ml_comment(itoken)
-        elif itoken.peak() == "func":
-            raise ParsingError("Functions in functions are not allowed", itoken)
         elif itoken.peak() == "struct":
             raise ParsingError("Structs in functions are not allowed", itoken)
         elif itoken.peak() == ";":

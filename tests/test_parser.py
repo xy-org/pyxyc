@@ -2032,7 +2032,7 @@ def test_simple_expressions(code, exp_ast):
     [
         """func main() -> void {
             minusone := -1;
-            plusone := +1;
+            plusone := 1;
             addneg := a + -5;
             negadd := -b + a*-c;
             notOp := !a && !true && !b || !(c && d);
@@ -2575,7 +2575,7 @@ def test_newlines_in_expressions(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """func fun() {
-            return % ! - - + ^ ' a;
+            return % ! - - . ^ ' a;
         }""",
         [
             ast.FuncDef(ast.Id("fun"), body=[
@@ -2588,7 +2588,7 @@ def test_newlines_in_expressions(code, exp_ast):
                             arg=ast.UnaryExpr(
                                 op="-",
                                 arg=ast.UnaryExpr(
-                                    op="+",
+                                    op=".",
                                     arg=ast.CallerContextExpr(
                                         arg=ast.FuncCall(
                                             name=ast.Id("a"),
@@ -4533,10 +4533,10 @@ def test_global_constants(code, exp_ast):
 
         func test() {
             a : mut = Status.start;
-            a =.pending;
-            a = .end;
-            a = . end;
-            b := Status{.end};
+            a = +pending;
+            a = +end;
+            a = + end;
+            b := Status{+end};
         }
         """,
         [
@@ -4617,7 +4617,7 @@ def test_global_constants(code, exp_ast):
         }
 
         func test() {
-            .a.st1.end;
+            +a.st1.end;
         }
         """,
         [
@@ -4657,7 +4657,32 @@ def test_global_constants(code, exp_ast):
     [
         """
         func test() {
-            a : mut = Struct{st1=Status{.pending}, .st2.end};
+            +a.st1.end;
+        }
+        """,
+        [
+            ast.FuncDef(
+                ast.Id("test"),
+                body=[
+                    ast.BinExpr(
+                        arg1=ast.BinExpr(
+                            ast.BinExpr(
+                                ast.Id("a"), ast.Id("st1"), op="."
+                            ),
+                            ast.Id("end"),
+                            op=".",
+                        ),
+                        arg2=ast.Const(True),
+                        op="=",
+                    )
+                ]
+            ),
+        ]
+    ],
+    [
+        """
+        func test() {
+            a : mut = Struct{st1=Status{+pending}, +st2.end};
         }
         """,
         [
@@ -4700,7 +4725,7 @@ def test_global_constants(code, exp_ast):
         """
         func test() {
             a : mut = Struct{};
-            !.a.field.toggle;
+            -!a.field.toggle;
         }
         """,
         [

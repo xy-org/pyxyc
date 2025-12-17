@@ -1279,6 +1279,8 @@ def do_eval(node, cast, cfunc, ctx, msg=None, is_func=False):
                 obj.kwargs[fname] = eval(arg.arg2, cast, cfunc, ctx)
             else:
                 # positional field
+                if i >= len(pos_to_name):
+                    raise CompilationError("Too many positional fields", arg)
                 fname = pos_to_name[i]
                 obj.kwargs[fname] = eval(arg, cast, cfunc, ctx)
             if obj.kwargs[fname] is None:
