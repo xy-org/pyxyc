@@ -4049,11 +4049,21 @@ def test_arrays(code, exp_ast):
     [
         """func main() -> void {
             a := if (cond1) 5 elif (cond2) 6 else 7;
+            b := if (cond1) 5, (cond2) 6, else 7;
         }
         """,
         [
             ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
                 ast.VarDecl(name="a", value=ast.IfExpr(
+                    cond=ast.Id("cond1"),
+                    block=ast.Block(body=ast.Const(5)),
+                    else_node=ast.IfExpr(
+                        cond=ast.Id("cond2"),
+                        block=ast.Block(body=ast.Const(6)),
+                        else_node=ast.Block(body=ast.Const(7)),
+                    ),
+                )),
+                ast.VarDecl(name="b", value=ast.IfExpr(
                     cond=ast.Id("cond1"),
                     block=ast.Block(body=ast.Const(5)),
                     else_node=ast.IfExpr(

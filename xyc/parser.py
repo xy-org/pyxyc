@@ -1029,9 +1029,11 @@ def parse_if(itoken):
         )
 
     itoken.skip_empty_lines()
+    has_comma = itoken.check(",")
     if itoken.check("else"):
         if_expr.else_node = parse_block(itoken, accept_early_return=True)
-    elif itoken.peak() == "elif":
+    elif itoken.check("elif") or has_comma:
+        itoken.i -= 1
         if_expr.else_node = parse_if(itoken)
 
     return if_expr
