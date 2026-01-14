@@ -184,6 +184,16 @@ class IfExpr(Node):
     else_node: Node | list | None = None
 
 @dataclass
+class SwitchExpr(Node):
+    over: Node = None
+    block: Block = field(default_factory=Block) # block's body is a list of 'Case's
+
+@dataclass
+class Case(Node):
+    cond: Node | None = None
+    expr: Node = None
+
+@dataclass
 class ForExpr(Node):
     over: list[Node] = field(default_factory=list)
     name: Node | None = None

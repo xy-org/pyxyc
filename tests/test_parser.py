@@ -4145,6 +4145,138 @@ def test_if(code, exp_ast):
 @pytest.mark.parametrize("code, exp_ast", [
     [
         """func main() -> void {
+            switch (v) {
+                (val1) expr1,
+                (val2) expr2,
+                else expr3
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.SwitchExpr(
+                    over=ast.Id("v"),
+                    block=ast.Block(body=[
+                        ast.Case(ast.Id("val1"), ast.Id("expr1")),
+                        ast.Case(ast.Id("val2"), ast.Id("expr2")),
+                        ast.Case(None, ast.Id("expr3")),
+                    ]),
+                )
+            ]),
+        ]
+    ],
+    [
+        """func main() -> void {
+            switch (v) -> (res: Int) {
+                (val1) res = 10,
+                (val2) res = 30,
+                else res = 40,
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.SwitchExpr(
+                    over=ast.Id("v"),
+                    block=ast.Block(body=[
+                        ast.Case(ast.Id("val1"), ast.BinExpr(ast.Id("res"), ast.Const(10), op="=")),
+                        ast.Case(ast.Id("val2"), ast.BinExpr(ast.Id("res"), ast.Const(30), op="=")),
+                        ast.Case(None, ast.BinExpr(ast.Id("res"), ast.Const(40), op="=")),
+                    ],
+                    returns=[
+                        ast.VarDecl("res", ast.Id("Int"), mutable=True)
+                    ]
+                    )
+                )
+            ]),
+        ]
+    ],
+    [
+        """func main() -> void {
+            switch (v) -> (res: Int) {
+                (val1) {
+                    res = 10;
+                },
+                (val2) {
+                    res = 30;
+                },
+                else {
+                    res = 40;
+                },
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.SwitchExpr(
+                    over=ast.Id("v"),
+                    block=ast.Block(body=[
+                        ast.Case(
+                            ast.Id("val1"),
+                            ast.Block(
+                                body=[
+                                    ast.BinExpr(ast.Id("res"), ast.Const(10), op="=")
+                                ]
+                            )
+                        ),
+                        ast.Case(
+                            ast.Id("val2"),
+                            ast.Block(
+                                body=[
+                                    ast.BinExpr(ast.Id("res"), ast.Const(30), op="=")
+                                ]
+                            )
+                        ),
+                        ast.Case(
+                            None,
+                            ast.Block(
+                                body=[
+                                    ast.BinExpr(ast.Id("res"), ast.Const(40), op="=")
+                                ]
+                            )
+                        ),
+                    ],
+                    returns=[
+                        ast.VarDecl("res", ast.Id("Int"), mutable=True)
+                    ]
+                    )
+                )
+            ]),
+        ]
+    ],
+    [
+        """func main() -> void {
+            switch (v)
+            >> v > 10
+            {
+                (val1) res = 10,
+            };
+        }
+        """,
+        [
+            ast.FuncDef(ast.Id("main"), returns=ast.SimpleRType("void"), body=[
+                ast.SwitchExpr(
+                    over=ast.Id("v"),
+                    block=ast.Block(body=[
+                        ast.Case(ast.Id("val1"), ast.BinExpr(ast.Id("res"), ast.Const(10), op="=")),
+                    ],
+                    in_guards=[
+                        ast.BinExpr(ast.Id("v"), ast.Const(10), op=">"),
+                    ]
+                    )
+                )
+            ]),
+        ]
+    ],
+])
+def test_switch(code, exp_ast):
+    act_ast = parse_code(code)
+    assert act_ast == exp_ast
+
+
+@pytest.mark.parametrize("code, exp_ast", [
+    [
+        """func main() -> void {
             while (a < b) {
                 a += b;
             }

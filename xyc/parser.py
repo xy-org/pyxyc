@@ -303,11 +303,34 @@ def parse_func_select(itoken: TokenIter):
 
 def parse_block(itoken, accept_early_return=False):
     block = Block(src=itoken.src)
-    explicit_block = False
 
+    explicit_block = itoken.peak() == "->"
+    parse_block_header(itoken, block)
+
+    block.coords = itoken.peak_coords()
+
+    if explicit_block:
+        itoken.expect("{", "Blocks must have their body in curly brackets '{body}'")
+        itoken.consume(-1)
+        block.body = parse_body(itoken)
+    elif itoken.peak() in {"return", "error"}:
+        if not accept_early_return:
+            raise ParsingError(f"'{itoken.peak()}' is not allowed here", itoken)
+
+        if itoken.peak() == "return":
+            block.body = [parse_return(itoken)]
+        else:
+            block.body = [parse_error(itoken)]
+    elif itoken.peak() != "{":
+        block.body = parse_expression(itoken)
+    else:
+        block.body = parse_body(itoken)
+
+    return block
+
+def parse_block_header(itoken, block: Block):
     args = []
     if itoken.check("->"):
-        explicit_block = True
         if itoken.check("("):
             args = parse_expr_list(itoken)
             itoken.expect(")")
@@ -335,6 +358,9 @@ def parse_block(itoken, accept_early_return=False):
                 VarDecl(type=expr, src=expr.src, coords=expr.coords)
             )
 
+    parse_block_guards(itoken, block)
+
+def parse_block_guards(itoken, block):
     num_empty = itoken.skip_empty_lines()
     while itoken.peak() in {">>", "<<"}:
         guard_token = itoken.consume()
@@ -347,27 +373,6 @@ def parse_block(itoken, accept_early_return=False):
             block.in_guards.append(guard_expr)
         # itoken.expect_semicolon()
         num_empty = itoken.skip_empty_lines()
-
-    block.coords = itoken.peak_coords()
-
-    if explicit_block:
-        itoken.expect("{", "Blocks must have their body in curly brackets '{body}'")
-        itoken.consume(-1)
-        block.body = parse_body(itoken)
-    elif itoken.peak() in {"return", "error"}:
-        if not accept_early_return:
-            raise ParsingError(f"'{itoken.peak()}' is not allowed here", itoken)
-
-        if itoken.peak() == "return":
-            block.body = [parse_return(itoken)]
-        else:
-            block.body = [parse_error(itoken)]
-    elif itoken.peak() != "{":
-        block.body = parse_expression(itoken)
-    else:
-        block.body = parse_body(itoken)
-
-    return block
 
 def parse_params(itoken, is_error_block=False):
     res = []
@@ -601,6 +606,8 @@ def parse_operand(itoken, precedence, op_prec):
     itoken.skip_empty_lines()
     if itoken.peak() == "if":
         return parse_if(itoken)
+    elif itoken.peak() == "switch":
+        return parse_switch(itoken)
     elif itoken.peak() in {"else", "elif"}:
         raise ParsingError("Missing corresponding if", itoken)
     elif itoken.peak() == "while":
@@ -1037,6 +1044,42 @@ def parse_if(itoken):
         if_expr.else_node = parse_if(itoken)
 
     return if_expr
+
+
+def parse_switch(itoken):
+    switch_coords = itoken.peak_coords()
+    itoken.expect("switch")
+    switch_expr = SwitchExpr(src=itoken.src, coords=switch_coords)
+    itoken.expect("(")
+    switch_expr.over = parse_expression(itoken)
+    itoken.expect(")")
+
+    parse_block_header(itoken, switch_expr.block)
+
+    itoken.skip_empty_lines()
+    itoken.expect("{")
+    itoken.skip_empty_lines()
+    while not itoken.check("}"):
+        if itoken.check("("):
+            case_cond = parse_expression(itoken)
+            itoken.expect(")")
+        else:
+            itoken.expect("else")
+            case_cond = None
+
+        if itoken.peak() != "{":
+            case_expr = parse_expression(itoken)
+        else:
+            case_expr = parse_block(itoken)
+        itoken.skip_empty_lines()
+        if itoken.peak() != "}":
+            itoken.expect(",")
+        else:
+            itoken.check(",")
+        itoken.skip_empty_lines()
+        switch_expr.block.body.append(Case(case_cond, case_expr))
+
+    return switch_expr
 
 
 def parse_while(itoken):
