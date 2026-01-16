@@ -177,6 +177,7 @@ from xyc.compiler import CompilationError
     "structs/moveInStructLit",
     "structs/fieldExternalType",
     "structs/fieldExternalTypeInit",
+    "structs/indexStructInit",
     "globals/globals1",
     "globals/globals2",
     "errors/handling1",

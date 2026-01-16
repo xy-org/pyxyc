@@ -1,0 +1,19 @@
+struct Map {
+    ptr: Ptr,
+}
+
+func get(map: mut Map, key: Int) -> Int {
+    return 0;
+}
+
+func set(map: mut Map, key: Int, val: Int) {
+    # ...
+}
+
+func test() {
+    log10: mut = Map{
+        [1] = 0,
+        [10] = 1,
+        [100] = 2,
+    };
+}

@@ -3701,8 +3701,19 @@ def do_compile_struct_literal(expr, type_obj, tmp_obj, cast, cfunc, ctx: Compile
         for expr, fval_obj in expr_objs:
             if isinstance(expr, xy.Id):
                 obj = field_set(tmp_obj, type_obj.fields[expr.name], fval_obj, cast, cfunc, ctx)
+            elif isinstance(expr, xy.Select):
+                assert expr.base is None
+                assert len(expr.args.args) == 1
+                assert len(expr.args.kwargs) == 0
+                arg_obj = compile_expr(expr.args.args[0], cast, cfunc, ctx)
+                idx_obj = idx_setup(IdxObj(
+                    xy_node=expr,
+                    container=var_to_expr_obj(expr, tmp_obj, cast, cfunc, ctx, False),
+                    idx=arg_obj,
+                ), cast, cfunc, ctx)
+                obj = idx_set(idx_obj, fval_obj, cast, cfunc, ctx)
             else:
-                f_obj = do_compile_field_get_rec(tmp_expr_obj, expr, cast, cfunc, ctx)
+                f_obj = do_compile_field_get_recursive(tmp_expr_obj, expr, cast, cfunc, ctx)
                 obj = idx_set(f_obj, fval_obj, cast, cfunc, ctx)
             if not isinstance(obj.c_node, c.Id):
                 cfunc.body.append(obj.c_node)
@@ -5446,10 +5457,10 @@ def compile_builtin_to(from_obj: CompiledObj, dst_type: CompiledObj, expr):
         inferred_type=dst_type
     )
 
-def do_compile_field_get_rec(obj, compound_expr, cast, cfunc, ctx):
+def do_compile_field_get_recursive(obj, compound_expr, cast, cfunc, ctx):
     res = obj
     if isinstance(compound_expr, xy.BinExpr) and  compound_expr.op == ".":
-        res = do_compile_field_get_rec(res, compound_expr.arg1, cast, cfunc, ctx)
+        res = do_compile_field_get_recursive(res, compound_expr.arg1, cast, cfunc, ctx)
         compound_expr = compound_expr.arg2
     assert isinstance(compound_expr, xy.Id)
     return do_compile_field_get(res, compound_expr, cast, cfunc, ctx)
