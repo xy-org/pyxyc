@@ -1,0 +1,32 @@
+struct String {
+    addr: Ptr~[Byte],
+    size: pseudo = SizeField{},
+    packedSize: Bits64,
+}
+
+struct SizeField {
+    # ...
+}
+
+func get(str: String, :SizeField) = str.packedSize'shiftr(1)'to(Usize);
+
+
+func set(str: mut String, :SizeField, new: Usize) {
+    str.packedSize = new'to(Bits64)'shiftl(1)'or(str.packedSize && 1uz'to(Bits64));
+}
+
+func test1(x: Int, sep: String) {
+    iter: String;
+    iter.addr += x'to(Usize) + sep.size;
+    iter.size -= x'to(Usize) + sep.size;
+}
+
+func test2(x: Int, sep: String) {
+    iter: String;
+    iter.size *= x'to(Usize) / sep.size;
+}
+
+func test3(x: Int, sep: String) {
+    iter: String;
+    iter.size /= x'to(Usize) * sep.size;
+}

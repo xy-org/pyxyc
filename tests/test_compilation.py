@@ -79,6 +79,7 @@ from xyc.compiler import CompilationError
     "tags/paramTags1",
     "tags/paramTags2",
     "indices/pseudoFields",
+    "indices/modifyingPseudoField",
     "errors/guards",
     "errors/richErrors",
     "indices/indices",

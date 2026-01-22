@@ -20,6 +20,11 @@ op_precedence = {
 }
 cast_precedence = 11
 
+def is_right_assoc(op):
+    return op in {
+        "=", "+=", "-=", "*=", "/=", "%=", ">>=", "<<=", "&=", "^=", "|=", "?:",
+    } or op.startswith("pre")
+
 def stringify(ast: Ast):
     frags = []
 
@@ -221,8 +226,8 @@ def parentheses_required(op, parent_op_precedence):
     # but also generate more readable code
     return (
         parent_op_precedence > op_precedence[op] or
-        op == "&" and parent_op_precedence == op_precedence["|"] or
-        op == "&&" and parent_op_precedence == op_precedence["||"]
+        op == "&" and parent_op_precedence >= op_precedence["|"] or
+        op == "&&" and parent_op_precedence >= op_precedence["||"]
     )
 
 def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
@@ -240,7 +245,8 @@ def stringify_expr(expr, frags, parent_op_precedence=-10, ident=0):
             frags.extend((" ", expr.op, " "))
         else:
             frags.append(expr.op)
-        stringify_expr(expr.arg2, frags, op_prec)
+        left_assoc_indicator = 1 - int(is_right_assoc(expr.op))
+        stringify_expr(expr.arg2, frags, op_prec + left_assoc_indicator)
         if parentheses:
             frags.append(")")
     elif isinstance(expr, UnaryExpr):
