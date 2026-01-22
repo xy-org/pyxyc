@@ -226,7 +226,7 @@ def parentheses_required(op, parent_op_precedence):
     # but also generate more readable code
     return (
         parent_op_precedence > op_precedence[op] or
-        op == "&" and parent_op_precedence >= op_precedence["|"] or
+        op in {"&", "^"} and parent_op_precedence >= op_precedence["|"] or
         op == "&&" and parent_op_precedence >= op_precedence["||"]
     )
 
